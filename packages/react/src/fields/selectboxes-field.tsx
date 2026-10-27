@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
-import { ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
+import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 
@@ -224,6 +224,7 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
     >
       <legend data-formancy-part="label">{label}</legend>
       <RequiredHint field={field} />
+      <Description field={field} />
       {options.map((option) => {
         const optionId = `${field.ids.control}:${option.value}`
         return (

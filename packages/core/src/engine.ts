@@ -19,7 +19,7 @@ import { createInteractionState } from './interaction.js'
 import { modelViolations, storedShapeViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
 import { formatPath, parsePath, templateWire, withinAny } from './path.js'
-import { buildFieldProps } from './props.js'
+import { GROUPED_FIELD_TYPES, buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
@@ -94,6 +94,8 @@ export interface FieldSnapshot {
    * renderer then falls back to something of its own.
    */
   label: string | undefined
+  /** The field's help text, resolved as `label` is; undefined when it has none (0194). */
+  description: string | undefined
   /** The model definition, verbatim — renderers read options and extras from it. */
   def: FieldDef
   ids: FieldIds
@@ -272,15 +274,6 @@ function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
   return mode === 'client' ? 'server' : 'client'
 }
 
-/**
- * The field types a renderer draws as a fieldset and a legend.
- *
- * Several controls answering one question, which is a `group` to assistive
- * technology — and `role="group"` does not support `aria-required`, so these
- * say they are required in their description instead. See
- * `FieldPropsInput.grouped`.
- */
-const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes', 'ranking', 'matrix', 'repeater'])
 
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
@@ -1176,6 +1169,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         value: store.get(node.path),
         type: node.def.type,
         label: resolveText(schema, node.def.label, locale),
+        description: resolveText(schema, node.def.description, locale),
         def: node.def,
         required,
         visible: !hiddenAt(node.path),
@@ -1191,7 +1185,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           disabled,
           touched,
           errors,
-          grouped: GROUPED_TYPES.has(node.def.type),
+          grouped: GROUPED_FIELD_TYPES.has(node.def.type),
+          described: node.def.description !== undefined,
           checking: checkingWires.has(wire),
         }),
       })

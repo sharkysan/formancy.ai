@@ -117,6 +117,7 @@ export function translationCommands(core: SessionCore): TranslationCommands {
             const at = [...parent, def.key]
             const path = at.join('.')
             lift(def as unknown as Record<string, unknown>, 'label', `${path}.label`)
+            lift(def as unknown as Record<string, unknown>, 'description', `${path}.description`)
             for (const option of def.options ?? []) {
               // By VALUE rather than by index: an option's value is its identity,
               // so the id reads as the thing it names rather than as a position.
@@ -125,6 +126,15 @@ export function translationCommands(core: SessionCore): TranslationCommands {
                 'label',
                 `${path}.option.${option.value}`,
               )
+              // A picture's words are text too, and a reader of another language needs
+              // them as much as the label (spec 4; found when the case below was derived
+              // from the schema rather than from a list).
+              if (option.image !== undefined) {
+                lift(option.image as unknown as Record<string, unknown>, 'alt', `${path}.option.${option.value}.alt`)
+              }
+            }
+            for (const row of def.rows ?? []) {
+              lift(row as unknown as Record<string, unknown>, 'label', `${path}.row.${row.value}`)
             }
             for (const column of def.columns ?? []) {
               lift(

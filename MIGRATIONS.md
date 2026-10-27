@@ -11,13 +11,32 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
+## Spec version 5 is OPEN
+
+Spec `"5"` is open as of 2026-10-27, and is the version this package writes: a new document
+declares it, and `upgradeSpecVersion` moves an older one to it unchanged but for the version
+line. **It is not frozen.** A document written against it today is a document of a version that
+may still gain constructs; pin a reader to it knowing that, and freeze nothing on it until it
+says FROZEN here ([0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
+
+It is a superset of version 4 and removes nothing. A reader pinned to spec 4 **refuses** a
+version 5 document rather than ignoring the part it does not know, as at every version before
+it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
+
+### What version 5 adds so far
+
+- `description` on a field — help text under its question, read out with the control rather
+  than as part of its name. Text, or a reference into the catalogue; on a group, a page or a
+  repeater it describes the whole set. A version 4 document carrying one is refused, naming the
+  property ([0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
+
 ## Spec version 4 is FROZEN
 
 Spec `"4"` is frozen as of 2026-10-09, and first released with `0.4.0`. A document that
 validates today will validate against every future release that speaks spec 4, save one that
 keys a field or a matrix row `__proto__`, which no release could store an answer under
-([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). **No version
-is open now**: the next construct that needs one opens version 5
+([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). Version 5,
+opened by the next construct that needed one as 0140 said it would be, is open above
 ([0140](docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
 
 It is a superset of version 3 and removes nothing, so upgrading is the same single line
@@ -305,6 +324,41 @@ again.
   in spec 3 that names a check the deployment answers
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
+
+## Every answer has the shape its type says (unreleased)
+
+**If anything posts submissions to the server other than the shipped renderers, check what it
+sends.** The engine checks every answer's shape first, in the browser and on the server's
+replay, whether or not the field has a constraint, and refuses another shape as `type` with
+`422` ([0189](docs/decisions/0189-every-answer-has-the-shape-its-type-says.md)). Every form
+version is enforced from the next submission, without a republish.
+
+- A number is a JSON number: `"3"` is refused for a `number` field.
+- An unanswered number, date, time, choice or tick box is `null` or absent, never `""`: `""` is
+  an answer only to a text field.
+- An empty list is `[]` and an untouched matrix `{}`, never `null`.
+- A group's value is an object, and so is the answer a rule hid but kept with
+  `clearOnHide: false`, which is now checked for its shape though for nothing else.
+- A value posted for a `static` field is dropped.
+- A computed result that does not fit its field is no longer stored; a decimal into a number
+  field is stored as the number it writes.
+
+A prefill (`initialValue`) is held to the same: one that writes `""` for a date shows a `type`
+error on it after a submit. Submissions already stored are not re-examined.
+
+## An error is said, not coded (unreleased)
+
+**If you wrote a conformance driver, or styled the error text, read this.** A field's error text
+is now one sentence per code, each a `span` carrying `data-formancy-code`, where it was the codes
+joined with commas ([0191](docs/decisions/0191-an-error-is-said-not-coded.md)). The codes are
+unchanged in `submit()`, the API and every fixture.
+
+- A driver that split the error text on `", "` reads each `[data-formancy-code]` instead, and
+  the suite fails a message whose text is its own code.
+- A theme that styled `[data-formancy-part="error"]` still matches it; the sentences inside
+  are separated by a space.
+- A host that reworded `errors.entry` and used `{codes}` still gets them; the shipped wording
+  uses `{problems}`, the sentences.
 
 ## A radio group, a set of tick boxes and a signature carry the field's control id (0.7.0)
 

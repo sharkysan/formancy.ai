@@ -40,6 +40,9 @@ import { FormancyErrorText } from './error-text.js'
       [attr.data-state]="showError() ? 'invalid' : 'valid'"
     >
       <label data-formancy-part="label" [id]="field().snapshot().props.label.id" [attr.for]="field().snapshot().props.label.for">{{ label() }}</label>
+      @if (field().snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field().snapshot().ids.description">{{ said }}</p>
+      }
       <ng-content />
       @if (showError()) {
         <p data-formancy-part="error" [id]="field().snapshot().props.error.id" [formancyErrorText]="field().snapshot()"></p>

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
-import { ErrorText, RequiredHint, useResolvedOptions } from './internals.js'
+import { Description, ErrorText, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 /**
@@ -82,6 +82,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
     >
       <legend data-formancy-part="label">{label}</legend>
       <RequiredHint field={field} />
+      <Description field={field} />
       {ranked.length === 0 ? null : (
         <ol data-formancy-part="ranking-order" aria-label={text('ranking.order', { label })}>
           {ranked.map((option, index) => (

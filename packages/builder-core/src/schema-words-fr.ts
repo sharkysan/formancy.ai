@@ -16,6 +16,9 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   Label: 'Libellé',
   'What the person filling the form in reads next to this field, or a reference to it in the message catalogue.':
     'Ce que lit la personne qui remplit le formulaire à côté de ce champ, ou une référence vers ce texte dans le catalogue de messages.',
+  Description: 'Description',
+  'Help text under the question — "as on your passport" — read out with the control rather than as part of its name, so the label stays short. On a group, a page or a repeater it is read out with the whole set. Text, or a reference to it in the message catalogue. Needs spec version 5.':
+    'Texte d’aide sous la question – « tel que sur votre passeport » – lu avec le contrôle plutôt que comme partie de son nom, pour que le libellé reste court. Sur un groupe, une page ou une répétition, il est lu avec l’ensemble. Du texte, ou une référence vers lui dans le catalogue de messages. Nécessite la version 5 de la spécification.',
   'Minimum length': 'Longueur minimale',
   'The shortest answer that counts, in characters.': 'La réponse la plus courte acceptée, en caractères.',
   'Maximum length': 'Longueur maximale',

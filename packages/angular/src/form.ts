@@ -44,6 +44,10 @@ export interface SubmitOutcome {
           }
         </ol>
       </nav>
+      <!-- The current step's help text (0194), under the steps and above its questions. -->
+      @if (pageDescription(); as said) {
+        <p data-formancy-part="description">{{ said }}</p>
+      }
       <!-- A paged form with a layout is the layout, a page at a time. This dropped the
            layout for any paged form while the React binding drew every page's fields on
            every step; both now ask the spec which nodes the page leaves empty (0137). -->
@@ -87,6 +91,12 @@ export class FormancyForm {
 
   protected readonly wizard: WizardBinding | undefined =
     this.engine.wizard() === undefined ? undefined : injectWizard()
+
+  /** The current step's help text (0194), or nothing on a form with no pages. */
+  protected readonly pageDescription = computed(() => {
+    const page = this.wizard?.page()
+    return page === undefined ? undefined : this.engine.text(this.engine.pages()[page]?.def.description)
+  })
 
   /**
    * Display text per wire path (row fields by their template wire,

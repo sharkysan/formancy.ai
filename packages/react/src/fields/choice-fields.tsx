@@ -2,7 +2,7 @@ import { optionsStatus } from '@formancy/core/words'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
-import { ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
+import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 import { TypeaheadSelectField } from './typeahead-field.js'
 
@@ -155,6 +155,7 @@ export function RadioGroupField({ path, label }: FieldComponentProps) {
     >
       <legend data-formancy-part="label">{label}</legend>
       <RequiredHint field={field} />
+      <Description field={field} />
       {options.map((option) => {
         const optionId = `${field.ids.control}:${option.value}`
         return (

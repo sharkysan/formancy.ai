@@ -107,6 +107,7 @@ export function FieldShell({
       <label data-formancy-part="label" {...field.labelProps}>
         {label}
       </label>
+      <Description field={field} />
       {children}
       {field.touched && field.errors.length > 0 ? <ErrorText field={field} /> : null}
     </div>
@@ -191,6 +192,20 @@ export function RequiredHint({ field }: { field: ReturnType<typeof useField> }) 
     <span data-formancy-part="required-hint" id={field.props.hint.id}>
       {text('form.required')}
     </span>
+  )
+}
+
+/**
+ * A field's help text under its question (0194), at the id the control's
+ * `aria-describedby` names, so it is read out with the control and never as its name.
+ * Nothing when the field has none.
+ */
+export function Description({ field }: { field: FieldBinding }) {
+  if (field.description === undefined) return null
+  return (
+    <p data-formancy-part="description" id={field.props.description.id}>
+      {field.description}
+    </p>
   )
 }
 

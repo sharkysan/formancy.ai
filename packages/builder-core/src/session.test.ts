@@ -1,4 +1,5 @@
 import type { FieldDef, FormSchema } from '@formancy/spec'
+import documentSchema from '@formancy/spec/schema.json' with { type: 'json' }
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from './session.js'
 import type { BuilderSession } from './session.js'
@@ -515,15 +516,17 @@ describe('authoring translations', () => {
 
 describe('extracting every text in a document', () => {
   /*
-   * `Text` appears in exactly four places in the format: a field's label, an
-   * option's label, a datagrid column's heading, and a layout node's label. The
-   * first version of this reached one of them, and the sentence recording that
-   * said it left "options, placeholders and help text" for later — naming two
-   * properties the format does not have. It was written from a memory of other
-   * form builders rather than from this one's schema.
+   * `Text` is wherever the format's schema says a property is text — read from the schema
+   * below, not listed. The first version of this reached one place, and the sentence
+   * recording that said it left "options, placeholders and help text" for later — naming
+   * two properties the format did not have. It was written from a memory of other form
+   * builders rather than from this one's schema.
    *
-   * So this case is derived from the format rather than from a list: every string
-   * that can be a reference is one afterwards.
+   * Then it was "four places", a list, and the list went stale twice without failing: an
+   * option picture's `alt` (spec 4) and a matrix row's label were never extracted, because
+   * the walk below looked for `label` and `header` by name and the fixture had neither a
+   * picture nor a matrix. A field's `description` (spec 5, 0194) would have been the
+   * third. So the keys are the schema's, and the fixture has one of each.
    *
    * Ids do not have to be stable, and that is worth saying because it looks like
    * they should be. The reference lives INSIDE the thing it names — an option's
@@ -532,7 +535,7 @@ describe('extracting every text in a document', () => {
    * an id has to be is unique and readable.
    */
   const everything: FormSchema = {
-    specVersion: '3',
+    specVersion: '5',
     id: 'trip',
     title: 'Trip',
     model: {
@@ -541,9 +544,26 @@ describe('extracting every text in a document', () => {
           key: 'country',
           type: 'select',
           label: 'Country',
+          description: 'Where you live.',
           options: [
             { value: 'CH', label: 'Switzerland' },
             { value: 'DE', label: 'Germany' },
+          ],
+        },
+        {
+          key: 'pet',
+          type: 'radio',
+          label: 'Pet',
+          options: [{ value: 'cat', label: 'Cat', image: { src: '/cat.png', alt: 'A tabby cat asleep' } }],
+        },
+        {
+          key: 'rating',
+          type: 'matrix',
+          label: 'Rating',
+          rows: [{ value: 'taste', label: 'Taste' }],
+          options: [
+            { value: 'good', label: 'Good' },
+            { value: 'bad', label: 'Bad' },
           ],
         },
         {
@@ -571,7 +591,31 @@ describe('extracting every text in a document', () => {
     ] as unknown as NonNullable<FormSchema['layouts']>,
   }
 
-  test('leaves no literal behind, in any of the four places text lives', () => {
+  /** Every property the format's schema says is text, wherever it sits in the schema. */
+  const TEXT_PROPERTIES: ReadonlySet<string> = (() => {
+    const found = new Set<string>()
+    const visit = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(visit)
+      if (typeof node !== 'object' || node === null) return
+      for (const [key, child] of Object.entries(node as Record<string, unknown>)) {
+        if (key === 'properties' && typeof child === 'object' && child !== null) {
+          for (const [name, property] of Object.entries(child as Record<string, unknown>)) {
+            if ((property as { $ref?: string }).$ref === '#/$defs/text') found.add(name)
+            visit(property)
+          }
+        } else visit(child)
+      }
+    }
+    visit(documentSchema)
+    return found
+  })()
+
+  // The guard on the guard: a schema read that found nothing would pass every case below.
+  test('reads the format’s text properties from its schema', () => {
+    expect([...TEXT_PROPERTIES].sort()).toEqual(['alt', 'description', 'header', 'label'])
+  })
+
+  test('leaves no literal behind, in any place text lives', () => {
     const session = createBuilderSession(everything)
 
     expect(session.extractAllText().ok).toBe(true)
@@ -585,10 +629,7 @@ describe('extracting every text in a document', () => {
       }
       if (typeof value !== 'object' || value === null) return
       for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-        // The two properties that carry display text, wherever they appear.
-        if ((key === 'label' || key === 'header') && typeof item === 'string') {
-          literals.push(`${at}.${key}`)
-        }
+        if (TEXT_PROPERTIES.has(key) && typeof item === 'string') literals.push(`${at}.${key}`)
         walk(item, `${at}.${key}`)
       }
     }

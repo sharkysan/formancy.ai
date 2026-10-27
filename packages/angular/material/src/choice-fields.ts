@@ -153,6 +153,9 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
         @if (field.snapshot().required) {
           <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
         }
+        @if (field.snapshot().description; as said) {
+          <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+        }
         <mat-radio-group
           [name]="control().name"
           [value]="field.snapshot().value"
@@ -200,6 +203,9 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
         <legend data-formancy-part="label">{{ context.label }}</legend>
         @if (field.snapshot().required) {
           <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
+        }
+        @if (field.snapshot().description; as said) {
+          <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
         }
         @for (option of offered; track option.value) {
           <mat-checkbox

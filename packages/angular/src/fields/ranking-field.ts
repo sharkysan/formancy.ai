@@ -42,6 +42,9 @@ import { FormancyErrorText } from './error-text.js'
              aria-required, so the engine describes the group by this instead. -->
         <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
       }
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
       @if (ranked().length > 0) {
         <ol data-formancy-part="ranking-order" [attr.aria-label]="'ranking.order' | formancyText: { label: context.label }">
           @for (option of ranked(); track option.value; let first = $first; let last = $last) {

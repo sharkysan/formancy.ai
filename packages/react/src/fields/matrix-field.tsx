@@ -1,6 +1,6 @@
 import { useFormEngine } from '../context.js'
 import { useField } from '../use-field.js'
-import { ErrorText, RequiredHint, useResolvedOptions } from './internals.js'
+import { Description, ErrorText, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 /**
@@ -44,6 +44,7 @@ export function MatrixField({ path, label }: FieldComponentProps) {
     >
       <legend data-formancy-part="label">{label}</legend>
       <RequiredHint field={field} />
+      <Description field={field} />
       <div data-formancy-part="matrix" data-columns={String(columns.length)}>
         {rows.map((row) => (
           <fieldset key={row.value} data-formancy-part="matrix-row">
