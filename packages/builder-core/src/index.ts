@@ -252,3 +252,4 @@ export {
 export { duplicateAndSay, duplicateField } from './duplicate.js'
 export { changeFieldType, retypeAndSay, retypeTargets } from './retype.js'
 export type { BlockPlaced, BlockSaved, BuilderBlock } from './blocks.js'
+export { addOtherOption, offersOther } from './other.js'

@@ -380,6 +380,45 @@ describe('a choice that keeps its place (0200)', () => {
   })
 })
 
+describe('"Other, please specify" (0202)', () => {
+  // The cases React's panel is held to.
+  const mountChannel = async (type: 'radio' | 'text') => {
+    const session = createBuilderSession({
+      specVersion: '5',
+      id: 'survey',
+      title: 'Survey',
+      model: {
+        fields: [
+          type === 'radio'
+            ? { key: 'channel', type, label: 'Channel', options: [{ value: 'friend', label: 'A friend' }] }
+            : { key: 'channel', type, label: 'Channel' },
+        ],
+      },
+    } as FormSchema)
+    const view = await render(FormancyPropertyPanel, {
+      componentInputs: { session, keyPath: ['channel'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    return { session, settle: async (): Promise<void> => void (await view.fixture.whenStable()) }
+  }
+
+  test('is one button on a choice, which adds the option and the field asking what', async () => {
+    const { session, settle } = await mountChannel('radio')
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add “Other, please specify”' }))
+    await settle()
+
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['channel', 'channelOther'])
+    expect(screen.queryByRole('button', { name: 'Add “Other, please specify”' })).toBeNull()
+  })
+
+  test('is not offered on a field that is not a choice', async () => {
+    await mountChannel('text')
+    expect(screen.queryByRole('button', { name: 'Add “Other, please specify”' })).toBeNull()
+  })
+})
+
 describe('editing a datagrid’s columns', () => {
   /*
    * The other shape generation cannot produce: the schema says "array of

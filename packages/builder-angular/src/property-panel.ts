@@ -6,7 +6,16 @@ import {
   output,
   signal,
 } from '@angular/core'
-import { changeFieldType, createBuilderText, editablePropertiesFor, nameOf, paletteEntries, retypeTargets } from '@formancy/builder-core'
+import {
+  addOtherOption,
+  changeFieldType,
+  createBuilderText,
+  editablePropertiesFor,
+  nameOf,
+  offersOther,
+  paletteEntries,
+  retypeTargets,
+} from '@formancy/builder-core'
 import type { BuilderText, PaletteEntry } from '@formancy/builder-core'
 import type { FieldType } from '@formancy/spec'
 import type {
@@ -263,6 +272,12 @@ export class FormancyProperty {
             (changed)="set(property.name, $event)"
           />
         }
+
+        <!-- The option, the field asking what and the rules on it, in one step and one undo:
+             three constructs an author would otherwise put together by hand (0202). -->
+        @if (offersOther()) {
+          <button type="button" (click)="addOther()">{{ session().text('other.add') }}</button>
+        }
       </div>
     }
   `,
@@ -306,6 +321,15 @@ export class FormancyPropertyPanel {
     const type = this.def()?.type ?? ''
     return paletteEntries(undefined, this.session().text).find((entry) => entry.type === type)?.title ?? type
   })
+
+  protected readonly offersOther = computed(() => {
+    const field = this.def()
+    return field !== undefined && offersOther(field)
+  })
+
+  protected addOther(): void {
+    addOtherOption(this.session(), this.keyPath())
+  }
 
   protected retype(event: Event): void {
     changeFieldType(this.session(), this.keyPath(), (event.target as HTMLSelectElement).value as FieldType)
