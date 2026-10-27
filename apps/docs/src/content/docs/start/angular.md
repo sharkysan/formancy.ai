@@ -115,6 +115,15 @@ field's errors are said in the same language — the engine's code `minLength` i
 translate: `addLabel` is a plain string in one language
 ([0171](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
 
+### Checking the answers before sending
+
+`<formancy-form [review]="true" />` puts a step between the last question and sending: where
+the form would send, it offers **Check your answers**, which validates the whole form as sending
+would, goes to the problem if there is one, and otherwise shows every answer in words with a
+**Change** back to its question. The form is sent from there, through the same `(submitted)`
+output. The React binding's `review` prop does the same, from the same list
+([0204](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+
 ## Drive one field yourself
 
 `FormancyForm` is a convenience. Underneath, every field is a signal you can

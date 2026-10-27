@@ -30,6 +30,6 @@ import { FormancyForm } from '@formancy/angular'
   // The same layout name the React side renders, so the two are comparable. A
   // different one would make every difference on screen a difference of
   // arrangement rather than of renderer.
-  template: `<formancy-form layout="web" />`,
+  template: `<formancy-form layout="web" [review]="true" />`,
 })
 export class AngularPreview {}

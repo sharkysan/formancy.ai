@@ -876,3 +876,24 @@ The browser half is held by each renderer's `options-source.test`, near-copies w
 names, since the conformance driver cannot supply a source; the server half by
 `packages/server-core/src/options-membership.test.ts`, and the publish refusal by its cases in
 `use-cases.test.ts`.
+
+## 6.17 Checking the answers before they are sent
+
+```
+browser: form.tsx / form.ts, review.tsx / review.ts         core/words: answersToReview
+──────────────────────────────────────────────────          ───────────────────────────
+the last step, with review on: "Check your answers" where Submit would be
+  pressed ──▶ submit(): every field touched and validated, nothing sent
+    a problem ──▶ wizard.goTo(page of engine.firstInvalid()), the errors shown
+    none ──▶ the review, focus on its heading
+      answersToReview(engine, text) ───────────────────▶  answersInWords(schema, value, text, locale)
+                                    ◀───────────────────  per answer: label, said, field,
+                                                           page = pageOf(field), controlId
+      each answer: <dt> the question, <dd> the answer in words, <dd> Change <question>
+      Change ──▶ leave the review, wizard.goTo(page), focus controlId once it is drawn
+      Submit ──▶ the ordinary send, as without a review
+```
+
+The review reads the form as it stands, so a Change and a return show the answer as changed. A
+question nobody answered has no line ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+

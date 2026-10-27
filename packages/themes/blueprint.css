@@ -406,7 +406,7 @@
 
 [data-formancy-theme='blueprint'] [data-formancy-part='repeater'] button,
 [data-formancy-theme='blueprint'] [data-formancy-part='wizard-nav'] button,
-[data-formancy-theme='blueprint'] [data-formancy-part='submit'] {
+[data-formancy-theme='blueprint'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers']) {
   font: inherit;
   font-family: var(--fm-sans);
   font-size: 0.875rem;
@@ -426,7 +426,7 @@
   color: var(--fm-signal);
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='submit'] {
+[data-formancy-theme='blueprint'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers']) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -439,7 +439,7 @@
 }
 
 /* Decorative: the button already says what it does. */
-[data-formancy-theme='blueprint'] [data-formancy-part='submit']::after {
+[data-formancy-theme='blueprint'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers'])::after {
   content: '→' / '';
 }
 
@@ -474,11 +474,11 @@
   color: var(--fm-invalid);
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='submit']:hover {
+[data-formancy-theme='blueprint'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers']):hover {
   background: color-mix(in srgb, var(--fm-signal) 88%, black);
 }
 
-[data-formancy-theme='blueprint'] :is([data-formancy-part='repeater'], [data-formancy-part='wizard-nav'], [data-formancy-part='submit']):focus-visible,
+[data-formancy-theme='blueprint'] :is([data-formancy-part='repeater'], [data-formancy-part='wizard-nav'], [data-formancy-part='submit'], [data-formancy-part='check-answers']):focus-visible,
 [data-formancy-theme='blueprint'] [data-formancy-part='repeater'] button:focus-visible,
 [data-formancy-theme='blueprint'] [data-formancy-part='wizard-nav'] button:focus-visible {
   outline: 2px solid var(--fm-signal);
@@ -2054,3 +2054,51 @@
   padding: 0;
   font-weight: 600;
 }
+
+/* Checking the answers before sending (0204): each question, its answer and its "Change" on one
+   line that wraps rather than overflows on a narrow screen, a rule between the lines. */
+[data-formancy-theme='blueprint'] [data-formancy-part='review'] {
+  display: grid;
+  gap: 1rem;
+  margin-block: 1rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-heading'] {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-answers'] {
+  margin: 0;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-answer'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--fm-rule);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-answer'] :is(dt, dd) {
+  margin: 0;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-answer'] dt {
+  flex: 0 1 12rem;
+  font-weight: 600;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-answer'] dd {
+  flex: 1 1 12rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-answer'] dd:last-child {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='review-empty'] {
+  color: var(--fm-muted);
+}
+

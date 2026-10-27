@@ -1,10 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Injector,
+  afterNextRender,
   computed,
+  inject,
   input,
   output,
+  signal,
 } from '@angular/core'
+import { NgTemplateOutlet } from '@angular/common'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, LayoutNode } from '@formancy/spec'
 import { injectSubmit } from './submit.js'
@@ -14,6 +19,9 @@ import { injectEngine } from './provide.js'
 import { FormancyLayout } from './layout.js'
 import { FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
 import { FormancyTextPipe, injectFormText } from './text.js'
+import { FormancyReview } from './review.js'
+import { focusControl } from './focus-control.js'
+import type { ReviewedAnswer } from '@formancy/core/words'
 
 export interface SubmitOutcome {
   ok: boolean
@@ -34,9 +42,21 @@ export interface SubmitOutcome {
 @Component({
   selector: 'formancy-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyLayout, FormancyTextPipe],
+  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyLayout, FormancyReview, FormancyTextPipe, NgTemplateOutlet],
   template: `
-    @if (wizard; as w) {
+    <!-- What ends the form: sending it, or checking the answers first where it asks (0204). -->
+    <ng-template #end>
+      @if (review()) {
+        <button type="button" data-formancy-part="check-answers" (click)="check()">{{ 'review.open' | formancyText }}</button>
+      } @else {
+        <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
+      }
+    </ng-template>
+    @if (reviewing()) {
+      <formancy-review (changed)="change($event)">
+        <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
+      </formancy-review>
+    } @else if (wizard; as w) {
       <nav data-formancy-part="stepper" [attr.aria-label]="'form.progress' | formancyText">
         <ol>
           @for (page of w.livePages(); track page.key) {
@@ -68,12 +88,12 @@ export interface SubmitOutcome {
         @if (w.canGoNext()) {
           <button type="button" (click)="onNext()">{{ 'form.next' | formancyText }}</button>
         } @else {
-          <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
+          <ng-container *ngTemplateOutlet="end" />
         }
       </div>
     } @else if (arrangement(); as nodes) {
       <formancy-layout [nodes]="nodes" [labels]="labels()" />
-      <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
+      <ng-container *ngTemplateOutlet="end" />
     } @else {
       @for (wire of staticWires; track wire) {
         <formancy-field [path]="wire" [fallbackLabel]="fallbackFor(wire)" />
@@ -81,7 +101,7 @@ export interface SubmitOutcome {
       @for (wire of repeaterWires; track wire) {
         <formancy-repeater [wire]="wire" [labels]="labels()" />
       }
-      <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
+      <ng-container *ngTemplateOutlet="end" />
     }
   `,
 })
@@ -110,7 +130,16 @@ export class FormancyForm {
    */
   readonly layout = input<string>()
   readonly submitLabel = input<string>()
+  /**
+   * Show the answers in words before sending, each with a way back to its question: the last
+   * step offers "Check your answers" in place of sending (0204). Off unless asked for.
+   */
+  readonly review = input(false)
   readonly submitted = output<SubmitOutcome>()
+
+  /** Whether the answers are being checked. */
+  protected readonly reviewing = signal(false)
+  private readonly injector = inject(Injector)
 
   private readonly text = injectFormText()
   /** The host's word when it gave one, and the form's language's otherwise (0171). */
@@ -158,6 +187,21 @@ export class FormancyForm {
 
   protected onNext(): void {
     void this.wizard?.next()
+  }
+
+  /** Validate everything as a send would; open the review only when nothing is wrong. */
+  protected check(): void {
+    const outcome = this.submit()
+    if (outcome.ok) return this.reviewing.set(true)
+    const firstInvalid = this.engine.firstInvalid()
+    if (firstInvalid !== null) this.wizard?.goTo(this.engine.pageOf(parsePath(firstInvalid)))
+  }
+
+  /** Leave the review for the page the question is on, and focus it once that is drawn. */
+  protected change(answer: ReviewedAnswer): void {
+    this.reviewing.set(false)
+    this.wizard?.goTo(answer.page)
+    afterNextRender(() => focusControl(document.getElementById(answer.controlId)), { injector: this.injector })
   }
 
   protected onSubmit(): void {

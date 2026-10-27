@@ -519,7 +519,9 @@ answer, or with no data, is stored without it).
   that difference matters — a clinical question, a consent — the field should have no default;
   `required` without one makes the person answer.
 - **A required field with a default is answered before anybody reads it**, so `required` does
-  not make a person look at that question.
+  not make a person look at that question. A form can ask for a review before sending
+  ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)), where every answer, a default left alone included, is shown in
+  words — but nothing records that the person looked.
 - **A field shown again shows its default again**, including to somebody who cleared it, changed
   the answer that showed it and changed that back.
 
