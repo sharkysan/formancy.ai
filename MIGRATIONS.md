@@ -38,6 +38,11 @@ it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
   never instead of the label. Text, or a reference into the catalogue; on a masked field it
   replaces the drawn shape. A version 4 document carrying one is refused, naming the property
   ([0196](docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)).
+- `default` on a text, long text, hidden, number, tick box, date, time, date and time or choice
+  field — the answer a new form, a new row, or a field shown again after its hiding cleared it
+  starts with, of the answer's own JSON type. Never applied to what is handed in. A document
+  whose default its field would refuse is refused by the engine; a version 4 document carrying
+  one is refused, naming the property ([0197](docs/decisions/0197-a-default-is-where-something-fresh-starts.md)).
 
 ## Spec version 4 is FROZEN
 

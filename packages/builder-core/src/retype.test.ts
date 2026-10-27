@@ -50,6 +50,31 @@ describe('changing a field’s type', () => {
     expect(session.document().model.fields[1]?.options?.length).toBe(1)
   })
 
+  // A default is kept only where the new field would accept it, by the check every answer
+  // gets (0197). Kept as it was, a number's 2 on a text field is a document the format
+  // refuses — so the change would be — and a text's "Zürich" on a select is not one of its
+  // options, a form the engine will not open.
+  test('keeps a default the new field accepts and drops one it would refuse', () => {
+    const session = createBuilderSession({
+      ...form,
+      specVersion: '5',
+      model: {
+        fields: [
+          { key: 'colour', type: 'select', label: 'Colour', options: [{ value: 'red', label: 'Red' }], default: 'red' },
+          { key: 'city', type: 'text', label: 'City', default: 'Zürich' },
+          { key: 'adults', type: 'number', label: 'Adults', default: 2 },
+        ],
+      },
+    })
+    expect(changeFieldType(session, ['colour'], 'radio').ok).toBe(true)
+    expect(changeFieldType(session, ['city'], 'select').ok).toBe(true)
+    expect(changeFieldType(session, ['adults'], 'text').ok).toBe(true)
+    const [colour, city, adults] = session.document().model.fields
+    expect(colour?.default).toBe('red')
+    expect(city).not.toHaveProperty('default')
+    expect(adults).not.toHaveProperty('default')
+  })
+
   // A group, a page or a repeater holds other fields: turning one into a question would
   // throw its fields away, and turning a question into one would invent fields.
   test('is refused for anything that holds fields, either way', () => {

@@ -18,13 +18,14 @@ import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
 import { modelViolations, storedShapeViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
-import { formatPath, parsePath, templateWire, withinAny } from './path.js'
+import { formatPath, parsePath, templateWire, topSegment, withinAny } from './path.js'
 import { GROUPED_FIELD_TYPES, buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
 import { computedTargets, isTarget, staticTargets, withoutValuesAt } from './computed-targets.js'
 import { computedWriter } from './computed-value.js'
+import { filled, refusedDefault, reopened } from './defaults.js'
 import { getAt, setAt } from './value.js'
 import { refusedRule } from './rule-refusal.js'
 import { createRows, repeaterViolations } from './rows.js'
@@ -563,7 +564,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const computed = computedTargets(allRules)
   /** Those, and the fields that collect nothing: nothing handed in or set lands on either. */
   const unwritable = new Set([...computed, ...staticTargets(schema.model)])
-  const store = createValueStore(withoutValuesAt(options.initialValue ?? {}, unwritable))
+  const refusal = refusedDefault(schema.model, computed)
+  if (refusal !== undefined) throw new Error(refusal)
+  // A new form starts with the document's defaults; anything handed in, as it was handed (0197).
+  const store = createValueStore(withoutValuesAt(options.initialValue ?? filled(schema.model.fields, {}), unwritable))
   const interaction = createInteractionState()
   const rows = createRows(store, interaction)
   const errorsByWire = new Map<string, string[]>()
@@ -735,17 +739,19 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             // error would silently drop whatever the user typed into it.
             const visible = ok ? value === true : true
             const wasHidden = hiddenWires.has(wire)
-            if (visible && wasHidden) {
-              hiddenWires.delete(wire)
-              metaChanged.push(wire)
-              shown.push(wire)
-            } else if (!visible && !wasHidden) {
-              hiddenWires.add(wire)
-              metaChanged.push(wire)
+            if (visible === wasHidden) {
               // A group's and a repeater's own `clearOnHide` too, which a lookup that knew
               // only leaf fields never read: their answers were cleared whatever it said.
               const def = resolveNode(path)?.def ?? repeaterByWire.get(wire)?.def ?? groupDefs.get(wire)
-              if (def?.clearOnHide !== false) store.remove(path)
+              metaChanged.push(wire)
+              if (visible) {
+                hiddenWires.delete(wire)
+                shown.push(wire)
+                seeded = reopened(store, def, path) || seeded
+              } else {
+                hiddenWires.add(wire)
+                if (def?.clearOnHide !== false) store.remove(path)
+              }
             }
           } else {
             const set = entry.rule.kind === 'required' ? requiredWires : disabledWires
@@ -1283,11 +1289,4 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       return { ok: report.valid, errors: report.errors }
     },
   }
-}
-
-function topSegment(reference: string): string {
-  const dot = reference.indexOf('.')
-  const bracket = reference.indexOf('[')
-  const end = Math.min(dot === -1 ? reference.length : dot, bracket === -1 ? reference.length : bracket)
-  return reference.slice(0, end)
 }

@@ -227,3 +227,31 @@ describe('a draft is one response, however late and however often it is resumed'
     expect(await send(hash, token)).toMatchObject({ ok: true, id: token.split('.')[0] })
   })
 })
+
+describe('a default is never stored by the server (0197)', () => {
+  // The replay starts from what arrived. A default filled in here would store an answer the
+  // person cleared, or never saw — and a response that says nothing about a question would
+  // come back from the server answering it.
+  const withDefault: FormSchema = {
+    ...schema,
+    specVersion: '5',
+    model: { fields: [{ key: 'email', type: 'text', required: true }, { key: 'note', type: 'text', default: 'none' }] },
+  }
+
+  test('a response without the answer is stored without it', async () => {
+    const hash = await openForm('contact-us', withDefault)
+    const outcome = await send(hash, await handedOut(), { email: 'a@b.ch' })
+    expect(outcome).toMatchObject({ ok: true })
+    expect((await deps.storage.listSubmissions())[0]?.data).toEqual({ email: 'a@b.ch' })
+  })
+
+  // `data` is `unknown` here, so a caller can hand in none — and an engine handed nothing
+  // starts a new form, with every default. A replay of nothing is still a replay: on a form
+  // with nothing required it is stored as nothing, not as the author's defaults.
+  test('nor is one handed in with no data at all', async () => {
+    const hash = await openForm('notes', { ...withDefault, model: { fields: [{ key: 'note', type: 'text', default: 'none' }] } })
+    const outcome = await createSubmission(deps, { path: 'notes', declaredSchemaHash: hash, data: undefined, token: await handedOut('notes') })
+    expect(outcome).toMatchObject({ ok: true })
+    expect((await deps.storage.listSubmissions())[0]?.data).toEqual({})
+  })
+})

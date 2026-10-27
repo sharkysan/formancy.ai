@@ -488,6 +488,34 @@ which runs the packed bin and type-checks its output outside the workspace.
 - **Submissions stored before 0189** were not checked for their shape and may hold answers the
   type does not describe.
 
+### A10. An answer the person did not give is stored as theirs
+
+*How it arises:* a field has a `default`, and either the person submits without reading the
+question — so the author's answer is stored as one the person gave — or a default is filled in
+where nothing was fresh: a resumed draft gets back an answer somebody cleared, or the server's
+replay stores one a response never sent.
+
+*Constraint:* a default is applied only where something is fresh — a form opened with nothing
+handed in, a row added, a field shown again after its hiding cleared it — and never to a draft, a
+prefill or the server's replay, which start exactly as handed in; the server replays a response
+with no data as `{}`, not as a new form. The engine refuses to open a document whose default its
+field would refuse, with the check every answer gets, so a default cannot be an answer the
+server rejects ([0197](../decisions/0197-a-default-is-where-something-fresh-starts.md)). Verified by
+`packages/core/src/default.test.ts` (nothing handed in is filled; a refused default keeps the
+form from opening) and `packages/server-core/src/submitting.test.ts` (a response without the
+answer, or with no data, is stored without it).
+
+*Residual:*
+
+- **A submission does not record that an answer was left at its default.** A default left alone
+  and the same answer chosen are stored identically, and nothing here can tell them apart. Where
+  that difference matters — a clinical question, a consent — the field should have no default;
+  `required` without one makes the person answer.
+- **A required field with a default is answered before anybody reads it**, so `required` does
+  not make a person look at that question.
+- **A field shown again shows its default again**, including to somebody who cleared it, changed
+  the answer that showed it and changed that back.
+
 ## B — Correct data is lost or altered
 
 ### B1. Answers are orphaned when a field is renamed

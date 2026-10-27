@@ -191,6 +191,30 @@ never announce it, so what the question asks stays in the label and how to answe
 catalogue reference, extracted for translation with the rest; spec version 5
 ([0196](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)).
 
+A field that holds one answer, or a list of ticks, can start answered:
+
+```json
+{ "key": "delivery", "type": "radio", "label": "Delivery", "default": "standard", "options": [ … ] }
+```
+
+The default is where **something fresh** starts — a form opened with nothing handed in, a row
+added to a repeater, a field shown again after a rule hid and cleared it — and nothing else. A
+resumed draft, a prefill and the server's replay of a submission start exactly as they were
+handed in, so a default never puts back an answer somebody cleared or stores one nobody sent. A
+host whose prefill should start as a new form would asks for that:
+
+```ts
+import { createFormEngine, withDefaults } from '@formancy/core'
+
+const engine = createFormEngine({ schema, initialValue: withDefaults(schema, { email }) })
+```
+
+A default is an answer, so it is of the answer's own type, it is not translated, and the form
+refuses to open with one its field would refuse — not an option, out of bounds, not a date. It is
+submitted unless somebody changes it, and nothing records that it was left alone: make it the
+answer most people give, and give a question whose answer must be considered none. Spec version 5
+([0197](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0197-a-default-is-where-something-fresh-starts.md)).
+
 ## A key is an identity, forever
 
 ```jsonc

@@ -124,7 +124,9 @@ export async function createSubmission(
 
   const engine = createFormEngine({
     schema: current.schema,
-    initialValue: input.data,
+    // Never undefined: an engine handed nothing starts a new form, with the author's defaults,
+    // and a replay of nothing would store answers nobody sent (0197).
+    initialValue: input.data ?? {},
     capabilities: deps.capabilities,
     // The side this replay is, which was never said. Without it the server ran
     // as a CLIENT: a `runsOn: "server"` rule was skipped in the one place it was

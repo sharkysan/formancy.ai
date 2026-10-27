@@ -103,3 +103,11 @@ export function withinAny(wires: ReadonlySet<string>, path: Path): boolean {
   for (let end = 1; end <= path.length; end++) if (wires.has(formatPath(path.slice(0, end)))) return true
   return false
 }
+
+/** The field a reference starts at: `items` for `items[0].qty`, `stay` for `stay.board`. */
+export function topSegment(reference: string): string {
+  const dot = reference.indexOf('.')
+  const bracket = reference.indexOf('[')
+  const end = Math.min(dot === -1 ? reference.length : dot, bracket === -1 ? reference.length : bracket)
+  return reference.slice(0, end)
+}

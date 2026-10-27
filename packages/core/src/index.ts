@@ -19,6 +19,7 @@ export type { FieldSnapshot, FormEngine, FormEngineOptions } from './engine.js'
 // What `validate()` answers, and the codes the engine puts in it of its own accord (0162).
 export type { BuiltInErrorCode, ValidationReport } from './error-codes.js'
 export { engineRefusal } from './engine-refusal.js'
+export { acceptsDefault, withDefaults } from './defaults.js'
 export { expressionProblems, MIXED_NUMERIC_LITERAL_EXAMPLE } from './expression-problems.js'
 export { runScenarios } from './scenarios.js'
 export type { Scenario, ScenarioFailure, ScenarioOptions, ScenarioResult, FailureAbout } from './scenarios.js'
