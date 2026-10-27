@@ -256,6 +256,7 @@ export const BUILDER_MESSAGES_DE = {
   'options.image': 'Bildadresse',
   'options.imageAlt': 'Was das Bild zeigt',
   'options.exclusive': 'Nur allein',
+  'options.keepPlace': 'Behält beim Mischen ihren Platz',
   'list.remove': 'Entfernen',
   'columns.heading': 'Spalten',
   'columns.empty':

@@ -309,6 +309,8 @@ const BUILDER_OWN_MESSAGES = {
   'options.imageAlt': 'What the picture shows',
   // A choice chosen alone or not at all — "None of these" (0199).
   'options.exclusive': 'Only on its own',
+  // Where it stays when the options are shuffled (0200).
+  'options.keepPlace': 'Keeps its place when shuffled',
   'list.remove': 'Remove',
   'columns.heading': 'Columns',
   'columns.empty':

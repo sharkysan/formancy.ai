@@ -355,6 +355,31 @@ describe('a choice chosen only on its own (0199)', () => {
   })
 })
 
+describe('a choice that keeps its place (0200)', () => {
+  // The case React's panel is held to.
+  test('can be set on a radio group, and taken off again leaves no flag', async () => {
+    const session = createBuilderSession({
+      specVersion: '5',
+      id: 'survey',
+      title: 'Survey',
+      model: { fields: [{ key: 'channel', type: 'radio', label: 'Channel', shuffle: true, options: [{ value: 'other', label: 'Other' }] }] },
+    } as FormSchema)
+    const view = await render(FormancyPropertyPanel, {
+      componentInputs: { session, keyPath: ['channel'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Keeps its place when shuffled' }))
+    await view.fixture.whenStable()
+    expect(fieldNamed('channel', session)['options']).toEqual([{ value: 'other', label: 'Other', keepPlace: true }])
+    await user.click(screen.getByRole('checkbox', { name: 'Keeps its place when shuffled' }))
+    await view.fixture.whenStable()
+    expect(fieldNamed('channel', session)['options']).toEqual([{ value: 'other', label: 'Other' }])
+  })
+})
+
 describe('editing a datagrid’s columns', () => {
   /*
    * The other shape generation cannot produce: the schema says "array of

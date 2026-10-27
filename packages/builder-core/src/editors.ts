@@ -78,12 +78,13 @@ export function withPicture(
 }
 
 /**
- * A choice made one that is chosen alone, or not, as both options editors change it (0199).
- * Unticked, the key goes: `exclusive: false` says nothing a missing flag does not.
+ * A choice with one of its flags set or cleared, as both options editors change it — chosen
+ * only on its own (0199), keeping its place when shuffled (0200). Unticked, the key goes:
+ * `exclusive: false` says nothing a missing flag does not.
  */
-export function withExclusive(option: FieldOption, on: boolean): FieldOption {
-  const { exclusive: _, ...rest } = option
-  return on ? { ...rest, exclusive: true } : rest
+export function withFlag(option: FieldOption, flag: 'exclusive' | 'keepPlace', on: boolean): FieldOption {
+  const { [flag]: _, ...rest } = option
+  return on ? { ...rest, [flag]: true } : rest
 }
 
 export function layoutPropertyHeading(kind: LayoutNode['kind'], text: BuilderText): string {

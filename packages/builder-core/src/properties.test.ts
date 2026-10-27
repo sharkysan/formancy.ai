@@ -6,7 +6,7 @@ import {
   editablePropertiesFor,
   layoutKinds,
 } from './properties.js'
-import { withExclusive } from './editors.js'
+import { withFlag } from './editors.js'
 
 const names = (type: string): string[] =>
   editablePropertiesFor(type).map((property) => property.name)
@@ -59,12 +59,24 @@ describe('editablePropertiesFor', () => {
     expect(exclusive('select')).toBe(false)
   })
 
+  // Wherever the options can be shuffled, so "None" and "Other" can be kept where they are
+  // written (0200).
+  test('choices offer "keeps its place" exactly where the options can be shuffled', () => {
+    const keepPlace = (type: string) =>
+      editablePropertiesFor(type).find((property) => property.name === 'options')?.keepPlace
+
+    expect(keepPlace('radio')).toBe(true)
+    expect(keepPlace('selectboxes')).toBe(true)
+    expect(keepPlace('ranking')).toBe(true)
+    expect(keepPlace('select')).toBe(false)
+  })
+
   // Unticked, the key goes: an option that says `exclusive: false` says nothing a missing one
   // does not, and a document that carries it is noisier to diff.
-  test('an option made exclusive and back carries no flag', () => {
+  test('an option given a flag and back carries no flag', () => {
     const none = { value: 'none', label: 'None' }
-    expect(withExclusive(none, true)).toEqual({ ...none, exclusive: true })
-    expect(withExclusive(withExclusive(none, true), false)).toEqual(none)
+    expect(withFlag(none, 'exclusive', true)).toEqual({ ...none, exclusive: true })
+    expect(withFlag(withFlag(none, 'keepPlace', true), 'keepPlace', false)).toEqual(none)
   })
 
   test('a property belonging to another type is not offered', () => {

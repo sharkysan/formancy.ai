@@ -4,7 +4,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { MatRadioModule } from '@angular/material/radio'
-import { ticked } from '@formancy/core'
+import { inOptionOrder, ticked } from '@formancy/core'
 import { FormancyTextPipe } from '@formancy/angular'
 import { MaterialFieldBase } from './base.js'
 import { FormancyErrorText } from '@formancy/angular'
@@ -35,10 +35,12 @@ function plainOptions(
   const options = def.options ?? []
   if (def.widget !== undefined || def.optionsSource !== undefined) return undefined
   if (options.some((option) => option.image !== undefined)) return undefined
-  return options.map((option): Offered => ({
+  // In the order the engine chose for a shuffled field, and as written otherwise (0200).
+  const offered = options.map((option): Offered => ({
     value: option.value,
     label: text(option.label) ?? option.value,
   }))
+  return inOptionOrder(offered, field.snapshot().optionOrder)
 }
 
 @Component({
@@ -242,7 +244,6 @@ export class FormancyMaterialSelectBoxesField extends MaterialFieldBase {
   protected toggle(value: string, on: boolean): void {
     // In the options' own order, and an exclusive option alone, as the default control stores
     // it — the core's one function (0199).
-    const order = (this.offered() ?? []).map((option) => option.value)
-    this.field.setValue(ticked(this.field.snapshot().def, order, this.chosen(), value, on))
+    this.field.setValue(ticked(this.field.snapshot().def, this.chosen(), value, on))
   }
 }

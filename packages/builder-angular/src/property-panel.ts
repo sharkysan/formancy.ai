@@ -51,6 +51,7 @@ let nextId = 0
         [text]="text()"
         [pictures]="property().pictures === true"
         [exclusive]="property().exclusive === true"
+        [keepPlace]="property().keepPlace === true"
         [list]="property().list ?? 'options'"
         (changed)="changed.emit($event.length === 0 ? undefined : $event)"
       />

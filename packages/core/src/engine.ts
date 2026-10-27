@@ -28,6 +28,7 @@ import { filled, refusedDefault, reopened } from './defaults.js'
 import { getAt, setAt } from './value.js'
 import { refusedRule } from './rule-refusal.js'
 import { ruleMessages } from './rule-messages.js'
+import { optionOrders } from './option-order.js'
 import { createRows, repeaterViolations } from './rows.js'
 import type { RepeaterNode } from './rows.js'
 import { bagType, topLevelDataFields } from './top-level-fields.js'
@@ -200,11 +201,6 @@ const NO_MESSAGES: Readonly<Record<string, string>> = Object.freeze({})
 
 /** Variables every row-scoped rule sees on top of the form's fields. */
 const ROW_VARIABLES: Record<string, DeclaredType> = { item: 'map', index: 'int' }
-
-/** The side a rule must be marked for in order NOT to run here. */
-function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
-  return mode === 'client' ? 'server' : 'client'
-}
 
 
 /*
@@ -382,6 +378,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const locale = options.locale ?? schema.i18n?.defaultLocale ?? ''
   // What each field's rules say for their codes, in that language, by the rules' own target (0198).
   const messagesByTarget = ruleMessages(allRules, (text) => resolveText(schema, text, locale))
+  const orders = optionOrders(schema.model, capabilitySource)
 
   if (rules.length > 0 && capabilitySource === undefined) {
     throw new Error(
@@ -507,8 +504,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // A rule that does not run on this side is dropped at compile time rather
   // than skipped at evaluation time, so it costs nothing per keystroke.
   const mode = options.mode ?? 'client'
+  // The side a rule must be marked for in order NOT to run here.
+  const otherSide = mode === 'client' ? 'server' : 'client'
   const validateRules = compiledRules.filter(
-    (entry) => entry.rule.kind === 'validate' && (entry.rule.runsOn ?? 'both') !== otherSide(mode),
+    (entry) => entry.rule.kind === 'validate' && (entry.rule.runsOn ?? 'both') !== otherSide,
   )
   const validateByTemplateWire = new Map<string, CompiledRule[]>()
   for (const entry of validateRules) {
@@ -1137,6 +1136,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         label: resolveText(schema, node.def.label, locale),
         description: resolveText(schema, node.def.description, locale),
         messages: messagesByTarget.get(templateWire(wire)) ?? NO_MESSAGES,
+        optionOrder: orders.get(templateWire(wire)),
         def: node.def,
         required,
         visible: !hiddenAt(node.path),

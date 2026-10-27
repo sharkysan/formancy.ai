@@ -376,6 +376,12 @@ export interface FieldDef {
   default?: string | number | boolean | string[]
   options?: FieldOption[]
   /**
+   * `radio`, `selectboxes` and `ranking`: show the options in an order of the engine's choosing,
+   * fixed for the form's life, with the ones that `keepPlace` where they are written.
+   * Presentation only. Spec version 5 (0200).
+   */
+  shuffle?: boolean
+  /**
    * `matrix` fields: the things the one question is asked of, each a value and a label like
    * an option, sharing the field's `options` as their columns (0139).
    */
@@ -506,6 +512,8 @@ export interface FieldOption {
    * version 5 (0199).
    */
   exclusive?: boolean
+  /** When the field's options are shuffled, this one stays where it is written. Spec version 5 (0200). */
+  keepPlace?: boolean
 }
 
 /** A picture beside an option's label (0126). */

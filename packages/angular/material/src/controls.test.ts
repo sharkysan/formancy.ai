@@ -129,6 +129,28 @@ describe('a field Material draws', () => {
     expect(engine.value()).toEqual({ ok: true, size: 'l', extras: ['wrap', 'card'] })
   })
 
+  // In the engine's order, as the default control draws it (0200): Material's options are its
+  // own list, and one that ignored the order would show the written order to some people only.
+  test('a shuffled radio group draws its options in the engine’s order, the one that keeps its place last', async () => {
+    const options = [
+      { value: 'friend', label: 'A friend' },
+      { value: 'press', label: 'The press' },
+      { value: 'search', label: 'A search' },
+      { value: 'none', label: 'None of these', keepPlace: true },
+    ]
+    const document = { ...form([{ key: 'channel', type: 'radio', label: 'Channel', shuffle: true, options }]), specVersion: '5' } as FormSchema
+    const engine = createFormEngine({ schema: document, capabilities: { now: () => 0, today: () => '2026-10-27', random: () => 0 } })
+    const view = await render(FormancyForm, {
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...provideFormancyMaterial()],
+      inputs: { submitLabel: 'Submit' },
+    })
+    await view.fixture.whenStable()
+
+    const group = screen.getByRole('group', { name: 'Channel' })
+    expect(within(group).getByLabelText('A friend').closest('mat-radio-group')).not.toBeNull()
+    expect(within(group).getAllByRole('radio').map((radio) => (radio as HTMLInputElement).value)).toEqual(['press', 'search', 'friend', 'none'])
+  })
+
   // An option chosen alone or not at all, as the default control ticks it (0199).
   test('an exclusive option in a group of ticks clears the rest, and is cleared by another', async () => {
     const engine = await mount({
