@@ -191,7 +191,7 @@ those a paragraph. A `description` is drawn under the question and named in the 
 `aria-describedby`, so it is read out after the name rather than as part of it; on a group, a
 page or a repeater it describes the whole set. It is text or a reference into the catalogue, like
 the label, and the builder extracts it for translation with the rest. It needs spec version 5,
-which is open: a version 4 document carrying one is refused by name
+which is frozen: a version 4 document carrying one is refused by name
 ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
 A field that asks about the person filling the form in can also say what its answer is, for a

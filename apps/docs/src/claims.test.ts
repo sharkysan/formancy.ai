@@ -464,24 +464,22 @@ describe('the spec version 2 freeze', () => {
     ).toEqual([])
   })
 
-  test('and says every version the code speaks is frozen but the newest, which is open', () => {
-    // Version 4 was open, and this case said so; it froze with the two types it was opened
-    // for (0140). Version 5 is open (0194), and this is where that is written down: every
-    // version but the newest says FROZEN, the newest says OPEN, and no other does. Read from
-    // the code's own list of versions, so a version 6 has to arrive with a heading too.
+  test('and says every version the code speaks is frozen, and none is open', () => {
+    // Version 4 froze with no version open (0140); version 5 opened (0194) and froze with the
+    // batch it was opened for (0201), and again nothing is open. Read from the code's own list
+    // of versions, so a version 6 has to arrive with a heading — OPEN while it gains
+    // constructs, when this case says so again.
     const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
     const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
     const versions = [
       ...(/export const SPEC_VERSIONS = \[([^\]]*)\]/.exec(types)?.[1] ?? '').matchAll(/'(\d+)'/g),
     ].map((match) => match[1]!)
 
-    expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(3)
-    const newest = versions[versions.length - 1]!
-    for (const version of versions.slice(0, -1)) {
+    expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(4)
+    for (const version of versions) {
       expect(text, `version ${version}`).toContain(`## Spec version ${version} is FROZEN`)
     }
-    expect(text, `version ${newest}`).toContain(`## Spec version ${newest} is OPEN`)
-    expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([newest])
+    expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([])
   })
 
   test('says the version is frozen and what a version 1 document may not carry', () => {

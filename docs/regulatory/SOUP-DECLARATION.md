@@ -41,8 +41,8 @@ submissions*, which is the artefact with real switching costs.
 > frozen, so a form document written against any of them, and the submissions stored against
 > it, keeps its shape ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). A
 > deployment pinned to any of them is characterising a settled format whatever the source
-> does next. The source writes version 5, which is open and in no release
-> ([0194](../decisions/0194-spec-5-opens-with-a-fields-description.md)): it is not a version to pin yet. The
+> does next. The source writes version 5, which is frozen and in no release yet
+> ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)): a deployment can pin it once a release carries it. The
 > *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.

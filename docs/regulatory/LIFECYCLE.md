@@ -282,9 +282,12 @@ widget and the `check` and `skip` rule kinds
 ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)). Version `"4"` is
 **frozen** as of 2026-10-09, first released with 0.4.0, and carries the `ranking` and
 `matrix` field types, the `rating` and `slider` widgets and the `step`, `mask` and
-option `image` properties ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). No version is open: a construct
-needing one opens version 5, and `spec-version.test.ts` fails on a type that belongs to no
-version's list. Version 2 is
+option `image` properties ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). Version `"5"` is
+**frozen** as of 2026-10-27, in no release yet, and carries properties only — a field's
+`description`, `autocomplete`, `placeholder`, `default` and `shuffle`, an option's `exclusive` and
+`keepPlace`, and a rule's `message` ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). No version is open:
+a construct needing one opens version 6, `spec-version.test.ts` fails on a type that belongs to no
+version's list, and `version-ledger.ts` does not compile with a property that has no version. Version 2 is
 a superset — it adds field types and layout kinds and removes nothing — so a
 version 1 document is also a valid version 2 document, while a version 1 reader
 refuses a version 2 document rather than ignoring the parts it does not know.

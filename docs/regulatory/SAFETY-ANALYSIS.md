@@ -1807,8 +1807,8 @@ that spliced the questions onto the top level, which is the one that reads corre
 *Residual, and it is the substantial one:* **the format still permits it.** A document
 written by hand, by an agent through `@formancy/mcp`, or by an older version of the
 builder can place a field beside a page, and it validates. Refusing it is a spec change,
-and versions `"1"` to `"4"` are frozen — so it would belong to **version `"5"`**, which is
-not open ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), where it would be a migration with a report rather than a
+and versions `"1"` to `"5"` are frozen — so it would belong to **version `"6"`**, which is
+not open ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)), where it would be a migration with a report rather than a
 silent breakage. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
 allowed without breaking a document that validates today, so the honest form of this is a
 warning on publish rather than a refusal
@@ -2743,8 +2743,9 @@ section for each version is checked to name exactly that version's additions
 *Residual:* **the newest version is the fallback in the check itself.** A construct in no
 version's list would be attributed to version 4. Since version 4 froze, that is guarded from
 outside: `packages/spec/src/spec-version.test.ts` fails when a field type or widget is in no
-version's list, so a new one cannot be added without opening version 5 and its list
-([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
+version's list, so a new one cannot be added without opening the next version and its list
+([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)); version 5 added
+no type or widget, and froze with none ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)).
 
 Properties, rule kinds and layout kinds had no such check until 2026-10-09: each was gated
 by a line somebody remembered, a rule kind outside version 2's list was taken to be version
@@ -2774,9 +2775,9 @@ are compared with nothing.
    ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"`
    ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are all
    frozen, so stored data written against any of them has a settled shape — and so is
-   `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), which 0.4.0 first releases. Version `"5"` is open and in no
-   release: the source writes it and it may still gain constructs, so characterise against a
-   frozen version ([0194](../decisions/0194-spec-5-opens-with-a-fields-description.md)). Otherwise it is the software that is still moving.
+   `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), which 0.4.0 first releases. Version `"5"` is frozen too, and in no
+   release yet: the source writes it, and a deployment can characterise against it once a release
+   carries it ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Otherwise it is the software that is still moving.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be
