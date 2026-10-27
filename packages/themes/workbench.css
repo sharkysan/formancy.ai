@@ -851,6 +851,13 @@ kbd {
   font-size: 0.6875rem;
 }
 
+/* What a rule that rejects an answer says (0198), read back as the person will read it: words,
+   set apart from the expression above them. */
+[data-formancy-part='logic-message'] {
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
 [data-formancy-part='logic-draft'] {
   display: grid;
   gap: 0.5rem;

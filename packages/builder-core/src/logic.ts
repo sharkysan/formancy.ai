@@ -1,3 +1,4 @@
+import { resolveText } from '@formancy/spec'
 import type { FormSchema, LogicRule, SpecVersion } from '@formancy/spec'
 import type { Operator } from './conditions.js'
 import { compileGroup } from './conditions.js'
@@ -222,6 +223,14 @@ function freshCode(rules: readonly LogicRule[], target: string): string {
  */
 export function ruleTakesMessage(specVersion: SpecVersion): boolean {
   return Number(specVersion) >= 5
+}
+
+/**
+ * What a rule says while it rejects an answer, in the document's own language, as the logic panel
+ * lists it beside the rule (0198); undefined for a rule with no message.
+ */
+export function ruleSays(document: FormSchema, rule: LogicRule): string | undefined {
+  return rule.message === undefined ? undefined : resolveText(document, rule.message, document.i18n?.defaultLocale ?? '')
 }
 
 /** Whether what is on screen is enough to add. */

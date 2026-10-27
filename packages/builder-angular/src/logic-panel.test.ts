@@ -166,6 +166,16 @@ describe('authoring a rule', () => {
     expect(rulesOf(session)[0]).not.toHaveProperty('message')
   })
 
+  // As React's panel: the list shows what a rule that rejects an answer says.
+  test('lists a rule with what it says', async () => {
+    await mountOn(['about', 'total'], {
+      ...paged,
+      specVersion: '5',
+      logic: { rules: [{ target: 'total', kind: 'validate', cel: 'total > 0.0', code: 'given', message: 'Enter a total above nothing.' }] },
+    } as FormSchema)
+    expect(screen.getByRole('listitem').textContent).toContain('Enter a total above nothing.')
+  })
+
   test('a check asks for a name rather than a condition', async () => {
     const { session, click, type, select } = await mountOn(['about', 'total'])
 

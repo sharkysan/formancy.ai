@@ -4,6 +4,7 @@ import {
   RULE_KIND_CHOICES,
   comparisonLabel,
   composeRule,
+  ruleSays,
   ruleTakesMessage,
   draftIsComplete,
   kindCarriesCondition,
@@ -192,6 +193,23 @@ describe('where a rule may say its own message (0198)', () => {
   test('is not asked for where the document cannot hold one', () => {
     const adult: ConditionDraft = { join: 'all', items: [{ field: 'age', operator: 'isAtLeast', text: '18' }] }
     expect(draftIsComplete({ kind: 'validate', draft: adult, check: '' })).toBe(true)
+  })
+})
+
+describe('what a rule says, as the logic panel lists it (0198)', () => {
+  // An author who wrote a rule's message has to be able to read it back in the list, in the
+  // document's own language — a catalogue reference is resolved, not shown as its id.
+  test('is its message in the document’s language, and nothing for a rule with none', () => {
+    const document = {
+      specVersion: '5',
+      id: 'f',
+      title: 'F',
+      i18n: { defaultLocale: 'en', messages: { en: { 'age.adult': 'Travellers must be 18 or older.' } } },
+      model: { fields: [{ key: 'age', type: 'number', label: 'Age' }] },
+    } as FormSchema
+    const said = { target: 'age', kind: 'validate' as const, cel: 'age >= 18', code: 'adult', message: { $t: 'age.adult' } }
+    expect(ruleSays(document, said)).toBe('Travellers must be 18 or older.')
+    expect(ruleSays(document, { target: 'age', kind: 'visible', cel: 'true' })).toBeUndefined()
   })
 })
 
