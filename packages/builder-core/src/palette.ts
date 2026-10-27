@@ -170,7 +170,7 @@ export function newFieldOfType(
 }
 
 /** `text`, then `text2`, `text3` — the first spelling nobody is using. */
-function uniqueKey(base: string, taken: ReadonlySet<string>): string {
+export function uniqueKey(base: string, taken: ReadonlySet<string>): string {
   if (!taken.has(base)) return base
   for (let suffix = 2; ; suffix += 1) {
     const candidate = `${base}${String(suffix)}`

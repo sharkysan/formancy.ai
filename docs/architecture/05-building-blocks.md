@@ -242,7 +242,9 @@ renderer emits — [0146](../decisions/0146-a-drop-between-two-nodes-is-read-fro
 palette, the editable property list read out of the spec's own JSON Schema — which is also
 what a field keeps when `retype.ts` changes its type, so the panel and the change cannot
 disagree about a type's properties, while `duplicate.ts` places a copy the way a block is
-placed ([0192](../decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)) — and,
+placed ([0192](../decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)) and
+`other.ts` adds "Other, please specify" as an option, a text field and the rules on it, written
+by the condition editor's own composition ([0202](../decisions/0202-other-please-specify-is-a-command.md)) — and,
 in `repath.ts`, what the rest of the document does when a path moves or goes. That last one is why this package depends on
 `@formancy/expressions` at all: a field lives in the model, in the layouts that
 arrange it, in the rules that read and target it, and in the metadata the logic

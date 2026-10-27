@@ -10,6 +10,13 @@ later.
 
 ## Unreleased
 
+**"Other, please specify" in one step, in both builders.** On a radio group, a dropdown or a list of
+ticks, the property panel adds an `other` option that keeps its place, a text field straight after
+the choice, and the rules that show and require it while "Other" is chosen — one edit, one undo.
+Nothing new in the format: it is three constructs an author could put together by hand, written as
+the condition editor writes them, so the text is its own answer under its own key
+(`addOtherOption` in `@formancy/builder-core`; [0202](docs/decisions/0202-other-please-specify-is-a-command.md)).
+
 **Spec version 5 is frozen**, with the batch it was opened for: a field's `description`,
 `autocomplete`, `placeholder`, `default` and `shuffle`, an option's `exclusive` and `keepPlace`, and a
 rule's `message` — properties only. It is what this package writes, and a reader pinned to 0.7.0 or

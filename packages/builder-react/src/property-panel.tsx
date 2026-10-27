@@ -4,7 +4,7 @@ import type { DataGridColumn, FieldDef, FieldOption, FieldType } from '@formancy
 import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import { ColumnsEditor } from './columns-editor.js'
 import { OptionsEditor } from './options-editor.js'
-import { changeFieldType, editablePropertiesFor, paletteEntries, retypeTargets } from '@formancy/builder-core'
+import { addOtherOption, changeFieldType, editablePropertiesFor, offersOther, paletteEntries, retypeTargets } from '@formancy/builder-core'
 import type { EditableProperty } from '@formancy/builder-core'
 import { nameOf } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
@@ -70,6 +70,14 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
           }}
         />
       ))}
+
+      {/* The option, the field asking what and the rules on it, in one step and one undo:
+          three constructs an author would otherwise put together by hand (0202). */}
+      {offersOther(def) ? (
+        <button type="button" onClick={() => addOtherOption(session, keyPath)}>
+          {session.text('other.add')}
+        </button>
+      ) : null}
     </div>
   )
 }

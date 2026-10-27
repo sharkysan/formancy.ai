@@ -309,6 +309,13 @@ const BUILDER_OWN_MESSAGES = {
   'options.imageAlt': 'What the picture shows',
   // A choice chosen alone or not at all — "None of these" (0199).
   'options.exclusive': 'Only on its own',
+  // "Other, please specify" in one step: the option, the field asking what, and why it is
+  // refused where it cannot be added (0202).
+  'other.add': 'Add “Other, please specify”',
+  'other.option': 'Other',
+  'other.specify': 'Please specify',
+  'refuse.otherNotAChoice': '“{name}” is not a choice, so there is no “Other” to add to it.',
+  'refuse.otherTaken': '“{name}” already offers “other”.',
   // Where it stays when the options are shuffled (0200).
   'options.keepPlace': 'Keeps its place when shuffled',
   'list.remove': 'Remove',

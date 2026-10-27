@@ -319,6 +319,39 @@ describe('a choice that keeps its place (0200)', () => {
   })
 })
 
+describe('"Other, please specify" (0202)', () => {
+  const channel = (type: 'radio' | 'text') =>
+    createBuilderSession({
+      specVersion: '5',
+      id: 'survey',
+      title: 'Survey',
+      model: {
+        fields: [
+          type === 'radio'
+            ? { key: 'channel', type, label: 'Channel', options: [{ value: 'friend', label: 'A friend' }] }
+            : { key: 'channel', type, label: 'Channel' },
+        ],
+      },
+    } as FormSchema)
+
+  test('is one button on a choice, which adds the option and the field asking what', async () => {
+    const user = userEvent.setup()
+    const session = channel('radio')
+    render(<PropertyPanel session={session} keyPath={['channel']} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add “Other, please specify”' }))
+
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['channel', 'channelOther'])
+    // Offered once: the choice offers "other" now.
+    expect(screen.queryByRole('button', { name: 'Add “Other, please specify”' })).toBeNull()
+  })
+
+  test('is not offered on a field that is not a choice', () => {
+    render(<PropertyPanel session={channel('text')} keyPath={['channel']} />)
+    expect(screen.queryByRole('button', { name: 'Add “Other, please specify”' })).toBeNull()
+  })
+})
+
 describe('a matrix in the property panel', () => {
   /*
    * Its rows are value/label pairs like choices, and they arrived as a text box asking for

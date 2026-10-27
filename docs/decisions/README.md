@@ -302,3 +302,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0199](0199-an-option-can-be-chosen-only-on-its-own.md) | An option can be chosen only on its own, and one function ticks it | accepted |
 | [0200](0200-options-can-be-shown-in-a-shuffled-order.md) | Options can be shown in a shuffled order, chosen once by the engine, and the answer keeps the written one | accepted |
 | [0201](0201-spec-5-freezes-with-the-batch-it-opened-for.md) | Spec 5 freezes with the batch it was opened for, and nothing opens version 6 yet | accepted |
+| [0202](0202-other-please-specify-is-a-command.md) | "Other, please specify" is a builder command, composed from what the format has | accepted |

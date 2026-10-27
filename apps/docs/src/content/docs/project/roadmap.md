@@ -58,6 +58,9 @@ as a block — with the rules that live inside it — to insert into the next fo
 `d` duplicates a field in place, with every rule about it aimed at the copy, and the
 property panel changes what kind of question a field asks while keeping what still applies
 ([0192](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)).
+On a choice it adds "Other, please specify" in one step — the option, a text field after it
+and the rules that show and require it while "Other" is chosen
+([0202](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0202-other-please-specify-is-a-command.md)).
 The builder's words come from one catalogue in `builder-core`, English, German and French: a
 session refuses, offers destinations and names layout nodes in the language it was
 opened in, and every surface of both builders shows and announces everything in it. The
@@ -301,11 +304,7 @@ now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **"Other, please specify" in one step.** A document can already say it — an option, a text
-   field and a `visible` rule on it — and the engine already clears the text when the option is
-   not chosen; what is missing is the builder doing the three at once, which is a command rather
-   than a version event ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
-2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
+1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
 
