@@ -16,6 +16,8 @@ export interface FieldIds {
   label: string
   hint: string
   description: string
+  /** A character count's, under a field with a limit to count against (0203). */
+  count: string
   error: string
 }
 
@@ -38,6 +40,7 @@ export function fieldIds(formId: string, path: Path): FieldIds {
     label: `${base}:label`,
     hint: `${base}:hint`,
     description: `${base}:description`,
+    count: `${base}:count`,
     error: `${base}:error`,
   }
 }
@@ -54,11 +57,12 @@ export function fieldIds(formId: string, path: Path): FieldIds {
  */
 export function describedBy(
   ids: FieldIds,
-  present: { hint?: boolean; description?: boolean; error?: boolean },
+  present: { hint?: boolean; description?: boolean; count?: boolean; error?: boolean },
 ): string | undefined {
   const parts: string[] = []
   if (present.hint) parts.push(ids.hint)
   if (present.description) parts.push(ids.description)
+  if (present.count) parts.push(ids.count)
   if (present.error) parts.push(ids.error)
   return parts.length > 0 ? parts.join(' ') : undefined
 }

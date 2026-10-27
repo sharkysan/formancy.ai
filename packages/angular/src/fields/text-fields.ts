@@ -3,6 +3,7 @@ import type { Type } from '@angular/core'
 import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { injectScanner } from '../scanning.js'
 import { FormancyTextPipe, injectFormText } from '../text.js'
+import { FormancyCharacterCount } from './character-count.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
 
@@ -28,7 +29,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 @Component({
   selector: 'formancy-text-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell, FormancyTextPipe],
+  imports: [FormancyCharacterCount, FormancyFieldShell, FormancyTextPipe],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <!-- A computed field's value is the engine's: read-only, never disabled, so it is still
@@ -70,6 +71,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
              shape the file field uses for an upload. -->
         <p role="status" data-formancy-part="scanner-status">{{ status() }}</p>
       }
+      <formancy-character-count [snapshot]="field.snapshot()" />
     </formancy-field-shell>
   `,
 })
@@ -202,7 +204,7 @@ export class FormancyTextField extends FieldComponentBase {
 @Component({
   selector: 'formancy-textarea-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
+  imports: [FormancyCharacterCount, FormancyFieldShell],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <textarea
@@ -219,6 +221,7 @@ export class FormancyTextField extends FieldComponentBase {
         (input)="onInput($event)"
         (blur)="field.touch()"
       ></textarea>
+      <formancy-character-count [snapshot]="field.snapshot()" />
     </formancy-field-shell>
   `,
 })

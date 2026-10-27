@@ -91,6 +91,15 @@
   color: var(--fm-muted);
 }
 
+/* A character count under a box with a limit (0203): quiet as the help text, its figures in
+   columns so the line does not shimmer as they change. */
+[data-formancy-theme='blueprint'] [data-formancy-part='count'] {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fm-muted);
+}
+
 [data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']) {
   font: inherit;
   font-size: 0.9375rem;

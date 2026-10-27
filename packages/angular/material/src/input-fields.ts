@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { MaterialFieldBase } from './base.js'
-import { FormancyErrorText } from '@formancy/angular'
+import { FormancyCharacterCount, FormancyErrorText } from '@formancy/angular'
 
 /**
  * The answers typed into a box, drawn in Material's form field: text, a paragraph, a
@@ -27,7 +27,7 @@ import { FormancyErrorText } from '@formancy/angular'
 @Component({
   selector: 'formancy-material-text-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
+  imports: [FormancyCharacterCount, FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
   template: `
     @if (plain()) {
       <mat-form-field [attr.data-formancy-field-path]="context.path">
@@ -50,6 +50,9 @@ import { FormancyErrorText } from '@formancy/angular'
         />
         <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       </mat-form-field>
+      <!-- Outside the form field, as the default control draws it: Material's own hint would
+           describe the box a second time, and the engine already names the count (0203). -->
+      <formancy-character-count [snapshot]="field.snapshot()" />
     } @else {
       <ng-container *ngComponentOutlet="fallbackFor('text')" />
     }
@@ -75,7 +78,7 @@ export class FormancyMaterialTextField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-textarea-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule],
+  imports: [FormancyCharacterCount, FormancyErrorText, MatFormFieldModule, MatInputModule],
   template: `
     <mat-form-field [attr.data-formancy-field-path]="context.path">
       <mat-label>{{ context.label }}</mat-label>
@@ -96,6 +99,7 @@ export class FormancyMaterialTextField extends MaterialFieldBase {
       ></textarea>
       <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
     </mat-form-field>
+    <formancy-character-count [snapshot]="field.snapshot()" />
   `,
 })
 export class FormancyMaterialTextareaField extends MaterialFieldBase {

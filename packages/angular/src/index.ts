@@ -4,6 +4,7 @@ export type { FormancyOptions } from './provide.js'
 // languages to `provideFormancy`, and a registry's own controls draw them with the pipe.
 export { FormancyTextPipe, injectFormText } from './text.js'
 export { FormancyErrorText } from './fields/error-text.js'
+export { FormancyCharacterCount } from './fields/character-count.js'
 export type { FormText, FormWordId, FormWordValues, FormWords, FormWordsByLocale } from '@formancy/core/words'
 export { injectField } from './field.js'
 export type { FieldBinding } from './field.js'

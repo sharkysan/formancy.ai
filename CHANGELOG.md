@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**A field with a limit counts while somebody types.** A text or a long text field with a `maxLength`
+shows, under its box, the limit, then what is left, then how many too many — counted as the engine's
+check counts, named in the control's `aria-describedby`, and spoken by a polite live region only once
+typing pauses, never on load. Both renderers and Material; `countSentence` in `@formancy/core/words`
+says it, `FormancyCharacterCount` is exported for a host's own control, and every shipped theme styles
+the `count` part. A limit used to be met only as an error after it was passed. Field ids gain
+`count`, and `buildFieldProps` takes the field's definition to read what it needs from. A counted
+field draws a `role="status"` region of its own, so a host's test that asked a page for its one status
+region may now find two — the site's gallery test did
+([0203](docs/decisions/0203-a-limit-is-counted-while-typing.md)).
+
 **"Other, please specify" in one step, in both builders.** On a radio group, a dropdown or a list of
 ticks, the property panel adds an `other` option that keeps its place, a text field straight after
 the choice, and the rules that show and require it while "Other" is chosen — one edit, one undo.
