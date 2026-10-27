@@ -297,3 +297,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0194](0194-spec-5-opens-with-a-fields-description.md) | Spec 5 opens with a field's description, for a batch that lands together | accepted |
 | [0195](0195-a-field-says-what-its-answer-is-for-autofill.md) | A field says what its answer is, for autofill, from a list without passwords or cards | accepted |
 | [0196](0196-a-placeholder-is-an-example-never-the-label.md) | A placeholder is an example of the answer, never the label | accepted |
+| [0197](0197-a-default-is-where-something-fresh-starts.md) | A default is where something fresh starts, and the field checks it as an answer | accepted |

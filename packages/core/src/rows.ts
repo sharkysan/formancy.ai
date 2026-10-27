@@ -1,5 +1,6 @@
 import { ROW_ID, ROW_ID_PREFIX } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
+import { filled } from './defaults.js'
 import type { BuiltInErrorCode } from './error-codes.js'
 import type { InteractionState } from './interaction.js'
 import type { Path } from './path.js'
@@ -137,7 +138,7 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
       const minimum = repeater.def.minItems ?? 0
       if (count(repeater) >= minimum) return false
       const rows = [...of(repeater)]
-      while (rows.length < minimum) rows.push({ [ROW_ID]: mint(repeater) })
+      while (rows.length < minimum) rows.push(filled(repeater.def.fields ?? [], { [ROW_ID]: mint(repeater) }))
       store.set(repeater.path, rows)
       return true
     },
@@ -146,7 +147,7 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
       if (!canAdd(repeater)) {
         throw new RangeError(`"${repeater.wire}" already holds the most rows it allows, ${String(repeater.def.maxItems)}`)
       }
-      store.set(repeater.path, [...of(repeater), { [ROW_ID]: mint(repeater) }])
+      store.set(repeater.path, [...of(repeater), filled(repeater.def.fields ?? [], { [ROW_ID]: mint(repeater) })])
     },
 
     id(repeater, index) {

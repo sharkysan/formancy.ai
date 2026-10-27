@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**A field can start answered (spec 5).** `default` on a text, long text, hidden, number, tick box,
+date, time, date and time or choice field is the answer **something fresh** starts with: a form
+opened with nothing handed in, a row added, a field shown again after its hiding cleared it. A
+draft, a prefill and the server's replay start exactly as handed in, because filling them would
+put back an answer somebody cleared or store one nobody sent; `withDefaults` from
+`@formancy/core` gives a prefill the defaults explicitly. The engine refuses to open a document
+whose default its field would refuse, with the check every answer gets, and the builder keeps a
+default through a change of kind only where the new field accepts it. The server now replays a
+submission with no data as `{}` rather than as a new form. A default left alone is stored as the
+person's answer, indistinguishable from one chosen
+([0197](docs/decisions/0197-a-default-is-where-something-fresh-starts.md)).
+
 **A text, long text or number field can show an example of its answer (spec 5).** `placeholder`
 — text or a catalogue reference, in the form's language — is drawn in the empty box by both
 renderers and Material, extracted by the builder for translation, and refused in a version 4

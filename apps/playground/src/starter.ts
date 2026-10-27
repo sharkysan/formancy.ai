@@ -72,6 +72,9 @@ export const STARTER_SCHEMA = {
         key: 'delivery',
         type: 'radio',
         label: { $t: 'delivery' },
+        // A default (spec 5): the answer a new form starts with, and submitted unless somebody
+        // changes it — so the one most people give, and never a guess for them to correct.
+        default: 'standard',
         // Pictures on the options: decoration here, since the label already says what
         // each one is — so no text alternative, and a screen reader hears the label alone.
         options: [

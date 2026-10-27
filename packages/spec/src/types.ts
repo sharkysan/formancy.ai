@@ -367,6 +367,13 @@ export interface FieldDef {
    * on a masked field it replaces the shape the control shows. Spec version 5 (0196).
    */
   placeholder?: Text
+  /**
+   * The answer a fresh form starts with: a new form, a new row, a field shown again after its
+   * hiding cleared it — never a draft, a prefill or the server's replay, which start as handed
+   * in. Of the field's own answer type; the engine refuses to open a document with one the
+   * field would refuse. Spec version 5 (0197).
+   */
+  default?: string | number | boolean | string[]
   options?: FieldOption[]
   /**
    * `matrix` fields: the things the one question is asked of, each a value and a label like

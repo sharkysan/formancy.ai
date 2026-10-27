@@ -91,8 +91,11 @@ A specified behaviour, not an emergent one
   repeater's for everything inside them.
 - The **server** applies the same semantics from its own evaluation, so a
   client cannot smuggle data into a hidden branch by sending it anyway.
-- Invariant, held by property tests: hiding then unhiding restores the value if
-  and only if `clearOnHide` is `false`.
+- Hiding then showing again gives back the person's answer if and only if `clearOnHide` is
+  `false`. With it on, the field opens as it first did — empty, or with its `default`
+  ([0197](../decisions/0197-a-default-is-where-something-fresh-starts.md)). Held by example tests,
+  `packages/core/src/engine-logic.test.ts` and `default.test.ts`; until 2026-10-27 this line
+  said property tests, and there were none.
 
 ## 8.6 Accessibility
 

@@ -508,6 +508,38 @@ optional · Text (see below)
 
 **Placeholder.** An example of the answer, shown in the empty box until somebody types — "079 123 45 67". Never instead of a label: it disappears as soon as there is an answer, and many readers never announce it, so what the question asks belongs in the label and how to answer it in the description. On a masked field it replaces the shape the control would show. Text, or a reference to it in the message catalogue. On text, long text and number fields. Needs spec version 5.
 
+#### `text`, `textarea`, `hidden`, `date`, `time`, `datetime`, `select`, `radio`
+
+##### `default`
+
+optional · string · min length 1
+
+**Default.** The answer this field starts with in a new form — "CH", 2, true, or the options a list of ticks starts ticked. An answer like any other: it is submitted unless somebody changes it, so make it the answer most people give, never a guess for them to correct. Stored as written, and not translated. A new row starts with it, and so does a field shown again after a rule hid and cleared it; a resumed draft, a prefill and the server's replay of a submission start as they were handed in. The form refuses to open with one the field itself would refuse — not an option, out of bounds, the wrong shape. On text, long text, hidden, number, tick box, date, time, date and time, and choice fields. Needs spec version 5.
+
+#### `number`
+
+##### `default`
+
+optional · number
+
+**Default.** The answer this field starts with in a new form — "CH", 2, true, or the options a list of ticks starts ticked. An answer like any other: it is submitted unless somebody changes it, so make it the answer most people give, never a guess for them to correct. Stored as written, and not translated. A new row starts with it, and so does a field shown again after a rule hid and cleared it; a resumed draft, a prefill and the server's replay of a submission start as they were handed in. The form refuses to open with one the field itself would refuse — not an option, out of bounds, the wrong shape. On text, long text, hidden, number, tick box, date, time, date and time, and choice fields. Needs spec version 5.
+
+#### `checkbox`
+
+##### `default`
+
+optional · boolean
+
+**Default.** The answer this field starts with in a new form — "CH", 2, true, or the options a list of ticks starts ticked. An answer like any other: it is submitted unless somebody changes it, so make it the answer most people give, never a guess for them to correct. Stored as written, and not translated. A new row starts with it, and so does a field shown again after a rule hid and cleared it; a resumed draft, a prefill and the server's replay of a submission start as they were handed in. The form refuses to open with one the field itself would refuse — not an option, out of bounds, the wrong shape. On text, long text, hidden, number, tick box, date, time, date and time, and choice fields. Needs spec version 5.
+
+#### `selectboxes`
+
+##### `default`
+
+optional · array
+
+**Default.** The answer this field starts with in a new form — "CH", 2, true, or the options a list of ticks starts ticked. An answer like any other: it is submitted unless somebody changes it, so make it the answer most people give, never a guess for them to correct. Stored as written, and not translated. A new row starts with it, and so does a field shown again after a rule hid and cleared it; a resumed draft, a prefill and the server's replay of a submission start as they were handed in. The form refuses to open with one the field itself would refuse — not an option, out of bounds, the wrong shape. On text, long text, hidden, number, tick box, date, time, date and time, and choice fields. Needs spec version 5.
+
 ## Logic rules
 
 Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.

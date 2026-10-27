@@ -1,5 +1,6 @@
 import type { FieldDef, FieldType } from '@formancy/spec'
 import { ANSWER_KINDS, WIDGETS_BY_FIELD_TYPE } from '@formancy/spec'
+import { acceptsDefault } from '@formancy/core'
 import { locate } from './navigate.js'
 import { newFieldOfType, paletteEntries } from './palette.js'
 import type { PaletteEntry } from './palette.js'
@@ -92,6 +93,10 @@ function retyped(field: FieldDef, type: FieldType, session: BuilderSession): Fie
   const { key: _key, label: _label, ...starting } = newFieldOfType(type, new Set(), session.text)
   const next = { ...starting, ...kept, type } as FieldDef
   if (widget === undefined) delete next.widget
+  // A default is an answer, so it stays only if the new field would take it as one (0197):
+  // a number's 2 on a text field is a document the format refuses, and a text's "Zürich" on
+  // a select is not one of the options it now has.
+  if (!acceptsDefault(next)) delete next.default
   return next
 }
 
