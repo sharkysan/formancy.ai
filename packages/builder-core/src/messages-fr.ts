@@ -290,6 +290,8 @@ export const BUILDER_MESSAGES_FR = {
   'logic.what': 'Ce que fait la règle',
   'logic.check': 'Quelle vérification',
   'logic.check.example': 'email-deja-utilise',
+  'logic.message': 'Ce qu’elle dit quand une réponse est refusée',
+  'logic.message.example': 'Les voyageurs doivent avoir au moins 18 ans.',
   'logic.calculation': 'Le calcul',
   'logic.calculation.example': 'quantite * prixUnitaire',
   'logic.match': 'Doivent être vraies',

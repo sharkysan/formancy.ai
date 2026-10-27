@@ -5,6 +5,7 @@ import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presenta
 import { ROW_ID, UNSTORABLE_KEY } from './types.js'
 import { layoutChildren } from './layout.js'
 import type { FieldDef, FormSchema, Text } from './types.js'
+import type { LogicRule } from './rules.js'
 import type { LayoutNode } from './layout.js'
 import { versionErrors } from './version-errors.js'
 import { toSchemaErrors } from './structural-errors.js'
@@ -295,6 +296,30 @@ function logicErrors(schema: FormSchema): SchemaError[] {
     }
   }
 
+  errors.push(...sharedCodeErrors(rules))
+  return errors
+}
+
+/**
+ * One code on one field is said one way (0198). Two validate rules sharing a code, either with a
+ * message, would be two sentences for one code, and the person would read whichever came last.
+ * Sharing one with no message says nothing new, as before.
+ */
+function sharedCodeErrors(rules: readonly LogicRule[]): SchemaError[] {
+  const errors: SchemaError[] = []
+  const byCode = new Map<string, number[]>()
+  rules.forEach((rule, index) => {
+    if (rule.kind !== 'validate' || rule.code === undefined) return
+    const claim = `${rule.target}\u0000${rule.code}`
+    byCode.set(claim, [...(byCode.get(claim) ?? []), index])
+  })
+  for (const indexes of byCode.values()) {
+    if (indexes.length < 2 || indexes.every((index) => rules[index]!.message === undefined)) continue
+    for (const index of indexes.slice(1)) {
+      const rule = rules[index]!
+      errors.push(schemaError(`/logic/rules/${String(index)}/code`, 'rule.codeShared', { target: rule.target, code: rule.code! }))
+    }
+  }
   return errors
 }
 

@@ -21,6 +21,7 @@ import {
   rowsOf,
   ruleKindHint,
   ruleKindLabel,
+  ruleTakesMessage,
   ruleKindsFor,
   ruleTargetFor,
   setJoin,
@@ -106,6 +107,8 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
           // named a field inside a page by a path no field has (0127). Scoped to the
           // rule's target, so a rule in a repeater row may compare that row (0129).
           fields={conditionFields(view.document, { target: ruleTarget, text })}
+          rules={rules}
+          takesMessage={ruleTakesMessage(view.document.specVersion)}
           text={text}
           onCancel={() => setDrafting(false)}
           onAdd={(rule) => {
@@ -126,6 +129,8 @@ function RuleDraft({
   on,
   target,
   fields,
+  rules,
+  takesMessage,
   text,
   onAdd,
   onCancel,
@@ -135,6 +140,10 @@ function RuleDraft({
   /** What the rule will be addressed by, decided by the core. */
   target: string
   fields: readonly ConditionField[]
+  /** The document's rules, so a rule's code is its own on its field. */
+  rules: readonly LogicRule[]
+  /** Whether the document can hold a rule's own message (0198). */
+  takesMessage: boolean
   text: BuilderText
   onAdd: (rule: LogicRule) => void
   onCancel: () => void
@@ -145,6 +154,9 @@ function RuleDraft({
   const writes = kindWrites(kind)
   const carriesCondition = writes === 'condition'
   const [expression, setExpression] = useState('')
+  const [message, setMessage] = useState('')
+  /** Asked of a rule that rejects an answer, where the document can hold it (0198). */
+  const asked = kind === 'validate' && takesMessage ? message : undefined
   /**
    * The condition being written. Every edit is builder-core's — which comparison a
    * field still takes, whether a typed value survives a change of field, what an
@@ -283,6 +295,18 @@ function RuleDraft({
         <p data-formancy-part="logic-hint">{hint}</p>
       ) : null}
 
+      {asked === undefined ? null : (
+        <label>
+          {text('logic.message')}
+          <input
+            type="text"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder={text('logic.message.example')}
+          />
+        </label>
+      )}
+
       <div data-formancy-part="logic-actions">
         <button
           type="button"
@@ -295,10 +319,12 @@ function RuleDraft({
                 fields,
                 check: check.trim(),
                 expression: expression.trim(),
+                ...(asked === undefined ? {} : { message: asked }),
+                rules,
               }),
             )
           }
-          disabled={!draftIsComplete({ kind, draft, check, expression })}
+          disabled={!draftIsComplete({ kind, draft, check, expression, ...(asked === undefined ? {} : { message: asked }) })}
         >
           {text('logic.addRule')}
         </button>

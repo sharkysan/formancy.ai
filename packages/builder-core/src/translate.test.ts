@@ -233,6 +233,8 @@ describe('the request', () => {
           ],
         },
       ],
+      // A rule's message, which the person reads when an answer is refused (0198).
+      logic: { rules: [{ target: 'later', kind: 'validate', cel: "later != ''", code: 'given', message: { $t: 'later.given' } }] },
       i18n: { defaultLocale: 'en', messages: { en: {} } },
     } as unknown as FormSchema
 
@@ -244,6 +246,9 @@ describe('the request', () => {
     expect(new Set(rows.map((row) => row.context)).size).toBe(rows.length)
     expect(rows.find((row) => row.id === 'tab.one')?.context).toBe('name of a tab')
     expect(rows.find((row) => row.id === 'later.future')?.context).toBe('"future" of "Later"')
+    expect(rows.find((row) => row.id === 'later.given')?.context).toBe(
+      'message shown when an answer to "Later" is refused, saying what would be accepted',
+    )
   })
 
   test('carries none of the form’s rules, only its words and where they are used', () => {

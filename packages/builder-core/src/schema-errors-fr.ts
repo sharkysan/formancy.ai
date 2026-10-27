@@ -62,6 +62,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Seule une règle « validate » ou « check » peut choisir où elle s’exécute. Une règle « {kind} » qui se comporterait différemment dans le navigateur et sur le serveur empêcherait le serveur de vérifier ce que le navigateur a fait.',
   'rule.duplicate':
     '« {target} » a déjà une règle « {kind} ». Un champ peut porter une règle par type, car deux n’auraient pas de gagnant défini.',
+  'rule.codeShared':
+    'Une autre règle sur « {target} » signale déjà « {code} », et l’une des deux a un message. Un code se dit d’une seule façon sur un champ : donnez à cette règle un code qui lui soit propre.',
 
   // ------------------------------------------------------- translations
   'i18n.noDefaultCatalogue':

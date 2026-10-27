@@ -1,4 +1,4 @@
-import { DECLINE_KEY } from '@formancy/spec'
+import { DECLINE_KEY, modelDataFields } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { catalogueFile } from './translation.js'
 
@@ -135,8 +135,8 @@ interface Around {
 /**
  * Where each message the document refers to is used, in words a model reads.
  *
- * **Shaped like `referencedIds`**: every value under the model and the layouts, a
- * reference noted where it is found and not descended into. So a message that walk calls
+ * **Shaped like `referencedIds`**: every value under the model and the layouts, and each
+ * rule's message, a reference noted where it is found and not descended into. So a message that walk calls
  * live is one this one places — a property the spec gains tomorrow included, named by
  * its own key until somebody words it.
  */
@@ -175,6 +175,17 @@ function placesOf(document: FormSchema): Map<string, string[]> {
   }
   walk(document.model, {}, 'model', {})
   walk(document.layouts, {}, 'layouts', {})
+  // Not walked as the rest are: a rule has a `kind` and would be taken for a layout node. Its
+  // message is what the person reads when their answer to the rule's field is refused (0198).
+  const fields = new Map(modelDataFields(document.model).map(({ path, def }) => [path, def]))
+  for (const rule of document.logic?.rules ?? []) {
+    const id = referenceIn(rule.message)
+    if (id === undefined) continue
+    const def = fields.get(rule.target)
+    const place = `message shown when an answer to ${said(def?.label, rule.target)} is refused, saying what would be accepted`
+    const known = places.get(id) ?? []
+    if (!known.includes(place)) places.set(id, [...known, place])
+  }
   return places
 }
 

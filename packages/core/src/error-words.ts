@@ -15,10 +15,20 @@ import type { FormText, FormWordId, FormWordValues } from './words.js'
  * ways, and with the field's own limit in the sentence: "Enter at least 5 characters", not
  * "too short", because the field knows what would be right.
  *
- * A code the catalogue does not know is said as itself. That is a `validate` rule's own
- * `code`, or the message its expression returned, and either is the author's word.
+ * A code the field's own rules give a message for is said in those words — the snapshot's
+ * `messages`, resolved in the form's language (0198). Any other code the catalogue does not know
+ * is said as itself: a `validate` rule's `code` with no message, or the message its expression
+ * returned, and either is the author's word.
  */
-export function errorSentence(text: FormText, def: FieldDef | undefined, code: string): string {
+export function errorSentence(
+  text: FormText,
+  def: FieldDef | undefined,
+  code: string,
+  messages: Readonly<Record<string, string>> = {},
+): string {
+  // The field's own rule saying it, in the form's language: the author's words over the
+  // catalogue's, for a code the author chose (0198).
+  if (Object.hasOwn(messages, code)) return messages[code]!
   if (!Object.hasOwn(WORDED, code)) return code
   const locale = text.locale === '' ? 'en-GB' : text.locale
   const { id, values } = WORDED[code as BuiltInErrorCode](def, locale)

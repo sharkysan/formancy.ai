@@ -54,8 +54,8 @@ interface Mounted {
   select(element: Element, value: string): Promise<void>
 }
 
-const mountOn = async (keyPath: readonly string[]): Promise<Mounted> => {
-  const session = createBuilderSession(paged)
+const mountOn = async (keyPath: readonly string[], document: FormSchema = paged): Promise<Mounted> => {
+  const session = createBuilderSession(document)
   const view = await render(FormancyLogicPanel, {
     componentInputs: { session, keyPath },
     providers: [provideZonelessChangeDetection()],
@@ -139,6 +139,31 @@ describe('authoring a rule', () => {
     await click(screen.getByRole('button', { name: /^add rule$/i }))
 
     expect(rulesOf(session)[0]).toMatchObject({ kind: 'skip', target: 'visa' })
+  })
+
+  // As React's panel (0198): a rule that rejects an answer says why, under a code of its own.
+  test('a rule that rejects an answer asks what it says, and carries it', async () => {
+    const { session, click, type, select } = await mountOn(['about', 'total'], { ...paged, specVersion: '5' })
+
+    await click(screen.getByRole('button', { name: /add a rule/i }))
+    await select(kindChooser(), 'validate')
+    expect(screen.getByRole('button', { name: /^add rule$/i }).hasAttribute('disabled')).toBe(true)
+    await type(screen.getByRole('textbox', { name: 'What it says when an answer is rejected' }), 'Too much.')
+    await click(screen.getByRole('button', { name: /^add rule$/i }))
+
+    expect(rulesOf(session)).toMatchObject([{ kind: 'validate', code: 'condition', message: 'Too much.' }])
+  })
+
+  test('and does not ask where the document cannot hold one', async () => {
+    const { session, click, select } = await mountOn(['about', 'total'])
+
+    await click(screen.getByRole('button', { name: /add a rule/i }))
+    await select(kindChooser(), 'validate')
+    expect(screen.queryByRole('textbox', { name: 'What it says when an answer is rejected' })).toBeNull()
+    await click(screen.getByRole('button', { name: /^add rule$/i }))
+
+    expect(rulesOf(session)).toMatchObject([{ kind: 'validate' }])
+    expect(rulesOf(session)[0]).not.toHaveProperty('message')
   })
 
   test('a check asks for a name rather than a condition', async () => {

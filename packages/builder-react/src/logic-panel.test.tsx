@@ -221,6 +221,41 @@ describe('authoring a rule', () => {
     expect(session.canPublish().valid).toBe(true)
   })
 
+  // A rule that rejects an answer says why, in the author's words, under a code of its own on
+  // the field (0198). Every rule this editor wrote used to say `condition` to the person.
+  test('a rule that rejects an answer asks what it says, and carries it', async () => {
+    const user = userEvent.setup()
+    const session = mount({ ...schema, specVersion: '5' })
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await user.selectOptions(screen.getByLabelText('What the rule does'), 'validate')
+    await user.selectOptions(screen.getByLabelText('Field'), 'country')
+    await user.type(screen.getByLabelText('Value'), 'CH')
+
+    // Not added until it says something: an error that says only that something is wrong
+    // leaves the person to guess what would be right.
+    expect(screen.getByRole('button', { name: 'Add rule' }).hasAttribute('disabled')).toBe(true)
+    await user.type(screen.getByLabelText('What it says when an answer is rejected'), 'We ship to Switzerland only.')
+    await user.click(screen.getByRole('button', { name: 'Add rule' }))
+
+    expect(rulesOf(session)).toMatchObject([{ kind: 'validate', code: 'condition', message: 'We ship to Switzerland only.' }])
+  })
+
+  // A document older than spec 5 cannot hold one, so it is not asked for — or no rule that
+  // rejects an answer could be added to it at all.
+  test('and does not ask where the document cannot hold one', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await user.selectOptions(screen.getByLabelText('What the rule does'), 'validate')
+    await user.selectOptions(screen.getByLabelText('Field'), 'country')
+    await user.type(screen.getByLabelText('Value'), 'CH')
+
+    expect(screen.queryByLabelText('What it says when an answer is rejected')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Add rule' }))
+    expect(rulesOf(session)).toMatchObject([{ kind: 'validate' }])
+    expect(rulesOf(session)[0]).not.toHaveProperty('message')
+  })
+
   test('cancelling adds nothing', async () => {
     const user = userEvent.setup()
     const session = mount()

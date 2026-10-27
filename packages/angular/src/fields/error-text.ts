@@ -24,7 +24,7 @@ export class FormancyErrorText {
   private readonly text = injectFormText()
 
   protected readonly sentences = computed(() => {
-    const { errors, def } = this.snapshot()
-    return errors.map((code) => ({ code, text: errorSentence(this.text, def, code) }))
+    const { errors, def, messages } = this.snapshot()
+    return errors.map((code) => ({ code, text: errorSentence(this.text, def, code, messages) }))
   })
 }

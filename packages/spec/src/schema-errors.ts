@@ -65,6 +65,8 @@ export const SCHEMA_ERRORS = {
     'Only a validate or check rule can choose where it runs. A {kind} rule that behaved differently in the browser and on the server would leave the server unable to check what the browser did.',
   'rule.duplicate':
     '"{target}" already has a {kind} rule. A field can carry one rule per kind, because two would have no defined winner.',
+  'rule.codeShared':
+    'Another rule on "{target}" already reports "{code}", and one of them has a message. One code on a field is said one way, so give this rule a code of its own.',
 
   // ------------------------------------------------------- translations
   'i18n.noDefaultCatalogue':

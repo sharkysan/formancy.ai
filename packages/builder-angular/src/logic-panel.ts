@@ -14,6 +14,7 @@ import {
   rowsOf,
   ruleKindHint,
   ruleKindLabel,
+  ruleTakesMessage,
   ruleKindsFor,
   ruleTargetFor,
   setJoin,
@@ -199,6 +200,18 @@ import { injectBuilderView } from './view.js'
             <code data-formancy-part="logic-preview">{{ preview() }}</code>
           }
 
+          @if (asked() !== undefined) {
+            <label>
+              {{ 'logic.message' | builderText: text() }}
+              <input
+                type="text"
+                [value]="message()"
+                [attr.placeholder]="'logic.message.example' | builderText: text()"
+                (input)="onMessage($event)"
+              />
+            </label>
+          }
+
           <div data-formancy-part="logic-actions">
             <button type="button" [disabled]="!complete()" (click)="add()">
               {{ 'logic.addRule' | builderText: text() }}
@@ -227,6 +240,7 @@ export class FormancyLogicPanel {
   protected readonly kind = signal<LogicRule['kind']>('visible')
   protected readonly check = signal('')
   protected readonly expression = signal('')
+  protected readonly message = signal('')
   protected readonly draft = signal<ConditionDraft>({ join: 'all', items: [] })
 
   /** What a rule here is addressed by, and which kinds apply. Decided by the core. */
@@ -235,6 +249,10 @@ export class FormancyLogicPanel {
   protected readonly applicable = computed(() => ruleKindsFor(this.addressed().on))
   protected readonly writes = computed(() => kindWrites(this.kind()))
   protected readonly hint = computed(() => ruleKindHint(this.kind(), this.text()))
+  /** Asked of a rule that rejects an answer, where the document can hold it (0198). */
+  protected readonly asked = computed(() =>
+    this.kind() === 'validate' && ruleTakesMessage(this.view().document.specVersion) ? this.message() : undefined,
+  )
   /** At the paths the engine reads, from the core: the tree's key path named a field
    *  inside a page by a path no field has (0127). Scoped to the rule's target, so a
    *  rule in a repeater row may compare that row (0129). */
@@ -259,6 +277,7 @@ export class FormancyLogicPanel {
       draft: this.draft(),
       check: this.check(),
       expression: this.expression(),
+      ...this.messageOf(),
     }),
   )
 
@@ -301,6 +320,7 @@ export class FormancyLogicPanel {
     this.kind.set(this.applicable()[0]?.id ?? 'visible')
     this.check.set('')
     this.expression.set('')
+    this.message.set('')
     this.draft.set(emptyDraft(this.fields()))
     this.drafting.set(true)
   }
@@ -315,6 +335,16 @@ export class FormancyLogicPanel {
 
   protected onExpression(event: Event): void {
     this.expression.set((event.target as HTMLInputElement).value)
+  }
+
+  protected onMessage(event: Event): void {
+    this.message.set((event.target as HTMLInputElement).value)
+  }
+
+  /** The message as the core takes it: absent where it is not asked for. */
+  private messageOf(): { message?: string } {
+    const asked = this.asked()
+    return asked === undefined ? {} : { message: asked }
   }
 
   protected onJoin(event: Event, group?: number): void {
@@ -348,6 +378,8 @@ export class FormancyLogicPanel {
         fields: this.fields(),
         check: this.check().trim(),
         expression: this.expression().trim(),
+        ...this.messageOf(),
+        rules: this.view().document.logic?.rules ?? [],
       }),
     )
   }

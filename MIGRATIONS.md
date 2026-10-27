@@ -43,6 +43,10 @@ it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
   starts with, of the answer's own JSON type. Never applied to what is handed in. A document
   whose default its field would refuse is refused by the engine; a version 4 document carrying
   one is refused, naming the property ([0197](docs/decisions/0197-a-default-is-where-something-fresh-starts.md)).
+- `message` on a `validate` rule — what the person reads while it fails, text or a reference into
+  the catalogue, said for the rule's `code` in the form's language. Needs a `code`, which no other
+  rule on the field may share when either has a message (`rule.codeShared`). A version 4 document
+  carrying one is refused, naming the property ([0198](docs/decisions/0198-a-rule-says-its-own-message.md)).
 
 ## Spec version 4 is FROZEN
 

@@ -73,8 +73,8 @@ export class FormancyErrorSummary {
    */
   protected readonly entries = computed(() =>
     this.errors().map(({ path, codes }) => {
-      const { def } = this.engine.getFieldSnapshot(parsePath(path))
-      const problems = codes.map((code) => errorSentence(this.text, def, code)).join(' ')
+      const { def, messages } = this.engine.getFieldSnapshot(parsePath(path))
+      const problems = codes.map((code) => errorSentence(this.text, def, code, messages)).join(' ')
       return { path, text: this.text('errors.entry', { label: this.labelFor(path), problems, codes: codes.join(', ') }) }
     }),
   )

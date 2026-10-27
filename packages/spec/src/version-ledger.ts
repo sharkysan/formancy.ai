@@ -111,6 +111,7 @@ export const RULE_PROPERTY_SINCE = {
   kind: 1,
   cel: 1,
   code: 1,
+  message: 5,
   runsOn: 1,
   editor: 1,
   check: 3,
