@@ -10,6 +10,13 @@ later.
 
 ## Unreleased
 
+**Spec version 5 is frozen**, with the batch it was opened for: a field's `description`,
+`autocomplete`, `placeholder`, `default` and `shuffle`, an option's `exclusive` and `keepPlace`, and a
+rule's `message` — properties only. It is what this package writes, and a reader pinned to 0.7.0 or
+earlier refuses it, so upgrade the readers before the documents. No version is open; version 6 opens
+when a construct needs one. "Other, please specify" was not a construct and left the batch
+([0201](docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)).
+
 **Options can be shown in a shuffled order (spec 5).** `shuffle` on a radio group, a list of ticks or a
 ranking shows the options in an order the engine chooses once, from the `random()` it is given, and
 keeps for its life; an option with `keepPlace` — "None of these", "Other" — stays where it is written.

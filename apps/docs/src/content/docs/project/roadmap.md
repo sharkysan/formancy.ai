@@ -108,7 +108,7 @@ field is shown because of it. The verdicts are tested to agree with the engine; 
 field in a repeater row is listed, and has no verdict, because it has one per row
 ([0128](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
 
-**Spec version 5 is open**, so far with seven properties: a field's `description`, help text
+**Spec version 5 is frozen** ([0201](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)), with seven properties: a field's `description`, help text
 read out with the control rather than as its name; its `autocomplete`, the input purpose
 WCAG 1.3.5 asks for, set on the control for a browser to fill ([0195](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)); its
 `placeholder`, an example of the answer that never stands in for the label ([0196](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)); and its
@@ -301,18 +301,17 @@ now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **Version 5 freezes**, now that it holds every construct its batch named
-   ([0200](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)): a field's description, autofill
-   hint, placeholder and default, a rule's own message, an option chosen only on its own, and a
-   shuffled order. "Other, please specify" left the list, because a document can already say it
-   — an option, a text field and a `visible` rule — and what is missing is the builder doing the
-   three in one step ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
+1. **"Other, please specify" in one step.** A document can already say it — an option, a text
+   field and a `visible` rule on it — and the engine already clears the text when the option is
+   not chosen; what is missing is the builder doing the three at once, which is a command rather
+   than a version event ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
 2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
 
-Version 4 is frozen with the two survey types it was opened for
-([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
+Version 5 is frozen with the batch it was opened for
+([0201](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)), as version 4 froze with the two survey
+types it was opened for ([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
 
 ### Done since this list was written
 

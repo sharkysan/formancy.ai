@@ -11,19 +11,21 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
-## Spec version 5 is OPEN
+## Spec version 5 is FROZEN
 
-Spec `"5"` is open as of 2026-10-27, and is the version this package writes: a new document
-declares it, and `upgradeSpecVersion` moves an older one to it unchanged but for the version
-line. **It is not frozen.** A document written against it today is a document of a version that
-may still gain constructs; pin a reader to it knowing that, and freeze nothing on it until it
-says FROZEN here ([0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
+Spec `"5"` is frozen as of 2026-10-27, with the batch it was opened for, and is the version this
+package writes: a new document declares it, and `upgradeSpecVersion` moves an older one to it
+unchanged but for the version line. It is in no release yet; the first that carries it is the one
+after 0.7.0. No version is open: version 6 opens when a construct needs one
+([0201](docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md), [0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
-It is a superset of version 4 and removes nothing. A reader pinned to spec 4 **refuses** a
-version 5 document rather than ignoring the part it does not know, as at every version before
-it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
+It is a superset of version 4 and removes nothing, and adds properties only — no field type,
+widget, rule kind or layout kind. A reader pinned to spec 4, which every release up to 0.7.0 is,
+**refuses** a version 5 document rather than ignoring the part it does not know, as at every
+version before it ([0051](docs/decisions/0051-spec-2-adds-types.md)): upgrade the readers before
+the documents.
 
-### What version 5 adds so far
+### What version 5 added
 
 - `description` on a field — help text under its question, read out with the control rather
   than as part of its name. Text, or a reference into the catalogue; on a group, a page or a
@@ -63,7 +65,7 @@ Spec `"4"` is frozen as of 2026-10-09, and first released with `0.4.0`. A docume
 validates today will validate against every future release that speaks spec 4, save one that
 keys a field or a matrix row `__proto__`, which no release could store an answer under
 ([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). Version 5,
-opened by the next construct that needed one as 0140 said it would be, is open above
+opened by the next construct that needed one as 0140 said it would be, is frozen above
 ([0140](docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
 
 It is a superset of version 3 and removes nothing, so upgrading is the same single line
