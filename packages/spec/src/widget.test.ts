@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { FIELD_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './types.js'
+import { FIELD_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 import { validateSchema } from './validate.js'
 
 /**

@@ -16,6 +16,8 @@ export function DateField({ path, label }: FieldComponentProps) {
       <input
         type="date"
         {...field.controlProps}
+        // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
+        autoComplete={field.def.autocomplete}
         readOnly={field.readOnly}
         value={typeof field.value === 'string' ? field.value : ''}
         onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.value)}

@@ -10,7 +10,7 @@
  *
  * `SchemaError` stays in `validate.ts`, which is where the public surface is.
  */
-import { SPEC_2_WIDGETS, SPEC_3_WIDGETS } from './types.js'
+import { SPEC_2_WIDGETS, SPEC_3_WIDGETS } from './widgets.js'
 import type { FieldDef, FormSchema } from './types.js'
 import { layoutChildren } from './layout.js'
 import type { LayoutNode } from './layout.js'

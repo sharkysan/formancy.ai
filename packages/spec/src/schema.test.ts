@@ -6,8 +6,8 @@ import {
   CURRENT_SPEC_VERSION,
   FIELD_TYPES,
   SPEC_VERSIONS,
-  WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
+import { WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 
 describe('formancy.schema.json', () => {
   test('is itself a valid JSON Schema 2020-12 document', () => {

@@ -19,6 +19,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
         type="date"
         [id]="control().id"
         [attr.name]="control().name"
+        [attr.autocomplete]="field.snapshot().def.autocomplete ?? null"
         [attr.aria-invalid]="control()['aria-invalid']"
         [attr.aria-required]="control()['aria-required']"
         [attr.aria-describedby]="control()['aria-describedby']"

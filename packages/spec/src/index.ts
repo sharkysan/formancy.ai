@@ -7,15 +7,14 @@ export {
   CONTAINER_FIELD_TYPES,
   CURRENT_SPEC_VERSION,
   FIELD_TYPES,
-  FIELD_WIDGETS,
   LIST_VALUED_FIELD_TYPES,
   SPEC_1_FIELD_TYPES,
   SPEC_2_FIELD_TYPES,
   SPEC_VERSIONS,
   TEMPORAL_FIELD_TYPES,
   TEMPORAL_SHAPES,
-  WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
+export { FIELD_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 export {
   PAGE_TARGETED_RULE_KINDS,
   RULE_KINDS,
@@ -64,7 +63,6 @@ export type {
   FieldOption,
   OptionImage,
   FieldType,
-  FieldWidget,
   TemporalFieldType,
   FormI18n,
   FormModel,
@@ -75,6 +73,8 @@ export type {
   MessageRef,
   Text,
 } from './types.js'
+export type { FieldWidget } from './widgets.js'
+export type { AutocompleteToken } from './autocomplete.js'
 export type {
   FormLogic,
   RunsOn,
@@ -91,6 +91,7 @@ export { answersTypeName, answersTypeScript } from './answers-typescript.js'
 export type { AnswersTypeOptions } from './answers-typescript.js'
 export type { AnswerKind, AnswerShape, StoredFile } from './answers.js'
 export { ROW_ID, ROW_ID_PREFIX, UNSTORABLE_KEY } from './types.js'
+export { AUTOCOMPLETE_TOKENS } from './autocomplete.js'
 export {
   collectFieldPaths,
   isMessageRef,

@@ -179,6 +179,8 @@ function NumberFallback({ path, label }: FieldComponentProps) {
       <input
         type="number"
         {...field.controlProps}
+        // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
+        autoComplete={field.def.autocomplete}
         // As `NumberField` does: a computed number is read, not typed (0181).
         readOnly={field.readOnly}
         value={typeof field.value === 'number' ? field.value : ''}

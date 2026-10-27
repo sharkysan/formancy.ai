@@ -42,15 +42,17 @@ export const STARTER_SCHEMA = {
       // static: text the reader sees that collects nothing.
       { key: 'intro', type: 'static', label: { $t: 'intro' } },
 
-      { key: 'firstName', type: 'text', label: { $t: 'firstName' }, required: true },
-      { key: 'lastName', type: 'text', label: { $t: 'lastName' }, required: true },
+      // An autofill hint (spec 5): what the answer is, so a browser can fill it and a
+      // person's own tools can mark it — WCAG 1.3.5 asks it of a field about the person.
+      { key: 'firstName', type: 'text', label: { $t: 'firstName' }, autocomplete: 'given-name', required: true },
+      { key: 'lastName', type: 'text', label: { $t: 'lastName' }, autocomplete: 'family-name', required: true },
       // A description (spec 5): help text under the question, read out with the control
       // rather than as its name, so the label stays "Email".
-      { key: 'email', type: 'text', label: { $t: 'email' }, description: { $t: 'email.help' }, format: 'email', required: true },
+      { key: 'email', type: 'text', label: { $t: 'email' }, description: { $t: 'email.help' }, autocomplete: 'email', format: 'email', required: true },
       // A mask: the control writes "+41" and the spaces, the answer holds the nine
       // digits typed. Paste "+41 79 123 45 67" and it is read as one number, not as
       // a 4 and a 1 followed by seven more.
-      { key: 'phone', type: 'text', label: { $t: 'phone' }, mask: '+41 99 999 99 99' },
+      { key: 'phone', type: 'text', label: { $t: 'phone' }, autocomplete: 'tel-national', mask: '+41 99 999 99 99' },
 
       {
         key: 'country',
