@@ -100,10 +100,10 @@ export class FormancyTextField extends FieldComponentBase {
     const mask = this.mask()
     return mask === undefined ? this.answer() : formatMasked(mask, this.answer())
   })
-  /** The shape as the hint, and a keypad when every position takes a digit. */
+  /** The author's example when there is one (0196), else the shape as the hint. */
   protected readonly placeholder = computed(() => {
     const mask = this.mask()
-    return mask === undefined ? null : maskPlaceholder(mask)
+    return this.authoredPlaceholder() ?? (mask === undefined ? null : maskPlaceholder(mask))
   })
   protected readonly inputMode = computed(() => {
     const mask = this.mask()
@@ -209,6 +209,7 @@ export class FormancyTextField extends FieldComponentBase {
         [id]="control().id"
         [attr.name]="control().name"
         [attr.autocomplete]="field.snapshot().def.autocomplete ?? null"
+        [attr.placeholder]="authoredPlaceholder()"
         [attr.aria-invalid]="control()['aria-invalid']"
         [attr.aria-required]="control()['aria-required']"
         [attr.aria-describedby]="control()['aria-describedby']"

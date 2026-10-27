@@ -361,6 +361,12 @@ export interface FieldDef {
    * Spec version 5 (0195).
    */
   autocomplete?: AutocompleteToken
+  /**
+   * An example of the answer in the empty box, never instead of the label — it disappears with
+   * the first keystroke and many readers never announce it. Text, long text and number fields;
+   * on a masked field it replaces the shape the control shows. Spec version 5 (0196).
+   */
+  placeholder?: Text
   options?: FieldOption[]
   /**
    * `matrix` fields: the things the one question is asked of, each a value and a label like

@@ -40,6 +40,8 @@ export abstract class MaterialFieldBase {
   protected readonly context = injectFieldContext()
   protected readonly field = injectField(this.context.path)
   protected readonly engine = injectEngine()
+  /** The author's example for the empty box, in the form's language (0196); null for none. */
+  protected readonly authoredPlaceholder = computed(() => this.engine.text(this.field.snapshot().def.placeholder) ?? null)
   protected readonly control = computed(() => this.field.snapshot().props.control)
 
   protected readonly showError = computed(() => {

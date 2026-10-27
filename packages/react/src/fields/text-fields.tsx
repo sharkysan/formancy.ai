@@ -3,7 +3,7 @@ import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholde
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { useScanner } from '../scanning.js'
-import { FieldShell } from './internals.js'
+import { FieldShell, usePlaceholder } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 
@@ -25,6 +25,7 @@ import type { FieldComponentProps } from './internals.js'
  */
 export function TextField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const placeholder = usePlaceholder(field)
   const scan = useScanner()
   const words = useFormText()
   const [scanning, setScanning] = useState(false)
@@ -109,8 +110,9 @@ export function TextField({ path, label }: FieldComponentProps) {
         // still reached and read (0181). Every control that takes typed text says it.
         readOnly={field.readOnly}
         value={shown}
-        // The shape as the hint, and a keypad when every position takes a digit.
-        placeholder={mask === undefined ? undefined : maskPlaceholder(mask)}
+        // The author's example when there is one (0196), else the shape as the hint, and a
+        // keypad when every position takes a digit.
+        placeholder={placeholder ?? (mask === undefined ? undefined : maskPlaceholder(mask))}
         inputMode={mask !== undefined && maskIsNumeric(mask) ? 'numeric' : undefined}
         onChange={(event) => {
           if (mask === undefined) {
@@ -181,10 +183,12 @@ export function TextField({ path, label }: FieldComponentProps) {
 
 export function TextareaField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const placeholder = usePlaceholder(field)
   return (
     <FieldShell path={path} field={field} label={label}>
       <textarea
         {...field.controlProps}
+        placeholder={placeholder}
         // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
         autoComplete={field.def.autocomplete}
         readOnly={field.readOnly}
@@ -198,11 +202,13 @@ export function TextareaField({ path, label }: FieldComponentProps) {
 
 export function NumberField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const placeholder = usePlaceholder(field)
   return (
     <FieldShell path={path} field={field} label={label}>
       <input
         type="number"
         {...field.controlProps}
+        placeholder={placeholder}
         // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
         autoComplete={field.def.autocomplete}
         readOnly={field.readOnly}

@@ -924,6 +924,28 @@
        }
       }
      }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "enum": [
+         "text",
+         "textarea",
+         "number"
+        ]
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "placeholder": {
+        "title": "Placeholder",
+        "description": "An example of the answer, shown in the empty box until somebody types — \"079 123 45 67\". Never instead of a label: it disappears as soon as there is an answer, and many readers never announce it, so what the question asks belongs in the label and how to answer it in the description. On a masked field it replaces the shape the control would show. Text, or a reference to it in the message catalogue. On text, long text and number fields. Needs spec version 5.",
+        "$ref": "#/$defs/text"
+       }
+      }
+     }
     }
    ],
    "unevaluatedProperties": false

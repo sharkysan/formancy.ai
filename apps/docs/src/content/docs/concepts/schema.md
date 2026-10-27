@@ -179,6 +179,18 @@ password and payment-card purposes on purpose: a form platform keeps its answers
 invites a browser to put a card number into a stored submission is not one to offer. Spec
 version 5 ([0195](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)).
 
+A text, long text or number field can show an example of its answer in the empty box:
+
+```json
+{ "key": "phone", "type": "text", "label": "Mobile", "placeholder": "079 123 45 67" }
+```
+
+An example, never the question: it disappears as soon as somebody types, and many screen readers
+never announce it, so what the question asks stays in the label and how to answer it goes in the
+`description`. On a masked field it replaces the shape the control would otherwise draw. Text or a
+catalogue reference, extracted for translation with the rest; spec version 5
+([0196](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)).
+
 ## A key is an identity, forever
 
 ```jsonc

@@ -1,5 +1,5 @@
 import { useField } from '../use-field.js'
-import { FieldShell } from './internals.js'
+import { FieldShell, usePlaceholder } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 /**
@@ -174,11 +174,13 @@ export function SliderField({ path, label }: FieldComponentProps) {
  */
 function NumberFallback({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const placeholder = usePlaceholder(field)
   return (
     <FieldShell path={path} field={field} label={label}>
       <input
         type="number"
         {...field.controlProps}
+        placeholder={placeholder}
         // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
         autoComplete={field.def.autocomplete}
         // As `NumberField` does: a computed number is read, not typed (0181).

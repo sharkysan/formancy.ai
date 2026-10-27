@@ -34,6 +34,10 @@ it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
   the control for a browser to fill. A closed list: the standard's purposes without the password
   and payment-card ones. A version 4 document carrying one is refused, naming the property
   ([0195](docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)).
+- `placeholder` on a text, long text or number field — an example of the answer in the empty box,
+  never instead of the label. Text, or a reference into the catalogue; on a masked field it
+  replaces the drawn shape. A version 4 document carrying one is refused, naming the property
+  ([0196](docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)).
 
 ## Spec version 4 is FROZEN
 

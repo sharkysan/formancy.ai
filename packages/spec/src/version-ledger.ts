@@ -58,6 +58,7 @@ export const FIELD_PROPERTY_SINCE = {
   label: 1,
   description: 5,
   autocomplete: 5,
+  placeholder: 5,
   options: 1,
   rows: 4,
   optionsSource: { select: 2, selectboxes: 3 },
