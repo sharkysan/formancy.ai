@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { FORM_WORDS, FORM_WORDS_DE } from '@formancy/core/words'
 import type { FormSchema } from '@formancy/spec'
@@ -365,14 +365,28 @@ describe('sending the response', () => {
     // stop. Left to fire after the 201 it finds no draft, starts one holding the answers just
     // stored, and remembers it — and the next visit resumes it with a token nothing has spent,
     // so its Submit stores the same response a second time.
-    const user = userEvent.setup()
+    //
+    // The quiet is the test's clock, not the machine's. On a real one, under the whole suite's
+    // load, the keys came more than the quiet apart, the save fired between two of them and
+    // started a draft before Submit — correctly — and the case failed on a premise it assumed.
+    // Now the premise is checked: the save is waiting when Submit is pressed. Events are fired
+    // rather than typed, and the page polled on the real clock, because user-event and the
+    // library's async queries both settle on a setTimeout, which is faked here.
+    const realSetTimeout = globalThis.setTimeout
+    const tick = () => new Promise((resolve) => realSetTimeout(resolve, 10))
     render(<FillPane path="contact" quietMs={300} />)
+    const email = await screen.findByLabelText('Email')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
 
-    await user.type(await screen.findByLabelText('Email'), 'a@b.ch')
-    await user.click(screen.getByRole('button', { name: 'Submit' }))
-    await screen.findByText('Submitted.')
-    // Twice the quiet: a save that was going to fire has fired.
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    fireEvent.change(email, { target: { value: 'a@b.ch' } })
+    expect(vi.getTimerCount()).toBe(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    while (screen.queryByText('Submitted.') === null) await tick()
+    // The quiet runs out after the response is stored: a save still waiting fires now.
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+    await tick()
 
     expect(sent()[0]?.headers['x-formancy-submission-token']).toBe('st-form')
     expect(starts()).toHaveLength(0)
