@@ -326,7 +326,7 @@ describe('signing with a finger, which is how most people will', () => {
     mount()
 
     const move = new Event('touchmove', { bubbles: true, cancelable: true })
-    screen.getByRole('textbox', { name: 'Type your name' }).dispatchEvent(move)
+    screen.getByRole('textbox', { name: 'Sign here: type your name' }).dispatchEvent(move)
 
     expect(move.defaultPrevented, 'touches away from the surface are being cancelled too').toBe(false)
   })
@@ -388,5 +388,41 @@ describe('a signature a rule disables', () => {
     fireEvent.pointerUp(surface())
 
     expect(answer(engine)).toEqual(kept)
+  })
+})
+
+/**
+ * The box a name is typed into is the signature's control: it carries the field's control id, and
+ * the label points at it (0186). It carried nothing else of the field's, so the field's error was
+ * not read with it, a required signature did not say so on it, and its name was *Type your name*
+ * under a visible label *Sign here* that the name did not contain — WCAG 2.5.3, Label in Name,
+ * which no axe rule reports (hazard D4, 0212). The Angular renderer is held to the same in its
+ * signature tests.
+ */
+describe('the box a name is typed into', () => {
+  test('is named after the field, the visible label first', () => {
+    mount()
+
+    expect(screen.getByRole('textbox', { name: 'Sign here: type your name' })).toBeTruthy()
+  })
+
+  test('required and sent empty, says it is required and invalid, and is described by the error', async () => {
+    const engine = createFormEngine({
+      schema: { ...schema, model: { fields: [{ ...schema.model.fields[0]!, required: true }] } } as FormSchema,
+      capabilities: { now: () => 0, today: () => '2026-10-28', random: () => 0.5 },
+    })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    const box = screen.getByRole('textbox', { name: /type your name/i })
+    const error = document.getElementById(engine.getFieldSnapshot(['mark']).props.error.id)
+
+    expect(box.getAttribute('aria-required')).toBe('true')
+    expect(box.getAttribute('aria-invalid')).toBe('true')
+    expect(error?.textContent).toBeTruthy()
+    expect((box.getAttribute('aria-describedby') ?? '').split(/\s+/)).toContain(error?.id)
   })
 })

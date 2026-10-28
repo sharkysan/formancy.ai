@@ -1482,10 +1482,12 @@ carry the id now, and focus moves to the first option or to the box
 renderer's `control-id.test` and Material's `controls.test.ts` — the three fields by cases of
 their own, and the rule they were missed by over every type the spec has and every widget it
 allows each, so a type or a widget added later that draws no element with the id fails without
-a case of its own. What remains: the typed box is not described by the field's error, so a
-screen reader landing on it hears the box and not the problem, and it is named *Type your name*
-under a visible label *Signature* that its name does not contain, a WCAG 2.5.3 (Label in Name)
-failure no axe rule reports, measured in React; a field drawn with no control — a file field with no upload route,
+a case of its own. The typed box was not described by the field's error, so a screen reader
+landing on it heard the box and not the problem, and it was named *Type your name* under a visible
+label *Signature* that its name did not contain, a WCAG 2.5.3 (Label in Name) failure no axe rule
+reports. It carries all of the field's control props now, and is named *Signature: type your name*
+([0212](../decisions/0212-a-signatures-box-says-what-its-field-says.md)), held by each renderer's
+signature cases, which failed before the change. What remains: a field drawn with no control — a file field with no upload route,
 a select whose source the deployment lacks — still carries no element with the id, measured on
 2026-10-20; and a host moving focus into a group by the id has to do what `focusControl` does,
 which is not exported.

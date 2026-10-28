@@ -80,7 +80,7 @@ async function mount(schema: FormSchema, summary = false) {
 const LANDING: Record<Key, () => HTMLElement> = {
   smoker: () => screen.getByRole('radio', { name: 'Yes' }),
   allergies: () => screen.getByRole('checkbox', { name: 'Yes' }),
-  mark: () => screen.getByRole('textbox', { name: 'Type your name' }),
+  mark: () => screen.getByRole('textbox', { name: 'Signature: type your name' }),
 }
 
 /** The three fields, as each case names them, and the summary's link to each. */

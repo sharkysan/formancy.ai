@@ -424,6 +424,24 @@ the element you mean, or by what it says.
 message for its code. A control of your own that calls it should pass them; without them a rule's
 code is said as itself, as before.
 
+## A signature's typed box is named after its field (unreleased)
+
+**If a test of yours finds a signature's typed box by its name**, the name now starts with the
+field's label: *Signature: type your name* where it was *Type your name*, so that it contains the
+label it is drawn under (WCAG 2.5.3)
+([0212](docs/decisions/0212-a-signatures-box-says-what-its-field-says.md)). A pattern finds both:
+
+```ts
+screen.getByRole('textbox', { name: /type your name/i }) // the typed box, in English
+```
+
+**If you reworded `signature.typed`**, your words are used as they are, without the field's label;
+add `{label}` to them for the name to contain it. The shipped words are `{label}: type your name`,
+`{label}: Namen eingeben` and `{label} : tapez votre nom`.
+
+**If you style or query the box by its attributes**, it now carries the field's `name`,
+`aria-required`, `aria-invalid` and `aria-describedby`, as every other control does.
+
 ## A radio group, a set of tick boxes and a signature carry the field's control id (0.7.0)
 
 **If a test of yours finds a signature by the field's label**, it finds two elements now, and

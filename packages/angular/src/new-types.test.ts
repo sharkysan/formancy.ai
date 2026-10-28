@@ -869,6 +869,32 @@ describe('the signature field, which must behave as the React one does', () => {
     expect(screen.getByRole('button', { name: /clear/i })).toHaveProperty('disabled', true)
   })
 
+  test('its typed box is named after the field, the visible label first', async () => {
+    // It was *Type your name* under the visible label *Sign here*, which the name did not
+    // contain: WCAG 2.5.3 (0212), as React's.
+    await renderForm(engineFor(signing()))
+
+    expect(screen.getByRole('textbox', { name: 'Sign here: type your name' })).toBeTruthy()
+  })
+
+  test('required and sent empty, its typed box says so and is described by the error', async () => {
+    // It carried the field's control id and nothing else of the field's, so the error was not
+    // read with it and a required signature did not say so on it (D4, 0212).
+    const schema = signing()
+    const fields = schema.model.fields.map((field) => ({ ...field, required: true }))
+    const engine = engineFor({ ...schema, model: { ...schema.model, fields } } as FormSchema)
+    const view = await renderForm(engine)
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await view.fixture.whenStable()
+    const box = screen.getByRole('textbox', { name: /type your name/i })
+    const error = document.getElementById(engine.getFieldSnapshot(['mark']).props.error.id)
+
+    expect(box.getAttribute('aria-required')).toBe('true')
+    expect(box.getAttribute('aria-invalid')).toBe('true')
+    expect(error?.textContent).toBeTruthy()
+    expect((box.getAttribute('aria-describedby') ?? '').split(/\s+/)).toContain(error?.id)
+  })
+
   test('disabled mid-stroke, it takes no more of the stroke than it had', async () => {
     const engine = engineFor(lockable())
     await renderForm(engine)

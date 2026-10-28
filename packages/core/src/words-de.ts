@@ -158,7 +158,7 @@ export const FORM_WORDS_DE = {
   'richtext.orderedList': 'Nummerierte Liste',
   'richtext.linkAddress': 'Adresse des Links',
 
-  'signature.typed': 'Namen eingeben',
+  'signature.typed': '{label}: Namen eingeben',
   'signature.clear': 'Löschen',
 
   'resume.heading': 'Dieses Formular hat sich geändert, während Sie weg waren',

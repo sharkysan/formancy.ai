@@ -1,6 +1,7 @@
 # 0186 — A field's control id names its group or its control, and focus moves into the group
 
-- **Status:** accepted
+- **Status:** accepted; the signature's typed box carrying the id alone and keeping its own name,
+  superseded in part by [0212](0212-a-signatures-box-says-what-its-field-says.md)
 - **Date:** 2026-10-20
 - **Extends:** [0021](0021-engine-owns-aria.md), which fixed a real `fieldset` and `legend` for a
   radio group in both renderers and left which element carries the field's id to each, and
