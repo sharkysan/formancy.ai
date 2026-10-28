@@ -10,6 +10,19 @@ later.
 
 ## Unreleased
 
+**A field a rule disables takes no answer, whatever draws it.** A radio group's radios were never
+disabled with their field, in either renderer; React's rating put `disabled` on a `div`, where it
+disables nothing; and a signature's typed box, its Clear button and its drawing surface took input
+under the rule, in both renderers and under Material — so a click, a keystroke or a stroke changed
+the answer of a field the form had made read-only, and Clear erased it. Each was recorded as a
+known defect in `0.7.0` and `0.8.0` (hazard B6a). Now each radio carries `disabled`, the signature's
+box and Clear do, and its surface says `aria-disabled` and takes no stroke, nor any more of one
+under way when the rule lands. And it is held over every control: a test in each renderer, and
+under Material, draws every type and widget the spec has under a `disabled` rule and fails on
+anything inside that a person could still operate — the rule 0186 holds the control id to, now
+for `disabled` ([0210](docs/decisions/0210-a-disabled-field-has-nothing-to-operate.md)). A host
+whose own test clicked a disabled radio group and saw the answer change now sees it unchanged.
+
 **The server image carries GitHub's build provenance, as `RELEASING.md` said it did.** It said
 `gh attestation verify` checked the image's provenance, and the command answered 404 for every
 image there has been, `v0.2.0` to `v0.8.0`: the workflow's `provenance: mode=max` makes BuildKit's

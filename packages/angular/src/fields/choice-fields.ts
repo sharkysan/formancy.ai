@@ -210,6 +210,7 @@ export class FormancySelectField extends FieldComponentBase {
             [attr.name]="control().name"
             [value]="option.value"
             [checked]="field.snapshot().value === option.value"
+            [disabled]="field.snapshot().disabled"
             (change)="field.setValue(option.value)"
             (blur)="field.touch()"
           />

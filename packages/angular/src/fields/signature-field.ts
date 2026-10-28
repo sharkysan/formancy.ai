@@ -38,6 +38,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           [attr.viewBox]="viewBox()"
           role="img"
           [attr.aria-label]="context.label"
+          [attr.aria-disabled]="field.snapshot().disabled ? 'true' : null"
           (pointerdown)="onDown($event)"
           (pointermove)="onMove($event)"
           (pointerup)="onUp()"
@@ -61,11 +62,12 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           type="text"
           [attr.aria-label]="'signature.typed' | formancyText"
           [value]="typed()"
+          [disabled]="field.snapshot().disabled"
           (input)="onTyped($event)"
           (blur)="field.touch()"
         />
 
-        <button data-formancy-part="signature-clear" type="button" (click)="clear()">{{ 'signature.clear' | formancyText }}</button>
+        <button data-formancy-part="signature-clear" type="button" [disabled]="field.snapshot().disabled" (click)="clear()">{{ 'signature.clear' | formancyText }}</button>
       </div>
     </formancy-field-shell>
   `,
@@ -132,14 +134,17 @@ export class FormancySignatureField extends FieldComponentBase {
     if (event.cancelable) event.preventDefault()
   }
 
+  // A surface is not a form control, so nothing disables it but these handlers: a field a rule
+  // disabled takes no stroke, and one disabled mid-stroke takes no more of it (B6a, 0210).
   protected onDown(event: PointerEvent): void {
+    if (this.field.snapshot().disabled) return
     this.before = [...this.strokes()]
     this.stroke = [this.pointFrom(event)]
     this.surface()?.nativeElement.setPointerCapture?.(event.pointerId)
   }
 
   protected onMove(event: PointerEvent): void {
-    if (this.stroke === null) return
+    if (this.stroke === null || this.field.snapshot().disabled) return
     this.stroke = [...this.stroke, this.pointFrom(event)]
     this.commit([...this.before, this.stroke])
   }

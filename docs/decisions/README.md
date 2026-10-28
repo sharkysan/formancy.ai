@@ -310,3 +310,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0207](0207-a-versions-document-can-be-read.md) | A version's document can be read by its number, so older submissions are read through it | accepted |
 | [0208](0208-the-published-javascript-carries-no-jsdoc.md) | The published JavaScript carries no JSDoc, and core's budget is a gate | accepted |
 | [0209](0209-the-image-carries-githubs-build-provenance.md) | The image carries GitHub's build provenance, as the documents said it did | accepted |
+| [0210](0210-a-disabled-field-has-nothing-to-operate.md) | A field a rule disables has nothing in it a person can operate, over every type and widget | accepted |

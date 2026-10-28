@@ -168,6 +168,9 @@ export function RadioGroupField({ path, label }: FieldComponentProps) {
               name={field.controlProps.name}
               value={option.value}
               checked={field.value === option.value}
+              // Each radio, as each tick box: the engine takes a value set on a disabled field,
+              // so the element is the only thing that keeps a rule's `disabled` (B6a, 0210).
+              disabled={field.disabled}
               onChange={() => field.setValue(option.value)}
               onBlur={() => field.touch()}
             />
