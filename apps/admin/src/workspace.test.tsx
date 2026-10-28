@@ -248,6 +248,20 @@ describe('the tabs', () => {
     expect(screen.getByText('{"email":"old@example.ch"}', { selector: 'code' })).toBeTruthy()
   })
 
+  // The responses together before any one of them (0206): for the version whose questions the
+  // admin has, and saying how many to an earlier version it could not count.
+  test('the current version’s responses are summarised question by question', async () => {
+    const stub: Stub = { calls: [] }
+    const user = await openForm(stub)
+    await user.click(await screen.findByRole('button', { name: 'submissions' }))
+
+    const summary = await screen.findByRole('region', { name: 'Summary' })
+    expect(within(summary).getByText(/1 response to version 2/)).toBeTruthy()
+    expect(within(summary).getByText(/1 to an earlier version/)).toBeTruthy()
+    expect(within(summary).getByRole('heading', { name: 'Email' })).toBeTruthy()
+    expect(within(summary).getByText('1 answered')).toBeTruthy()
+  })
+
   test('switching away and back does not lose an unpublished edit', async () => {
     const stub: Stub = { calls: [] }
     const user = await openForm(stub)

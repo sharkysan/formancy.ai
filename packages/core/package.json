@@ -13,6 +13,10 @@
     "./words": {
       "types": "./dist/words.d.mts",
       "default": "./dist/words.mjs"
+    },
+    "./summary": {
+      "types": "./dist/summary.d.mts",
+      "default": "./dist/summary.mjs"
     }
   },
   "files": [
