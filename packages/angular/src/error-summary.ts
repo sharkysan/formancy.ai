@@ -3,6 +3,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
+  afterNextRender,
   afterRenderEffect,
   computed,
   inject,
@@ -45,6 +47,7 @@ export class FormancyErrorSummary {
   readonly labels = input<Record<string, string>>()
 
   private readonly engine = injectEngine()
+  private readonly injector = inject(Injector)
   private readonly text = injectFormText()
   private readonly region = viewChild<ElementRef<HTMLElement>>('region')
 
@@ -98,8 +101,15 @@ export class FormancyErrorSummary {
   }
 
   protected focusControl(event: Event, path: string): void {
-    // The hash alone scrolls but does not focus; do both.
+    // The hash alone scrolls but does not focus; do both — on the question's own page, which a
+    // paged form may not be showing: a problem listed on another page had no element to focus,
+    // and the link did nothing. Focused once that page is drawn (0205).
     event.preventDefault()
-    focusControl(document.getElementById(this.controlIdOf(path)))
+    const id = this.controlIdOf(path)
+    const wizard = this.engine.wizard()
+    const page = this.engine.pageOf(parsePath(path))
+    if (wizard === undefined || wizard.page() === page) return focusControl(document.getElementById(id))
+    wizard.goTo(page)
+    afterNextRender(() => focusControl(document.getElementById(id)), { injector: this.injector })
   }
 }

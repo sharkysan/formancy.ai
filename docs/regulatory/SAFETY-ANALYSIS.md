@@ -1459,6 +1459,12 @@ showed an error without Angular forms, and an error summary's link did nothing w
 engine's id was on a component's host — both fixed, both held by tests. One divergence is kept
 and said: Material does not mark an empty required field `aria-invalid`.
 
+*And a question on another page.* A failed send on a paged form lists every page's problems
+while showing the first page with one, and a summary link to a question on a page not drawn found
+no element and did nothing — focus stayed on the link. Measured on `0.7.0`, in both renderers. The
+link now moves the wizard to the question's page and focuses the question once it is drawn
+([0205](../decisions/0205-a-summary-link-goes-to-its-questions-page.md)), held by each renderer's `summary-across-pages.test`.
+
 *And three fields drew no element with their id.* A radio group and a set of tick boxes, in
 both renderers and in Material, and a signature drew nothing that carried the engine's control
 id, so the error summary's link to one did nothing — focus stayed on the link — and a failed
