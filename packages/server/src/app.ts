@@ -22,6 +22,7 @@ import {
   exportCsv,
   listForms,
   listSubmissions,
+  formVersion,
   listVersions,
 } from '@formancy/server-core'
 import type {
@@ -361,6 +362,15 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     const versions = await listVersions(deps, path)
     if (versions === undefined) return reply.code(404).send({ error: 'unknown_form' })
     return reply.send({ versions })
+  })
+
+  // One version's document, which the history leaves out, for reading that version's submissions
+  // against the questions they answered (0207).
+  app.get('/f/:path/versions/:version', { preHandler: requires('form.read') }, async (request, reply) => {
+    const { path, version } = request.params as { path: string; version: string }
+    const found = await formVersion(deps, path, version)
+    if (!found.ok) return reply.code(404).send({ error: found.kind })
+    return reply.send({ version: found.version, schemaHash: found.schemaHash, schema: found.schema })
   })
 
   app.get(

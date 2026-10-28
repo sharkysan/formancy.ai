@@ -438,3 +438,29 @@ export async function listVersions(
     title: version.schema.title,
   }))
 }
+
+/** One version's document, or why there is none to give. */
+export type FormVersionOutcome =
+  | { ok: true; version: number; schemaHash: string; schema: FormSchema }
+  | { ok: false; kind: 'unknown_form' | 'unknown_version' }
+
+/**
+ * One published version's document, by its number (0207): what an older version's submissions are
+ * read against, since they answered its questions and not the current one's. The history above
+ * leaves documents out on purpose; this is one, asked for by name.
+ *
+ * **Looked up among this form's own versions**, so reading one form never reads another's: a
+ * version of another form, by its id or by its number, is as unknown as one never made, and says
+ * nothing about where else it exists.
+ *
+ * **One spelling per version** — the number's own decimal digits, no sign, no leading zero, no
+ * fraction or exponent — so one document is not reachable under several addresses.
+ */
+export async function formVersion(deps: ServerDeps, path: string, version: string): Promise<FormVersionOutcome> {
+  const form = await deps.storage.getFormByPath(path)
+  if (form === undefined) return { ok: false, kind: 'unknown_form' }
+  if (!/^[1-9]\d{0,8}$/.test(version)) return { ok: false, kind: 'unknown_version' }
+  const found = (await deps.storage.listVersionsByForm(form.id)).find((candidate) => candidate.version === Number(version))
+  if (found === undefined) return { ok: false, kind: 'unknown_version' }
+  return { ok: true, version: found.version, schemaHash: found.schemaHash, schema: found.schema }
+}

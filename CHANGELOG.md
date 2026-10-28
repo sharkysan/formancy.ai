@@ -10,9 +10,16 @@ later.
 
 ## Unreleased
 
+**A version's document can be read, and the admin reads old submissions through theirs.**
+`GET /f/:path/versions/:version`, behind `form.read`, answers the document a version was published
+with — looked up among this form's own versions, under the number's one spelling, and 404
+`unknown_version` otherwise. The admin reads each submission, and summarises each version, through
+the version it answered, where it read only the current one's
+([0207](docs/decisions/0207-a-versions-document-can-be-read.md)).
+
 **The admin summarises a form's responses.** Above the submissions, question by question, for the
 current version: how many answered, how many chose each option with its share, a number's range and
-mean. Responses to an earlier version are counted out and said so, since their questions may differ.
+mean — one summary per version, each against the questions that version asked.
 `summariseAnswers`, in a new entry `@formancy/core/summary` that no form loads, does the counting, a repeater's questions over every row
 and a matrix row by row ([0206](docs/decisions/0206-a-forms-responses-are-summarised-by-question.md)).
 

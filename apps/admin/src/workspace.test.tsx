@@ -35,6 +35,9 @@ const SCHEMA = {
   model: { fields: [{ key: 'email', type: 'text', label: 'Email', required: true }] },
 }
 
+/** Version 1, whose question was worded differently: what its submissions are read through (0207). */
+const SCHEMA_V1 = { ...SCHEMA, model: { fields: [{ key: 'email', type: 'text', label: 'E-mail address', required: true }] } }
+
 const forms = [{ path: 'contact', title: 'Contact us', version: 2, schemaHash: 'hash-abcdef012345' }]
 
 const versions = [
@@ -82,6 +85,10 @@ function serve(stub: Stub): void {
         })
 
       if (url.endsWith('/forms') && method === 'GET') return Promise.resolve(json({ forms }))
+      // One version's document (0207): version 1 as it was worded, version 2 as it is now.
+      const versionAsked = /\/versions\/(\d+)$/.exec(url)?.[1]
+      if (versionAsked === '1') return Promise.resolve(json({ version: 1, schemaHash: '1111111111111111aaaa', schema: SCHEMA_V1 }))
+      if (versionAsked === '2') return Promise.resolve(json({ version: 2, schemaHash: '2222222222222222bbbb', schema: SCHEMA }))
       if (url.includes('/versions')) return Promise.resolve(json({ versions }))
       if (url.includes('/submissions')) return Promise.resolve(json({ submissions }))
       if (method === 'POST' || method === 'PUT') {
@@ -236,30 +243,33 @@ describe('the tabs', () => {
     expect(link.getAttribute('href')).toContain('contact')
   })
 
-  // A submission read back under its question, not as its JSON (0193) — for the version whose
-  // document the admin has, which is the current one; an older version's stays as stored.
-  test('a submission to the current version is shown question by question', async () => {
+  // A submission read back under its question, not as its JSON (0193) — each through the version
+  // it was made on (0207): version 1's under the question as version 1 asked it.
+  test('a submission is shown question by question, through the version it answered', async () => {
     const stub: Stub = { calls: [] }
     const user = await openForm(stub)
     await user.click(await screen.findByRole('button', { name: 'submissions' }))
 
     const current = (await screen.findByText('ada@example.ch', { selector: 'dd' })).closest('.wb-answers')!
     expect(within(current as HTMLElement).getByText('Email', { selector: 'dt' })).toBeTruthy()
-    expect(screen.getByText('{"email":"old@example.ch"}', { selector: 'code' })).toBeTruthy()
+    const older = (await screen.findByText('old@example.ch', { selector: 'dd' })).closest('.wb-answers')!
+    expect(within(older as HTMLElement).getByText('E-mail address', { selector: 'dt' })).toBeTruthy()
   })
 
-  // The responses together before any one of them (0206): for the version whose questions the
-  // admin has, and saying how many to an earlier version it could not count.
+  // The responses together before any one of them (0206), version by version, each against the
+  // questions it answered.
   test('the current version’s responses are summarised question by question', async () => {
     const stub: Stub = { calls: [] }
     const user = await openForm(stub)
     await user.click(await screen.findByRole('button', { name: 'submissions' }))
 
-    const summary = await screen.findByRole('region', { name: 'Summary' })
+    const summary = await screen.findByRole('region', { name: 'Summary of version 2' })
     expect(within(summary).getByText(/1 response to version 2/)).toBeTruthy()
-    expect(within(summary).getByText(/1 to an earlier version/)).toBeTruthy()
     expect(within(summary).getByRole('heading', { name: 'Email' })).toBeTruthy()
     expect(within(summary).getByText('1 answered')).toBeTruthy()
+    // Each version on its own, against its own questions (0207).
+    const older = await screen.findByRole('region', { name: 'Summary of version 1' })
+    expect(within(older).getByRole('heading', { name: 'E-mail address' })).toBeTruthy()
   })
 
   test('switching away and back does not lose an unpublished edit', async () => {

@@ -307,3 +307,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0204](0204-answers-can-be-checked-before-they-are-sent.md) | The answers can be checked before they are sent, in words, from one list | accepted |
 | [0205](0205-a-summary-link-goes-to-its-questions-page.md) | An error summary's link goes to its question's page | accepted |
 | [0206](0206-a-forms-responses-are-summarised-by-question.md) | A form's responses are summarised question by question, for the version they answered | accepted |
+| [0207](0207-a-versions-document-can-be-read.md) | A version's document can be read by its number, so older submissions are read through it | accepted |

@@ -207,6 +207,13 @@ export async function fetchVersions(path: string): Promise<VersionEntry[]> {
   return ((await response.json()) as { versions: VersionEntry[] }).versions
 }
 
+/** One published version's document, which the history leaves out (0207). */
+export async function fetchVersion(path: string, version: number): Promise<{ version: number; schemaHash: string; schema: FormSchema }> {
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/versions/${String(version)}`)
+  if (!response.ok) throw new Error(`version failed: ${response.status}`)
+  return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema }
+}
+
 export async function fetchSubmissions(path: string): Promise<SubmissionEntry[]> {
   const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`)
   if (!response.ok) throw new Error(`submissions failed: ${response.status}`)
