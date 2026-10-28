@@ -464,6 +464,15 @@ engine since `0.7.0` refuses it, so its public read answers `200` and every subm
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
+**Found after `0.8.0` was published:**
+
+- **Under Material, a field's description is not drawn by eight controls** — the text, the
+  paragraph, the number, the date, the time, the select, the checkbox and the toggle — though each
+  names its id in `aria-describedby`, so the help text is not on the page and a screen reader is
+  pointed at an element that does not exist. Material's radio group and list of ticks draw it, and
+  the default controls draw it for every type. `0.8.0`'s changelog says Material draws it. Found on
+  2026-10-28. Hazard D4, and [0211](../decisions/0211-every-id-a-field-names-is-drawn.md).
+
 **Found while making `0.8.0`, and not changed by it:**
 
 - **A default left alone is stored as the person's answer**, indistinguishable from the same

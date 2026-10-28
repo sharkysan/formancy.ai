@@ -74,6 +74,12 @@ function plainOptions(
         </select>
         <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       </mat-form-field>
+      <!-- The field's help text under the box, at the id the box's describedby names (0194),
+           outside the form field as the count is: Material's own hint hides while an error
+           shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
     } @else {
       <ng-container *ngComponentOutlet="fallbackFor('select')" />
     }
@@ -120,6 +126,10 @@ export class FormancyMaterialSelectField extends MaterialFieldBase {
         (focusout)="field.touch()"
         >{{ context.label }}</mat-checkbox
       >
+      <!-- Help text at the id the box's describedby names (0194); undrawn, it named nothing (0211). -->
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
       @if (showError()) {
         <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       }

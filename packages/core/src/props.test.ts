@@ -97,3 +97,48 @@ describe('field props', () => {
     expect(engine.getFieldSnapshot(['email']).props).toBe(before)
   })
 })
+
+describe('a list of ticks drawn as a tag picker', () => {
+  /*
+   * A tag picker is one combobox with the chosen answers beside it, not a group of boxes, and
+   * the engine decided whether a field is a group from its type alone. So a required one was
+   * told to say so as a group does — by a hint its renderer never draws, since the hint is a
+   * fieldset's — and not with `aria-required`, which a combobox supports: its box pointed at an
+   * id nothing carried, and nothing said the field was required (hazard D4). The same list drawn
+   * as boxes is still a group.
+   */
+  const topics = (widget?: 'tagpicker'): FormSchema => ({
+    specVersion: '4',
+    id: 'topics',
+    title: 'Topics',
+    model: {
+      fields: [
+        {
+          key: 'topics',
+          type: 'selectboxes',
+          label: 'Topics',
+          required: true,
+          options: [
+            { value: 'a', label: 'A' },
+            { value: 'b', label: 'B' },
+          ],
+          ...(widget === undefined ? {} : { widget }),
+        },
+      ],
+    },
+  })
+
+  test('is one control, so a required one carries aria-required and names no hint', () => {
+    const snapshot = createFormEngine({ schema: topics('tagpicker') }).getFieldSnapshot(['topics'])
+
+    expect(snapshot.props.control['aria-required']).toBe(true)
+    expect(snapshot.props.control['aria-describedby'] ?? '').not.toContain(snapshot.ids.hint)
+  })
+
+  test('drawn as boxes, is a group, which says it is required by its hint', () => {
+    const snapshot = createFormEngine({ schema: topics() }).getFieldSnapshot(['topics'])
+
+    expect(snapshot.props.control['aria-required']).toBeUndefined()
+    expect(snapshot.props.control['aria-describedby']).toContain(snapshot.ids.hint)
+  })
+})

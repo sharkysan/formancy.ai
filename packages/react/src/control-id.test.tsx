@@ -226,6 +226,37 @@ describe('every field drawn with a control', () => {
     cleanup()
     expect(operable(drawnUnder(field, 'true'))).toEqual([])
   })
+
+  test.each(DRAWN)('$name, required, described and sent empty, names no id that is not drawn', async ({ field }) => {
+    // The engine composes every id a control points at (0021), and the renderer draws the
+    // elements that carry them. A required tag picker pointed its box at a required hint it
+    // never drew — the engine had decided it was a group — so nothing said the field was
+    // required (D4, 0211); nothing held the next control to drawing what it names. Required, with
+    // a description and an error, so every slot the engine can name is named.
+    const engine = createFormEngine({
+      schema: {
+        specVersion: '5',
+        id: 'one',
+        title: 'One',
+        model: { fields: [{ ...field, required: true, description: 'Help.' }] },
+      } as unknown as FormSchema,
+    })
+    render(
+      <UploaderProvider value={upload}>
+        <FormancyProvider engine={engine}>
+          <FormancyForm />
+        </FormancyProvider>
+      </UploaderProvider>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    const drawn = document.querySelector('[data-formancy-field-path="f"]')
+    expect(drawn).not.toBeNull()
+
+    const named = idsNamedWithin(drawn!)
+    // A guard on the guard: a required field with a description names at least those two.
+    expect(named.length).toBeGreaterThan(0)
+    expect(named.filter(({ id }) => document.getElementById(id) === null)).toEqual([])
+  })
 })
 
 /** The field drawn alone, under a `disabled` rule whose condition is `cel`. */
@@ -273,4 +304,18 @@ function operable(root: Element): string[] {
     }
   }
   return live
+}
+
+/** Every id an element inside `root`, or `root` itself, points at, with the attribute that names it. */
+function idsNamedWithin(root: Element): Array<{ id: string; by: string }> {
+  const ATTRIBUTES = ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-errormessage', 'aria-activedescendant', 'aria-owns', 'for']
+  const named: Array<{ id: string; by: string }> = []
+  for (const element of [root, ...Array.from(root.querySelectorAll('*'))]) {
+    for (const by of ATTRIBUTES) {
+      for (const id of (element.getAttribute(by) ?? '').split(/\s+/)) {
+        if (id !== '') named.push({ id, by: `${element.tagName.toLowerCase()}[${by}]` })
+      }
+    }
+  }
+  return named
 }

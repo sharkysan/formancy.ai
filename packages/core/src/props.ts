@@ -86,7 +86,7 @@ export interface FieldPropsInput {
    * The field's definition, from which `grouped`, `described` and `counted` are read where they
    * are not given — what the engine hands, so the three are decided here and nowhere else.
    */
-  def?: Pick<FieldDef, 'type' | 'description' | 'maxLength'>
+  def?: Pick<FieldDef, 'type' | 'widget' | 'description' | 'maxLength'>
   /** A check about this answer is waiting for the deployment to answer. */
   checking?: boolean
   disabled: boolean
@@ -97,7 +97,9 @@ export interface FieldPropsInput {
 export function buildFieldProps(input: FieldPropsInput): FieldProps {
   const showError = input.touched && input.errors.length > 0
   const { def } = input
-  const grouped = input.grouped ?? (def !== undefined && GROUPED_FIELD_TYPES.has(def.type))
+  // A list of ticks drawn as a tag picker is one combobox, which supports `aria-required`, and
+  // draws no hint: decided as a group, its box pointed at a hint nothing carried (D4, 0211).
+  const grouped = input.grouped ?? (def !== undefined && GROUPED_FIELD_TYPES.has(def.type) && def.widget !== 'tagpicker')
   const described = input.described ?? def?.description !== undefined
   const counted = input.counted ?? (def !== undefined && showsCount(def))
 
