@@ -8,6 +8,18 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached â€
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**The server image carries GitHub's build provenance, as `RELEASING.md` said it did.** It said
+`gh attestation verify` checked the image's provenance, and the command answered 404 for every
+image there has been, `v0.2.0` to `v0.8.0`: the workflow's `provenance: mode=max` makes BuildKit's
+provenance, kept inside the image's index, and nothing made GitHub's. Found verifying `0.8.0`
+after it was published. The release now attests the image with `actions/attest` by the digest it
+pushed, from the next release on; the images already published keep only BuildKit's, which
+`RELEASING.md` now says how to read, behind the cosign signature on the index. The command takes
+`--repo sharkysan/formancy.ai`, since `--owner` asks the organisations' endpoint and this
+repository is a user's ([0209](docs/decisions/0209-the-image-carries-githubs-build-provenance.md)).
+
 ## 0.8.0 â€” 2026-10-28
 
 **A minor release, and the spec version moves to 5.** Version 5 is frozen with the batch it was
