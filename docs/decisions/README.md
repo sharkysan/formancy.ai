@@ -114,7 +114,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0181](0181-a-computed-value-is-the-engines.md) | A computed value is the engine's: nothing else writes it, and its control is read-only | accepted |
 | [0184](0184-a-repeater-is-validated-as-a-field-is.md) | A repeater is validated as a field is, and no row is added or removed past its bounds | accepted |
 | [0185](0185-an-answer-is-what-the-value-holds-as-its-own.md) | An answer is what the value holds as its own, and `__proto__` names none | accepted |
-| [0186](0186-a-fields-control-id-names-its-group-or-its-control.md) | A field's control id names its group or its control, and focus moves into the group | accepted; the signature's typed box carrying the id alone and keeping its own name, superseded in part by 0212 |
+| [0186](0186-a-fields-control-id-names-its-group-or-its-control.md) | A field's control id names its group or its control, and focus moves into the group | accepted; the signature's typed box carrying the id alone and keeping its own name, superseded in part by 0212; the way to a field it left unexported, decided by 0213 |
 
 ### The server
 
@@ -313,3 +313,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0210](0210-a-disabled-field-has-nothing-to-operate.md) | A field a rule disables has nothing in it a person can operate, over every type and widget | accepted |
 | [0211](0211-every-id-a-field-names-is-drawn.md) | A tag picker is one control, and every id a field names is drawn | accepted |
 | [0212](0212-a-signatures-box-says-what-its-field-says.md) | A signature's typed box carries what its field says, and is named after it | accepted |
+| [0213](0213-a-host-can-take-a-person-to-a-question.md) | A host can take a person to a question, by the function the summary and the review use | accepted |

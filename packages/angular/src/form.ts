@@ -1,8 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  Injector,
-  afterNextRender,
   computed,
   inject,
   input,
@@ -20,7 +18,7 @@ import { FormancyLayout } from './layout.js'
 import { FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
 import { FormancyTextPipe, injectFormText } from './text.js'
 import { FormancyReview } from './review.js'
-import { focusControl } from './focus-control.js'
+import { injectGoToField } from './go-to-field.js'
 import type { ReviewedAnswer } from '@formancy/core/words'
 
 export interface SubmitOutcome {
@@ -139,7 +137,7 @@ export class FormancyForm {
 
   /** Whether the answers are being checked. */
   protected readonly reviewing = signal(false)
-  private readonly injector = inject(Injector)
+  private readonly goToField = injectGoToField()
 
   private readonly text = injectFormText()
   /** The host's word when it gave one, and the form's language's otherwise (0171). */
@@ -200,8 +198,7 @@ export class FormancyForm {
   /** Leave the review for the page the question is on, and focus it once that is drawn. */
   protected change(answer: ReviewedAnswer): void {
     this.reviewing.set(false)
-    this.wizard?.goTo(answer.page)
-    afterNextRender(() => focusControl(document.getElementById(answer.controlId)), { injector: this.injector })
+    this.goToField(answer.field)
   }
 
   protected onSubmit(): void {
