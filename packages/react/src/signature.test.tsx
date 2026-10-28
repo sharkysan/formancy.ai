@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
@@ -329,5 +329,64 @@ describe('signing with a finger, which is how most people will', () => {
     screen.getByRole('textbox', { name: 'Type your name' }).dispatchEvent(move)
 
     expect(move.defaultPrevented, 'touches away from the surface are being cancelled too').toBe(false)
+  })
+})
+
+/**
+ * A rule's `disabled` keeps the answer, and nothing but the control holds it: the engine takes
+ * a value set on a disabled field. The box and Clear are form controls and are disabled with
+ * the field; the surface is not one, so its own handlers refuse. Before, all three took input
+ * under the rule — a stroke stored `{ drawn: … }` over a typed name, and Clear erased it — in
+ * both renderers (B6a, 0210). The Angular renderer is held to the same in its signature test.
+ */
+describe('a signature a rule disables', () => {
+  const lockable: FormSchema = {
+    ...schema,
+    model: { fields: [...schema.model.fields, { key: 'locked', type: 'checkbox', label: 'Locked' }] },
+    logic: { rules: [{ target: 'mark', kind: 'disabled', cel: 'locked == true' }] },
+  }
+
+  const mountLockable = (initialValue: Record<string, unknown>): ReturnType<typeof createFormEngine> => {
+    const engine = createFormEngine({
+      schema: lockable,
+      initialValue,
+      capabilities: { now: () => 0, today: () => '2026-10-28', random: () => 0.5 },
+    })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+    return engine
+  }
+
+  test('takes no stroke, no typing and no Clear, and keeps the name it was signed with', () => {
+    const engine = mountLockable({ mark: { typed: 'Ann' }, locked: true })
+
+    fireEvent.pointerDown(surface(), { clientX: 1, clientY: 1 })
+    fireEvent.pointerMove(surface(), { clientX: 20, clientY: 20 })
+    fireEvent.pointerUp(surface())
+    fireEvent.click(screen.getByRole('button', { name: /clear/i }))
+
+    expect(answer(engine)).toEqual({ typed: 'Ann' })
+    expect(surface().getAttribute('aria-disabled')).toBe('true')
+    expect((screen.getByRole('textbox', { name: /type your name/i }) as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: /clear/i }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  test('disabled mid-stroke, takes no more of the stroke than it had', () => {
+    // A rule can land while the pen is down — another answer computed, a host setting one. What
+    // was drawn before it landed is the answer the rule keeps; the rest of the stroke is not.
+    const engine = mountLockable({ locked: false })
+    fireEvent.pointerDown(surface(), { clientX: 1, clientY: 1 })
+    fireEvent.pointerMove(surface(), { clientX: 5, clientY: 5 })
+    const kept = answer(engine)
+    expect(kept).toEqual({ drawn: [[[1, 1], [5, 5]]] })
+
+    act(() => engine.setValue(['locked'], true))
+    fireEvent.pointerMove(surface(), { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(surface())
+
+    expect(answer(engine)).toEqual(kept)
   })
 })

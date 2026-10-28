@@ -763,33 +763,40 @@ and `packages/angular/src/new-types.test.ts`, whose two cases failed in both ren
 change. The Angular case asserts the disabled elements rather than clicking them: jsdom
 dispatches a synthetic click to a disabled button's listener, which no browser does.
 
+A radio group, React's rating and a signature took an answer under the rule too, until
+2026-10-28, and each had since its control arrived. A radio group set `disabled` on none of its
+radios, in either renderer; React's rating put it on its `role="radiogroup"` element, a `div`,
+where it disables nothing; and a signature's typed box and Clear were not disabled, and its
+drawing surface's pointer handlers never asked, so a stroke stored over a typed name and Clear
+erased it — in both renderers and under Material, which draws the default signature. Measured on
+2026-10-20 in jsdom: a click on a radio stored it in React and Angular, all eleven radios of a
+0–10 rating were enabled and a click stored `3`, and a stroke stored
+`{ "drawn": [[[1, 1], [20, 20]]] }`. Now each radio and each rating radio carries `disabled`, the
+signature's box and Clear carry it, its surface says `aria-disabled`, and its handlers take no
+stroke on a disabled field and no more of a stroke under way when the rule lands. Held by *a
+signature a rule disables* in `packages/react/src/signature.test.tsx` and
+`packages/angular/src/new-types.test.ts`, whose cases failed in both renderers before the change.
+
+And the property is held over every control, not control by control
+([0210](../decisions/0210-a-disabled-field-has-nothing-to-operate.md)): every type the spec has,
+as its default control and as each widget it allows, drawn under a `disabled` rule, has no form
+control inside it that is not `:disabled`, no editable region, and nothing else a keyboard reaches
+without `aria-disabled` — and something to operate when the rule is false, so the check cannot
+pass by finding nothing. Held by *under a rule that disables it, has nothing in it a person can
+operate* in each renderer's `control-id.test` and in Material's `controls.test.ts`, which failed
+before the change on exactly the three controls above and no other.
+
 *Residual:*
 
 - **Hidden, not closed.** Enabled again before anything closed it, the list the person had open
   shows again.
 - **The element is the only guard.** The engine accepts a value set on a disabled field, so a
-  host calling `setValue` changes one, and a control that draws anything clickable outside its
-  disabled element has to stop that itself. The typeahead and the tag picker do now; a control
-  added later is held to it only by whoever writes its tests.
-- **A signature's typed box, its drawing surface and its Clear button are not disabled with its
-  field.** A signature a rule disables still takes a typed name or a drawing, and Clear erases
-  its answer: measured on 2026-10-20 in jsdom in both renderers, and under Material, which draws
-  the default signature — a stroke stored `{ "drawn": [[[1, 1], [20, 20]]] }`, and Clear turned
-  `{ "typed": "Ann" }` into no answer. Neither renderer's pointer handlers nor its Clear asks
-  whether the field is disabled, read from their code. The box carries the field's control id and
-  nothing else of its `controlProps`, and spreading them would disable it, which is left to a fix
-  of its own ([0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
-- **A radio group's radios are not disabled with their field**, in either renderer, so a radio
-  group a rule disables still takes a choice. Measured on 2026-10-20 in jsdom: a click on an
-  option stored it in React and in Angular, while Material's radio group was disabled and took
-  none. Neither renderer has set `disabled` on its radios in any release, read from their code;
-  found while making `0.7.0`, and not changed by it or by `0.8.0`.
-- **React's rating is not disabled with its field either.** It is a radio group too: `disabled`
-  sits on its `role="radiogroup"` element, which disables nothing, and its radios carry none.
-  Measured on 2026-10-20 in jsdom: all eleven radios of a 0–10 rating were enabled under a
-  `disabled` rule, and a click stored `3`. Angular's rating, which Material draws, sets
-  `disabled` on each radio. Drawn so since the rating arrived in `0.4.0`, read from the code;
-  found while making `0.7.0`, and not changed by it or by `0.8.0`.
+  host calling `setValue` changes one — the spec's meaning of `disabled` is greyed out, keeping its
+  answer, not unwritable. A control added later is held to it by the rule over every type and
+  widget as far as that rule sees: form controls, editable regions and what a keyboard reaches.
+  It does not see a surface only a pointer reaches, which the signature's own cases hold, nor a list
+  drawn only once opened, which the typeahead's and the tag picker's hold; a control added later
+  that draws either is held by whoever writes its tests.
 
 ### B7. An attachment is recorded against the wrong row of a repeater
 

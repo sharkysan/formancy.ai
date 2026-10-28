@@ -831,6 +831,59 @@ describe('the signature field, which must behave as the React one does', () => {
 
     expect(move.defaultPrevented, 'touches away from the surface are being cancelled too').toBe(false)
   })
+
+  /*
+   * A rule's `disabled` keeps the answer, and nothing but the control holds it: the engine takes
+   * a value set on a disabled field. Before, the surface took a stroke over a typed name and the
+   * box and Clear stayed enabled (B6a, 0210). The box and Clear are asserted disabled rather than
+   * clicked, because jsdom dispatches a click to a disabled button's listener, which no browser
+   * does; the surface is not a form control, so its handlers are what refuse, and a stroke is
+   * what is asserted.
+   */
+  const lockable = (): FormSchema =>
+    base({
+      specVersion: '3',
+      model: {
+        fields: [
+          { key: 'mark', type: 'signature', label: 'Sign here', box: [600, 200] },
+          { key: 'locked', type: 'checkbox', label: 'Locked' },
+        ],
+      },
+      logic: { rules: [{ target: 'mark', kind: 'disabled', cel: 'locked == true' }] },
+    })
+
+  test('a rule disables: it takes no stroke, its box and Clear are disabled, and the name stays', async () => {
+    const engine = engineFor(lockable())
+    engine.setValue(['mark'], { typed: 'Ann' })
+    engine.setValue(['locked'], true)
+    await renderForm(engine)
+
+    const surface = screen.getByRole('img', { name: /sign here/i })
+    fireEvent.pointerDown(surface, { clientX: 1, clientY: 1 })
+    fireEvent.pointerMove(surface, { clientX: 20, clientY: 20 })
+    fireEvent.pointerUp(surface)
+
+    expect((engine.value() as { mark?: unknown }).mark).toEqual({ typed: 'Ann' })
+    expect(surface.getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByRole('textbox', { name: /type your name/i })).toHaveProperty('disabled', true)
+    expect(screen.getByRole('button', { name: /clear/i })).toHaveProperty('disabled', true)
+  })
+
+  test('disabled mid-stroke, it takes no more of the stroke than it had', async () => {
+    const engine = engineFor(lockable())
+    await renderForm(engine)
+    const surface = screen.getByRole('img', { name: /sign here/i })
+    fireEvent.pointerDown(surface, { clientX: 1, clientY: 1 })
+    fireEvent.pointerMove(surface, { clientX: 5, clientY: 5 })
+    const kept = (engine.value() as { mark?: unknown }).mark
+    expect(kept).toEqual({ drawn: [[[1, 1], [5, 5]]] })
+
+    engine.setValue(['locked'], true)
+    fireEvent.pointerMove(surface, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(surface)
+
+    expect((engine.value() as { mark?: unknown }).mark).toEqual(kept)
+  })
 })
 
 describe('the tag picker, which must behave as the React one does', () => {

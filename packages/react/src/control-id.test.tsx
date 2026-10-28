@@ -211,4 +211,66 @@ describe('every field drawn with a control', () => {
     act(() => focusControl(named[0] ?? null))
     expect(drawn?.contains(document.activeElement)).toBe(true)
   })
+
+  test.each(DRAWN)('$name, under a rule that disables it, has nothing in it a person can operate', ({ field }) => {
+    // A rule's `disabled` keeps the answer and greys the field out, and the renderer is the only
+    // thing that holds it: the engine takes a value set on a disabled field. So everything the
+    // field draws that takes input has to be disabled with it. A radio group's radios, React's
+    // rating and a signature's box, drawing surface and Clear were not, and each took an answer
+    // under the rule (B6a); nothing held the next control to it. A form control is disabled when
+    // it matches `:disabled`, itself or through a disabled fieldset; an editable region when it
+    // is not editable; anything else a keyboard reaches, when it says `aria-disabled`.
+    // Without the rule there is something to operate, so the check cannot pass by finding
+    // nothing.
+    expect(operable(drawnUnder(field, 'false'))).not.toEqual([])
+    cleanup()
+    expect(operable(drawnUnder(field, 'true'))).toEqual([])
+  })
 })
+
+/** The field drawn alone, under a `disabled` rule whose condition is `cel`. */
+function drawnUnder(field: Partial<FieldDef>, cel: string): Element {
+  const engine = createFormEngine({
+    schema: {
+      specVersion: '4',
+      id: 'one',
+      title: 'One',
+      model: { fields: [field] },
+      logic: { rules: [{ target: 'f', kind: 'disabled', cel }] },
+    } as unknown as FormSchema,
+    capabilities: { now: () => 0, today: () => '2026-10-28', random: () => 0.5 },
+  })
+  render(
+    <UploaderProvider value={upload}>
+      <FormancyProvider engine={engine}>
+        <FormancyForm />
+      </FormancyProvider>
+    </UploaderProvider>,
+  )
+  const drawn = document.querySelector('[data-formancy-field-path="f"]')
+  if (drawn === null) throw new Error('the field drew nothing to look inside')
+  return drawn
+}
+
+/**
+ * What inside `root` a person could still change an answer through: a form control not
+ * `:disabled`, a region still editable, or anything else focusable not marked
+ * `aria-disabled`. Each named by its tag and its accessible role or type, so a failure says
+ * which part of the field it was.
+ */
+function operable(root: Element): string[] {
+  const live: string[] = []
+  for (const element of Array.from(root.querySelectorAll<HTMLElement>('*'))) {
+    const name = `${element.tagName.toLowerCase()}${element.getAttribute('role') ? `[role=${element.getAttribute('role')}]` : ''}${element.getAttribute('type') ? `[type=${element.getAttribute('type')}]` : ''}`
+    if (element.matches('input, select, textarea, button')) {
+      if (element.matches('input[type=hidden]')) continue
+      if (!element.matches(':disabled')) live.push(name)
+    } else if (element.isContentEditable) {
+      live.push(`${name}[contenteditable]`)
+    } else if (element.tabIndex >= 0 && element.getAttribute('aria-disabled') !== 'true') {
+      if (element.matches('a[href]')) continue
+      live.push(name)
+    }
+  }
+  return live
+}

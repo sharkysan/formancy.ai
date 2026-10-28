@@ -140,7 +140,12 @@ export function SignatureField({ path, label }: FieldComponentProps) {
     }
   }, [])
 
+  /*
+   * A surface is not a form control, so nothing disables it but these handlers: a field a
+   * rule disabled takes no stroke, and one disabled mid-stroke takes no more of it (B6a, 0210).
+   */
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>): void => {
+    if (field.disabled) return
     before.current = drawn
     stroke.current = [pointFrom(event)]
     // Not in jsdom, and not on a mouse that never left the element.
@@ -148,7 +153,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
   }
 
   const onPointerMove = (event: React.PointerEvent<SVGSVGElement>): void => {
-    if (stroke.current === null) return
+    if (stroke.current === null || field.disabled) return
     stroke.current = [...stroke.current, pointFrom(event)]
     // Drawn as it goes: a mark that only appears when the pen lifts reads as a
     // surface that is not listening.
@@ -187,6 +192,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
           // control in the tab order that a keyboard cannot use.
           role="img"
           aria-label={label}
+          aria-disabled={field.disabled ? true : undefined}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -215,6 +221,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
           type="text"
           value={answer.typed ?? ''}
           aria-label={text('signature.typed')}
+          disabled={field.disabled}
           onChange={(event) => {
             const typed = event.target.value
             field.setValue(typed === '' ? null : { typed })
@@ -225,6 +232,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
         <button
           data-formancy-part="signature-clear"
           type="button"
+          disabled={field.disabled}
           onClick={() => {
             stroke.current = null
             before.current = []

@@ -99,6 +99,9 @@ export function RatingField({ path, label }: FieldComponentProps) {
               name={controlProps.id}
               value={value}
               checked={value === chosen}
+              // On each radio: `disabled` on the group above is an attribute a div does not
+              // have, and it disabled nothing (B6a, 0210).
+              disabled={field.disabled}
               onChange={() => field.setValue(value)}
               onBlur={() => field.touch()}
             />
