@@ -248,7 +248,7 @@ describe('a German form', () => {
   test('names a signature’s typed box and its clear button in German', () => {
     mount(document([{ key: 'sign', type: 'signature', label: 'Unterschrift' }]))
 
-    expect(screen.getByRole('textbox', { name: de('signature.typed') })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: de('signature.typed', { label: 'Unterschrift' }) })).toBeTruthy()
     expect(screen.getByRole('button', { name: de('signature.clear') })).toBeTruthy()
   })
 })

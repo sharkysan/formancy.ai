@@ -243,7 +243,8 @@ export const FORM_WORDS = {
   'richtext.linkAddress': 'Address for the link',
 
   // --------------------------------------------------------------- signature
-  'signature.typed': 'Type your name',
+  // The field's label first, so the name contains the label it is drawn under (WCAG 2.5.3, 0212).
+  'signature.typed': '{label}: type your name',
   'signature.clear': 'Clear',
 
   // ----------------------------------------------- a draft that came back changed

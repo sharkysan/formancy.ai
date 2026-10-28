@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**A signature's typed box says what its field says, and is named after it.** The box a name is
+typed into is the signature's control — the label points at it and the error summary's link lands
+there — and it carried the field's control id and nothing else of the field's: a screen reader
+there heard the box and not the problem, and a required signature did not say so. Its name was
+*Type your name* under the visible label *Signature*, which the name did not contain, a WCAG 2.5.3
+failure no axe rule reports. It carries all of the field's control props now, and the word
+`signature.typed` puts the field's label first: *Signature: type your name*
+([0212](docs/decisions/0212-a-signatures-box-says-what-its-field-says.md), which supersedes that
+part of 0186). A host's test that found the box by *Type your name* exactly, or a host that reworded
+the word, has something to change — [`MIGRATIONS.md`](MIGRATIONS.md) says what.
+
 **A required tag picker says it is required, and Material draws a field's description.** A tag
 picker is a list of ticks drawn as one combobox, and the engine decided it was a group from its type,
 so a required one carried no `aria-required` and pointed its box at a required hint nothing drew:

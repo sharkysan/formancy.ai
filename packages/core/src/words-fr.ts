@@ -155,7 +155,7 @@ export const FORM_WORDS_FR = {
   'richtext.orderedList': 'Liste numérotée',
   'richtext.linkAddress': 'Adresse du lien',
 
-  'signature.typed': 'Tapez votre nom',
+  'signature.typed': '{label} : tapez votre nom',
   'signature.clear': 'Effacer',
 
   'resume.heading': 'Ce formulaire a changé pendant votre absence',

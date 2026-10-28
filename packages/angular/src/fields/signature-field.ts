@@ -51,16 +51,21 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           }
         </svg>
 
-        <!-- The field's control id, because this is the one part of a signature a keyboard
-             can use: the error summary's link and a failed submit land here, and the shell's
-             label, which points at the id, labels this box. Its name stays its own words,
-             since aria-label outranks a label; without the id nothing had it, and the link,
-             the submit and the label all reached nothing (0186). -->
+        <!-- The field's control, because this is the one part of a signature a keyboard can
+             use: the error summary's link and a failed submit land here, and the shell's label
+             points at its id (0186). The field's describedby, required and invalid state too, so
+             its error is read with it, where it carried the id alone (0212); named after the
+             field, the visible label first, since aria-label outranks the label and a name that
+             does not contain it fails WCAG 2.5.3. -->
         <input
           [id]="control().id"
+          [attr.name]="control().name"
+          [attr.aria-describedby]="control()['aria-describedby'] ?? null"
+          [attr.aria-required]="control()['aria-required'] ? 'true' : null"
+          [attr.aria-invalid]="control()['aria-invalid'] ? 'true' : null"
           data-formancy-part="signature-typed"
           type="text"
-          [attr.aria-label]="'signature.typed' | formancyText"
+          [attr.aria-label]="'signature.typed' | formancyText: { label: context.label }"
           [value]="typed()"
           [disabled]="field.snapshot().disabled"
           (input)="onTyped($event)"
