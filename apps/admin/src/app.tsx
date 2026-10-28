@@ -9,6 +9,7 @@ import { TranslationsTab } from './translations-tab.js'
 import { WebhooksPane } from './webhooks-pane.js'
 import { SignIn } from './sign-in.js'
 import { SubmissionAnswers } from './submission-answers.js'
+import { ResponsesSummary } from './responses-summary.js'
 import '@formancy/themes/workbench.css'
 // After the workbench, whose light defaults its --wb-* recolour: both say :root.
 import '@formancy/themes/room.css'
@@ -389,6 +390,14 @@ function SubmissionsPane({ path }: { path: string }) {
           Download CSV (columns unioned across versions)
         </a>
       </p>
+      {current === undefined ? null : (
+        <ResponsesSummary
+          schema={current.schema}
+          version={current.version}
+          data={submissions.filter((submission) => submission.version === current.version).map((submission) => submission.data)}
+          earlier={submissions.filter((submission) => submission.version !== current.version).length}
+        />
+      )}
       <table className="wb-table">
         <thead>
           <tr>

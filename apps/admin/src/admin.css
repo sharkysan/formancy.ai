@@ -845,3 +845,48 @@ body::before {
   background: #fff;
   color: #1d2433;
 }
+
+/* A form's responses together, question by question (0206): each question, how many answered,
+   and for a choice its options with a bar beside each share. */
+.wb-summary {
+  display: grid;
+  gap: 1rem;
+  margin-block: 0 1.5rem;
+}
+
+.wb-summary-scope,
+.wb-summary-answered {
+  margin: 0;
+  color: #9aa3b8;
+}
+
+.wb-summary-question h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
+}
+
+.wb-summary-counts {
+  border-collapse: collapse;
+  min-inline-size: min(100%, 28rem);
+}
+
+.wb-summary-counts :is(th, td) {
+  padding: 0.25rem 0.75rem 0.25rem 0;
+  text-align: start;
+  font-weight: normal;
+}
+
+.wb-summary-counts thead th {
+  color: #9aa3b8;
+  font-size: 0.8125rem;
+}
+
+.wb-summary-bar {
+  display: inline-block;
+  block-size: 0.5rem;
+  margin-inline-end: 0.5rem;
+  border-radius: 999px;
+  background: rgb(139 123 255 / 60%);
+  vertical-align: middle;
+}
+

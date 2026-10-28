@@ -10,6 +10,12 @@ later.
 
 ## Unreleased
 
+**The admin summarises a form's responses.** Above the submissions, question by question, for the
+current version: how many answered, how many chose each option with its share, a number's range and
+mean. Responses to an earlier version are counted out and said so, since their questions may differ.
+`summariseAnswers`, in a new entry `@formancy/core/summary` that no form loads, does the counting, a repeater's questions over every row
+and a matrix row by row ([0206](docs/decisions/0206-a-forms-responses-are-summarised-by-question.md)).
+
 **An error summary's link reaches a question on another page.** On a paged form a failed send lists
 every page's problems while showing the first page with one, and a link to a question on a page not
 drawn did nothing — the person was told what was wrong and could not get there. The link now moves to
