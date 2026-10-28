@@ -51,14 +51,22 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.54 ms, the median of seven runs re-measured 2026-10-19; 0.34 on the same machine before [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md) |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **25.8 kB** — over, the index and the chunk it shares with `/words`, re-measured 2026-10-27 with a field's default, applied by the engine ([0197](../decisions/0197-a-default-is-where-something-fresh-starts.md)), a rule's own message resolved onto the snapshot ([0198](../decisions/0198-a-rule-says-its-own-message.md)), `ticked` ([0199](../decisions/0199-an-option-can-be-chosen-only-on-its-own.md)), a shuffled order ([0200](../decisions/0200-options-can-be-shown-in-a-shuffled-order.md)) the character count's id ([0203](../decisions/0203-a-limit-is-counted-while-typing.md)), and the path helpers now shared with `/words` for the review ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)), re-measured 2026-10-28 |
-| `@formancy/spec` bundle | — | 30.1 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-27 with spec 5's `description` and the autofill list `AUTOCOMPLETE_TOKENS` ([0195](../decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)) |
-| `@formancy/react` bundle | 4 kB brotli | **26.1 kB** for the whole barrel, re-measured 2026-10-28 with a field's, a group's and a page's description drawn ([0194](../decisions/0194-spec-5-opens-with-a-fields-description.md)), a character count under a box with a limit ([0203](../decisions/0203-a-limit-is-counted-while-typing.md)) and the review before sending ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)) |
-| `@formancy/core/words` bundle | — | 13.1 kB with the chunk it shares with the index, the answers to review before sending (0204), the renderers' words in English, German and French — what a sourced control says, every error said, and a submission read back — an entry of its own, re-measured 2026-10-27 |
+| `@formancy/core` bundle | 18 kB brotli | **17.8 kB** — within its budget for the first time, the index and the chunk it shares with `/words`, re-measured 2026-10-28 once the published JavaScript carried no JSDoc ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 25.8 kB the day before with it, after spec 5's defaults, rule messages, `ticked`, the shuffled order, the character count and the review |
+| `@formancy/spec` bundle | — | 16.3 kB for the whole barrel — the index and the chunk it shares with `/validate` — re-measured 2026-10-28 with no JSDoc in the JavaScript ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 30.1 kB with it |
+| `@formancy/react` bundle | 4 kB brotli | **15.2 kB** for the whole barrel, re-measured 2026-10-28 with no JSDoc in the JavaScript ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 26.1 kB with it, after the descriptions, the character count and the review |
+| `@formancy/core/words` bundle | — | 9.5 kB with the chunk it shares with the index — the renderers' words in English, German and French, every error said, a submission read back and the answers to review before sending — an entry of its own, re-measured 2026-10-28 with no JSDoc in the JavaScript ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 13.1 kB with it |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
 which converts "fast on large conditional forms" from a claim into a test.
+
+**Since 2026-10-28 the JavaScript carries no JSDoc, and core's budget is a gate.** The bundler had
+kept every JSDoc comment in what it emitted — the documentation of each exported function, which
+the declarations already carry for an editor — and it was about a third of every figure above.
+Every package built with tsdown now drops it, keeping legal comments and pure annotations, and
+`bundles.test.ts` fails when core measures more than its Limit in this table; React's is excused,
+by name, for the reason §11.2 gives ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)). The figures dated before
+then include the comments.
 
 **There is no bundle gate, and this column said "gate configured".** Nothing in the
 repository runs `size-limit` — [0038](../decisions/0038-esm-only.md) says so plainly in

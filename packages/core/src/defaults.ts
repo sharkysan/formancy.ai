@@ -15,7 +15,7 @@ import type { ValueStore } from './store.js'
  *
  * Apart from the engine because it is a question of the model alone — which answers start
  * where — and the rows need it as much as the engine does. Block comments below rather than
- * JSDoc, except on what a host imports: the bundler keeps JSDoc and drops the rest (§9.3).
+ * JSDoc, except on what a host imports, which an editor shows from the declarations.
  */
 
 /**
