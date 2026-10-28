@@ -10,6 +10,11 @@ later.
 
 ## Unreleased
 
+**An error summary's link reaches a question on another page.** On a paged form a failed send lists
+every page's problems while showing the first page with one, and a link to a question on a page not
+drawn did nothing — the person was told what was wrong and could not get there. The link now moves to
+the question's page and focuses it, in both renderers ([0205](docs/decisions/0205-a-summary-link-goes-to-its-questions-page.md)).
+
 **The logic panel lists what a rule says.** A rule that rejects an answer is shown with its message,
 in the document's own language, beside its kind and its expression, in both builders — before, an
 author could write a message and never read it back (`ruleSays` in `@formancy/builder-core`;

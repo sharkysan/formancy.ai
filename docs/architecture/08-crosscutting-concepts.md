@@ -123,7 +123,8 @@ a page of counted fields does not talk over the person; the count itself is name
 control's `aria-describedby` after the description, so it is heard when the box is reached
 ([0203](../decisions/0203-a-limit-is-counted-while-typing.md)).
 
-The summary's links and a failed submit move focus by the field's control id, so every field
+The summary's links and a failed submit move focus by the field's control id — on its own page,
+which a summary link moves a paged form to first ([0205](../decisions/0205-a-summary-link-goes-to-its-questions-page.md)) — so every field
 drawn with a control has an element carrying it: the control, when there is one, and the group,
 when the field is answered by several — the rating's `role="radiogroup"`, and the fieldsets of a
 radio group, a set of tick boxes, a ranking, a matrix and a repeater, in Material's groups too.

@@ -305,3 +305,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0202](0202-other-please-specify-is-a-command.md) | "Other, please specify" is a builder command, composed from what the format has | accepted |
 | [0203](0203-a-limit-is-counted-while-typing.md) | A field with a limit counts while somebody types, and speaks only when they pause | accepted |
 | [0204](0204-answers-can-be-checked-before-they-are-sent.md) | The answers can be checked before they are sent, in words, from one list | accepted |
+| [0205](0205-a-summary-link-goes-to-its-questions-page.md) | An error summary's link goes to its question's page | accepted |
