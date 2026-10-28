@@ -213,11 +213,27 @@ release page:
 cosign verify-attestation   --type cyclonedx   --certificate-identity-regexp 'https://github.com/sharkysan/formancy\.ai/.*'   --certificate-oidc-issuer https://token.actions.githubusercontent.com   "ghcr.io/sharkysan/formancy-server@${digest}"
 ```
 
-The image also carries GitHub's own build provenance — the same statement the
-npm tarballs make, that this workflow at this commit produced these bytes:
+From the first release after `0.8.0`, the image also carries GitHub's own build
+provenance — the same statement the npm tarballs make, that this workflow at this
+commit produced these bytes. `--repo`, not `--owner`: the owner form asks the
+organisations' endpoint, and this repository belongs to a user.
 
 ```bash
-gh attestation verify --owner sharkysan   "oci://ghcr.io/sharkysan/formancy-server@${digest}"
+gh attestation verify --repo sharkysan/formancy.ai   "oci://ghcr.io/sharkysan/formancy-server@${digest}"
+```
+
+**No image up to `v0.8.0` has one, though this section said they did**
+([0209](docs/decisions/0209-the-image-carries-githubs-build-provenance.md)). The
+command answered 404 for every image, `v0.2.0` to `v0.8.0`, on 2026-10-28:
+`provenance: mode=max` had made BuildKit's provenance, not GitHub's. Every one of them
+has that, an SLSA document in an attestation manifest inside its index, naming the
+repository, ref and commit it was built from. It is not signed on its own; the
+cosign signature above is on the index's digest, and the index names it by digest,
+so verify that first and then read it:
+
+```bash
+docker buildx imagetools inspect "ghcr.io/sharkysan/formancy-server@${digest}" \
+  --format '{{json .Provenance}}'
 ```
 
 ## Licences

@@ -185,6 +185,29 @@ describe('the release workflow', () => {
     expect(release).toMatch(/cyclonedx/i)
   })
 
+  test('makes the attestation RELEASING.md tells a verifier to check', () => {
+    // RELEASING.md said the image carried GitHub's own build provenance and gave
+    // `gh attestation verify` to check it, and no step made one: `provenance: mode=max` is
+    // BuildKit's, kept in the image's index, which that command does not read. It answered
+    // 404 for every image from v0.2.0 to v0.8.0 on 2026-10-28. The command is an
+    // instruction only while a step makes what it looks for: `actions/attest`, about the
+    // digest the image step pushed, in a job allowed to write attestations.
+    const releasing = readFileSync(join(repo, 'RELEASING.md'), 'utf8')
+    expect(releasing).toContain('gh attestation verify')
+
+    const steps = release.split(/\n(?= {6}- )/)
+    const image = steps.find((step) => step.includes('docker/build-push-action'))
+    const imageId = /\bid:\s*(\S+)/.exec(image ?? '')?.[1]
+    expect(imageId, 'the step that pushes the image has no id to read its digest by').toBeDefined()
+
+    const attest = steps.find((step) => /uses:\s*actions\/attest(?:-build-provenance)?@/.test(step))
+    expect(attest, 'no step runs actions/attest').toBeDefined()
+    expect(attest).toMatch(new RegExp(`subject-digest:\\s*\\$\\{\\{\\s*steps\\.${imageId}\\.outputs\\.digest\\s*\\}\\}`))
+    expect(attest).toMatch(/subject-name:\s*ghcr\.io\/\$\{\{\s*github\.repository_owner\s*\}\}\/formancy-server\s*$/m)
+    expect(release).toMatch(/^\s+attestations:\s*write\b/m)
+    expect(release).toMatch(/^\s+id-token:\s*write\b/m)
+  })
+
   test('does not publish a mutable tag the documents tell people not to use', () => {
     // The SOUP declaration tells a manufacturer to pin an exact version and says
     // `latest` is not characterised software. Publishing one anyway would be the

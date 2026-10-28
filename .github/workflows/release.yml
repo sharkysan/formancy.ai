@@ -37,6 +37,7 @@ jobs:
       contents: write # create the GitHub release
       id-token: write # OIDC, for npm provenance and keyless signing
       packages: write # push the server image to GHCR
+      attestations: write # GitHub's build provenance for the image (0209)
     steps:
       - uses: actions/checkout@v4
         with:
@@ -187,9 +188,20 @@ jobs:
           file: packages/server/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/formancy-server:${{ github.ref_name }}
-          # GitHub's own build provenance, which is the same statement the npm
-          # tarballs carry: this workflow, at this commit, produced these bytes.
+          # BuildKit's SLSA provenance, kept in the image's index beside the image.
+          # Not GitHub's: `gh attestation verify` does not read it (0209).
           provenance: mode=max
+
+      # GitHub's build provenance, the statement the npm tarballs carry: this
+      # workflow, at this commit, produced these bytes. Kept by GitHub, where
+      # `gh attestation verify` finds it by the image's digest; nothing more is
+      # pushed to the registry, because the storage record that would come with it
+      # is made only for an organisation's repository (0209).
+      - name: Attest the image's build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/formancy-server
+          subject-digest: ${{ steps.image.outputs.digest }}
 
       # By DIGEST, never by tag. A tag is mutable, so signing `:v1.2.3` says
       # nothing about the bytes anybody later pulls under that name — and being
