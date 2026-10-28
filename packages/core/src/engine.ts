@@ -226,7 +226,7 @@ const ROW_VARIABLES: Record<string, DeclaredType> = { item: 'map', index: 'int' 
  * work with no memoisation on the consumer's side.
  *
  * A block comment rather than JSDoc, with one line of that below for the declaration a host
- * reads: the bundler keeps JSDoc and drops the rest (§9.3).
+ * reads in an editor.
  */
 /** An engine over a validated document: its answers, its rules compiled once, and a snapshot per field. */
 export function createFormEngine(options: FormEngineOptions): FormEngine {

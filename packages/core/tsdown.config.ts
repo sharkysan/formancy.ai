@@ -6,6 +6,9 @@ export default defineConfig({
   // (0206) is the admin's, and no form carries it.
   entry: ['src/index.ts', 'src/words.ts', 'src/summary.ts'],
   format: ['esm'],
+  // No JSDoc in the JavaScript: the declarations carry it to an editor, and in the bundle it was a
+  // third of what a consumer downloads (§9.3). Legal comments and pure annotations stay.
+  outputOptions: { comments: { jsdoc: false, legal: true, annotation: true } },
   dts: true,
   clean: true,
 })

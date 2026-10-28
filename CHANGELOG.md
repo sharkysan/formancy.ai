@@ -10,6 +10,13 @@ later.
 
 ## Unreleased
 
+**The published JavaScript carries no JSDoc, and is a third smaller.** The bundler kept every
+exported function's documentation in the JavaScript as well as the declarations, where an editor
+reads it. Every package built with tsdown now leaves it out, keeping legal comments and pure
+annotations; the declarations are unchanged. Measured: `@formancy/core` 25.8 → 17.8 kB — within its
+18 kB budget for the first time, which is now a gate — React 26.1 → 15.2, the spec 30.1 → 16.3
+([0208](docs/decisions/0208-the-published-javascript-carries-no-jsdoc.md)).
+
 **A version's document can be read, and the admin reads old submissions through theirs.**
 `GET /f/:path/versions/:version`, behind `form.read`, answers the document a version was published
 with — looked up among this form's own versions, under the number's one spelling, and 404

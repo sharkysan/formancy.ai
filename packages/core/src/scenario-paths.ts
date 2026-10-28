@@ -16,8 +16,7 @@ import type { Path } from './path.js'
  * with a path to name instead. Only a path the engine takes is offered, because a second
  * wrong path is worse than none.
  *
- * Block comments rather than JSDoc in this file: nothing outside the package calls it, and
- * the bundler keeps JSDoc, which every consumer of `@formancy/core` would load (§9.3).
+ * Block comments rather than JSDoc in this file: nothing outside the package calls it.
  */
 
 // What each finding is, and how a scenario names what is in it.

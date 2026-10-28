@@ -3,7 +3,7 @@ import type { FieldDef } from '@formancy/spec'
 /*
  * One function every list and tag picker calls, so no control can store an answer the engine
  * refuses, and two people choosing the same answers store the same array (0199). Block comment,
- * with one JSDoc line below: the bundler keeps JSDoc (§9.3).
+ * with one JSDoc line below for the declaration a host reads.
  */
 /** A list of ticks after one tick, in the options' order; an exclusive option is chosen alone. */
 export function ticked(def: FieldDef, chosen: readonly unknown[], value: string, on: boolean): string[] {

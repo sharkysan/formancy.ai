@@ -47,7 +47,7 @@ export interface Rows {
 }
 
 // The comments on code below are block comments rather than JSDoc: this module is the
-// package's own, and the bundler keeps JSDoc and drops the rest (§9.3).
+// package's own, and nothing outside it reads them.
 export function createRows(store: ValueStore, interaction: InteractionState): Rows {
   /*
    * One counter per repeater, monotonic for the engine's lifetime. It is never

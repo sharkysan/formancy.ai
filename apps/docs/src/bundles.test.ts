@@ -118,6 +118,35 @@ describe('the bundle figures in §9.3', () => {
     }
   })
 
+  /*
+   * A budget is a limit only where something fails past it (0208). Read from the table's own Limit
+   * column, so the limit and the gate are one figure; a budget set long before this gate, not a
+   * threshold chosen to pass. React is excused, for the reason §11.2 gives: its 4 kB was written
+   * for a tree-shaken entry and the row measures the whole barrel, and which the budget meant is
+   * not settled.
+   */
+  test('hold every budget they have, but the one whose meaning is not settled', () => {
+    const UNSETTLED: Readonly<Record<string, string>> = {
+      react: 'the budget was written for a tree-shaken entry; the row measures the whole barrel (§11.2)',
+    }
+    const ENTRIES = [
+      { name: 'core', packageName: 'core', entry: 'index.mjs' },
+      { name: 'react', packageName: 'react', entry: 'index.mjs' },
+    ] as const
+    let held = 0
+    for (const { name, packageName, entry } of ENTRIES) {
+      const row = new RegExp(String.raw`^\|\s*\`@formancy/${name}\` bundle\s*\|.*$`, 'm').exec(quality)?.[0]
+      const limit = /([\d.]+)\s*kB/.exec(row?.split('|')[2] ?? '')?.[1]
+      expect(limit, `no budget for @formancy/${name} in §9.3`).toBeDefined()
+      if (UNSETTLED[name] !== undefined) continue
+      const measured = brotliKilobytes(packageName, entry)
+      expect(measured, `@formancy/${name} measures ${measured.toFixed(1)} kB against a budget of ${String(limit)} kB`).toBeLessThanOrEqual(Number(limit))
+      held += 1
+    }
+    // The guard on the guard: an excuse for every row would hold nothing.
+    expect(held).toBeGreaterThan(0)
+  })
+
   test('are dated, because they are re-measured rather than incremented', () => {
     // The repository's rule for a number that cannot be derived at build time. Without the
     // date a reader cannot tell a figure one release old from one that was never right.
