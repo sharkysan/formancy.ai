@@ -103,9 +103,10 @@ in another.
    ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"`
    ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen, so pinning any of them settles the shape of your documents and
    stored submissions; version 4 is first released with 0.4.0, and a release before it cannot
-   read a version 4 document. Version `"5"` is **frozen** as of 2026-10-27 and in no release yet:
-   the source writes it, and once a release carries it, it settles the shape of documents as the
-   others do ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version `"1"` stays frozen and readable
+   read a version 4 document. Version `"5"` is **frozen** as of 2026-10-27 and first released
+   with 0.8.0, which writes it; a release before it cannot read a version 5 document, and pinning
+   it settles the shape of documents as the others do
+   ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version `"1"` stays frozen and readable
    ([0042](../decisions/0042-freeze-the-spec.md)), so the shape of your form
    documents and stored submissions is settled in either. Version 2 is a
    superset that removes nothing, so a version 1 document is also a valid

@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.7.0`.** Everything below is true of that
+**This document describes version `0.8.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.7.0`, published to npm under the `@formancy` scope |
-| Spec version | `"4"`, **frozen as of 0.4.0** ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. Version `"5"` is open and in no release: the source writes it and it may still gain constructs ([0194](../decisions/0194-spec-5-opens-with-a-fields-description.md)). What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)) |
+| Package version | `0.8.0`, published to npm under the `@formancy` scope |
+| Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open: a construct needing one opens version `"6"`. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0 |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -30,20 +30,18 @@ submissions*, which is the artefact with real switching costs.
 > Each version is a superset of the one before it: it adds field types, layout kinds
 > and properties, and removes nothing, so a document characterised under version 1 is
 > unchanged and still valid under every later one — save one that keys a field or a matrix
-> row `__proto__`, which `0.7.0` refuses in every version, since no release could store an
-> answer under it ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
+> row `__proto__`, which every release since `0.7.0` refuses in every version, since none could
+> store an answer under it ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 > But a reader that speaks only one version cannot read a document written against a later
 > one — the failure is a validation error rather than a silent one
 > ([0051](../decisions/0051-spec-2-adds-types.md)). This document characterises the released
-> package, which writes version 4.
+> package, which writes version 5.
 >
-> **The data format is stable; the code is not.** Every released spec version — 1 to 4 — is
+> **The data format is stable; the code is not.** Every released spec version — 1 to 5 — is
 > frozen, so a form document written against any of them, and the submissions stored against
-> it, keeps its shape ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). A
+> it, keeps its shape ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). A
 > deployment pinned to any of them is characterising a settled format whatever the source
-> does next. The source writes version 5, which is frozen and in no release yet
-> ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)): a deployment can pin it once a release carries it. The
-> *packages* are pre-1.0 and their APIs will still change. A manufacturer
+> does next. The *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.
 
@@ -246,9 +244,35 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.7.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0`, `0.6.0` and `0.7.0` fix, so that one still running them knows what it is upgrading
-away from.
+manufacturer characterising `0.8.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` to `0.8.0` fix, so that one still running them knows what it is upgrading away from.
+
+**Every release through `0.7.0` stores an answer of another shape than its type where no
+constraint reads it.** The engine read a value's type only where a constraint needed it, so a
+`text` field with no length, pattern, format or mask stored an object posted for it, a `number`
+with no bounds stored a string, and every `hidden`, `richtext` and optional `checkbox` stored
+whatever arrived; a group's value was never checked to be an object; and a decimal computed into a
+field — the documented way to add up money — stored an object that made the form impossible to
+submit. Read from their engines' code, and held by the tests of the fix, twenty-eight of whose
+cases failed against the engine before it. Fixed in `0.8.0`: every answer is checked against the
+shape its type stores, `ANSWER_KINDS` in `@formancy/spec`, before any constraint reads it, in the
+browser and on the server's replay, so a published form version is held to it without being
+republished. Hazard A1a in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md).
+
+**Every release through `0.7.0` shows a field's errors as codes.** Both renderers and Material
+drew the engine's codes under a question — `required, minLength`, in English under a German form —
+and a `validate` rule's code as its author wrote it, a word no catalogue knows. Fixed in `0.8.0`:
+each of the engine's codes is a sentence in the form's language with the field's own limit in it,
+and a spec 5 rule says its own `message`; a rule in an older document still has its code said as
+written. Hazard D20, and [0191](../decisions/0191-an-error-is-said-not-coded.md),
+[0198](../decisions/0198-a-rule-says-its-own-message.md).
+
+**Every release through `0.7.0` gives a paged form's error summary a link that does nothing.** A
+failed send lists every page's problems while showing the first page with one, and a link to a
+question on a page not drawn found no element: focus stayed on the link. Measured on `0.7.0`, in
+both renderers. Fixed in `0.8.0`: the link moves to the question's page and focuses the question.
+Hazard D4, and [0205](../decisions/0205-a-summary-link-goes-to-its-questions-page.md).
 
 **Every release through `0.6.0` answers a field keyed after a name every object has with what the
 object inherits.** A path was read with `value[key]`, so a required field keyed `constructor` and
@@ -433,14 +457,29 @@ expressions should read that file rather than this summary.
   over several answers names none of them ([0078](../decisions/0078-a-grid-row-is-flat.md)).
 - Multi-tenancy is absent entirely.
 
-**`0.7.0` cannot open a version stored with a field keyed `__proto__`, on purpose.** Every
-earlier release opened it and lost what was typed into that field without a word; `0.7.0`'s
-engine refuses it, so its public read answers `200` and every submission to it is answered
+**No release since `0.7.0` opens a version stored with a field keyed `__proto__`, on purpose.**
+Every earlier release opened it and lost what was typed into that field without a word; the
+engine since `0.7.0` refuses it, so its public read answers `200` and every submission to it is answered
 `500` until it is republished without the key. Nothing finds such versions for an operator: search the
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
-**Found while making `0.7.0`, and not changed by it:**
+**Found while making `0.8.0`, and not changed by it:**
+
+- **A default left alone is stored as the person's answer**, indistinguishable from the same
+  answer chosen, and a required field with a default is answered before anybody reads it, so
+  `required` does not make a person look at that question. Where the difference matters — a
+  clinical question, a consent — the field should have no default. Hazard A10, and
+  [0197](../decisions/0197-a-default-is-where-something-fresh-starts.md).
+- **A review before sending lists only what will be sent**, so a question nobody answered has no
+  line there and one skipped by mistake is not pointed out; and nothing records that the person
+  looked ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+- **A rule's message is the author's, and nothing checks it against the rule.** It is said for its
+  code wherever the field carries it, so a rule whose code is one the engine reports itself — `min`
+  — words the engine's error too. Hazard D20, and
+  [0198](../decisions/0198-a-rule-says-its-own-message.md).
+
+**Found while making `0.7.0`, and not changed by it or by `0.8.0`:**
 
 - **A radio group a rule disables still takes a choice**, in both renderers, because its radios
   are not disabled with the field; Material's radio group is. Measured on 2026-10-20 in jsdom,
@@ -527,7 +566,44 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.6.0
+### Characterised by this document, and new since 0.7.0
+
+`0.8.0` reads versions `"1"` to `"5"` and **writes `specVersion: "5"`**, so a form its builder
+authors is refused by a reader on `0.7.0` or earlier — loudly, as the format means it to be. A
+version 4 document reads as it did. Version 5 adds properties only, and every one is optional: a
+field's `description`, `autocomplete`, `placeholder`, `default` and `shuffle`, an option's
+`exclusive` and `keepPlace`, and a `validate` rule's `message`
+([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). It adds no third-party
+dependency, table or setting; the new package `@formancy/cli` depends on `@formancy/spec` alone.
+**A deployment's answers change**, and a published form version is held to them without being
+republished: an answer of another shape than its field's type stores is refused `422` with
+`type`, where it was stored (above, hazard A1a), and the server replays a response sent with no
+data as `{}`, so a spec 5 document's defaults are never stored as answers nobody sent (hazard
+A10). **The server answers one route more**: `GET /f/:path/versions/:version`, behind
+`form.read`, the document a version was published with, `404 unknown_version` for a number this
+form has no version under ([0207](../decisions/0207-a-versions-document-can-be-read.md)). What a
+*host* sees is below; [`MIGRATIONS.md`](../../MIGRATIONS.md) has what must move.
+
+- **A field's errors are sentences**, from `errorSentence` in `@formancy/core/words`, one `span`
+  per sentence carrying the code as `data-formancy-code`; the codes are unchanged in `submit()`,
+  the API and the conformance fixtures (0191).
+- **A field with a `maxLength` draws a character count**, said through a `role="status"` region of
+  its own, so a page can have more than one status region
+  ([0203](../decisions/0203-a-limit-is-counted-while-typing.md)).
+- **A form can show every answer before it is sent**, with `review` in React and `[review]` in
+  Angular (0204).
+- **The engine's types grow**: `BuiltInErrorCode` gains `exclusive`, `FieldIds` gains `count`, and
+  `FieldSnapshot` gains `messages` and `optionOrder`, so a host building one by hand must add them.
+- **A form's submissions have a type**: `answersTypeScript` in `@formancy/spec`, and the
+  `formancy types` command of `@formancy/cli`, print what a form's submission data holds, true of
+  stored data because the engine checks every answer's shape (hazard A9,
+  [0190](../decisions/0190-a-form-has-a-type.md)).
+- **`summariseAnswers`**, in a new entry `@formancy/core/summary`, counts a form's responses
+  question by question ([0206](../decisions/0206-a-forms-responses-are-summarised-by-question.md)).
+- **The published JavaScript carries no JSDoc**; the declarations keep it, and nothing that runs
+  changes ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)).
+
+### Characterised by an earlier version of this document, and new in 0.7.0
 
 `0.7.0` reads and writes `specVersion: "4"`, as `0.4.0` to `0.6.0` do, and adds no dependency,
 table or setting. **The schema refuses one thing more**: `validateSchema` refuses `__proto__`

@@ -8,7 +8,43 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.8.0 — 2026-10-28
+
+**A minor release, and the spec version moves to 5.** Version 5 is frozen with the batch it was
+opened for — a field's `description`, `autocomplete`, `placeholder`, `default` and `shuffle`, an
+option's `exclusive` and `keepPlace`, and a `validate` rule's `message` — and is what this release
+writes: a form authored in the builder declares `5`, which every release up to `0.7.0` refuses,
+loudly. **Upgrade every reader before the documents**: `0.8.0` reads versions 1 to 5, and a
+version 4 document reads as it did. It is a minor release because it breaks a host, where a
+breaking change lands before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by choosing
+it**: one on `^0.7.0` keeps `0.7.0` until it moves to `^0.8.0`, which is when the Breaking list
+below applies, and a server run from `compose.published.yaml` runs the tag `FORMANCY_VERSION`
+pins. Besides spec 5: answers are checked for the shape their type stores, errors are said in the
+form's language rather than shown as codes, a form can be reviewed before it is sent, the admin
+reads and summarises every version's submissions, `@formancy/cli` prints a form's type, and the
+published JavaScript is a third smaller.
+
+**Breaking.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to change for each.
+
+- **An answer of another shape than its type stores is refused**, with `type`, in the browser and
+  on the server's replay — including against form versions published before: an object for a
+  text field, a string for a number, `''` for anything but text, `null` for a list. A submission
+  that was accepted can now be refused with `422` (0189).
+- **A field's errors are drawn as sentences, not codes**, by both renderers and Material: a host's
+  test or a third-party driver that read a code from the error's text reads it from
+  `data-formancy-code` on its `span` instead, and the summary's entry is `{label}: {problems}`
+  (0191).
+- **A form the builder writes declares spec 5**, which every reader on `0.7.0` or earlier refuses
+  (0194, 0201).
+- **`BuiltInErrorCode` gains `exclusive`** (0199), so a host's own `Record<BuiltInErrorCode, …>`
+  does not compile until it names it. **`FieldIds` gains `count`** and **`FieldSnapshot` gains
+  `messages` and `optionOrder`** (0198, 0200, 0203), so a host that builds either by hand — a test
+  double, say — must add them.
+- **A field with a `maxLength` draws a character count and a `role="status"` region of its own**
+  (0203), so a host's test asking a page for its one status region may find two.
+
+For a host taking spec 5 documents: one with `shuffle` needs `capabilities` even with no rules,
+and the engine refuses one whose `default` its field would refuse (0197, 0200).
 
 **The published JavaScript carries no JSDoc, and is a third smaller.** The bundler kept every
 exported function's documentation in the JavaScript as well as the declarations, where an editor
@@ -24,8 +60,8 @@ with — looked up among this form's own versions, under the number's one spelli
 the version it answered, where it read only the current one's
 ([0207](docs/decisions/0207-a-versions-document-can-be-read.md)).
 
-**The admin summarises a form's responses.** Above the submissions, question by question, for the
-current version: how many answered, how many chose each option with its share, a number's range and
+**The admin summarises a form's responses.** Above the submissions, question by question: how many
+answered, how many chose each option with its share, a number's range and
 mean — one summary per version, each against the questions that version asked.
 `summariseAnswers`, in a new entry `@formancy/core/summary` that no form loads, does the counting, a repeater's questions over every row
 and a matrix row by row ([0206](docs/decisions/0206-a-forms-responses-are-summarised-by-question.md)).
@@ -134,16 +170,14 @@ payment-card ones**: every answer here is stored, and a hint inviting a browser 
 number into a submission is not one to offer
 ([0195](docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)).
 
-**Spec version 5 is open, with a field's `description`.** Help text had nowhere to go but the
+**A field can carry help text (spec 5), the first construct of version 5.** Help text had nowhere to go but the
 label, which made every control's accessible name a paragraph. A field, a group, a page or a
 repeater may now carry `description` — text or a catalogue reference — drawn under the question
 by both renderers and Material, named in the control's `aria-describedby` so it is read out after
 the name, resolved in the form's language by the engine, styled in all four themes, offered by
-the builder's property panel and extracted for translation. Version 5 is the version this package
-now writes, and **it is open**: it will gain an autofill hint, a placeholder, a default value, a
-`validate` rule's own message and a choice's extras before it freezes. A version 4 document
-carrying a `description` is refused by name, and a form the builder writes now declares 5, which
-0.7.0 refuses. Translation extraction also picks up an option picture's `alt` and a matrix row's
+the builder's property panel and extracted for translation. A version 4 document carrying a
+`description` is refused by name, and a form the builder writes now declares 5, which 0.7.0
+refuses. Translation extraction also picks up an option picture's `alt` and a matrix row's
 label, which it never did ([0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
 **A submission is read back in words.** The admin's submissions tab printed each submission
@@ -152,9 +186,9 @@ as its JSON — `{"country":"CH"}` — which is what the server keeps, not what 
 choice by its option's label, a list joined as the language joins one, numbers and dates as the
 reader writes them, a matrix row by row, files by name, fields in a group or a row under their
 container. An answer the document cannot name is said as stored rather than dropped. The admin
-shows submissions to the current version this way, with the stored JSON one disclosure away;
-an older version's stay as stored, because the API does not yet hand out an older document
-([0193](docs/decisions/0193-a-submission-is-read-back-in-words.md)).
+shows every submission this way, through the version it was made on, with the stored JSON one
+disclosure away ([0193](docs/decisions/0193-a-submission-is-read-back-in-words.md)).
+
 **A field can be duplicated, and its type changed, in both builders.** Neither was possible:
 changing a type meant deleting the field and adding another, losing its label, options and
 the rules aimed at it, and duplicating meant adding it again by hand. `d` on the structure tree
@@ -235,6 +269,27 @@ version free. It names no peer, so neither React and Angular, which the host bri
 versions npm resolved on the release day, which the server image, built from the lockfile and
 carrying this SBOM as its attestation, need not hold
 ([0187](docs/decisions/0187-the-sbom-describes-what-a-consumer-installs.md)).
+
+### What 0.8.0 knowingly does not have
+
+Everything 0.7.0 listed still holds: a radio group, React's rating and a signature that a rule
+disables still take an answer, a required tag picker says nowhere that it is required,
+`focusControl` is not exported, and a version stored with a field keyed `__proto__` cannot be
+opened. New, or found while making this release:
+
+- **A default left alone is stored as the person's answer**, indistinguishable from one chosen,
+  and a required field with a default is answered before anybody reads it (0197; hazard A10). The
+  review before sending shows it, and nothing records that the person looked.
+- **The review lists only what will be sent**: a question nobody answered has no line, so one
+  skipped by mistake is not pointed out there (0204).
+- **A rule's message is said for its code wherever the field carries it**, so a rule whose code is
+  one the engine reports itself — `min` — words the engine's error too, and nothing checks a
+  message against its rule (0198; hazard D20).
+- **The admin counts in the browser**, over every submission it fetched, and fetches one whole
+  document per version that has submissions (0206, 0207).
+- **React's bundle is over its 4 kB budget**, which was written for a tree-shaken entry while the
+  figure is the whole barrel; which it meant is not settled, so only core's budget is a gate
+  (0208).
 
 ## 0.7.0 — 2026-10-21
 

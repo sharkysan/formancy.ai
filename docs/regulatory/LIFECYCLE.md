@@ -283,7 +283,7 @@ widget and the `check` and `skip` rule kinds
 **frozen** as of 2026-10-09, first released with 0.4.0, and carries the `ranking` and
 `matrix` field types, the `rating` and `slider` widgets and the `step`, `mask` and
 option `image` properties ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). Version `"5"` is
-**frozen** as of 2026-10-27, in no release yet, and carries properties only — a field's
+**frozen** as of 2026-10-27, first released with 0.8.0, and carries properties only — a field's
 `description`, `autocomplete`, `placeholder`, `default` and `shuffle`, an option's `exclusive` and
 `keepPlace`, and a rule's `message` ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). No version is open:
 a construct needing one opens version 6, `spec-version.test.ts` fails on a type that belongs to no

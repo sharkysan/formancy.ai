@@ -15,8 +15,8 @@ can both speak spec `"1"`.
 
 Spec `"5"` is frozen as of 2026-10-27, with the batch it was opened for, and is the version this
 package writes: a new document declares it, and `upgradeSpecVersion` moves an older one to it
-unchanged but for the version line. It is in no release yet; the first that carries it is the one
-after 0.7.0. No version is open: version 6 opens when a construct needs one
+unchanged but for the version line. It is first released with `0.8.0`. No version is open:
+version 6 opens when a construct needs one
 ([0201](docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md), [0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
 It is a superset of version 4 and removes nothing, and adds properties only — no field type,
@@ -58,6 +58,18 @@ the documents.
   written. Presentation only; answers are stored in the written order. A shuffled form needs a
   capabilities source. A version 4 document carrying either is refused, naming the property
   ([0200](docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)).
+
+### What upgrading to version 5 costs you
+
+As for version 4: **every reader of your forms has to speak version 5** before your documents
+do. A deployment pinning `@formancy/*` at `0.7.0` or earlier anywhere — a server, a mobile build,
+a partner's embedded renderer — refuses a version 5 document, loudly, and the builder writes 5.
+Upgrade the readers first.
+
+Two of its constructs ask something of a host as well as of a reader: a form with `shuffle` needs
+a capabilities source even with no rules, since the order comes from the injected `random()`, and
+the engine refuses to open a form whose `default` its own field would refuse. Nothing migrates
+submissions; a submission stays bound to the version it was collected under.
 
 ## Spec version 4 is FROZEN
 
@@ -354,7 +366,7 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
-## Every answer has the shape its type says (unreleased)
+## Every answer has the shape its type says (0.8.0)
 
 **If anything posts submissions to the server other than the shipped renderers, check what it
 sends.** The engine checks every answer's shape first, in the browser and on the server's
@@ -375,7 +387,7 @@ version is enforced from the next submission, without a republish.
 A prefill (`initialValue`) is held to the same: one that writes `""` for a date shows a `type`
 error on it after a submit. Submissions already stored are not re-examined.
 
-## An error is said, not coded (unreleased)
+## An error is said, not coded (0.8.0)
 
 **If you wrote a conformance driver, or styled the error text, read this.** A field's error text
 is now one sentence per code, each a `span` carrying `data-formancy-code`, where it was the codes
@@ -388,6 +400,29 @@ unchanged in `submit()`, the API and every fixture.
   are separated by a space.
 - A host that reworded `errors.entry` and used `{codes}` still gets them; the shipped wording
   uses `{problems}`, the sentences.
+
+## A host's own types and tests (0.8.0)
+
+**`BuiltInErrorCode` has `exclusive`**, the code for a list holding an option that is chosen
+alone with anything else ([0199](docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
+A `Record<BuiltInErrorCode, …>` of your own — a message for every code, say — does not compile
+until it names it.
+
+**`FieldIds` has `count`, and `FieldSnapshot` has `messages` and `optionOrder`**: the id of a
+character count, a field's rule messages by code, and a shuffled field's order
+([0203](docs/decisions/0203-a-limit-is-counted-while-typing.md),
+[0198](docs/decisions/0198-a-rule-says-its-own-message.md),
+[0200](docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)). Code that reads them
+needs nothing; a test double or a host's control that builds either by hand adds them — `{}` and
+`undefined` for a field with no rule messages and no shuffle.
+
+**A field with a `maxLength` draws a count and a `role="status"` region of its own.** A test that
+asks a page for its one status region — `getByRole('status')` — finds the count's too; ask within
+the element you mean, or by what it says.
+
+**`errorSentence` takes the snapshot's `messages` as a fourth argument**, and says a field's rule
+message for its code. A control of your own that calls it should pass them; without them a rule's
+code is said as itself, as before.
 
 ## A radio group, a set of tick boxes and a signature carry the field's control id (0.7.0)
 
