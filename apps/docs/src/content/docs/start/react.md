@@ -271,6 +271,11 @@ controls do, or the person types into a box that does not keep what they type
 - `useWizard()` — page state and `next`/`back`/`goTo` for a paged form; `next`
   validates only the current page, submit validates everything.
 - `useSubmit()` — returns a submit function producing `{ ok, errors }`.
+- `useGoToField()` — returns a function that takes a field's path, `email` or `guests[1].name`,
+  and takes the person there as the error summary's links do: to the field's page on a paged
+  form, then into its control once that page is drawn — a group's first option, and past a tab
+  a layout hides it behind. For a list of your own, of what is still missing, say
+  ([0213](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0213-a-host-can-take-a-person-to-a-question.md)).
 - `<ErrorSummary />` — the errors a user should currently see (touched and
   invalid), in document order.
 

@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A host can take a person to a question.** `useGoToField()` in `@formancy/react` and
+`injectGoToField()` in `@formancy/angular` return a function that takes a field's path and does what
+the error summary's links do: move a paged form to the field's page, wait for it to be drawn, and
+focus into its control — a group's first option, past a tab its layout hides it behind. A host's own
+list had only the control id, which reached nothing for a group, whose id is on a fieldset, or for a
+question on a page not drawn. The summary's links and the review's Change call the same function, so
+there is one per renderer where there were two
+([0213](docs/decisions/0213-a-host-can-take-a-person-to-a-question.md)).
+
 **A signature's typed box says what its field says, and is named after it.** The box a name is
 typed into is the signature's control — the label points at it and the error summary's link lands
 there — and it carried the field's control id and nothing else of the field's: a screen reader

@@ -1,8 +1,8 @@
-import { focusControl } from './focus-control.js'
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { parsePath } from '@formancy/core'
 import { errorSentence } from '@formancy/core/words'
 import { useFormEngine, useFormText } from './context.js'
+import { useGoToField } from './go-to-field.js'
 
 export interface ErrorSummaryProps {
   labels?: Record<string, string>
@@ -25,14 +25,7 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
   const errors = useSyncExternalStore(subscribe, getErrors, getErrors)
   const region = useRef<HTMLDivElement | null>(null)
   const previousCount = useRef(0)
-  // A control on another page is drawn only once the wizard is there, so it is focused after
-  // that commit rather than in the click (0205).
-  const [focusing, setFocusing] = useState<string | undefined>(undefined)
-  useEffect(() => {
-    if (focusing === undefined) return
-    focusControl(document.getElementById(focusing))
-    setFocusing(undefined)
-  }, [focusing])
+  const goToField = useGoToField()
 
   // Focus when errors APPEAR (a submit surfaced them), not on every keystroke
   // that edits an already-broken field.
@@ -70,10 +63,7 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
                   // page, which a paged form may not be showing: a problem the summary lists on
                   // another page had no element to focus, and the link did nothing (0205).
                   event.preventDefault()
-                  const wizard = engine.wizard()
-                  const page = engine.pageOf(parsePath(path))
-                  if (wizard !== undefined && wizard.page() !== page) wizard.goTo(page)
-                  setFocusing(controlId)
+                  goToField(path)
                 }}
               >
                 {/* Each code said as the field says it (0191); `codes` stays given for a

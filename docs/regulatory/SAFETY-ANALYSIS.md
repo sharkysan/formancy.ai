@@ -1489,8 +1489,10 @@ reports. It carries all of the field's control props now, and is named *Signatur
 ([0212](../decisions/0212-a-signatures-box-says-what-its-field-says.md)), held by each renderer's
 signature cases, which failed before the change. What remains: a field drawn with no control — a file field with no upload route,
 a select whose source the deployment lacks — still carries no element with the id, measured on
-2026-10-20; and a host moving focus into a group by the id has to do what `focusControl` does,
-which is not exported.
+2026-10-20. A host taking a person to a question calls `useGoToField` or `injectGoToField`, the
+function the summary's links and the review's Change call
+([0213](../decisions/0213-a-host-can-take-a-person-to-a-question.md)), where it had to do by hand
+what `focusControl` does, which is not exported.
 
 *And a required tag picker said nowhere that it was required.* The engine counted a `selectboxes`
 as a group, which says it is required in its description rather than with `aria-required`, and a

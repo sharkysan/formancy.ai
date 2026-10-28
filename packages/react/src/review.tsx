@@ -5,7 +5,7 @@ import { answersToReview } from '@formancy/core/words'
 import type { ReviewedAnswer } from '@formancy/core/words'
 import { useFormEngine, useFormText } from './context.js'
 import type { FormancyFormProps } from './fields/internals.js'
-import { focusControl } from './focus-control.js'
+import { useGoToField } from './go-to-field.js'
 import { useSubmit } from './use-submit.js'
 
 /*
@@ -49,13 +49,7 @@ export function useReview(goTo?: (page: number) => void) {
   const engine = useFormEngine()
   const submit = useSubmit()
   const [reviewing, setReviewing] = useState(false)
-  const [focusing, setFocusing] = useState<string | undefined>(undefined)
-
-  useEffect(() => {
-    if (focusing === undefined) return
-    focusControl(document.getElementById(focusing))
-    setFocusing(undefined)
-  }, [focusing])
+  const goToField = useGoToField()
 
   return {
     reviewing,
@@ -67,8 +61,7 @@ export function useReview(goTo?: (page: number) => void) {
     },
     change(answer: ReviewedAnswer): void {
       setReviewing(false)
-      goTo?.(answer.page)
-      setFocusing(answer.controlId)
+      goToField(answer.field)
     },
   }
 }

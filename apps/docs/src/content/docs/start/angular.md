@@ -176,6 +176,7 @@ controls do, or the person types into a box that does not keep what they type
 | `injectRepeater(path)` | `rowCount` signal, `addRow`, `removeRow`, and `canAdd` and `canRemove` signals for its `maxItems` and `minItems`, past which the two throw |
 | `injectWizard()` | `page` signal, `pageCount`, `next`, `back`, `goTo` |
 | `injectSubmit()` | submit, with focus moved to the first problem on failure |
+| `injectGoToField()` | a function taking a field's path, `email` or `guests[1].name`, that takes the person there as the summary's links do: to its page, then into its control once drawn — a group's first option, past a tab a layout hides it behind ([0213](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0213-a-host-can-take-a-person-to-a-question.md)) |
 
 `injectWizard()` throws on a form with no pages rather than pretending to be a
 one-page wizard: a stepper over a flat form is a bug in the caller, and a loud

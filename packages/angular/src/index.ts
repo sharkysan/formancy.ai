@@ -14,6 +14,7 @@ export type { RepeaterBinding } from './repeater.js'
 export { injectWizard } from './wizard.js'
 export type { WizardBinding } from './wizard.js'
 export { injectSubmit } from './submit.js'
+export { injectGoToField } from './go-to-field.js'
 export {
   FORMANCY_FIELD_CONTEXT,
   FORMANCY_REGISTRY,
