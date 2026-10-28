@@ -29,6 +29,7 @@ import {
   fetchForms,
   fetchModel,
   fetchSubmissions,
+  fetchVersion,
   fetchVersions,
   publish,
   setToken,
@@ -374,15 +375,27 @@ function VersionsPane({ path }: { path: string }) {
 
 function SubmissionsPane({ path }: { path: string }) {
   const [submissions, setSubmissions] = useState<SubmissionEntry[]>([])
-  // The current version's document, to read its own submissions back through (0193). An older
-  // version's document is not one the API hands out, so its submissions stay as stored.
-  const [current, setCurrent] = useState<{ version: number; schema: FormSchema } | undefined>()
+  // Each version's document that has submissions, to read them back through (0193): a submission
+  // answered its own version's questions, which may not be the current one's (0207). A version
+  // whose document could not be fetched leaves its submissions as stored.
+  const [documents, setDocuments] = useState<ReadonlyMap<number, FormSchema>>(new Map())
   useEffect(() => {
-    fetchSubmissions(path).then(setSubmissions).catch(() => setSubmissions([]))
-    fetchForm(path)
-      .then(({ version, schema }) => setCurrent({ version, schema }))
-      .catch(() => setCurrent(undefined))
+    let live = true
+    fetchSubmissions(path)
+      .then(async (listed) => {
+        if (!live) return
+        setSubmissions(listed)
+        const numbers = [...new Set(listed.map((submission) => submission.version))]
+        const fetched = await Promise.allSettled(numbers.map((version) => fetchVersion(path, version)))
+        const read = fetched.flatMap((outcome) => (outcome.status === 'fulfilled' ? [[outcome.value.version, outcome.value.schema] as const] : []))
+        if (live) setDocuments(new Map(read))
+      })
+      .catch(() => setSubmissions([]))
+    return () => {
+      live = false
+    }
   }, [path])
+  const versionsHeard = [...new Set(submissions.map((submission) => submission.version))].sort((a, b) => b - a)
   return (
     <div className="wb-page">
       <p className="wb-page-actions">
@@ -390,14 +403,17 @@ function SubmissionsPane({ path }: { path: string }) {
           Download CSV (columns unioned across versions)
         </a>
       </p>
-      {current === undefined ? null : (
-        <ResponsesSummary
-          schema={current.schema}
-          version={current.version}
-          data={submissions.filter((submission) => submission.version === current.version).map((submission) => submission.data)}
-          earlier={submissions.filter((submission) => submission.version !== current.version).length}
-        />
-      )}
+      {versionsHeard.map((version) => {
+        const schema = documents.get(version)
+        return schema === undefined ? null : (
+          <ResponsesSummary
+            key={version}
+            schema={schema}
+            version={version}
+            data={submissions.filter((submission) => submission.version === version).map((submission) => submission.data)}
+          />
+        )
+      })}
       <table className="wb-table">
         <thead>
           <tr>
@@ -414,8 +430,8 @@ function SubmissionsPane({ path }: { path: string }) {
                 <span className="wb-version">v{submission.version}</span>
               </td>
               <td>
-                {current?.version === submission.version ? (
-                  <SubmissionAnswers schema={current.schema} data={submission.data} />
+                {documents.has(submission.version) ? (
+                  <SubmissionAnswers schema={documents.get(submission.version)!} data={submission.data} />
                 ) : (
                   <code className="wb-data">{JSON.stringify(submission.data)}</code>
                 )}

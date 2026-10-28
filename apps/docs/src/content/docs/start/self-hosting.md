@@ -550,6 +550,7 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `POST` | `/forms` | management | `form.publish` (optional `x-formancy-schema-hash`) |
 | `GET` | `/forms` | management | `form.read` |
 | `GET` | `/f/:path/versions` | management | `form.read` |
+| `GET` | `/f/:path/versions/:version` | management | `form.read` |
 | `GET` | `/f/:path/submissions` | management | `submission.read` |
 | `GET` | `/f/:path/submissions/export.csv` | management | `submission.export` |
 | `GET` | `/f/:path` | public | — (hands out a `submissionToken`) |
