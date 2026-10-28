@@ -1019,6 +1019,25 @@ describe('the tag picker, which must behave as the React one does', () => {
       expect(box.getAttribute('aria-expanded')).toBe('false')
     })
   })
+
+  test('a required one says so on its box, and points at nothing that is not there', async () => {
+    // It said nowhere that it was required: decided as a group, its box carried no
+    // `aria-required` and pointed at a required hint the tag picker never draws (hazard D4,
+    // 0211). It is one combobox, and says it as one, as React's does.
+    const schema = tagging()
+    const fields = schema.model.fields.map((field) => ({ ...field, required: true }))
+    const engine = engineFor({ ...schema, model: { ...schema.model, fields } } as FormSchema)
+    const view = await renderForm(engine)
+    // Sent empty, so the error is drawn and named too.
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await view.fixture.whenStable()
+    const box = screen.getByRole('combobox', { name: 'Topics' })
+
+    expect(box.getAttribute('aria-required')).toBe('true')
+    const named = (box.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((id) => id !== '')
+    expect(named.length).toBeGreaterThan(0)
+    expect(named.filter((id) => document.getElementById(id) === null)).toEqual([])
+  })
 })
 
 describe('a skipped page under Angular, which must match the React one', () => {

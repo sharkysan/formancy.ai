@@ -220,3 +220,36 @@ describe('what it says it is', () => {
     expect(parts).toContain('tagpicker-remove')
   })
 })
+
+describe('a required tag picker', () => {
+  /*
+   * It said nowhere that it was required: the engine decided it was a group, as a list of ticks
+   * is, so its box carried no `aria-required` and pointed instead at a required hint the tag
+   * picker never draws, an id nothing carried (hazard D4, 0211). It is one combobox, and says it
+   * as one. The Angular renderer is held to the same in `new-types.test.ts`.
+   */
+  const required: FormSchema = {
+    ...schema,
+    model: { fields: [{ ...schema.model.fields[0]!, required: true } as FormSchema['model']['fields'][number]] },
+  }
+
+  test('says so on its box, and points at nothing that is not there', async () => {
+    const engine = createFormEngine({
+      schema: required,
+      capabilities: { now: () => 0, today: () => '2026-10-28', random: () => 0.5 },
+    })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+    // Sent empty, so the error is drawn and named too.
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    const box = screen.getByRole('combobox', { name: 'Topics' })
+
+    expect(box.getAttribute('aria-required')).toBe('true')
+    const named = (box.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((id) => id !== '')
+    expect(named.length).toBeGreaterThan(0)
+    expect(named.filter((id) => document.getElementById(id) === null)).toEqual([])
+  })
+})

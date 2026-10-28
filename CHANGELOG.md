@@ -10,6 +10,19 @@ later.
 
 ## Unreleased
 
+**A required tag picker says it is required, and Material draws a field's description.** A tag
+picker is a list of ticks drawn as one combobox, and the engine decided it was a group from its type,
+so a required one carried no `aria-required` and pointed its box at a required hint nothing drew:
+nothing said the field was required, to a screen reader or to a theme (hazard D4, every release
+since `0.3.0`). It is one control to the engine now, and says it as one. And under Material, eight
+controls — the text, the paragraph, the number, the date, the time, the select, the checkbox and the
+toggle — named the field's description in `aria-describedby` and drew no element carrying it, so
+spec 5's help text was not on the page; `0.8.0`'s entry below said Material drew it. Each draws it
+under its box now. Both are held by a rule over every type and widget, in each renderer and under
+Material: a field made required, described and sent empty names no id that is not drawn
+([0211](docs/decisions/0211-every-id-a-field-names-is-drawn.md)). A host's own test that looked for a
+required tag picker's hint finds none, and finds `aria-required` on its box.
+
 **A field a rule disables takes no answer, whatever draws it.** A radio group's radios were never
 disabled with their field, in either renderer; React's rating put `disabled` on a `div`, where it
 disables nothing; and a signature's typed box, its Clear button and its drawing surface took input
@@ -198,7 +211,8 @@ number into a submission is not one to offer
 **A field can carry help text (spec 5), the first construct of version 5.** Help text had nowhere to go but the
 label, which made every control's accessible name a paragraph. A field, a group, a page or a
 repeater may now carry `description` — text or a catalogue reference — drawn under the question
-by both renderers and Material, named in the control's `aria-describedby` so it is read out after
+by both renderers and Material (under Material by its radio group and list of ticks only — the
+other eight controls drew none until 0211; corrected after release), named in the control's `aria-describedby` so it is read out after
 the name, resolved in the form's language by the engine, styled in all four themes, offered by
 the builder's property panel and extracted for translation. A version 4 document carrying a
 `description` is refused by name, and a form the builder writes now declares 5, which 0.7.0

@@ -1490,13 +1490,32 @@ a select whose source the deployment lacks — still carries no element with the
 2026-10-20; and a host moving focus into a group by the id has to do what `focusControl` does,
 which is not exported.
 
-*And a required tag picker says nowhere that it is required.* The engine counts a `selectboxes`
+*And a required tag picker said nowhere that it was required.* The engine counted a `selectboxes`
 as a group, which says it is required in its description rather than with `aria-required`, and a
-tag picker is a `selectboxes` drawn as one text box: that box is described by a hint whose id no
-element carries, and has no `aria-required`, so neither a screen reader nor the page says the
-field is required. Measured on 2026-10-20 in jsdom, in both renderers; read from their code,
-every release since `0.3.0` draws it so. Found while making `0.7.0`, and not changed by it or
-by `0.8.0`.
+tag picker is a `selectboxes` drawn as one text box: that box was described by a hint whose id no
+element carried, and had no `aria-required`, so neither a screen reader nor the page said the
+field was required. Measured on 2026-10-20 in jsdom, in both renderers; every release from `0.3.0`
+to `0.8.0` drew it so. Now a tag picker is one control to the engine, so a required one carries
+`aria-required` on its box and names no hint
+([0211](../decisions/0211-every-id-a-field-names-is-drawn.md)), held by *a list of ticks drawn as a
+tag picker* in `packages/core/src/props.test.ts` and *a required tag picker* in each renderer, each
+of which failed before the change.
+
+*And Material drew no description for eight controls.* Its text, paragraph, number, date, time,
+select, checkbox and toggle pointed `aria-describedby` at the field's description and drew no
+element carrying its id, so the help text spec 5 added was not on the page and a screen reader was
+pointed at nothing; its radio group and its list of ticks drew it. `0.8.0`'s changelog said
+Material drew it. Found on 2026-10-28, after `0.8.0` was published, by the rule below. Now each draws
+it under its box, at the engine's id.
+
+*And every id a field names is drawn, over every type and widget.* Made required, given a
+description and sent empty, no element inside a field names an id — by `aria-describedby`,
+`aria-labelledby`, `aria-controls`, `aria-errormessage`, `aria-activedescendant`, `aria-owns` or
+`for` — that no element carries: every type the spec has, as its default control and as each widget
+it allows, in both renderers and under Material (0211). Held by *required, described and sent empty,
+names no id that is not drawn* in each renderer's `control-id.test` and Material's
+`controls.test.ts`, which failed before the change on the tag picker and the eight Material controls
+and on nothing else. It checks that a named id exists, not that it is the right one.
 
 ### D4a. A form is laid out differently by the two renderers, and nothing reports it
 

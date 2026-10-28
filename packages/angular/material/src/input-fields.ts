@@ -50,6 +50,12 @@ import { FormancyCharacterCount, FormancyErrorText } from '@formancy/angular'
         />
         <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       </mat-form-field>
+      <!-- The field's help text under the box, at the id the box's describedby names (0194),
+           outside the form field as the count is: Material's own hint hides while an error
+           shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
       <!-- Outside the form field, as the default control draws it: Material's own hint would
            describe the box a second time, and the engine already names the count (0203). -->
       <formancy-character-count [snapshot]="field.snapshot()" />
@@ -99,6 +105,12 @@ export class FormancyMaterialTextField extends MaterialFieldBase {
       ></textarea>
       <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
     </mat-form-field>
+    <!-- The field's help text under the box, at the id the box's describedby names (0194),
+         outside the form field as the count is: Material's own hint hides while an error
+         shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+    @if (field.snapshot().description; as said) {
+      <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+    }
     <formancy-character-count [snapshot]="field.snapshot()" />
   `,
 })
@@ -139,6 +151,12 @@ export class FormancyMaterialTextareaField extends MaterialFieldBase {
         />
         <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       </mat-form-field>
+      <!-- The field's help text under the box, at the id the box's describedby names (0194),
+           outside the form field as the count is: Material's own hint hides while an error
+           shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
     } @else {
       <ng-container *ngComponentOutlet="fallbackFor('number')" />
     }
@@ -189,6 +207,12 @@ export class FormancyMaterialNumberField extends MaterialFieldBase {
       />
       <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
     </mat-form-field>
+    <!-- The field's help text under the box, at the id the box's describedby names (0194),
+         outside the form field as the count is: Material's own hint hides while an error
+         shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+    @if (field.snapshot().description; as said) {
+      <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+    }
   `,
 })
 export class FormancyMaterialDateField extends MaterialFieldBase {
@@ -228,6 +252,12 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
       />
       <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
     </mat-form-field>
+    <!-- The field's help text under the box, at the id the box's describedby names (0194),
+         outside the form field as the count is: Material's own hint hides while an error
+         shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+    @if (field.snapshot().description; as said) {
+      <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+    }
   `,
 })
 export class FormancyMaterialTimeField extends MaterialFieldBase {

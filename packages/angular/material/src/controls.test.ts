@@ -536,6 +536,37 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     document.body.innerHTML = ''
     expect(operable(await drawnUnder('true'))).toEqual([])
   })
+
+  test.each(DRAWN)('$name, required, described and sent empty, names no id that is not drawn', async ({ field }) => {
+    // The rule the default renderer's and React's controls are held to (D4, 0211), with
+    // Material's registry provided: whatever draws the field draws every element its ARIA names.
+    const engine = createFormEngine({
+      schema: {
+        specVersion: '5',
+        id: 'm',
+        title: 'M',
+        model: { fields: [{ ...field, required: true, description: 'Help.' }] },
+      } as unknown as FormSchema,
+    })
+    const view = await render(FormancyForm, {
+      providers: [
+        provideZonelessChangeDetection(),
+        provideFormancy(engine),
+        provideFormancyUploader(upload),
+        ...provideFormancyMaterial(),
+      ],
+      inputs: { submitLabel: 'Submit' },
+    })
+    await view.fixture.whenStable()
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await view.fixture.whenStable()
+    const drawn = document.querySelector('[data-formancy-field-path="f"]')
+    expect(drawn).not.toBeNull()
+
+    const named = idsNamedWithin(drawn!)
+    expect(named.length).toBeGreaterThan(0)
+    expect(named.filter(({ id }) => document.getElementById(id) === null)).toEqual([])
+  })
 })
 
 /**
@@ -559,6 +590,20 @@ function operable(root: Element): string[] {
     }
   }
   return live
+}
+
+/** Every id an element inside `root`, or `root` itself, points at, with the attribute that names it. */
+function idsNamedWithin(root: Element): Array<{ id: string; by: string }> {
+  const ATTRIBUTES = ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-errormessage', 'aria-activedescendant', 'aria-owns', 'for']
+  const named: Array<{ id: string; by: string }> = []
+  for (const element of [root, ...Array.from(root.querySelectorAll('*'))]) {
+    for (const by of ATTRIBUTES) {
+      for (const id of (element.getAttribute(by) ?? '').split(/\s+/)) {
+        if (id !== '') named.push({ id, by: `${element.tagName.toLowerCase()}[${by}]` })
+      }
+    }
+  }
+  return named
 }
 
 describe('Material in the form’s language', () => {
