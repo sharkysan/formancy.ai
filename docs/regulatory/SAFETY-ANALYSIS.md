@@ -783,13 +783,13 @@ dispatches a synthetic click to a disabled button's listener, which no browser d
   group a rule disables still takes a choice. Measured on 2026-10-20 in jsdom: a click on an
   option stored it in React and in Angular, while Material's radio group was disabled and took
   none. Neither renderer has set `disabled` on its radios in any release, read from their code;
-  found while making `0.7.0`, and not changed by it.
+  found while making `0.7.0`, and not changed by it or by `0.8.0`.
 - **React's rating is not disabled with its field either.** It is a radio group too: `disabled`
   sits on its `role="radiogroup"` element, which disables nothing, and its radios carry none.
   Measured on 2026-10-20 in jsdom: all eleven radios of a 0–10 rating were enabled under a
   `disabled` rule, and a click stored `3`. Angular's rating, which Material draws, sets
   `disabled` on each radio. Drawn so since the rating arrived in `0.4.0`, read from the code;
-  found while making `0.7.0`, and not changed by it.
+  found while making `0.7.0`, and not changed by it or by `0.8.0`.
 
 ### B7. An attachment is recorded against the wrong row of a repeater
 
@@ -1488,7 +1488,8 @@ as a group, which says it is required in its description rather than with `aria-
 tag picker is a `selectboxes` drawn as one text box: that box is described by a hint whose id no
 element carries, and has no `aria-required`, so neither a screen reader nor the page says the
 field is required. Measured on 2026-10-20 in jsdom, in both renderers; read from their code,
-every release since `0.3.0` draws it so. Found while making `0.7.0`, and not changed by it.
+every release since `0.3.0` draws it so. Found while making `0.7.0`, and not changed by it or
+by `0.8.0`.
 
 ### D4a. A form is laid out differently by the two renderers, and nothing reports it
 
@@ -2783,9 +2784,8 @@ are compared with nothing.
    ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"`
    ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are all
    frozen, so stored data written against any of them has a settled shape — and so is
-   `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), which 0.4.0 first releases. Version `"5"` is frozen too, and in no
-   release yet: the source writes it, and a deployment can characterise against it once a release
-   carries it ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Otherwise it is the software that is still moving.
+   `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), which 0.4.0 first releases. Version `"5"` is frozen too, and first
+   released with 0.8.0, which writes it ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Otherwise it is the software that is still moving.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be

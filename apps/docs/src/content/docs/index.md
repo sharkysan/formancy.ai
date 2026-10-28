@@ -3,13 +3,13 @@ title: What is formancy?
 description: A visual form builder for Angular and React. Conditional fields, validation and your own styling, with one engine running in the browser and on the server. Open source, with an optional self-hosted backend.
 ---
 
-:::caution[Status: beta, version 0.7.0]
-formancy is beta software: **every spec version but the newest is frozen; the package APIs
-are not.**
+:::caution[Status: beta, version 0.8.0]
+formancy is beta software: **every spec version is frozen; the package APIs are not.**
 
-`specVersion: "5"` — the newest, **open**, with a field's `description` so far — is not in a
-release yet; write it once your installed packages speak it.
-`specVersion: "4"` — frozen, with the `ranking` and `matrix` field types, the `rating`
+`specVersion: "5"` — the newest, with a field's `description`, `autocomplete`, `placeholder`
+and `default`, a choice's `shuffle`, an option's `exclusive` and `keepPlace` and a rule's
+`message` — needs `0.8.0` or newer.
+`specVersion: "4"` — with the `ranking` and `matrix` field types, the `rating`
 and `slider` widgets and the `step` and `mask` properties — needs `0.4.0` or newer.
 `specVersion: "3"` — the first with `signature`, the tag picker and the `check` and
 `skip` rules — needs `0.3.0` or newer.
@@ -19,7 +19,7 @@ the version your installed packages actually speak, which is what the
 [React](/docs/start/react/) and [Angular](/docs/start/angular/) quickstarts say.
 
 **Every version only adds**, so an older document still validates, save one that keys a field
-`__proto__`, which `0.7.0` refuses because no release could store an answer under it, and
+`__proto__`, which every release since `0.7.0` refuses because none could store an answer under it, and
 upgrading one is a single line with nothing rebinding — see
 [`MIGRATIONS.md`](https://github.com/sharkysan/formancy.ai/blob/main/MIGRATIONS.md), which
 lists what each version added and what freezing one costs. The direction that costs

@@ -43,8 +43,8 @@ practice, and the failure names the address so you are not left guessing.
 The packages are published from CI and their APIs will change before 1.0. **Every spec
 version is frozen**, so a change that would alter what a form document may contain is a
 new spec version and not a patch — see [`MIGRATIONS.md`](MIGRATIONS.md) before proposing
-one. A document that never worked is the exception: `0.7.0` refuses a field keyed
-`__proto__`, under which no release could store an answer, without a new spec version
+one. A document that never worked is the exception: since `0.7.0` a field keyed
+`__proto__`, under which no release could store an answer, is refused without a new spec version
 ([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
 Before writing code, **open an issue**. A pull request that arrives unannounced is likely
