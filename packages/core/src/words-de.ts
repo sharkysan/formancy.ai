@@ -89,6 +89,8 @@ export const FORM_WORDS_DE = {
   'options.failed': 'Die Optionen konnten nicht geladen werden. Tippen Sie, um es erneut zu versuchen.',
   'options.failedListed':
     'Die Optionen konnten nicht geladen werden. Sie werden jedes Mal erneut angefragt, wenn Sie zu diesem Feld wechseln.',
+  'options.failedTicks': 'Die Optionen konnten nicht geladen werden.',
+  'options.retry': 'Erneut versuchen',
   'options.tooShort': {
     one: 'Geben Sie mindestens {count} Zeichen ein, um zu suchen.',
     other: 'Geben Sie mindestens {count} Zeichen ein, um zu suchen.',

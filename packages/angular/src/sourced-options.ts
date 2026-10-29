@@ -14,8 +14,10 @@ import { injectOptionsSources } from './options-source.js'
  * `optionsStatus` in `@formancy/core/words` decides that once, for both (0177).
  *
  * `optionsSource` decides which answers EXIST rather than how they are shown, so the
- * plain `<select>` honours it as well as the typeahead — one ignoring it would render
- * an empty chooser over a field that collects something.
+ * plain `<select>` honours it as well as the typeahead, and a list of ticks and the tag
+ * picker as well as both — one ignoring it would render an empty chooser over a field that
+ * collects something. Those two hold a list, so what is stored is a list of values here, a
+ * select's one answer being a list of one (0215).
  */
 
 export interface SourcedOptionsState {
@@ -72,7 +74,8 @@ export interface SourcedOptionsInputs {
    * which row it was answering for.
    */
   dataPath: () => string
-  storedValue: Signal<string | undefined>
+  /** What the form holds, as `storedValues` reads it, for the names to ask the source for. */
+  stored: Signal<readonly string[]>
   /** What the control types into; a plain select passes a constant empty one. */
   query: Signal<string>
   locale: () => string
@@ -106,7 +109,7 @@ const COMPLETE: RemoteCompleteness = { kind: 'complete' }
  * is a constant empty one, which asks the source for everything and shows what fits.
  */
 export function injectSourcedOptions(inputs: SourcedOptionsInputs): SourcedOptionsState {
-  const { sourceName, dataPath, storedValue, query, locale, enabled, disabled } = inputs
+  const { sourceName, dataPath, stored, query, locale, enabled, disabled } = inputs
   const sources = injectOptionsSources()
   const destroyRef = inject(DestroyRef)
 
@@ -238,10 +241,14 @@ export function injectSourcedOptions(inputs: SourcedOptionsInputs): SourcedOptio
   const askedFor = new Set<string>()
   effect(() => {
     const resolver = source()
-    const value = storedValue()
-    if (!enabled() || resolver === undefined || value === undefined) return
-    if (named().has(value) || askedFor.has(value)) return
-    askedFor.add(value)
+    const values = stored()
+    if (!enabled() || resolver === undefined || values.length === 0) return
+    // Every value not yet asked about, in one request: a list of ticks resumed with five
+    // answers asks once, not five times.
+    const known = named()
+    const unnamed = values.filter((value) => !known.has(value) && !askedFor.has(value))
+    if (unnamed.length === 0) return
+    for (const value of unnamed) askedFor.add(value)
 
     // Registered, so a destroy aborts it. The search request was; this one was not,
     // which left a request outliving the component that asked for it -- and a host
@@ -254,9 +261,9 @@ export function injectSourcedOptions(inputs: SourcedOptionsInputs): SourcedOptio
         source: sourceName() ?? '',
         path: dataPath(),
         query: '',
-        values: [value],
+        values: unnamed,
         locale: locale(),
-        limit: 1,
+        limit: unnamed.length,
         signal: controller.signal,
       })
       .then((answer) => {
@@ -287,4 +294,16 @@ export function injectSourcedOptions(inputs: SourcedOptionsInputs): SourcedOptio
     unavailable: computed(() => sourceName() !== undefined && source() === undefined),
     retry: () => attempt.update((count) => count + 1),
   }
+}
+
+/** A select's one answer, or a list's every answer, as the values a source is asked to name. */
+export function storedValues(value: unknown): readonly string[] {
+  if (typeof value === 'string') return value === '' ? [] : [value]
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item !== '')
+}
+
+/** Two lists of stored values hold the same, so the names asked for do not move. */
+export function sameValues(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index])
 }

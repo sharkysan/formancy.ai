@@ -170,6 +170,10 @@ export const FORM_WORDS = {
   /** A plain select's: nobody can type into one, and moving to it asks again. */
   'options.failedListed':
     'The options could not be loaded. They are asked for again each time you move to this field.',
+  /** A list of ticks': it may have no box to move to, so `options.retry` asks again (0215). */
+  'options.failedTicks': 'The options could not be loaded.',
+  /** The button under a list of ticks whose source failed, which asks it again. */
+  'options.retry': 'Try again',
   /** A typeahead's, below its source's minimum. */
   'options.tooShort': {
     one: 'Type at least {count} character to search.',

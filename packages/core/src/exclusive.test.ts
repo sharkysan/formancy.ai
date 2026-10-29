@@ -59,4 +59,15 @@ describe('a tick', () => {
   test('on any other clears the exclusive ones', () => {
     expect(ticked(allergies, ['none'], 'milk', true)).toEqual(['milk'])
   })
+
+  // A list whose options come from a source has none written, so the written order was empty
+  // and kept nothing: a tick on a sourced row stored no answer at all (0215). Its answers stay
+  // in the order they were ticked, since no order is written to keep them in.
+  test('on a list from a source keeps every answer, in the order ticked', () => {
+    const sourced: FieldDef = { key: 'stops', type: 'selectboxes', label: 'Stops', optionsSource: 'stops' }
+    expect(ticked(sourced, [], 'bern', true)).toEqual(['bern'])
+    expect(ticked(sourced, ['bern'], 'aarau', true)).toEqual(['bern', 'aarau'])
+    expect(ticked(sourced, ['bern', 'aarau'], 'bern', false)).toEqual(['aarau'])
+    expect(ticked(sourced, ['bern'], 'bern', true)).toEqual(['bern'])
+  })
 })

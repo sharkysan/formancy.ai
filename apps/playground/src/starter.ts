@@ -143,6 +143,16 @@ export const STARTER_SCHEMA = {
         widget: 'typeahead',
         optionsSource: 'pickup-points',
       },
+      // The same source behind several answers: a tag picker asks it what is typed, and
+      // each chip is named by the row it was chosen from (0215). The answer is the points'
+      // codes in the order they were chosen, since a source writes down no order.
+      {
+        key: 'otherPoints',
+        type: 'selectboxes',
+        label: { $t: 'otherPoints' },
+        widget: 'tagpicker',
+        optionsSource: 'pickup-points',
+      },
 
       // The same construct as `items` above, with `widget: 'datagrid'`. Three short
       // answers per row, deliberately: a grid earns its keep when the columns line up
@@ -462,6 +472,8 @@ export const STARTER_SCHEMA = {
                     { kind: 'field', path: 'interests', span: 'all' },
                     { kind: 'field', path: 'cardLanguage' },
                     { kind: 'field', path: 'deliveryPoint' },
+                    // Spanning, for the chips, as `interests` does.
+                    { kind: 'field', path: 'otherPoints', span: 'all' },
                     { kind: 'field', path: 'message', span: 'all' },
                     { kind: 'field', path: 'artwork', span: 'all' },
                     // Spanning, because a signing box that is half a row wide is a

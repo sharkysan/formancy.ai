@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**A list of ticks draws its source's rows, as tick boxes or as a tag picker.** Since spec 3 a
+`selectboxes` may name an `optionsSource`, and the server checks every value of its answer, but
+neither renderer drew the source's rows: tick boxes over a source were an empty group and a tag
+picker a combobox with nothing in its list, and a tick would have stored nothing, since `ticked`
+kept only values the document lists. Now tick boxes ask the source once, as a plain select does,
+and a tag picker asks with what is typed, as a typeahead does. What the form already holds is
+ticked and its chips named, from one request for every unnamed value. A sourced answer is stored
+in the order ticked, since no order is written. Each says what its list leaves out in the select's
+or the typeahead's words. A failed list of ticks says so and draws a **Try again** button, which
+keeps the focus while it asks and hands it to the first box once the rows arrive. In Angular the
+source is no longer asked twice under a tag picker. New: the parts `checkbox-status`,
+`tagpicker-status` and `checkbox-retry`, which every theme styles; the words `options.failedTicks`
+and `options.retry`; a `ticks` control in `optionsStatus`; and in the playground, a tag picker over
+its pickup points ([0215](docs/decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)).
+
 **The review before sending names a question left unanswered.** With `review` on, the list of
 answers left out an optional question nobody answered, so one skipped by mistake was missing at the
 moment the form asks the person to check, from a list that read as complete. It now lists every

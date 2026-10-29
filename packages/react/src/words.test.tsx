@@ -629,6 +629,17 @@ describe('every live region in a German form', () => {
     await waitFor(() => expect(status('select-status')).toBe(de('options.failedListed')))
   })
 
+  // A list of ticks' failure says only that, and its button asks again (0215).
+  test('says a list of ticks’ failed source and its way to ask again, in German', async () => {
+    const sources: OptionsSources = { orte: { debounceMs: 0, resolve: () => Promise.reject(new Error('down')) } }
+    mount(document([{ key: 'orte', type: 'selectboxes', label: 'Orte', optionsSource: 'orte' }]), {
+      around: (form) => <OptionsSourcesProvider value={sources}>{form}</OptionsSourcesProvider>,
+    })
+    await waitFor(() => expect(status('checkbox-status')).toBe(de('options.failedTicks')))
+    expect(screen.getByRole('button', { name: de('options.retry') })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: en('options.retry') })).toBeNull()
+  })
+
   test('says what a plain select’s list leaves out in German: capped, more, search only', async () => {
     // A select's own sentences, each the one a German reader of a list nobody types into
     // meets: the English literal back in any of them is a half-translated form.

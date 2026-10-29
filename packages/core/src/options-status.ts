@@ -9,8 +9,11 @@ import type { FormText } from './words.js'
  * field rather than a second function: one order, two vocabularies.
  */
 export interface OptionsStatusState {
-  /** A `typeahead` takes typing; a plain `select` cannot, and has words of its own. */
-  readonly control: 'typeahead' | 'select'
+  /**
+   * A `typeahead` or a tag picker takes typing; a plain `select` cannot, and has words of its
+   * own; a list of `ticks` cannot either, and asks again from a button when it failed (0215).
+   */
+  readonly control: 'typeahead' | 'select' | 'ticks'
   /** Whether a typeahead's list is showing. A select has no such event, and passes `true`. */
   readonly open: boolean
   /** Disabled by a rule: nothing it could say is something its person can act on. */
@@ -39,7 +42,8 @@ export interface OptionsStatusState {
  * In this order:
  *
  * 1. **Disabled** says nothing: a read-only record does not speak.
- * 2. **A failure**, in the control's words — a select cannot be typed into.
+ * 2. **A failure**, in the control's words — a select cannot be typed into, and a list of
+ *    ticks asks again from a button.
  * 3. **Below the source's minimum**: how many to type, or that a select cannot search.
  * 4. **A closed typeahead** stops there: only what typing fixes is said under a list nobody
  *    is looking at.
@@ -56,9 +60,12 @@ export interface OptionsStatusState {
  * region that spoke on every answer would talk over them.
  */
 export function optionsStatus(text: FormText, state: OptionsStatusState): string {
-  const listed = state.control === 'select'
+  const listed = state.control !== 'typeahead'
   if (state.disabled) return ''
-  if (state.failed) return text(listed ? 'options.failedListed' : 'options.failed')
+  if (state.failed) {
+    if (state.control === 'ticks') return text('options.failedTicks')
+    return text(listed ? 'options.failedListed' : 'options.failed')
+  }
   if (state.query.trim().length < state.needs) {
     return listed ? text('options.searchOnly') : text('options.tooShort', { count: state.needs })
   }

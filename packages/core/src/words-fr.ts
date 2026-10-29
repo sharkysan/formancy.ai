@@ -85,6 +85,8 @@ export const FORM_WORDS_FR = {
   'options.failed': 'Les options n’ont pas pu être chargées. Tapez pour réessayer.',
   'options.failedListed':
     'Les options n’ont pas pu être chargées. Elles sont redemandées chaque fois que vous revenez à ce champ.',
+  'options.failedTicks': 'Les options n’ont pas pu être chargées.',
+  'options.retry': 'Réessayer',
   'options.tooShort': {
     one: 'Tapez au moins {count} caractère pour rechercher.',
     other: 'Tapez au moins {count} caractères pour rechercher.',
