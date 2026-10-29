@@ -1,4 +1,4 @@
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 
 /**
  * What the starter form is supposed to do, written down.

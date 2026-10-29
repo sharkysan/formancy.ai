@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**An author's tools leave the engine's barrel, for `@formancy/core/authoring`.** Every form loads
+`@formancy/core`, held to 18 kB since 0208, and it measured 17.97 kB, so almost any change to the
+engine would have failed the gate. Three of its exports are what an author's tools run on a
+document and no form ever calls: `runScenarios`, `expressionProblems` and `unknownReferences`. They,
+`MIXED_NUMERIC_LITERAL_EXAMPLE` and their types are now a fourth entry, `@formancy/core/authoring`,
+and the barrel, measured with every chunk it imports, is 16.06 kB. **Breaking** for a host that
+imported any of them from `@formancy/core`: [`MIGRATIONS.md`](MIGRATIONS.md) says what to change
+([0217](docs/decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)).
+
 **A computed field shows the engine's answer, in words, and nothing in it can be changed.** Only a
 box a person types into has a read-only state, so a tick box, a choice, a list, a ranking, a
 matrix, a rating, a slider, a picker, rich text, a file or a signature that a `computed` rule

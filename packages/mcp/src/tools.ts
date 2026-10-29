@@ -1,8 +1,9 @@
 import { authoringFacts, diffSchemas, schemaHash } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { Change, FormSchema } from '@formancy/spec'
-import { engineRefusal, expressionProblems, runScenarios } from '@formancy/core'
-import type { Scenario } from '@formancy/core'
+import { engineRefusal } from '@formancy/core'
+import { expressionProblems, runScenarios } from '@formancy/core/authoring'
+import type { Scenario } from '@formancy/core/authoring'
 
 /**
  * What formancy can be asked to do by a coding agent, as plain functions.

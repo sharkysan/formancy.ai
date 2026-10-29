@@ -23,7 +23,9 @@ import {
 import { validateSchema } from '@formancy/spec/validate'
 import schemaJson from '@formancy/spec/schema.json'
 import { parse, referencedPaths, rewritePath } from '@formancy/expressions'
-import { createFormEngine, expressionProblems, unknownReferences } from '@formancy/core'
+import { createFormEngine } from '@formancy/core'
+// An author's tools' entry, which no form loads (0217): resolved through the exports map here too.
+import { expressionProblems, unknownReferences } from '@formancy/core/authoring'
 import {
   applyProposal,
   authorForm,

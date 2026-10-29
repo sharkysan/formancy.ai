@@ -590,7 +590,7 @@ held for what it is about
 import { useState } from 'react'
 import { createDraftRun, createRelay, createTranslationRun } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import { RelayPane, ScenarioPane, TranslationsPane } from '@formancy/builder-react'
 
 export function Tabs({ session, tab }: { session: BuilderSession; tab: 'fields' | 'translations' }) {

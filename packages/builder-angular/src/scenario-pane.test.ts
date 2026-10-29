@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createBuilderSession } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyScenarioPane } from './scenario-pane.js'
 

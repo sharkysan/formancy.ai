@@ -17,6 +17,10 @@
     "./summary": {
       "types": "./dist/summary.d.mts",
       "default": "./dist/summary.mjs"
+    },
+    "./authoring": {
+      "types": "./dist/authoring.d.mts",
+      "default": "./dist/authoring.mjs"
     }
   },
   "files": [

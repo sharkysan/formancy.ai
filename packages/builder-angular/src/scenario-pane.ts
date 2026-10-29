@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { createRunHistory, scenarioStatus } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
-import { runScenarios } from '@formancy/core'
+import { runScenarios } from '@formancy/core/authoring'
 import { FormancyScenarioDrafts } from './scenario-drafts.js'
 import type { AskModel, BuilderSession, DraftRun, Scenario, ScenarioResult } from './types.js'
 import { injectBuilderView } from './view.js'

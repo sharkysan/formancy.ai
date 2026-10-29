@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
 import { comparedToLastRun, createRunHistory, scenarioStatus } from '@formancy/builder-core'
-import { runScenarios } from '@formancy/core'
+import { runScenarios } from '@formancy/core/authoring'
 import type { AskModel, BuilderSession, DraftRun } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import { ScenarioDrafts } from './scenario-drafts.js'
 
 /**

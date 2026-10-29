@@ -317,3 +317,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0214](0214-the-review-names-a-question-left-unanswered.md) | The review names a question left unanswered, from the walk a submission read back takes | accepted |
 | [0215](0215-a-list-of-ticks-draws-its-sources-rows.md) | A list of ticks draws its source's rows, as tick boxes or as a tag picker | accepted |
 | [0216](0216-a-computed-answer-is-read-not-operated.md) | A computed field with no read-only control is drawn as its answer in words | accepted |
+| [0217](0217-what-no-form-runs-leaves-the-engine-barrel.md) | What only an author's tools run leaves the engine's barrel, for `@formancy/core/authoring` | accepted |

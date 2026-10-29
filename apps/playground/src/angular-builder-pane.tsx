@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderBlock, BuilderSession, Relay } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import { mountAngularBuilder } from './angular-builder-bootstrap.js'
 import type { BuilderTab, MountedBuilder, PreviewState } from './angular-builder-bootstrap.js'
 import type { ModelRuns } from './angular-builder-host.js'

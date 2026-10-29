@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import type { AskModel } from './answers.js'
 import { createDraftRun, draftsOn } from './draft-run.js'

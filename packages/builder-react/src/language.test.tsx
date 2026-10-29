@@ -22,8 +22,8 @@ import {
   translateCatalogue,
   untranslated,
 } from '@formancy/builder-core'
-import { runScenarios } from '@formancy/core'
-import type { Scenario } from '@formancy/core'
+import { runScenarios } from '@formancy/core/authoring'
+import type { Scenario } from '@formancy/core/authoring'
 import { DECLINE_KEY } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyBuilder } from './builder.js'

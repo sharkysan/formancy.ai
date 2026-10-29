@@ -1,4 +1,4 @@
-import type { ScenarioResult } from '@formancy/core'
+import type { ScenarioResult } from '@formancy/core/authoring'
 import type { BuilderText } from './messages.js'
 
 /**

@@ -1,5 +1,6 @@
 import { formatPath } from '@formancy/core'
-import type { BuiltInErrorCode, Scenario } from '@formancy/core'
+import type { BuiltInErrorCode } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import { DECLINE_KEY, LIST_VALUED_FIELD_TYPES, resolveText } from '@formancy/spec'
 import type { FieldDef, FieldType, FormSchema, Text } from '@formancy/spec'
 import type { DraftProblem, UnusableDraft } from './scenario-drafts.js'

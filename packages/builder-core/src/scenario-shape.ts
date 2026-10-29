@@ -1,4 +1,4 @@
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 
 /**
  * What an example is, read from JSON somebody else wrote.

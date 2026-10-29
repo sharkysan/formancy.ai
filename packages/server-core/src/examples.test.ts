@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import type { Actor } from './auth.js'
 import type { ServerDeps } from './deps.js'
