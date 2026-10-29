@@ -1,6 +1,6 @@
 ---
 title: Lists from a source
-description: How a select gets its answers from the deployment by name, what a source may answer — every row, or one page that says it goes on — what is refused whole, and what each control says and when.
+description: How a select or a list of ticks gets its answers from the deployment by name, what a source may answer — every row, or one page that says it goes on — what is refused whole, and what each control says and when.
 ---
 
 A `select` usually carries its answers. One that names an `optionsSource` gets them from the
@@ -28,6 +28,29 @@ may be chosen" has no rule for which one wins.
 
 The plain select honours a source, and so does `widget: "typeahead"`, which is the control the
 feature is for: a list too long to scroll is a list to search.
+
+**A `selectboxes` may name one too**, for several answers from the deployment's list
+([0215](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)):
+
+```json
+{
+  "key": "otherPoints",
+  "type": "selectboxes",
+  "widget": "tagpicker",
+  "label": "Other points that would suit you",
+  "optionsSource": "pickup-points"
+}
+```
+
+- **Tick boxes ask once, with nothing typed, as a plain select does**, and draw a box per row.
+- **A tag picker asks with what is typed, as a typeahead does**, and names each chip by the row it
+  was chosen from.
+- **What the form already holds is ticked, or shown as chips, named by the source.** The names
+  are asked for in one request.
+- **The answer is the rows' values, in the order they were ticked.** A source writes no order
+  down, so two people choosing the same rows in a different order store different lists.
+- **No sourced answer can be exclusive.** `exclusive` is an option's property, and a sourced
+  field has no options.
 
 ## Supplying the sources
 
@@ -158,6 +181,10 @@ short. An open list with nothing in it and nothing else to say says *No options 
 and nowhere to type, so its sentences ask nobody to type. Over a source with a minimum it never
 asks, since its question is always the empty one.
 
+**A tag picker says what a typeahead says, and tick boxes what a plain select says**, but for a
+failure. A list of ticks that did not arrive may have no box to move to, so it says only *The
+options could not be loaded.* and draws a **Try again** button.
+
 **A field a rule disables says nothing**, and asks its source only for the name of what it holds:
 no search, no busy box. A saved record opened read-only reads no page for any of its lookups. A
 typeahead whose list was open when the rule landed hides it, so no row is left to click into a
@@ -179,12 +206,16 @@ the typeahead's sentence do not reach it
 
 ## A select whose source failed asks again
 
-A typeahead asks again on the next keystroke. A select cannot be typed into and its question never
+A typeahead, or a tag picker, asks again on the next keystroke. A select cannot be typed into and its question never
 changes, so it asks again when the person moves to it — on focus, which comes before every way of
 opening a native select, by pointer or by keyboard — and only after a failure, so a working select
 is not asked again on every visit. Not on a timer: that would put load on a source that is down
 from every sourced select on every open form, and a live region would speak on a schedule nobody
 chose.
+
+Tick boxes ask again from their **Try again** button. The button stays, with the focus on it, while
+the source is asked again. Once the rows arrive the focus moves to the first box, rather than
+falling to the page when the button goes; if it fails again, the focus stays on the button.
 
 ## On the server
 
@@ -209,25 +240,22 @@ server, is drawn in the architecture's
 | --- | --- |
 | `typeahead-status` | The typeahead's status line. `data-state="failed"` while its source has failed |
 | `select-status` | The plain select's status line |
+| `tagpicker-status` | A sourced tag picker's status line. `data-state="failed"` while its source has failed |
+| `checkbox-status` | Sourced tick boxes' status line. `data-state="failed"` while its source has failed |
+| `checkbox-retry` | Sourced tick boxes' **Try again** button, drawn while their source has failed |
 
 ## Not built
 
 - **The active option is not scrolled into view**, so a keyboard user arrowing down a long page
   does not see where they are past what the theme's list shows
   ([0072](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)).
-- **A typeahead asks for a page when it is drawn**, before anybody opens it, if its source has no
+- **A typeahead, or a tag picker, asks for a page when it is drawn**, before anybody opens it, if its source has no
   minimum and the field is enabled — one read per such field per form opened. Over a source with a
   minimum it asks nothing until somebody types that much.
-- **A `selectboxes` fed by a source**, as tick boxes or as a tag picker. The format allows
-  `optionsSource` on a `selectboxes` from version 3, and the server checks each value submitted
-  as it does a select's, but neither renderer offers the source's rows: React's control reads
-  only the document's options and asks the source nothing; Angular's asks for a page, as a plain
-  select does, and draws none of it. Either shows the question with nothing to choose.
+- **Tick boxes show the first page and nothing more.** They ask once, with nothing typed, so over
+  a source with more rows than they show they draw the first ones and say how many. A field over
+  such a list wants the tag picker, as a select over one wants the typeahead.
 - **A "Show more" row, or an offset to ask for the next page.** An option that is not an answer
   would be something the person could choose and the field could not store.
 - **Checking the source.** The control believes what it is told: a page that says `more: false`
   when more rows match is a list that looks complete, and nothing here can tell.
-- **A source for a `selectboxes`.** The format allows `optionsSource` on one since spec 3, and the
-  server checks every value in its answer, but neither renderer asks a source for a tag picker's
-  or tick boxes' rows: such a field draws the document's options, of which it has none, and says
-  nothing. Use a `select` with `widget: "typeahead"` for one answer from a source.

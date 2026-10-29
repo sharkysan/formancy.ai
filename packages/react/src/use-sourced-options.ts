@@ -7,10 +7,11 @@ import { useOptionsSources } from './options-source.js'
 /**
  * A field's options, from the document or from the deployment.
  *
- * One hook for both controls — the plain `<select>` and the `typeahead` — because
- * `optionsSource` decides which answers EXIST rather than how they are shown, so a
- * select that ignored it would render an empty chooser over a field that collects
- * something.
+ * One hook for every control over a source — the plain `<select>`, the `typeahead`, a list
+ * of ticks and the tag picker — because `optionsSource` decides which answers EXIST rather
+ * than how they are shown, so a control that ignored it would render an empty chooser over
+ * a field that collects something. The ticks and the tag picker hold a list, so what is
+ * stored is a list of values here, a select's one answer being a list of one (0215).
  *
  * `unavailable` is the file field's branch, not the scanner's. A text field with no
  * scanner still collects by typing; a select whose options come only from a source
@@ -111,7 +112,9 @@ export function useSourcedOptions(
   const debounceMs = source?.debounceMs ?? DEBOUNCE_MS
   const minQueryLength = source?.minQueryLength ?? MIN_QUERY
   const maxRows = source?.maxRows ?? MAX_ROWS
-  const stored = typeof field.value === 'string' && field.value !== '' ? field.value : undefined
+  const stored = storedValues(field.value)
+  // A new array on every render, so the names below are asked for by what it holds.
+  const storedKey = stored.join('\u0000')
   // The field's DATA PATH, which is what `OptionsRequest.path` promises — `canton`, or
   // `people[1].canton` inside a repeater. It sent `def.key` before, so a resolver could
   // not tell two same-named sourced fields apart and never saw which row it was
@@ -219,9 +222,12 @@ export function useSourcedOptions(
    */
   const askedFor = useRef<Set<string>>(new Set())
   useEffect(() => {
-    if (!enabled || source === undefined || stored === undefined) return
-    if (named.has(stored) || askedFor.current.has(stored)) return
-    askedFor.current.add(stored)
+    if (!enabled || source === undefined || storedKey === '') return
+    // Every value not yet asked about, in one request: a list of ticks resumed with five
+    // answers asks once, not five times.
+    const unnamed = storedKey.split('\u0000').filter((value) => !named.has(value) && !askedFor.current.has(value))
+    if (unnamed.length === 0) return
+    for (const value of unnamed) askedFor.current.add(value)
 
     const controller = new AbortController()
     void source
@@ -230,9 +236,9 @@ export function useSourcedOptions(
         source: name ?? '',
         path,
         query: '',
-        values: [stored],
+        values: unnamed,
         locale: engine.locale(),
-        limit: 1,
+        limit: unnamed.length,
         signal: controller.signal,
       })
       .then((answer) => {
@@ -251,7 +257,7 @@ export function useSourcedOptions(
       .catch(() => undefined)
 
     return () => controller.abort()
-  }, [enabled, source, name, path, stored, named, engine])
+  }, [enabled, source, name, path, storedKey, named, engine])
 
   if (name === undefined) {
     return {
@@ -263,13 +269,12 @@ export function useSourcedOptions(
     }
   }
 
-  // The stored answer is always offerable, even when the current query does not match
-  // it: a control that dropped it would show an empty box over an answer the form
-  // holds, and the next blur would look like the person cleared it.
-  const offered = [...rows]
-  if (stored !== undefined && !offered.some((row) => row.value === stored)) {
-    offered.unshift({ value: stored, label: named.get(stored) ?? stored })
-  }
+  // A stored answer is always offerable, even when the current query does not match it: a
+  // control that dropped it would show an empty box over an answer the form holds, and the
+  // next blur would look like the person cleared it — or, in a list of ticks, an untick
+  // nobody could make.
+  const unlisted = stored.filter((value) => !rows.some((row) => row.value === value))
+  const offered = [...unlisted.map((value) => ({ value, label: named.get(value) ?? value })), ...rows]
 
   return {
     options: offered,
@@ -282,4 +287,11 @@ export function useSourcedOptions(
       retry,
     },
   }
+}
+
+/** A select's one answer, or a list's every answer, as the values a source is asked to name. */
+function storedValues(value: unknown): string[] {
+  if (typeof value === 'string') return value === '' ? [] : [value]
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item !== '')
 }

@@ -585,6 +585,18 @@ describe('every live region in a German form', () => {
     await waitFor(() => expect(status('select-status')).toBe(de('options.failedListed')))
   })
 
+  // The React binding's case: a list of ticks' failure says only that, and its button asks
+  // again (0215).
+  test('says a list of ticks’ failed source and its way to ask again, in German', async () => {
+    const sources: OptionsSources = { orte: { debounceMs: 0, resolve: () => Promise.reject(new Error('down')) } }
+    await mount(document_([{ key: 'orte', type: 'selectboxes', label: 'Orte', optionsSource: 'orte' }]), {
+      providers: [provideFormancyOptionsSources(sources)],
+    })
+    await waitFor(() => expect(status('checkbox-status')).toBe(de('options.failedTicks')))
+    expect(await screen.findByRole('button', { name: de('options.retry') })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: en('options.retry') })).toBeNull()
+  })
+
   test('says what a plain select’s list leaves out in German: capped, more, search only', async () => {
     // A list nobody can type into has sentences of its own, and each is found here by its
     // German, so one written back as English, or as the typeahead's, fails by name.

@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ticked } from '@formancy/core'
+import { optionsStatus } from '@formancy/core/words'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
+import { useSourcedOptions } from '../use-sourced-options.js'
 import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
-import type { FieldComponentProps } from './internals.js'
+import type { FieldComponentProps, ResolvedOption } from './internals.js'
 
 
 /**
@@ -61,22 +63,44 @@ export function SelectBoxesSwitch(props: FieldComponentProps) {
 export function TagPickerField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const text = useFormText()
-  const options = useResolvedOptions(field)
   const chosen = Array.isArray(field.value) ? (field.value as unknown[]).map(String) : []
 
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const listboxId = `${field.ids.control}:listbox`
 
+  // The document's options, or the source's rows for what was typed, the chosen ones named
+  // among them (0215). Every hook before the branch below, as the select's are.
+  const written = useResolvedOptions(field)
+  const sourced = useSourcedOptions({ ...field, path }, query)
+  const remote = sourced.remote
+  const options: readonly ResolvedOption[] = remote === null ? written : sourced.options
+
   // Not already chosen, then narrowed by what was typed. Offering an answer
-  // somebody has already given is offering them a way to do nothing.
+  // somebody has already given is offering them a way to do nothing. A source's rows are
+  // not narrowed again: it was handed the query, as the typeahead's is.
   const remaining = options.filter((option) => !chosen.includes(option.value))
-  const matches = narrowOptionsByLabel(remaining, query)
+  const matches = remote === null ? narrowOptionsByLabel(remaining, query) : remaining
   // A field a rule disabled draws no list, whatever the person had open: the list and the
   // chips' remove buttons are outside the text box, and the engine does not refuse a value
   // set on a disabled field, so each element is its own guard (B6a). Derived rather than
   // closed in answer to the rule, as the typeahead's is (0177).
   const expanded = open && !field.disabled && matches.length > 0
+  // In the typeahead's words: typing asks again, and what the list leaves out is said only
+  // while it is open (0177).
+  const said =
+    remote === null
+      ? ''
+      : optionsStatus(text, {
+          control: 'typeahead',
+          open: open && !field.disabled,
+          disabled: field.disabled,
+          failed: remote.failed,
+          busy: remote.busy,
+          needs: remote.needs,
+          query,
+          completeness: remote.completeness,
+        })
 
   const add = (value: string): void => {
     // In the options' own order, and an exclusive option alone (0199): the core's, as the
@@ -92,6 +116,18 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
 
   const labelFor = (value: string): string =>
     options.find((option) => option.value === value)?.label ?? value
+
+  // The document names a source this deployment does not have: said where the combobox
+  // would be, which could never answer, as the select says it.
+  if (remote?.unavailable === true) {
+    return (
+      <FieldShell path={path} field={field} label={label}>
+        <p data-formancy-part="options-unavailable">
+          {text('options.unavailable', { source: field.def.optionsSource ?? '' })}
+        </p>
+      </FieldShell>
+    )
+  }
 
   /*
    * A shell with a `<label>`, not a `<fieldset>` with a `<legend>`.
@@ -137,6 +173,8 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
             aria-expanded={expanded}
             aria-controls={listboxId}
             aria-autocomplete="list"
+            // Busy while a source is asked, never disabled: the box is where somebody types.
+            aria-busy={remote?.busy === true ? true : undefined}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value)
@@ -188,6 +226,13 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
             ))}
           </ul>
         </div>
+        {/* Only a sourced tag picker has anything to say, and never in the error region:
+            a source being down is not a wrong answer. */}
+        {remote === null ? null : (
+          <p role="status" data-formancy-part="tagpicker-status" data-state={remote.failed ? 'failed' : undefined}>
+            {said}
+          </p>
+        )}
       </div>
     </FieldShell>
   )
@@ -195,9 +240,47 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
 
 export function SelectBoxesField({ path, label }: FieldComponentProps) {
   const field = useField(path)
-  const options = useResolvedOptions(field)
+  const text = useFormText()
+  // The document's options, or the source's rows asked with the empty query, since nobody
+  // types into a list of ticks, with what the form holds among them (0215).
+  const written = useResolvedOptions(field)
+  const sourced = useSourcedOptions({ ...field, path }, '')
+  const remote = sourced.remote
+  const options: readonly ResolvedOption[] = remote === null ? written : sourced.options
   const showError = field.touched && field.errors.length > 0
   const chosen = Array.isArray(field.value) ? (field.value as unknown[]) : []
+
+  /*
+   * Asking again from the button keeps the button until the source answers: it goes with the
+   * failure, and focus on an element that goes falls to the page, where nothing is said, since
+   * success is not announced. Answered, the focus moves to the first box if it was still on the
+   * button; failed again, it stays there.
+   */
+  const group = useRef<HTMLFieldSetElement | null>(null)
+  const again = useRef<HTMLButtonElement | null>(null)
+  const [retrying, setRetrying] = useState(false)
+  const settled = remote !== null && !remote.busy && !remote.failed
+  useEffect(() => {
+    if (!retrying || !settled) return
+    setRetrying(false)
+    if (document.activeElement === again.current) {
+      group.current?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus()
+    }
+  }, [retrying, settled])
+
+  const said =
+    remote === null
+      ? ''
+      : optionsStatus(text, {
+          control: 'ticks',
+          open: true,
+          disabled: field.disabled,
+          failed: remote.failed,
+          busy: remote.busy,
+          needs: remote.needs,
+          query: '',
+          completeness: remote.completeness,
+        })
 
   const toggle = (value: string, on: boolean): void => {
     // Rebuilt in the options' own order rather than in the order they were ticked, so two
@@ -211,15 +294,24 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
     // The field's control id on the group, and each box keeps its own, as the radio group
     // does and for its reason (0186).
     <fieldset
+      ref={group}
       id={field.ids.control}
       data-formancy-part="field"
       data-formancy-field-path={path}
       data-state={showError ? 'invalid' : 'valid'}
       aria-describedby={field.controlProps['aria-describedby']}
+      aria-busy={remote?.busy === true ? true : undefined}
     >
       <legend data-formancy-part="label">{label}</legend>
       <RequiredHint field={field} />
       <Description field={field} />
+      {/* A source the deployment does not have: said where the boxes would be, rather than
+          an empty group that collects nothing. */}
+      {remote?.unavailable === true ? (
+        <p data-formancy-part="options-unavailable">
+          {text('options.unavailable', { source: field.def.optionsSource ?? '' })}
+        </p>
+      ) : null}
       {options.map((option) => {
         const optionId = `${field.ids.control}:${option.value}`
         return (
@@ -241,6 +333,26 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
           </span>
         )
       })}
+      {/* What a sourced list says, never in the error region; and, when its source failed,
+          a way to ask again, since a list that did not arrive may have no box to move to. */}
+      {remote === null || remote.unavailable ? null : (
+        <p role="status" data-formancy-part="checkbox-status" data-state={remote.failed ? 'failed' : undefined}>
+          {said}
+        </p>
+      )}
+      {remote !== null && (remote.failed || retrying) && !field.disabled ? (
+        <button
+          ref={again}
+          type="button"
+          data-formancy-part="checkbox-retry"
+          onClick={() => {
+            setRetrying(true)
+            remote.retry()
+          }}
+        >
+          {text('options.retry')}
+        </button>
+      ) : null}
       {showError ? <ErrorText field={field} /> : null}
     </fieldset>
   )

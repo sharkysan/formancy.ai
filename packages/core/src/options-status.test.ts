@@ -55,6 +55,17 @@ describe('what a sourced control says', () => {
     expect(status({ ...everything, control: 'select' })).toBe('options.failedListed')
   })
 
+  test('a list of ticks that failed says only that, since a button asks again', () => {
+    // A failed list of ticks may have no box to move to, so "asked for again each time you
+    // move to this field" would promise what it cannot do; its button asks again (0215).
+    // Everything else it says in a select's words: nobody types into it either.
+    const everything = { failed: true, busy: true, needs: 3, query: 'a', completeness: more }
+    expect(status({ ...everything, control: 'ticks' })).toBe('options.failedTicks')
+    expect(status({ control: 'ticks', needs: 3 })).toBe('options.searchOnly')
+    expect(status({ control: 'ticks', open: false, completeness: more })).toBe('options.moreListed {"count":6}')
+    expect(status({ control: 'ticks', disabled: true, failed: true })).toBe('')
+  })
+
   test('below the source’s minimum, how many to type, or for a select that it cannot search', () => {
     // The typeahead says how many characters, trimmed as the search is; a select has
     // nowhere to type, so "type at least 3 characters" is advice it cannot take.
@@ -119,6 +130,7 @@ describe('what a sourced control says', () => {
     const states: Array<Partial<OptionsStatusState>> = [
       { failed: true },
       { control: 'select', failed: true },
+      { control: 'ticks', failed: true },
       { needs: 3 },
       { control: 'select', needs: 3 },
       { busy: true },

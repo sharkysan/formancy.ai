@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core'
 import { ticked } from '@formancy/core'
+import { optionsStatus } from '@formancy/core/words'
 import { narrowOptionsByLabel } from '@formancy/spec'
-import { FormancyTextPipe } from '../text.js'
+import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 import { FormancyErrorText } from './error-text.js'
 
@@ -44,6 +45,13 @@ import { FormancyErrorText } from './error-text.js'
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell, FormancyTextPipe],
   template: `
+    @if (remote.unavailable()) {
+      <!-- The document names a source this deployment does not have: said where the
+           combobox would be, which could never answer, as the select says it (0215). -->
+      <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+        <p data-formancy-part="options-unavailable">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
+      </formancy-field-shell>
+    } @else {
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <div data-formancy-part="tagpicker">
         @if (chosen().length > 0) {
@@ -80,6 +88,7 @@ import { FormancyErrorText } from './error-text.js'
             [attr.aria-expanded]="expanded()"
             [attr.aria-controls]="listboxId()"
             aria-autocomplete="list"
+            [attr.aria-busy]="remote.busy() ? true : null"
             [value]="query()"
             (input)="onQuery($event)"
             (click)="open.set(true)"
@@ -106,26 +115,36 @@ import { FormancyErrorText } from './error-text.js'
             }
           </ul>
         </div>
+        <!-- Only a sourced tag picker has anything to say, and never in the error region: a
+             source being down is not a wrong answer. -->
+        @if (remote.sourced()) {
+          <p role="status" data-formancy-part="tagpicker-status" [attr.data-state]="remote.failed() ? 'failed' : null">{{ sourceStatus() }}</p>
+        }
       </div>
     </formancy-field-shell>
+    }
   `,
 })
 export class FormancyTagPickerField extends FieldComponentBase {
-  protected readonly query = signal('')
+  /** What is typed, which is what a source is asked: the base's query, so the search reads it. */
+  protected readonly query = this.sourceQuery
   protected readonly open = signal(false)
+  protected readonly sourceName = computed(() => this.field.snapshot().def.optionsSource ?? '')
+  private readonly words = injectFormText()
 
   protected readonly chosen = computed(() => {
     const value = this.field.snapshot().value
     return Array.isArray(value) ? value.map(String) : []
   })
 
-  /** Not already chosen, then narrowed by what was typed. */
-  protected readonly matches = computed(() =>
-    narrowOptionsByLabel(
-      this.options().filter((option) => !this.chosen().includes(option.value)),
-      this.query(),
-    ),
-  )
+  /**
+   * Not already chosen, then narrowed by what was typed — the document's options. A source's
+   * rows are not narrowed again: it was handed the query, as the typeahead's is (0215).
+   */
+  protected readonly matches = computed(() => {
+    const remaining = this.offered().filter((option) => !this.chosen().includes(option.value))
+    return this.remote.sourced() ? remaining : narrowOptionsByLabel(remaining, this.query())
+  })
 
   /**
    * A field a rule disabled draws no list, whatever the person had open: the list and the
@@ -138,8 +157,22 @@ export class FormancyTagPickerField extends FieldComponentBase {
   )
   protected readonly listboxId = computed(() => `${this.control().id}:listbox`)
 
+  /** In the typeahead's words: typing asks again, and what is left out is said while open. */
+  protected readonly sourceStatus = computed(() =>
+    optionsStatus(this.words, {
+      control: 'typeahead',
+      open: this.open() && !this.field.snapshot().disabled,
+      disabled: this.field.snapshot().disabled,
+      failed: this.remote.failed(),
+      busy: this.remote.busy(),
+      needs: this.remote.needs(),
+      query: this.query(),
+      completeness: this.remote.completeness(),
+    }),
+  )
+
   protected labelFor(value: string): string {
-    return this.options().find((option) => option.value === value)?.label ?? value
+    return this.offered().find((option) => option.value === value)?.label ?? value
   }
 
   protected onQuery(event: Event): void {
@@ -203,6 +236,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
       [attr.data-formancy-field-path]="context.path"
       [attr.data-state]="showError() ? 'invalid' : 'valid'"
       [attr.aria-describedby]="control()['aria-describedby']"
+      [attr.aria-busy]="remote.busy() ? true : null"
     >
       <legend data-formancy-part="label">{{ context.label }}</legend>
       @if (field.snapshot().required) {
@@ -216,7 +250,12 @@ export class FormancyTagPickerField extends FieldComponentBase {
       @if (field.snapshot().description; as said) {
         <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
       }
-      @for (option of options(); track option.value) {
+      @if (remote.unavailable()) {
+        <!-- A source the deployment does not have: said where the boxes would be, rather
+             than an empty group that collects nothing (0215). -->
+        <p data-formancy-part="options-unavailable">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
+      }
+      @for (option of offered(); track option.value) {
         <span data-formancy-part="checkbox-option">
           <input
             type="checkbox"
@@ -232,6 +271,14 @@ export class FormancyTagPickerField extends FieldComponentBase {
           <label [attr.for]="optionId(option)">@if (option.image; as image) {<img data-formancy-part="option-image" [src]="image.src" [alt]="image.alt" loading="lazy" decoding="async" />&ngsp;}{{ option.label }}</label>
         </span>
       }
+      <!-- What a sourced list says, never in the error region; and, when its source failed,
+           a way to ask again, since a list that did not arrive may have no box to move to. -->
+      @if (remote.sourced() && !remote.unavailable()) {
+        <p role="status" data-formancy-part="checkbox-status" [attr.data-state]="remote.failed() ? 'failed' : null">{{ sourceStatus() }}</p>
+      }
+      @if ((remote.failed() || retrying()) && !field.snapshot().disabled) {
+        <button type="button" data-formancy-part="checkbox-retry" (click)="retry()">{{ 'options.retry' | formancyText }}</button>
+      }
       @if (showError()) {
         <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
       }
@@ -241,6 +288,52 @@ export class FormancyTagPickerField extends FieldComponentBase {
 })
 export class FormancySelectBoxesField extends FieldComponentBase {
   protected readonly tagpicker = computed(() => this.field.snapshot().def.widget === 'tagpicker')
+  protected readonly sourceName = computed(() => this.field.snapshot().def.optionsSource ?? '')
+  private readonly words = injectFormText()
+
+  /** This one hands a tag picker over, which does its own asking: asked here too, the source
+   *  answered twice per search and one answer was read by nobody (0215). */
+  protected override sourceEnabled(): boolean {
+    return !this.tagpicker()
+  }
+
+  /**
+   * Asking again from the button keeps the button until the source answers, as the React
+   * binding's does: it goes with the failure, and focus on an element that goes falls to the
+   * page, where nothing is said, since success is not announced. Answered, the focus moves to
+   * the first box once it is drawn, if it was still on the button; failed again, it stays.
+   */
+  protected readonly retrying = signal(false)
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef)
+  private readonly injector = inject(Injector)
+  private readonly focusAfterRetry = effect(() => {
+    if (!this.retrying() || this.remote.busy() || this.remote.failed()) return
+    this.retrying.set(false)
+    const again = this.host.nativeElement.querySelector('[data-formancy-part="checkbox-retry"]')
+    if (again === null || document.activeElement !== again) return
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus(), {
+      injector: this.injector,
+    })
+  })
+
+  protected retry(): void {
+    this.retrying.set(true)
+    this.remote.retry()
+  }
+
+  /** In a select's words — nobody types into a list of ticks — but a failure is its own. */
+  protected readonly sourceStatus = computed(() =>
+    optionsStatus(this.words, {
+      control: 'ticks',
+      open: true,
+      disabled: this.field.snapshot().disabled,
+      failed: this.remote.failed(),
+      busy: this.remote.busy(),
+      needs: this.remote.needs(),
+      query: '',
+      completeness: this.remote.completeness(),
+    }),
+  )
 
   protected readonly showError = computed(() => {
     const snapshot = this.field.snapshot()

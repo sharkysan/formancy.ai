@@ -771,10 +771,10 @@ form's read answers.
 ```
 browser: use-sourced-options.ts, sourced-options.ts        host's OptionsSources       server
 ───────────────────────────────────────────────────        ─────────────────────       ──────
-a select names optionsSource "pickup-points"
+a select, or a list of ticks, names optionsSource "pickup-points"
   sources[name]?  none ──▶ options.unavailable where the chooser would be, nothing asked
-  a value stored ──▶ resolve({ kind: 'labels', values: [it] }) ───▶  its name
-                     once per value, disabled or not
+  values stored ──▶ resolve({ kind: 'labels', values: [the unnamed] }) ───▶  their names
+                     once per value, in one request, disabled or not
                      refused or failed ──▶ the value itself is shown
   the search, when drawn and whenever what it asks changes:
     the generation moves, the search before it is aborted  ───▶  signal.aborted
@@ -789,8 +789,9 @@ a select names optionsSource "pickup-points"
     capRemoteAnswer ──▶ the rows shown, and complete | more | capped | withheld
   offered: those rows, the stored answer first when they lack it
   optionsStatus ──▶ one sentence in the field's status region, never its error region
-  failed: a typeahead asks again on the next keystroke, a select when it is focused
-  chosen ──▶ engine.setValue: a string, and no list to hold it to
+  failed: a typeahead or tag picker asks again on the next keystroke, a select when it is
+          focused, tick boxes from their Try again button
+  chosen ──▶ engine.setValue: a string, or a list in the order ticked, and no list to hold it to
 
 POST /f/:path/submissions ───────────────────────────────────────────▶  the replay in 6.2, valid
                                                                        checkMembership
@@ -864,13 +865,20 @@ test imports a composition root — so the image as shipped is that deployment: 
 receives is stored with no source asked about it. A deployment wanting the check composes
 `createApp` itself, with `optionsSources` beside its storage.
 
-**Only a select asks.** A `selectboxes` may name a source since spec 3, and the server checks every
-value in its answer ([0085](../decisions/0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md)),
-but neither renderer draws a source's rows for one: the tag picker and the tick boxes draw the
-document's options, of which a sourced field has none, and say nothing. React asks the source
-nothing; Angular asks it for a page and draws none of it, twice under the tag picker. Measured on
-2026-10-18 by mounting a sourced `selectboxes`, with and without `widget: "tagpicker"`, in each
-renderer; no case in either suite holds it ([§11.2](11-risks-and-debt.md)).
+**A list of ticks asks as the select and the typeahead do.** A `selectboxes` may name a source since
+spec 3, and the server checks every value in its answer
+([0085](../decisions/0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md)).
+
+- **Tick boxes ask with the empty query, as a plain select does.** They say what a select says,
+  but for a failure: they draw a **Try again** button, which keeps the focus while it asks and
+  hands it to the first box when the rows arrive.
+- **A tag picker asks with what is typed, as a typeahead does.**
+- **What is stored is a list.** The names of every value not yet named are asked for in one
+  `labels` request, and every value the rows lack is offered first. A tick is stored in the order
+  ticked, since a sourced field writes no order down.
+
+Held by each renderer's `selectboxes-source.test`, by the same case names
+([0215](../decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)).
 
 The browser half is held by each renderer's `options-source.test`, near-copies with the same case
 names, since the conformance driver cannot supply a source; the server half by

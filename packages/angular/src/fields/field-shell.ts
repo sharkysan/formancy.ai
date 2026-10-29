@@ -6,7 +6,7 @@ import { injectField } from '../field.js'
 import type { FieldBinding } from '../field.js'
 import { injectEngine } from '../provide.js'
 import { injectFieldContext } from '../registry.js'
-import { injectSourcedOptions } from '../sourced-options.js'
+import { injectSourcedOptions, sameValues, storedValues } from '../sourced-options.js'
 import { FormancyErrorText } from './error-text.js'
 
 
@@ -113,10 +113,9 @@ export abstract class FieldComponentBase {
   protected readonly remote = injectSourcedOptions({
     sourceName: computed(() => this.field.snapshot().def.optionsSource),
     dataPath: () => this.context.path,
-    storedValue: computed(() => {
-      const value = this.field.snapshot().value
-      return typeof value === 'string' && value !== '' ? value : undefined
-    }),
+    // Compared by what it holds: a snapshot is rebuilt on every change, and a new list each
+    // time would wake the names effect on every keystroke.
+    stored: computed(() => storedValues(this.field.snapshot().value), { equal: sameValues }),
     query: this.sourceQuery,
     locale: () => this.engine.locale(),
     enabled: computed(() => this.sourceEnabled()),
@@ -137,17 +136,18 @@ export abstract class FieldComponentBase {
   /**
    * The options to offer: the document's, or the deployment's.
    *
-   * The stored answer is always offerable even when the current query does not match
-   * it — a control that dropped it would show an empty box over an answer the form
-   * holds, and the next blur would look like the person cleared it.
+   * A stored answer is always offerable even when the current query does not match it — a
+   * control that dropped it would show an empty box over an answer the form holds, and the
+   * next blur would look like the person cleared it, or, in a list of ticks, an untick
+   * nobody could make (0215).
    */
-  protected readonly offered = computed<ReadonlyArray<{ value: string; label: string }>>(() => {
+  protected readonly offered = computed<
+    ReadonlyArray<{ value: string; label: string; image?: { src: string; alt: string } }>
+  >(() => {
     if (!this.remote.sourced()) return this.options()
-    const rows = [...this.remote.rows()]
-    const stored = this.field.snapshot().value
-    if (typeof stored === 'string' && stored !== '' && !rows.some((row) => row.value === stored)) {
-      rows.unshift({ value: stored, label: this.remote.named().get(stored) ?? stored })
-    }
-    return rows
+    const rows = this.remote.rows()
+    const named = this.remote.named()
+    const unlisted = storedValues(this.field.snapshot().value).filter((value) => !rows.some((row) => row.value === value))
+    return [...unlisted.map((value) => ({ value, label: named.get(value) ?? value })), ...rows]
   })
 }

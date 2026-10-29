@@ -386,8 +386,8 @@ form naming sources records them, a form naming none records no such field.
 
 ### A7a. A list from a source looks complete when it is not
 
-*How it arises:* a select whose answers come from a source (A7) shows at most `maxRows` of
-the rows the source answered. A source backed by a database pages and does not count, and
+*How it arises:* a select or a list of ticks whose answers come from a source (A7) shows at most
+`maxRows` of the rows the source answered. A source backed by a database pages and does not count, and
 until [0177](../decisions/0177-a-source-may-say-its-list-goes-on.md), in `0.6.0`, it could answer rows and
 nothing else: one page was indistinguishable from every row there is, so it looked complete,
 or claimed a total of `limit + 1`. A row the source matched and could not hand over — a value
@@ -407,7 +407,11 @@ sentence for both renderers, and the sentence stands while a newer search is in 
 the rows it describes are still on screen. Verified by `packages/spec/src/options-source.test.ts`,
 `packages/core/src/options-status.test.ts` and each renderer's `options-source` test, which on
 0.5.0's renderers failed with a page refused as a failure and a capped sentence left standing
-under a closed list.
+under a closed list. A list of ticks says it in a select's words, and a tag picker in a
+typeahead's ([0215](../decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)): held for the
+tick boxes by *says what its list leaves out, in a select's words* in each renderer's
+`selectboxes-source` test, written after the change and passing at once, since `optionsStatus`
+decides it.
 
 *Residual:*
 

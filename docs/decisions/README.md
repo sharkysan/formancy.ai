@@ -315,3 +315,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0212](0212-a-signatures-box-says-what-its-field-says.md) | A signature's typed box carries what its field says, and is named after it | accepted |
 | [0213](0213-a-host-can-take-a-person-to-a-question.md) | A host can take a person to a question, by the function the summary and the review use | accepted |
 | [0214](0214-the-review-names-a-question-left-unanswered.md) | The review names a question left unanswered, from the walk a submission read back takes | accepted |
+| [0215](0215-a-list-of-ticks-draws-its-sources-rows.md) | A list of ticks draws its source's rows, as tick boxes or as a tag picker | accepted |
