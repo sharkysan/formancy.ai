@@ -77,6 +77,7 @@ export const FORM_WORDS_FR = {
   'repeater.removeRow': '{remove}, {position} sur {count}',
   'repeater.moveUp': 'Monter {label} {position} sur {count}',
   'repeater.moveDown': 'Descendre {label} {position} sur {count}',
+  'repeater.full': 'Impossible d’en ajouter davantage : {max} au maximum.',
 
   'tabs.unnamed': 'Onglet {position}',
 

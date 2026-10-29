@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A full repeater says so where its Add button was.** At a repeater's `maxItems` the Add button
+goes (0184), and nothing said why: a person who had added the third of three recipients saw it
+disappear, and a screen reader, whose focus had moved into the new row, heard nothing. Now the
+place where the button was says *No more can be added: 3 at most.* It is a polite status region
+drawn while the repeater has room, so it is heard as the repeater fills. It speaks when the engine
+says no row can be added, so the sentence and the missing button agree. Not on a repeater a rule
+computes. New: the part `repeater-status`, which every theme styles, and the word `repeater.full`
+in English, German and French ([0220](docs/decisions/0220-a-full-repeater-says-so.md)).
+
 **Focus follows a row a person adds, removes or moves.** A repeater's rows are changed by buttons,
 and neither renderer said where focus went afterwards. Removing a row drew its button out with it,
 and adding the last row the maximum allows drew out Add, so focus fell to the page and the next Tab

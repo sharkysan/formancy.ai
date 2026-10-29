@@ -82,7 +82,9 @@ repeater uses: "how many" is one question however it is asked. An empty list is
 not an answer, so `required` is what makes a choice compulsory rather than a
 minimum of one. On a repeater they bound its rows, with the same codes: it opens
 with `minItems` rows and offers no button to remove one below it, offers no add
-button at `maxItems`, and refuses a submission with more; `required` on a repeater
+button at `maxItems` and says it is full where that button was
+([0220](../../../../../docs/decisions/0220-a-full-repeater-says-so.md)), and refuses a submission
+with more; `required` on a repeater
 asks for a row
 ([0184](../../../../../docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)). On a ranking they bound how many options are put in order: "your
 top three" is `maxItems: 3`, and a complete order is `minItems` set to the number of

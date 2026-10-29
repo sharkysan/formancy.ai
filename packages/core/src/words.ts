@@ -157,6 +157,8 @@ export const FORM_WORDS = {
   'repeater.removeRow': '{remove} {position} of {count}',
   'repeater.moveUp': 'Move {label} {position} of {count} up',
   'repeater.moveDown': 'Move {label} {position} of {count} down',
+  /** Said where the add button was, once the repeater holds its `maxItems` (0220). */
+  'repeater.full': 'No more can be added: {max} at most.',
 
   // ---------------------------------------------------------------- a layout
   /** A tab whose section has no heading. */
