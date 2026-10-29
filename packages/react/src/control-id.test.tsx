@@ -184,6 +184,57 @@ const DRAWN = FIELD_TYPES.flatMap((type) => {
 /** Never called: a file field draws its control only where the host can take a file. */
 const upload: Uploader = () => new Promise(() => undefined)
 
+/**
+ * Fields the deployment cannot draw a control for: a file where it takes no uploads, and a choice
+ * whose options come from a source it does not have. Each draws a sentence saying so instead.
+ */
+const UNDRAWABLE: ReadonlyArray<{ name: string; field: Partial<FieldDef>; uploads: boolean }> = [
+  { name: 'a file field where the host takes no uploads', field: { type: 'file' }, uploads: false },
+  { name: 'a select whose source the deployment lacks', field: { type: 'select', optionsSource: 'nowhere' }, uploads: true },
+  {
+    name: 'a select drawn as typeahead whose source the deployment lacks',
+    field: { type: 'select', widget: 'typeahead', optionsSource: 'nowhere' },
+    uploads: true,
+  },
+  { name: 'a list of ticks whose source the deployment lacks', field: { type: 'selectboxes', optionsSource: 'nowhere' }, uploads: true },
+  {
+    name: 'a tag picker whose source the deployment lacks',
+    field: { type: 'selectboxes', widget: 'tagpicker', optionsSource: 'nowhere' },
+    uploads: true,
+  },
+]
+
+describe('every field drawn with no control', () => {
+  test.each(UNDRAWABLE)('$name is reached by its control id, and focus moved by it lands on the sentence it draws', ({ field, uploads }) => {
+    // The summary's link, a failed submit and `useGoToField` all move focus by the control id,
+    // and a field drawn as a sentence had no element carrying it: a required file field in a
+    // deployment that takes no uploads was named in the summary by a link that did nothing (D4).
+    // The sentence takes the id, or a group's fieldset keeps it (0186) and focus moved by it falls
+    // to the sentence inside: either way focus lands where a screen reader hears why there is no
+    // control.
+    const engine = createFormEngine({
+      schema: {
+        specVersion: '4',
+        id: 'one',
+        title: 'One',
+        model: { fields: [{ key: 'f', label: 'F', ...field }] },
+      } as unknown as FormSchema,
+    })
+    const form = (
+      <FormancyProvider engine={engine}>
+        <FormancyForm />
+      </FormancyProvider>
+    )
+    render(uploads ? <UploaderProvider value={upload}>{form}</UploaderProvider> : form)
+    const id = engine.getFieldSnapshot(['f']).ids.control
+    const named = Array.from(document.querySelectorAll<HTMLElement>('[id]')).filter((element) => element.id === id)
+
+    expect(named).toHaveLength(1)
+    act(() => focusControl(named[0] ?? null))
+    expect(document.activeElement?.getAttribute('data-formancy-part')).toMatch(/-unavailable$/)
+  })
+})
+
 describe('every field drawn with a control', () => {
   test.each(DRAWN)('$name has one element with its control id, and focus moved by it lands in the field', ({ field }) => {
     // The three fields above were missed because each group that carried the id carried it

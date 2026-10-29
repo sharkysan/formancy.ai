@@ -566,7 +566,8 @@ stored documents for the key
   whose source the deployment lacks — has no element carrying its id, measured on 2026-10-20, so
   the error summary's link to it does nothing; and since `0.9.0` `useGoToField` or
   `injectGoToField` with its path moves to its page and focuses nothing, read from their code.
-  Hazard D4, and [0213](../decisions/0213-a-host-can-take-a-person-to-a-question.md).
+  Hazard D4, and [0213](../decisions/0213-a-host-can-take-a-person-to-a-question.md); fixed
+  after `0.10.0` by [0221](../decisions/0221-a-field-with-no-control-is-reached-at-its-sentence.md).
 - **A submission is not required to be an object, and what a form does not define is stored as
   sent.** One sent as a list is stored with `201` unless a required field asks it something —
   `[1, 2]` was, measured on 2026-10-19 — and members the form does not define are stored as they

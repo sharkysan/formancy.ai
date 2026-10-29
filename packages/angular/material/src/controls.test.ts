@@ -505,6 +505,31 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     expect(drawn?.contains(document.activeElement)).toBe(true)
   })
 
+  // The cases the two renderers' `control-id.test` hold a field drawn with no control to (0221),
+  // with Material's registry provided: Material hands a sourced choice back to the default control.
+  test.each([
+    { name: 'a file field where the host takes no uploads', field: { key: 'f', type: 'file', label: 'F' }, uploads: false },
+    { name: 'a select whose source the deployment lacks', field: { key: 'f', type: 'select', label: 'F', optionsSource: 'nowhere' }, uploads: true },
+    { name: 'a list of ticks whose source the deployment lacks', field: { key: 'f', type: 'selectboxes', label: 'F', optionsSource: 'nowhere' }, uploads: true },
+  ])('$name is reached by its control id, and focus moved by it lands on the sentence it draws', async ({ field, uploads }) => {
+    const engine = createFormEngine({ schema: form([field]) })
+    const view = await render(FormancyForm, {
+      providers: [
+        provideZonelessChangeDetection(),
+        provideFormancy(engine),
+        ...(uploads ? [provideFormancyUploader(upload)] : []),
+        ...provideFormancyMaterial(),
+      ],
+    })
+    await view.fixture.whenStable()
+    const id = engine.getFieldSnapshot(['f']).ids.control
+    const named = Array.from(document.querySelectorAll<HTMLElement>('[id]')).filter((element) => element.id === id)
+
+    expect(named).toHaveLength(1)
+    focusControl(named[0] ?? null)
+    expect(document.activeElement?.getAttribute('data-formancy-part')).toMatch(/-unavailable$/)
+  })
+
   test.each(DRAWN)('$name, under a rule that disables it, has nothing in it a person can operate', async ({ field }) => {
     // The rule `packages/angular/src/control-id.test.ts` and React's hold their controls to, by
     // the same function, with Material's registry provided: whatever draws the field, nothing in

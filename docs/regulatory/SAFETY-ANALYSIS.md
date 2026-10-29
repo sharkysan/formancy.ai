@@ -1507,9 +1507,12 @@ landing on it heard the box and not the problem, and it was named *Type your nam
 label *Signature* that its name did not contain, a WCAG 2.5.3 (Label in Name) failure no axe rule
 reports. It carries all of the field's control props now, and is named *Signature: type your name*
 ([0212](../decisions/0212-a-signatures-box-says-what-its-field-says.md)), held by each renderer's
-signature cases, which failed before the change. What remains: a field drawn with no control — a file field with no upload route,
-a select whose source the deployment lacks — still carries no element with the id, measured on
-2026-10-20. A host taking a person to a question calls `useGoToField` or `injectGoToField`, the
+signature cases, which failed before the change. A field drawn with no control — a file field with
+no upload route, a choice whose source the deployment lacks — carried no element with the id,
+measured on 2026-10-20, so its summary link did nothing. The sentence drawn in its place now takes
+the id, or, in a list of ticks, the focus moved by its fieldset's
+([0221](../decisions/0221-a-field-with-no-control-is-reached-at-its-sentence.md)), held by
+*every field drawn with no control* in each renderer's `control-id.test` and Material's. A host taking a person to a question calls `useGoToField` or `injectGoToField`, the
 function the summary's links and the review's Change call
 ([0213](../decisions/0213-a-host-can-take-a-person-to-a-question.md)), where it had to do by hand
 what `focusControl` does, which is not exported.

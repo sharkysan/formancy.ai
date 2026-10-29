@@ -321,3 +321,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0218](0218-a-computed-repeater-is-the-rules-row-by-row.md) | A repeater a computed rule writes is the rule's, row by row | accepted |
 | [0219](0219-focus-follows-a-row-a-person-adds-removes-or-moves.md) | Focus follows a row a person adds, removes or moves | accepted |
 | [0220](0220-a-full-repeater-says-so.md) | A full repeater says so where its Add button was | accepted |
+| [0221](0221-a-field-with-no-control-is-reached-at-its-sentence.md) | A field drawn with no control is reached at the sentence that says why | accepted |

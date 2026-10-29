@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A field drawn with no control is reached at the sentence that says why.** A file field where
+the host takes no uploads, and a choice whose source the deployment does not have, draw a sentence
+saying so instead of a control. Nothing carried the field's control id, so a required one was named
+in the error summary by a link that did nothing, and `useGoToField` with its path focused nothing
+(hazard D4, a known anomaly since `0.7.0`). The sentence now takes the id and `tabindex="-1"`;
+in a list of ticks, whose fieldset keeps the id, focus moved by it falls to the sentence. A screen
+reader landing there hears why the question has no control. In both renderers and under Material
+([0221](docs/decisions/0221-a-field-with-no-control-is-reached-at-its-sentence.md)).
+
 **A full repeater says so where its Add button was.** At a repeater's `maxItems` the Add button
 goes (0184), and nothing said why: a person who had added the third of three recipients saw it
 disappear, and a screen reader, whose focus had moved into the new row, heard nothing. Now the

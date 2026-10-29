@@ -61,7 +61,10 @@ export function FileField({ path, label }: FieldComponentProps) {
   return (
     <FieldShell path={path} field={field} label={label}>
       {upload === undefined ? (
-        <p data-formancy-part="file-unavailable">{text('file.unavailable')}</p>
+        // The control's id on the sentence in its place, so a summary's link lands here (0221).
+        <p data-formancy-part="file-unavailable" id={field.controlProps.id} tabIndex={-1}>
+          {text('file.unavailable')}
+        </p>
       ) : (
         /*
          * The picker inside a drop target, not instead of one.

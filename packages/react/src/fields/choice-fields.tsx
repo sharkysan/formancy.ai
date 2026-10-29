@@ -82,7 +82,8 @@ export function SelectField({ path, label }: FieldComponentProps) {
   if (sourced.remote?.unavailable === true) {
     return (
       <FieldShell path={path} field={field} label={label}>
-        <p data-formancy-part="options-unavailable">
+        {/* The control's id on the sentence in its place, so a summary's link lands here (0221). */}
+        <p data-formancy-part="options-unavailable" id={field.controlProps.id} tabIndex={-1}>
           {text('options.unavailable', { source: field.def.optionsSource ?? '' })}
         </p>
       </FieldShell>

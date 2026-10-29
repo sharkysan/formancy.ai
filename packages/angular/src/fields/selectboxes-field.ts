@@ -47,9 +47,10 @@ import { FormancyErrorText } from './error-text.js'
   template: `
     @if (remote.unavailable()) {
       <!-- The document names a source this deployment does not have: said where the
-           combobox would be, which could never answer, as the select says it (0215). -->
+           combobox would be, which could never answer, as the select says it (0215). Its
+           control's id is on the sentence, so a summary's link lands there (0221). -->
       <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-        <p data-formancy-part="options-unavailable">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
+        <p data-formancy-part="options-unavailable" [id]="field.snapshot().ids.control" tabindex="-1">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
       </formancy-field-shell>
     } @else {
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
@@ -252,8 +253,9 @@ export class FormancyTagPickerField extends FieldComponentBase {
       }
       @if (remote.unavailable()) {
         <!-- A source the deployment does not have: said where the boxes would be, rather
-             than an empty group that collects nothing (0215). -->
-        <p data-formancy-part="options-unavailable">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
+             than an empty group that collects nothing (0215). Focus moved by the group's id
+             lands here (0221). -->
+        <p data-formancy-part="options-unavailable" tabindex="-1">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
       }
       @for (option of offered(); track option.value) {
         <span data-formancy-part="checkbox-option">
