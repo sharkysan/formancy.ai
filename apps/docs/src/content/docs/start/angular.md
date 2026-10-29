@@ -176,7 +176,7 @@ renderer draws its answer in words instead. Register it for the field's path to 
 | Helper | What it gives you |
 | --- | --- |
 | `injectField(path)` | `snapshot` signal, `setValue`, `touch` |
-| `injectRepeater(path)` | `rowCount` signal, `addRow`, `removeRow`, and `canAdd` and `canRemove` signals for its `maxItems` and `minItems`, past which the two throw |
+| `injectRepeater(path)` | `rowCount` signal, `addRow`, `removeRow`, and `canAdd` and `canRemove` signals for its `maxItems` and `minItems`, past which the two throw; on a repeater a computed rule writes, both say `false` and the commands do nothing ([0218](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md)). Drawing your own repeater, move focus yourself once a change is drawn: the shipped one takes it into a new row, into the row in a removed one's place, or to Add when none is left, and keeps it on a moved row's button ([0219](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md)) |
 | `injectWizard()` | `page` signal, `pageCount`, `next`, `back`, `goTo` |
 | `injectSubmit()` | submit, with focus moved to the first problem on failure |
 | `injectGoToField()` | a function taking a field's path, `email` or `guests[1].name`, that takes the person there as the summary's links do: to its page, then into its control once drawn — a group's first option, past a tab a layout hides it behind ([0213](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0213-a-host-can-take-a-person-to-a-question.md)) |

@@ -319,3 +319,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0216](0216-a-computed-answer-is-read-not-operated.md) | A computed field with no read-only control is drawn as its answer in words | accepted; a computed repeater, superseded in part by 0218 |
 | [0217](0217-what-no-form-runs-leaves-the-engine-barrel.md) | What only an author's tools run leaves the engine's barrel, for `@formancy/core/authoring` | accepted |
 | [0218](0218-a-computed-repeater-is-the-rules-row-by-row.md) | A repeater a computed rule writes is the rule's, row by row | accepted |
+| [0219](0219-focus-follows-a-row-a-person-adds-removes-or-moves.md) | Focus follows a row a person adds, removes or moves | accepted |

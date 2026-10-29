@@ -271,7 +271,13 @@ renderer draws its answer in words instead. Register it for the field's path to 
 
 - `useRepeater(path)` — row count, `addRow`, `removeRow` for a repeater, and `canAdd` and
   `canRemove`, which say whether its `maxItems` and `minItems` allow one more or one fewer;
-  past either, `addRow` and `removeRow` throw.
+  past either, `addRow` and `removeRow` throw. On a repeater a computed rule writes, both say
+  `false` and the commands do nothing
+  ([0218](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md)).
+  Drawing your own repeater from it, move focus yourself once a row's change is drawn. The
+  shipped one takes it into a new row, into the row now in a removed one's place, or to Add when
+  none is left, and keeps it on a moved row's button
+  ([0219](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md)).
 - `useWizard()` — page state and `next`/`back`/`goTo` for a paged form; `next`
   validates only the current page, submit validates everything.
 - `useSubmit()` — returns a submit function producing `{ ok, errors }`.

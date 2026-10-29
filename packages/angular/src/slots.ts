@@ -3,12 +3,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   Directive,
+  ElementRef,
   Injector,
   ViewContainerRef,
+  afterNextRender,
   computed,
   inject,
   input,
   runInInjectionContext,
+  viewChild,
 } from '@angular/core'
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
 import { hasReadOnlyControl } from '@formancy/core'
@@ -28,6 +31,8 @@ import { injectEngine } from './provide.js'
 import { FORMANCY_FIELD_CONTEXT, FORMANCY_REGISTRY } from './registry.js'
 import { FormancyTextPipe, injectFormText } from './text.js'
 import { FormancyErrorText } from './fields/error-text.js'
+import { focusRow } from './focus-row.js'
+import type { RowFocus } from './focus-row.js'
 
 /*
  * A field's place in a form, and a repeater's: the slot that resolves a field to a
@@ -188,7 +193,7 @@ interface RepeaterRow {
                  repeater's minItems, as the move buttons are at the ends: the engine would
                  refuse the row, and a button that does nothing announces one. -->
             @if (state!.repeater.canRemove()) {
-              <button type="button" data-formancy-part="row-remove" [disabled]="state!.field.snapshot().disabled" (click)="state!.repeater.removeRow(row.index)"><span data-formancy-part="row-action-text">{{ 'repeater.removeRow' | formancyText: { remove: state!.removeLabel, position: row.index + 1, count } }}</span></button>
+              <button type="button" data-formancy-part="row-remove" [disabled]="state!.field.snapshot().disabled" (click)="removeRow(state!.repeater, row.index)"><span data-formancy-part="row-action-text">{{ 'repeater.removeRow' | formancyText: { remove: state!.removeLabel, position: row.index + 1, count } }}</span></button>
             }
             <!-- Reordering by button, which is the KEYBOARD route and therefore the
                  primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag,
@@ -197,10 +202,10 @@ interface RepeaterRow {
                  the tab order in some browsers and announces a control that does
                  nothing. Absent too from a repeater a computed rule writes (0218). -->
             @if (row.index > 0 && !state!.field.snapshot().readOnly) {
-              <button type="button" data-formancy-part="row-up" [disabled]="state!.field.snapshot().disabled" (click)="state!.repeater.moveRow(row.index, row.index - 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveUp' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
+              <button type="button" data-formancy-part="row-up" [disabled]="state!.field.snapshot().disabled" (click)="moveRow(state!.repeater, row.index, row.index - 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveUp' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
             }
             @if (row.index < count - 1 && !state!.field.snapshot().readOnly) {
-              <button type="button" data-formancy-part="row-down" [disabled]="state!.field.snapshot().disabled" (click)="state!.repeater.moveRow(row.index, row.index + 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveDown' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
+              <button type="button" data-formancy-part="row-down" [disabled]="state!.field.snapshot().disabled" (click)="moveRow(state!.repeater, row.index, row.index + 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveDown' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
             }
           </ng-template>
 
@@ -272,7 +277,7 @@ interface RepeaterRow {
           }
           <!-- Not offered at maxItems, for the reason the remove button is not at minItems. -->
           @if (s.repeater.canAdd()) {
-            <button type="button" [disabled]="field.disabled" (click)="s.repeater.addRow()">{{ s.addLabel }}</button>
+            <button #addButton type="button" [disabled]="field.disabled" (click)="addRow(s.repeater)">{{ s.addLabel }}</button>
           }
         </fieldset>
       }
@@ -283,6 +288,8 @@ export class FormancyRepeaterSection implements OnInit {
   private readonly engine = injectEngine()
   private readonly text = injectFormText()
   private readonly injector = inject(Injector)
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef)
+  private readonly addButton = viewChild<ElementRef<HTMLButtonElement>>('addButton')
 
   readonly wire = input.required<string>()
   readonly labels = input<Record<string, string>>()
@@ -408,6 +415,33 @@ export class FormancyRepeaterSection implements OnInit {
         })),
       ),
     }
+  }
+
+  /*
+   * The row commands a person presses, each followed by where focus goes once the change is
+   * drawn: the button pressed may have gone with its row, or with the room for another (0219).
+   */
+  protected addRow(repeater: RepeaterBinding): void {
+    const row = repeater.rowCount()
+    repeater.addRow()
+    this.focusAfter({ row, parts: [] })
+  }
+
+  protected removeRow(repeater: RepeaterBinding, index: number): void {
+    const count = repeater.rowCount()
+    repeater.removeRow(index)
+    this.focusAfter(count === 1 ? 'add' : { row: Math.min(index, count - 2), parts: [] })
+  }
+
+  protected moveRow(repeater: RepeaterBinding, from: number, to: number): void {
+    repeater.moveRow(from, to)
+    this.focusAfter({ row: to, parts: to < from ? ['row-up', 'row-down'] : ['row-down', 'row-up'] })
+  }
+
+  private focusAfter(target: RowFocus): void {
+    afterNextRender(() => focusRow(this.host.nativeElement, target, this.addButton()?.nativeElement ?? null), {
+      injector: this.injector,
+    })
   }
 
   protected fallbackFor(instanceWire: string): string | undefined {

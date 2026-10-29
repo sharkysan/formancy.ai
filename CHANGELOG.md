@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**Focus follows a row a person adds, removes or moves.** A repeater's rows are changed by buttons,
+and neither renderer said where focus went afterwards. Removing a row drew its button out with it,
+and adding the last row the maximum allows drew out Add, so focus fell to the page and the next Tab
+started from the top of the form. Moving a row to an end did the same. Now Add takes focus into
+the new row's first control. Remove takes it into the row now in its place, or the row before it,
+or to Add when none is left. A move keeps it on the moved row's button for the same direction, or
+the other one at an end, so pressing it again moves the row on. Both renderers, in rows and in a
+data grid ([0219](docs/decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md)).
+
 **A repeater a computed rule writes is drawn, and is the rule's row by row.** A rule may compute a
 whole repeater, its expression returning the rows. The rows it wrote carried no row id, and both
 renderers key a row by its id, so once the rule had written a row, drawing the repeater threw
