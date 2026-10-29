@@ -1,6 +1,6 @@
 {
   "name": "@formancy/cli",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "formancy on the command line: the TypeScript type of what a form's submissions hold.",
   "license": "Apache-2.0",
   "type": "module",

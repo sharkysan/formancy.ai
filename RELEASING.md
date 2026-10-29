@@ -215,8 +215,10 @@ cosign verify-attestation   --type cyclonedx   --certificate-identity-regexp 'ht
 
 From `0.9.0`, the release attests the image with GitHub's own build provenance —
 the same statement the npm tarballs make, that this workflow at this commit produced
-these bytes; `v0.9.0`'s tag is the first run of that step. `--repo`, not `--owner`: the owner form asks the
-organisations' endpoint, and this repository belongs to a user.
+these bytes. `v0.9.0`'s tag was the first run of that step, and GitHub's attestation API lists a
+SLSA v1 provenance for that image's digest, from `release.yml` at `refs/tags/v0.9.0`, read on
+2026-10-29. `--repo`, not `--owner`: the owner form asks the organisations' endpoint, and this
+repository belongs to a user.
 
 ```bash
 gh attestation verify --repo sharkysan/formancy.ai   "oci://ghcr.io/sharkysan/formancy-server@${digest}"

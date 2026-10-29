@@ -1,6 +1,6 @@
 {
   "name": "@formancy/themes",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Reference themes for formancy renderers — four unrelated looks targeting data-formancy-part hooks — with the builders' stylesheet and the admin's palette. CSS only.",
   "license": "Apache-2.0",
   "type": "module",

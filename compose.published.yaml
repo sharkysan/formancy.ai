@@ -7,13 +7,13 @@
 # THE IMAGE IS PUBLISHED FROM v0.2.0 ONWARD. The release workflow builds, pushes
 # and signs it; v0.1.0 predates those steps and only signed the SBOM, so there is
 # no v0.1.0 image. Checked 2026-10-29 with `docker manifest inspect`: v0.2.0
-# to v0.8.0 are in the registry, v0.1.0 and `latest` are not. Pin the
+# to v0.9.0 are in the registry, v0.1.0 and `latest` are not. Pin the
 # release you want; the version below is an example.
 #
 #   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.published.yaml
 #   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/.env.example
 #   cp .env.example .env      # then follow what it says
-#   FORMANCY_VERSION=v0.9.0 docker compose -f compose.published.yaml up -d
+#   FORMANCY_VERSION=v0.10.0 docker compose -f compose.published.yaml up -d
 #
 # THE VERSION HAS NO DEFAULT, deliberately. There is no `latest` tag to fall back
 # on: the SOUP declaration tells a manufacturer to pin an exact version and says
@@ -44,7 +44,7 @@ services:
       retries: 10
 
   server:
-    image: ghcr.io/sharkysan/formancy-server:${FORMANCY_VERSION:?pin a version, e.g. FORMANCY_VERSION=v0.9.0 — there is no latest tag, on purpose}
+    image: ghcr.io/sharkysan/formancy-server:${FORMANCY_VERSION:?pin a version, e.g. FORMANCY_VERSION=v0.10.0 — there is no latest tag, on purpose}
     ports:
       # Every interface, which is right with nothing in front. Behind a reverse
       # proxy, publish nothing: this port is a way around the proxy, and Docker
