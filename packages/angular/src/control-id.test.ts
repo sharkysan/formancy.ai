@@ -236,6 +236,20 @@ describe('every field drawn with a control', () => {
     expect(operable(await drawnUnder(field, 'true'))).toEqual([])
   })
 
+  // The React binding's rule, by the same function. A repeater is rows of fields, each drawn by its
+  // own control; a rule computing every row is recorded in §11.2.
+  test.each(DRAWN.filter(({ field }) => field.type !== 'repeater'))('$name, written by a computed rule, has nothing in it a person can change, and a read-only box to read', async ({ field }) => {
+    // A computed value is the engine's (0181). Every control but a box a person types into drew
+    // the field as one a person could change, and here the change stayed on screen over the
+    // engine's value (A3); each is drawn as its answer in words, in a read-only box (0216).
+    expect(changeable(await drawnWith(field, { kind: 'disabled', cel: 'false' }))).not.toEqual([])
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+    const written = await drawnWith(field, { kind: 'computed', cel: 'null' })
+    expect(changeable(written)).toEqual([])
+    expect(written.querySelector('input[readonly], textarea[readonly]')).not.toBeNull()
+  })
+
   test.each(DRAWN)('$name, required, described and sent empty, names no id that is not drawn', async ({ field }) => {
     // The engine composes every id a control points at (0021), and the renderer draws the
     // elements that carry them. A required tag picker pointed its box at a required hint it never
@@ -266,13 +280,18 @@ describe('every field drawn with a control', () => {
 
 /** The field drawn alone, under a `disabled` rule whose condition is `cel`. */
 async function drawnUnder(field: Partial<FieldDef>, cel: string): Promise<Element> {
+  return drawnWith(field, { kind: 'disabled', cel })
+}
+
+/** The field drawn alone, with one rule on it. */
+async function drawnWith(field: Partial<FieldDef>, rule: { kind: 'disabled' | 'computed'; cel: string }): Promise<Element> {
   const engine = createFormEngine({
     schema: {
       specVersion: '4',
       id: 'one',
       title: 'One',
       model: { fields: [field] },
-      logic: { rules: [{ target: 'f', kind: 'disabled', cel }] },
+      logic: { rules: [{ target: 'f', ...rule }] },
     } as unknown as FormSchema,
     capabilities: { now: () => 0, today: () => '2026-10-28', random: () => 0.5 },
   })
@@ -291,9 +310,10 @@ async function drawnUnder(field: Partial<FieldDef>, cel: string): Promise<Elemen
  * a keyboard reaches that does not say `aria-disabled`. Each named by its tag and its role or
  * type, so a failure says which part of the field it was. The same function as React's.
  */
-function operable(root: Element): string[] {
+function operable(root: Element, unchangeable: (element: HTMLElement) => boolean = () => false): string[] {
   const live: string[] = []
   for (const element of Array.from(root.querySelectorAll<HTMLElement>('*'))) {
+    if (unchangeable(element)) continue
     const name = `${element.tagName.toLowerCase()}${element.getAttribute('role') ? `[role=${element.getAttribute('role')}]` : ''}${element.getAttribute('type') ? `[type=${element.getAttribute('type')}]` : ''}`
     if (element.matches('input, select, textarea, button')) {
       if (element.matches('input[type=hidden]')) continue
@@ -306,6 +326,14 @@ function operable(root: Element): string[] {
     }
   }
   return live
+}
+
+/**
+ * What inside `root` a person could change a value through: `operable`'s list, less a box drawn
+ * `readonly`, which a person can reach and read and not change. The same function as React's.
+ */
+function changeable(root: Element): string[] {
+  return operable(root, (element) => element.matches('input[readonly], textarea[readonly]'))
 }
 
 /** Every id an element inside `root`, or `root` itself, points at, with the attribute that names it. */

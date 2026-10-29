@@ -111,7 +111,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0021](0021-engine-owns-aria.md) | The engine owns element ids and ARIA composition | accepted; which element carries a field's control id, which it left to each renderer, decided by 0186 |
 | [0022](0022-fail-open-fail-closed.md) | Fail open on metadata, fail closed on validation | accepted |
 | [0023](0023-model-properties-in-engine.md) | Model properties are honoured by the engine, not by renderers | accepted; the removal below `minItems` it left to the renderers, refused by 0184 |
-| [0181](0181-a-computed-value-is-the-engines.md) | A computed value is the engine's: nothing else writes it, and its control is read-only | accepted |
+| [0181](0181-a-computed-value-is-the-engines.md) | A computed value is the engine's: nothing else writes it, and its control is read-only | accepted; every other control drawn as before, superseded in part by 0216 |
 | [0184](0184-a-repeater-is-validated-as-a-field-is.md) | A repeater is validated as a field is, and no row is added or removed past its bounds | accepted |
 | [0185](0185-an-answer-is-what-the-value-holds-as-its-own.md) | An answer is what the value holds as its own, and `__proto__` names none | accepted |
 | [0186](0186-a-fields-control-id-names-its-group-or-its-control.md) | A field's control id names its group or its control, and focus moves into the group | accepted; the signature's typed box carrying the id alone and keeping its own name, superseded in part by 0212; the way to a field it left unexported, decided by 0213 |
@@ -316,3 +316,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0213](0213-a-host-can-take-a-person-to-a-question.md) | A host can take a person to a question, by the function the summary and the review use | accepted |
 | [0214](0214-the-review-names-a-question-left-unanswered.md) | The review names a question left unanswered, from the walk a submission read back takes | accepted |
 | [0215](0215-a-list-of-ticks-draws-its-sources-rows.md) | A list of ticks draws its source's rows, as tick boxes or as a tag picker | accepted |
+| [0216](0216-a-computed-answer-is-read-not-operated.md) | A computed field with no read-only control is drawn as its answer in words | accepted |

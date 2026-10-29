@@ -77,6 +77,24 @@ describe('a computed field', () => {
     expect(control('Answer').readOnly).toBe(true)
   })
 
+  // A control with no read-only state drew the field as one a person could tick or choose, and
+  // the change did not take; the Angular binding went on showing it, a ticked box over `false`
+  // (A3). Drawn as its answer in words, in a read-only box that stays in the tab order (0216).
+  test.each([
+    ['checkbox', 'true', {}, 'Yes'],
+    ['select', "'hi'", { options: [{ value: 'lo', label: 'Low' }, { value: 'hi', label: 'High' }] }, 'High'],
+    ['radio', "'lo'", { options: [{ value: 'lo', label: 'Low' }, { value: 'hi', label: 'High' }] }, 'Low'],
+  ] as const)('drawn by the %s control says its answer in words, read-only', (type, cel, more, said) => {
+    mount([{ key: 'answer', type, label: 'Answer', ...more } as FieldDef], {
+      rules: [{ target: 'answer', kind: 'computed', cel }],
+    })
+
+    expect(screen.getByRole('textbox', { name: 'Answer' })).toBe(control('Answer'))
+    expect(control('Answer').value).toBe(said)
+    expect(control('Answer').readOnly).toBe(true)
+    expect(control('Answer').disabled).toBe(false)
+  })
+
   // A row rule names the member once for every row, so each row's control is read-only,
   // and a member no rule writes is not.
   test('in a row is read-only in every row', () => {

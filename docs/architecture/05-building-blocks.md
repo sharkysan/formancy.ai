@@ -116,6 +116,7 @@ comprehension would capture.
 | `store.ts` | Path-addressed value storage with change tracking |
 | `path.ts` / `value.ts` | Parsing, formatting and traversal of data paths, reading only what a value holds as its own — a key only out of an object, an index only out of a list — and refusing `__proto__` as a key ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)) |
 | `props.ts` | Every ARIA attribute, composed centrally ([0021](../decisions/0021-engine-owns-aria.md)) |
+| `read-only-control.ts` | `hasReadOnlyControl`: whether a field's own control can show a computed value read-only, which each renderer asks where it picks the field's component, drawing the answer in words where it cannot ([0216](../decisions/0216-a-computed-answer-is-read-not-operated.md)) |
 | `ids.ts` | Deterministic, SSR-stable element ids |
 | `model-validators.ts` | min, max, lengths, anchored patterns, and formats as explicit regular expressions because `URL` is unavailable |
 | `error-codes.ts` | Types only: `BuiltInErrorCode`, every code the engine reports of its own accord, which the validators and the engine are typed against, and `ValidationReport` beside it. Nothing in the bundle ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)) |

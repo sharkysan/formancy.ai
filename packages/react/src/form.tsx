@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ComponentType, CSSProperties, KeyboardEvent, ReactNode } from 'react'
-import { parsePath, placedGroup, placedPage } from '@formancy/core'
+import { hasReadOnlyControl, parsePath, placedGroup, placedPage } from '@formancy/core'
 import type { PlacedGroup } from '@formancy/core'
 import { applyRichCommand, datagridColumns, narrowOptionsByLabel, resolveText } from '@formancy/spec'
 import type { DataGridColumn, FieldDef, FieldType, RichCommand } from '@formancy/spec'
@@ -22,6 +22,7 @@ import { useUploader } from './uploads.js'
 import type { StoredFile } from './uploads.js'
 
 import { CheckboxField, RadioGroupField, SelectField } from './fields/choice-fields.js'
+import { ComputedAnswerField } from './fields/computed-answer.js'
 import { FileField } from './fields/file-field.js'
 import { RichTextField } from './fields/rich-text-field.js'
 import { SelectBoxesSwitch } from './fields/selectboxes-field.js'
@@ -226,8 +227,14 @@ function FieldSlot({
   // to screen-reader "read all" passes.
   if (!field.visible) return null
 
+  // A computed value is read, never operated: a field whose own control has no read-only state
+  // is drawn as its answer in words, whoever supplies the control for its type; a host's control
+  // for this one path still wins (0216).
   const Component =
-    registry?.byPath?.[path] ?? registry?.byType?.[field.type] ?? DEFAULT_COMPONENTS[field.type]
+    registry?.byPath?.[path] ??
+    (field.readOnly && !hasReadOnlyControl(field.def) ? ComputedAnswerField : undefined) ??
+    registry?.byType?.[field.type] ??
+    DEFAULT_COMPONENTS[field.type]
   if (Component === null) return null
 
   const label = field.label ?? fallbackLabel ?? path

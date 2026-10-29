@@ -88,6 +88,24 @@ describe('a computed field', () => {
     expect(control('Answer').readOnly).toBe(true)
   })
 
+  // The React binding's case. Here the ticked box stayed ticked over the engine's `false`, since
+  // a bound value is written only when it changes (A3); drawn as its answer in words, in a
+  // read-only box, there is nothing to tick (0216).
+  test.each([
+    ['checkbox', 'true', {}, 'Yes'],
+    ['select', "'hi'", { options: [{ value: 'lo', label: 'Low' }, { value: 'hi', label: 'High' }] }, 'High'],
+    ['radio', "'lo'", { options: [{ value: 'lo', label: 'Low' }, { value: 'hi', label: 'High' }] }, 'Low'],
+  ] as const)('drawn by the %s control says its answer in words, read-only', async (type, cel, more, said) => {
+    await mount([{ key: 'answer', type, label: 'Answer', ...more } as FieldDef], {
+      rules: [{ target: 'answer', kind: 'computed', cel }],
+    })
+
+    expect(screen.getByRole('textbox', { name: 'Answer' })).toBe(control('Answer'))
+    expect(control('Answer').value).toBe(said)
+    expect(control('Answer').readOnly).toBe(true)
+    expect(control('Answer').disabled).toBe(false)
+  })
+
   // A row rule names the member once for every row, so each row's control is read-only,
   // and a member no rule writes is not.
   test('in a row is read-only in every row', async () => {
