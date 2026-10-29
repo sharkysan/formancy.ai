@@ -27,12 +27,17 @@ export interface RepeaterNode {
  * is refused, and `canAdd`/`canRemove` say so first, so both renderers ask one question
  * rather than each comparing a count with a definition — the drift 0023 found when Angular
  * topped rows up in an effect and React did not.
+ *
+ * **A repeater a computed rule writes has the rule's rows and no others** (0218): none is topped
+ * up, added, removed or moved, and `canAdd`/`canRemove` say so. A row that stood there while the
+ * expression could not be evaluated was stored as computed, as a value typed into a computed
+ * field was (0181).
  */
 export interface Rows {
   /** The rows as stored, or none when what is stored is not a list. */
   of(repeater: RepeaterNode): readonly unknown[]
   count(repeater: RepeaterNode): number
-  /** Give every row an id, keeping any that arrived with the data (0041). */
+  /** Give every row an id, keeping any that arrived with the data (0041) or a rule wrote (0218). */
   adopt(repeater: RepeaterNode): void
   /** Add empty rows up to `minItems`. True when it wrote any. */
   topUp(repeater: RepeaterNode): boolean
@@ -48,7 +53,11 @@ export interface Rows {
 
 // The comments on code below are block comments rather than JSDoc: this module is the
 // package's own, and nothing outside it reads them.
-export function createRows(store: ValueStore, interaction: InteractionState): Rows {
+export function createRows(
+  store: ValueStore,
+  interaction: InteractionState,
+  written: (repeater: RepeaterNode) => boolean,
+): Rows {
   /*
    * One counter per repeater, monotonic for the engine's lifetime. It is never
    * decremented on removal, so a deleted row's id is never reissued — a new row
@@ -74,8 +83,9 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
 
   const count = (repeater: RepeaterNode): number => of(repeater).length
   const canAdd = (repeater: RepeaterNode): boolean =>
-    repeater.def.maxItems === undefined || count(repeater) < repeater.def.maxItems
-  const canRemove = (repeater: RepeaterNode): boolean => count(repeater) > (repeater.def.minItems ?? 0)
+    !written(repeater) && (repeater.def.maxItems === undefined || count(repeater) < repeater.def.maxItems)
+  const canRemove = (repeater: RepeaterNode): boolean =>
+    !written(repeater) && count(repeater) > (repeater.def.minItems ?? 0)
 
   /*
    * Rewrite the row index in every piece of position-keyed state under one repeater.
@@ -107,9 +117,10 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
     canRemove,
 
     /*
-     * Data written before rows had identity is not stranded: it is adopted on load. An id
-     * that IS present is kept, because a draft, a log or an export may already refer to it
-     * — and the counter is advanced past it so the next row cannot collide with it.
+     * Data written before rows had identity is not stranded: it is adopted on load, as the rows a
+     * rule writes are after each run. An id that IS present is kept, because a draft, a log or an
+     * export may already refer to it — and the counter is advanced past it so the next row cannot
+     * collide with it.
      */
     adopt(repeater) {
       const rows = of(repeater)
@@ -126,17 +137,19 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
       }
       counters.set(repeater.wire, highest)
 
-      const adopted = rows.map((row) => {
+      const adopted = rows.map((row, index) => {
         const base = isRowObject(row) ? row : {}
         if (typeof base[ROW_ID] === 'string') return row
-        return { ...base, [ROW_ID]: mint(repeater) }
+        // A rule writes its rows afresh each time it runs, and nobody moves one, so a row's
+        // position is who it is: the same id each time, and a renderer keeps the row (0218).
+        return { ...base, [ROW_ID]: written(repeater) ? `${ROW_ID_PREFIX}${String(index + 1)}` : mint(repeater) }
       })
       if (adopted.some((row, index) => row !== rows[index])) store.set(repeater.path, adopted)
     },
 
     topUp(repeater) {
       const minimum = repeater.def.minItems ?? 0
-      if (count(repeater) >= minimum) return false
+      if (written(repeater) || count(repeater) >= minimum) return false
       const rows = [...of(repeater)]
       while (rows.length < minimum) rows.push(filled(repeater.def.fields ?? [], { [ROW_ID]: mint(repeater) }))
       store.set(repeater.path, rows)
@@ -144,6 +157,7 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
     },
 
     add(repeater) {
+      if (written(repeater)) return
       if (!canAdd(repeater)) {
         throw new RangeError(`"${repeater.wire}" already holds the most rows it allows, ${String(repeater.def.maxItems)}`)
       }
@@ -163,6 +177,7 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
     },
 
     remove(repeater, index) {
+      if (written(repeater)) return
       const rows = store.get(repeater.path)
       if (!Array.isArray(rows) || index < 0 || index >= rows.length) {
         throw new RangeError(`Cannot remove row ${index} of "${repeater.wire}"`)
@@ -182,6 +197,7 @@ export function createRows(store: ValueStore, interaction: InteractionState): Ro
     },
 
     move(repeater, from, to) {
+      if (written(repeater)) return
       const rows = store.get(repeater.path)
       if (!Array.isArray(rows)) throw new RangeError(`"${repeater.wire}" holds no rows`)
       for (const index of [from, to]) {

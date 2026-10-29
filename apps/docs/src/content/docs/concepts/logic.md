@@ -93,10 +93,15 @@ never shows an answer the form does not hold. A control a host registers for the
 draws it
 ([0216](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0216-a-computed-answer-is-read-not-operated.md)).
 
+A rule may compute a whole repeater, its expression returning the rows. Each field in its rows is
+then the rule's too: drawn read-only, or as its answer in words, with no button to add, remove or
+move a row
+([0218](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md)).
+A row whose values are of more than one type needs `dyn()`, since a map literal is typed by its
+values: `[{'drug': dyn('A'), 'given': dyn(true)}]`.
+
 What this does not do:
 
-- **A computed repeater is drawn as a repeater.** The engine refuses every change to its rows, but
-  its add and remove buttons and its rows' controls are drawn as an ordinary repeater's.
 - **A computed field whose options come from a source is said by its stored value**, not its
   label.
 - **No shipped theme styles a read-only box differently** from one that takes

@@ -366,6 +366,26 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A repeater a computed rule writes is the rule's, row by row (unreleased)
+
+**If you read a computed repeater's rows from stored submissions**, the ones stored from now on
+carry an `_id` in each row, as every other repeater's rows do, and the ones stored before do not.
+Nothing converts them; a reader that keys rows by `_id` has to allow for both
+([0218](docs/decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md)).
+
+**If you draw your own repeater from `useRepeater` or `injectRepeater`**, `canAdd` and `canRemove`
+are `false` for a repeater a computed rule writes, and adding, removing or moving a row does
+nothing. There is no `canMove`: read the repeater's own snapshot and leave out your move buttons
+while it says `readOnly`, as the shipped renderers do:
+
+```ts
+const canMove = !useField('doses').readOnly // React
+const canMove = !injectField('doses').snapshot().readOnly // Angular
+```
+
+**If a test of yours fills in a computed repeater's rows**, each field in them is read-only now,
+drawn as a read-only box or as its answer in words, and nothing typed into one takes.
+
 ## An author's tools are imported from `@formancy/core/authoring` (0.10.0)
 
 **If you import `runScenarios`, `expressionProblems`, `unknownReferences` or

@@ -130,4 +130,38 @@ describe('a computed field', () => {
     expect(totals.every((input) => input.readOnly)).toBe(true)
     expect((screen.getAllByLabelText('Amount') as HTMLInputElement[]).some((input) => input.readOnly)).toBe(false)
   })
+
+  // A rule may write a whole repeater. Its rows' fields said they were not read-only, and the rows
+  // had no ids to be drawn by, so drawing one threw (0218). Each row's answers are drawn read-only,
+  // a tick box as its answer in words, and nothing adds, removes or moves a row.
+  test('as a whole repeater is read-only in every row, with nothing to add, remove or move one', async () => {
+    await mount(
+      [
+        {
+          key: 'doses',
+          type: 'repeater',
+          label: 'Doses',
+          fields: [
+            { key: 'drug', type: 'text', label: 'Drug' },
+            { key: 'given', type: 'checkbox', label: 'Given' },
+          ],
+        },
+      ],
+      {
+        rules: [
+          {
+            target: 'doses',
+            kind: 'computed',
+            cel: "[{'drug': dyn('A'), 'given': dyn(true)}, {'drug': dyn('B'), 'given': dyn(false)}]",
+          },
+        ],
+      },
+    )
+
+    const drugs = screen.getAllByLabelText('Drug') as HTMLInputElement[]
+    expect(drugs.map((input) => [input.value, input.readOnly])).toEqual([['A', true], ['B', true]])
+    const given = screen.getAllByRole('textbox', { name: 'Given' }) as HTMLInputElement[]
+    expect(given.map((input) => [input.value, input.readOnly])).toEqual([['Yes', true], ['No', true]])
+    expect(screen.queryAllByRole('button', { name: /^(add|remove|move) /i })).toEqual([])
+  })
 })

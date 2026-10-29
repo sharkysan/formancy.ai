@@ -29,9 +29,17 @@ export function staticTargets(model: FormModel): ReadonlySet<string> {
   )
 }
 
-/** Whether the field at `wire`, a row's included, is one of `targets`. */
-export function isTarget(targets: ReadonlySet<string>, wire: string): boolean {
-  return targets.has(templateWire(wire))
+/**
+ * Whether the field at `wire`, a row's included, is one of `targets` or lies inside one. A rule
+ * may compute a whole repeater or group, and what it writes is its own all the way down: a
+ * field in a computed repeater's row is the rule's as the repeater is (0218).
+ */
+export function withinTarget(targets: ReadonlySet<string>, wire: string): boolean {
+  const template = templateWire(wire)
+  for (const target of targets) {
+    if (template === target || template.startsWith(`${target}.`) || template.startsWith(`${target}[]`)) return true
+  }
+  return false
 }
 
 /** `value` — a draft, a prefill, a request body — with nothing left at any of `targets`. */

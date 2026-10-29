@@ -316,5 +316,6 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0213](0213-a-host-can-take-a-person-to-a-question.md) | A host can take a person to a question, by the function the summary and the review use | accepted |
 | [0214](0214-the-review-names-a-question-left-unanswered.md) | The review names a question left unanswered, from the walk a submission read back takes | accepted |
 | [0215](0215-a-list-of-ticks-draws-its-sources-rows.md) | A list of ticks draws its source's rows, as tick boxes or as a tag picker | accepted |
-| [0216](0216-a-computed-answer-is-read-not-operated.md) | A computed field with no read-only control is drawn as its answer in words | accepted |
+| [0216](0216-a-computed-answer-is-read-not-operated.md) | A computed field with no read-only control is drawn as its answer in words | accepted; a computed repeater, superseded in part by 0218 |
 | [0217](0217-what-no-form-runs-leaves-the-engine-barrel.md) | What only an author's tools run leaves the engine's barrel, for `@formancy/core/authoring` | accepted |
+| [0218](0218-a-computed-repeater-is-the-rules-row-by-row.md) | A repeater a computed rule writes is the rule's, row by row | accepted |

@@ -93,6 +93,34 @@ describe('answers to review', () => {
     expect(answersToReview(engine, createFormText({ locale: 'en' })).map((row) => row.path)).toEqual(['shown'])
   })
 
+  // A repeater a rule writes is the rule's row by row (0218), so a question in its rows is not the
+  // person's to answer, as a computed field's is not: what the rule wrote is listed, as it will be
+  // sent, and a question it left empty is not said to be *Not answered*.
+  test('name no question left unanswered in the rows of a repeater a rule computes', () => {
+    const schema: FormSchema = {
+      specVersion: '5',
+      id: 'doses',
+      title: 'Doses',
+      model: {
+        fields: [
+          { key: 'weight', type: 'number', label: 'Weight' },
+          {
+            key: 'doses',
+            type: 'repeater',
+            label: 'Dose',
+            fields: [
+              { key: 'drug', type: 'text', label: 'Drug' },
+              { key: 'note', type: 'text', label: 'Note' },
+            ],
+          },
+        ],
+      },
+      logic: { rules: [{ kind: 'computed', target: 'doses', cel: "[{'drug': 'A'}]" }] },
+    }
+    const engine = createFormEngine({ schema, capabilities: { now: () => 0, today: () => '2026-10-29', random: () => 0.5 } })
+    expect(answersToReview(engine, createFormText({ locale: 'en' })).map((row) => row.field)).toEqual(['weight', 'doses[0].drug'])
+  })
+
   // A row's questions are asked once per row, so each row's unanswered one has its line; a
   // repeater with no rows asked nothing, and a matrix asks each of its rows.
   test('name an unanswered question in each row, and each unanswered row of a matrix', () => {

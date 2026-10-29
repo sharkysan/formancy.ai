@@ -1,6 +1,7 @@
 # 0216 — A computed field with no read-only control is drawn as its answer in words
 
-- **Status:** accepted
+- **Status:** accepted; a computed repeater drawn as an ordinary one, superseded in part by
+  [0218](0218-a-computed-repeater-is-the-rules-row-by-row.md)
 - **Date:** 2026-10-29
 - **Deciders:** Daniel Bacher
 - **Supersedes in part:** [0181](0181-a-computed-value-is-the-engines.md), which drew every

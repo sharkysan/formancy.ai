@@ -160,9 +160,21 @@ over `false` and a select showing `b` over `a`. Every release from `0.6.0`, whic
 values the engine's, to `0.9.0` draws them so. Now each is drawn as its answer in words, in a
 read-only box, wherever the renderer picks the field's component, Material's controls included
 ([0216](../decisions/0216-a-computed-answer-is-read-not-operated.md)). Held over every type and
-widget but a repeater by *written by a computed rule, has nothing in it a person can change* in
-each renderer's `control-id` test and Material's `controls.test.ts`, which failed before the
-change on fourteen controls in each.
+widget by *written by a computed rule, has nothing in it a person can change* in each renderer's
+`control-id` test and Material's `controls.test.ts`, which failed before the change on fourteen
+controls in each.
+
+*And a repeater a rule writes was the rule's only at its top.* Its rows' fields said they were not
+read-only, and a row could be added, removed, moved or typed into. While the expression could not
+be evaluated, the rule wrote nothing back, so a row a person added stood on the screen, and the
+server, which drops what arrives for a computed field, stored none of it. A repeater's minimum was
+met with an empty row, which the server's replay stored as `[{ "_id": "r1" }]` for a submission
+that sent nothing. And the rows a rule writes had no ids, so as soon as it wrote one, both
+renderers threw drawing the repeater. Measured on 2026-10-29 on `0.10.0`'s code; earlier releases
+were not run. Now a field inside a computed one is read-only, a computed repeater's rows are not
+topped up, added, removed or moved, and the rows a rule writes are given ids
+([0218](../decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md)). Held by
+`computed-targets.test.ts` in core, and by the rule above, which now writes a repeater two rows.
 
 *Residual:*
 
@@ -171,9 +183,6 @@ change on fourteen controls in each.
   starts from nothing. A form submitted after an input was emptied showed the
   last total and stores none. The stored record agrees with its own inputs, and
   the screen did not.
-- **A computed repeater is drawn as an ordinary repeater.** The engine refuses
-  every change to its rows, but its buttons and its rows' controls look as though
-  they take one.
 - **A host writing a whole row or group** with `setValue` on its parent path
   writes a computed member's value with it. The next pass overwrites that value
   when it can evaluate the expression, and keeps it until then. The server is
