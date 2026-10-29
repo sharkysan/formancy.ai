@@ -119,9 +119,11 @@ background and cursor are still yours.
 would send, it offers **Check your answers**. Pressing it validates the whole form as sending
 would; with a problem it goes to the problem, and without one it shows every answer in words
 under its question — an option by its label, a date as the reader writes one — each with a
-**Change** that returns to that question's page and focuses it. The form is sent from there. A
-question nobody answered has no line: the review is of what will be sent
+**Change** that returns to that question's page and focuses it. The form is sent from there
 ([0204](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+A question the form asks and nobody answered is listed too, as *Not answered*, so one skipped by
+mistake is seen; one a rule hides or disables is not asked and has no line
+([0214](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0214-the-review-names-a-question-left-unanswered.md)).
 
 ## The form's own words, in its language
 

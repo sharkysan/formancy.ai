@@ -304,7 +304,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0201](0201-spec-5-freezes-with-the-batch-it-opened-for.md) | Spec 5 freezes with the batch it was opened for, and nothing opens version 6 yet | accepted |
 | [0202](0202-other-please-specify-is-a-command.md) | "Other, please specify" is a builder command, composed from what the format has | accepted |
 | [0203](0203-a-limit-is-counted-while-typing.md) | A field with a limit counts while somebody types, and speaks only when they pause | accepted |
-| [0204](0204-answers-can-be-checked-before-they-are-sent.md) | The answers can be checked before they are sent, in words, from one list | accepted |
+| [0204](0204-answers-can-be-checked-before-they-are-sent.md) | The answers can be checked before they are sent, in words, from one list | accepted; a question nobody answered having no line, superseded in part by 0214 |
 | [0205](0205-a-summary-link-goes-to-its-questions-page.md) | An error summary's link goes to its question's page | accepted |
 | [0206](0206-a-forms-responses-are-summarised-by-question.md) | A form's responses are summarised question by question, for the version they answered | accepted |
 | [0207](0207-a-versions-document-can-be-read.md) | A version's document can be read by its number, so older submissions are read through it | accepted |
@@ -314,3 +314,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0211](0211-every-id-a-field-names-is-drawn.md) | A tag picker is one control, and every id a field names is drawn | accepted |
 | [0212](0212-a-signatures-box-says-what-its-field-says.md) | A signature's typed box carries what its field says, and is named after it | accepted |
 | [0213](0213-a-host-can-take-a-person-to-a-question.md) | A host can take a person to a question, by the function the summary and the review use | accepted |
+| [0214](0214-the-review-names-a-question-left-unanswered.md) | The review names a question left unanswered, from the walk a submission read back takes | accepted |

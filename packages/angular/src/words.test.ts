@@ -266,14 +266,22 @@ describe('the error summary in a German form', () => {
 })
 
 describe('checking the answers in a German form (0204)', () => {
-  // The React binding's case: the button, the heading, "Change" and the empty review, in German.
+  // The React binding's case: the button, the heading, "Change", a question left unanswered
+  // (0214) and the empty review, in German.
   test('is said in German, and never in English', async () => {
     const fields = [{ key: 'name', type: 'text', label: 'Name' }]
     await mount(document_(fields), { inputs: { review: true } })
     expect(screen.queryByRole('button', { name: en('review.open') })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: de('review.open') }))
     expect(await screen.findByRole('heading', { name: de('review.heading') })).toBeTruthy()
-    expect(screen.getByText(de('review.empty'))).toBeTruthy()
+    expect(screen.getByText(de('answer.none'))).toBeTruthy()
+    expect(screen.queryByText(en('answer.none'))).toBeNull()
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+
+    await mount(document_([{ key: 'ref', type: 'hidden' }]), { inputs: { review: true } })
+    fireEvent.click(screen.getByRole('button', { name: de('review.open') }))
+    expect(await screen.findByText(de('review.empty'))).toBeTruthy()
     TestBed.resetTestingModule()
     document.body.innerHTML = ''
 

@@ -94,6 +94,21 @@ describe('checking the answers', () => {
     expect(document.activeElement).toBe(country)
   })
 
+  // The React binding's case: a question skipped by mistake is pointed out as its own part, and
+  // its Change takes the person back to answer it (0214).
+  test('names a question left unanswered, and takes the person back to answer it', async () => {
+    const { click, toLastPage } = await mount(paged, true, { name: 'Ada', nights: 3 })
+    await toLastPage()
+    await click(screen.getByRole('button', { name: 'Check your answers' }))
+    expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['Name', 'Country', 'Nights'])
+    const unanswered = [...document.querySelectorAll('[data-formancy-part="review-unanswered"]')]
+    expect(unanswered.map((said) => said.textContent)).toEqual(['Not answered'])
+    await click(screen.getByRole('button', { name: 'Change Country' }))
+    const country = await screen.findByRole('combobox', { name: 'Country' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(document.activeElement).toBe(country)
+  })
+
   test('works on a form with no pages too', async () => {
     const flat: FormSchema = { ...paged, model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] } }
     const { click } = await mount(flat, true, { name: 'Ada' })

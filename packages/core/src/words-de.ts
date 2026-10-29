@@ -74,6 +74,7 @@ export const FORM_WORDS_DE = {
   'answer.no': 'Nein',
   'answer.drawnSignature': 'Eine gezeichnete Unterschrift',
   'answer.row': '{label} {position}',
+  'answer.none': 'Nicht beantwortet',
 
   'repeater.add': '{label} hinzufügen',
   'repeater.remove': '{label} entfernen',

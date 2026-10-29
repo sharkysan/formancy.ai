@@ -41,10 +41,92 @@ describe('answers to review', () => {
     expect(rows[1]?.controlId).toBe(engine.getFieldSnapshot(['country']).ids.control)
   })
 
-  // What will be sent, and nothing else: a question nobody answered has no line, as a
-  // submission read back has none.
-  test('leave out a question nobody answered', () => {
+  // An optional question skipped by mistake is pointed out where the person checks, in its
+  // place, rather than missing from a list that reads as complete (0214).
+  test('name a question the person was asked and left unanswered, in its place', () => {
     const engine = createFormEngine({ schema: trip, initialValue: { name: 'Ada' } })
-    expect(answersToReview(engine, createFormText({ locale: 'en' })).map((row) => row.path)).toEqual(['name'])
+    const rows = answersToReview(engine, createFormText({ locale: 'en' }))
+    expect(rows.map(({ label, said, answered, page }) => ({ label, said, answered, page }))).toEqual([
+      { label: 'Name', said: 'Ada', answered: true, page: 0 },
+      { label: 'Country', said: 'Not answered', answered: false, page: 0 },
+      { label: 'Nights', said: 'Not answered', answered: false, page: 1 },
+    ])
+    expect(rows[2]?.controlId).toBe(engine.getFieldSnapshot(['nights']).ids.control)
+  })
+
+  // A line the person cannot act on is noise, and a Change to a control that is not drawn or
+  // takes no answer goes nowhere: only a question the person is being asked has one.
+  test('name no question a rule hides, a skipped page holds, a rule disables or computes, or a hidden field', () => {
+    const schema: FormSchema = {
+      specVersion: '5',
+      id: 'asked',
+      title: 'Asked',
+      model: {
+        fields: [
+          {
+            key: 'first',
+            type: 'page',
+            label: 'First',
+            fields: [
+              { key: 'shown', type: 'text', label: 'Shown' },
+              { key: 'hidden', type: 'text', label: 'Hidden by a rule' },
+              { key: 'boxed', type: 'group', label: 'Boxed', fields: [{ key: 'inside', type: 'text', label: 'Inside' }] },
+              { key: 'locked', type: 'text', label: 'Locked' },
+              { key: 'total', type: 'number', label: 'Total' },
+              { key: 'ref', type: 'hidden' },
+            ],
+          },
+          { key: 'second', type: 'page', label: 'Second', fields: [{ key: 'later', type: 'text', label: 'Later' }] },
+        ],
+      },
+      logic: {
+        rules: [
+          { kind: 'visible', target: 'hidden', cel: 'false' },
+          { kind: 'visible', target: 'boxed', cel: 'false' },
+          { kind: 'disabled', target: 'locked', cel: 'true' },
+          { kind: 'computed', target: 'total', cel: 'null' },
+          { kind: 'skip', target: 'second', cel: 'true' },
+        ],
+      },
+    }
+    const engine = createFormEngine({ schema, capabilities: { now: () => 0, today: () => '2026-10-29', random: () => 0.5 } })
+    expect(answersToReview(engine, createFormText({ locale: 'en' })).map((row) => row.path)).toEqual(['shown'])
+  })
+
+  // A row's questions are asked once per row, so each row's unanswered one has its line; a
+  // repeater with no rows asked nothing, and a matrix asks each of its rows.
+  test('name an unanswered question in each row, and each unanswered row of a matrix', () => {
+    const schema: FormSchema = {
+      specVersion: '5',
+      id: 'rows',
+      title: 'Rows',
+      model: {
+        fields: [
+          { key: 'guests', type: 'repeater', label: 'Guest', fields: [{ key: 'name', type: 'text', label: 'Name' }] },
+          { key: 'pets', type: 'repeater', label: 'Pet', fields: [{ key: 'kind', type: 'text', label: 'Kind' }] },
+          {
+            key: 'rate',
+            type: 'matrix',
+            label: 'Rate',
+            rows: [
+              { value: 'food', label: 'Food' },
+              { value: 'room', label: 'Room' },
+            ],
+            options: [{ value: 'good', label: 'Good' }],
+          },
+        ],
+      },
+    }
+    const engine = createFormEngine({
+      schema,
+      initialValue: { guests: [{ name: 'Ada' }, {}], pets: [], rate: { food: 'good' } },
+    })
+    const rows = answersToReview(engine, createFormText({ locale: 'en' }))
+    expect(rows.map(({ label, said, field }) => ({ label, said, field }))).toEqual([
+      { label: 'Guest 1 › Name', said: 'Ada', field: 'guests[0].name' },
+      { label: 'Guest 2 › Name', said: 'Not answered', field: 'guests[1].name' },
+      { label: 'Rate › Food', said: 'Good', field: 'rate' },
+      { label: 'Rate › Room', said: 'Not answered', field: 'rate' },
+    ])
   })
 })

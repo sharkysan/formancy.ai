@@ -886,14 +886,18 @@ the last step, with review on: "Check your answers" where Submit would be
   pressed ──▶ submit(): every field touched and validated, nothing sent
     a problem ──▶ wizard.goTo(page of engine.firstInvalid()), the errors shown
     none ──▶ the review, focus on its heading
-      answersToReview(engine, text) ───────────────────▶  answersInWords(schema, value, text, locale)
-                                    ◀───────────────────  per answer: label, said, field,
+      answersToReview(engine, text) ───────────────────▶  readAnswers(schema, value, text, locale,
+                                                                       asked = shown, enabled, not computed)
+                                    ◀───────────────────  per question: label, said, answered, field,
                                                            page = pageOf(field), controlId
-      each answer: <dt> the question, <dd> the answer in words, <dd> Change <question>
+      each line: <dt> the question, <dd> the answer in words or Not answered, <dd> Change <question>
       Change ──▶ leave the review, wizard.goTo(page), focus controlId once it is drawn
       Submit ──▶ the ordinary send, as without a review
 ```
 
 The review reads the form as it stands, so a Change and a return show the answer as changed. A
-question nobody answered has no line ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+question the form asks and nobody answered is said *Not answered*, drawn as `review-unanswered`;
+one it does not ask has no line. `answersInWords` takes the same walk with nothing asked, so a
+submission read back has no line for it ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md),
+[0214](../decisions/0214-the-review-names-a-question-left-unanswered.md)).
 

@@ -142,6 +142,11 @@ export const FORM_WORDS = {
   'answer.drawnSignature': 'A drawn signature',
   /** A repeater's row, counted from one: "Items 2". */
   'answer.row': '{label} {position}',
+  /**
+   * A question the person was asked and left, said in a review before sending (0214). A
+   * submission read back never says it: what was not sent has no line there.
+   */
+  'answer.none': 'Not answered',
 
   // -------------------------------------------------------------- a repeater
   /** Only when the document gives the repeater no `addLabel` of its own. */

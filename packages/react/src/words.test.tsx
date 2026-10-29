@@ -292,12 +292,19 @@ describe('the error summary in a German form', () => {
 })
 
 describe('checking the answers in a German form (0204)', () => {
-  // The button, the heading and "Change", each found by its German words; and the empty review.
+  // The button, the heading and "Change", each found by its German words; a question left
+  // unanswered (0214); and the empty review, which a form asking nothing shows.
   test('is said in German, and never in English', () => {
     mount(document([{ key: 'name', type: 'text', label: 'Name' }]), { review: true })
     expect(screen.queryByRole('button', { name: en('review.open') })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: de('review.open') }))
     expect(screen.getByRole('heading', { name: de('review.heading') })).toBeTruthy()
+    expect(screen.getByText(de('answer.none'))).toBeTruthy()
+    expect(screen.queryByText(en('answer.none'))).toBeNull()
+    cleanup()
+
+    mount(document([{ key: 'ref', type: 'hidden' }]), { review: true })
+    fireEvent.click(screen.getByRole('button', { name: de('review.open') }))
     expect(screen.getByText(de('review.empty'))).toBeTruthy()
     cleanup()
 

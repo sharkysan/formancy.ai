@@ -92,6 +92,19 @@ describe('checking the answers', () => {
     expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Country' }))
   })
 
+  // An optional question skipped by mistake is pointed out where the person checks, as its own
+  // part a theme can mark, and its Change takes them back to answer it (0214).
+  test('names a question left unanswered, and takes the person back to answer it', async () => {
+    mount(paged, { review: true }, { name: 'Ada', nights: 3 })
+    await toLastPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Check your answers' }))
+    expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['Name', 'Country', 'Nights'])
+    const unanswered = [...document.querySelectorAll('[data-formancy-part="review-unanswered"]')]
+    expect(unanswered.map((said) => said.textContent)).toEqual(['Not answered'])
+    act(() => fireEvent.click(screen.getByRole('button', { name: 'Change Country' })))
+    expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Country' }))
+  })
+
   test('works on a form with no pages too', () => {
     const flat: FormSchema = { ...paged, model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] } }
     mount(flat, { review: true }, { name: 'Ada' })

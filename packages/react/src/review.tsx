@@ -77,8 +77,8 @@ export function CheckAnswersButton({ onCheck }: { onCheck: () => void }) {
 }
 
 /*
- * The answers in words, under their questions, each with a "Change" naming its question for a
- * screen reader — and focus on the heading when it opens, so a screen reader says where the
+ * The answers in words, under their questions — and a question left unanswered as such — each
+ * with a "Change" naming its question for a screen reader — and focus on the heading when it opens, so a screen reader says where the
  * person now is. `children` is what sends the form.
  */
 export function Review({ onChange, children }: { onChange: (answer: ReviewedAnswer) => void; children: ReactNode }) {
@@ -102,7 +102,8 @@ export function Review({ onChange, children }: { onChange: (answer: ReviewedAnsw
           {answers.map((answer) => (
             <div key={answer.path} data-formancy-part="review-answer">
               <dt>{answer.label}</dt>
-              <dd>{answer.said}</dd>
+              {/* A question left unanswered says so, as a part a theme can mark (0214). */}
+              <dd {...(answer.answered ? {} : { 'data-formancy-part': 'review-unanswered' })}>{answer.said}</dd>
               <dd>
                 <button type="button" onClick={() => onChange(answer)}>
                   {text('review.change')} <span data-formancy-part="visually-hidden">{answer.label}</span>

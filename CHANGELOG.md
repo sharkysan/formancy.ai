@@ -8,6 +8,22 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached â€
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**The review before sending names a question left unanswered.** With `review` on, the list of
+answers left out an optional question nobody answered, so one skipped by mistake was missing at the
+moment the form asks the person to check, from a list that read as complete. It now lists every
+question the form asks, in its place: answered ones in words, the rest as *Not answered*, each with
+its Change. A question a rule hides, a skipped page holds, a rule disables or computes, and a
+`hidden` field are not asked and have no line. The review and a submission read back take one walk
+over the answers, so they agree about what was answered, and a submission read back still lists
+only what was sent. `ReviewedAnswer` gains `answered`, an unanswered answer is drawn as the
+`review-unanswered` part, which every theme sets apart, and the catalogue gains `answer.none` in
+English, German and French. A host's test that expected the empty review on a form with questions
+left unanswered now finds them listed
+([0214](docs/decisions/0214-the-review-names-a-question-left-unanswered.md), which supersedes that
+part of 0204).
+
 ## 0.9.0 â€” 2026-10-29
 
 **A minor release; the spec version stays 5.** `0.9.0` reads and writes what `0.8.0` does, so a
