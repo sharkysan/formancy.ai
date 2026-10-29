@@ -366,6 +366,38 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A signature's typed box is named after its field (0.9.0)
+
+**If a test of yours finds a signature's typed box by its name**, the name now starts with the
+field's label: *Signature: type your name* where it was *Type your name*, so that it contains the
+label it is drawn under (WCAG 2.5.3)
+([0212](docs/decisions/0212-a-signatures-box-says-what-its-field-says.md)). A pattern finds both:
+
+```ts
+screen.getByRole('textbox', { name: /type your name/i }) // the typed box, in English
+```
+
+**If you reworded `signature.typed`**, your words are used as they are, without the field's label;
+add `{label}` to them for the name to contain it. The shipped words are `{label}: type your name`,
+`{label}: Namen eingeben` and `{label} : tapez votre nom`.
+
+**If you style or query the box by its attributes**, it now carries the field's `name`,
+`aria-required`, `aria-invalid` and `aria-describedby`, as every other control does.
+
+## A required tag picker, and a field a rule disables (0.9.0)
+
+**If a test of yours looks for a required tag picker's hint**, it finds nothing: the tag picker
+is one control to the engine now, so its box carries `aria-required="true"` and its
+`aria-describedby` names no hint
+([0211](docs/decisions/0211-every-id-a-field-names-is-drawn.md)). Ask the box for the attribute
+instead. A list of ticks drawn as boxes is a group and keeps its hint.
+
+**If a test of yours clicks a radio group, a rating or a signature that a rule disables**, the
+answer stays as it was: each radio, the signature's typed box and its Clear button carry
+`disabled`, and the drawing surface says `aria-disabled` and takes no stroke
+([0210](docs/decisions/0210-a-disabled-field-has-nothing-to-operate.md)). A test that saw the
+answer change was testing the defect.
+
 ## Every answer has the shape its type says (0.8.0)
 
 **If anything posts submissions to the server other than the shipped renderers, check what it
@@ -424,24 +456,6 @@ the element you mean, or by what it says.
 message for its code. A control of your own that calls it should pass them; without them a rule's
 code is said as itself, as before.
 
-## A signature's typed box is named after its field (unreleased)
-
-**If a test of yours finds a signature's typed box by its name**, the name now starts with the
-field's label: *Signature: type your name* where it was *Type your name*, so that it contains the
-label it is drawn under (WCAG 2.5.3)
-([0212](docs/decisions/0212-a-signatures-box-says-what-its-field-says.md)). A pattern finds both:
-
-```ts
-screen.getByRole('textbox', { name: /type your name/i }) // the typed box, in English
-```
-
-**If you reworded `signature.typed`**, your words are used as they are, without the field's label;
-add `{label}` to them for the name to contain it. The shipped words are `{label}: type your name`,
-`{label}: Namen eingeben` and `{label} : tapez votre nom`.
-
-**If you style or query the box by its attributes**, it now carries the field's `name`,
-`aria-required`, `aria-invalid` and `aria-describedby`, as every other control does.
-
 ## A radio group, a set of tick boxes and a signature carry the field's control id (0.7.0)
 
 **If a test of yours finds a signature by the field's label**, it finds two elements now, and
@@ -462,7 +476,9 @@ option keeps its own, `<control id>:<value>`.
 
 **If you move focus by `ids.control` yourself**, you now find an element for all three, but a
 fieldset takes no focus: focus it, and where focus did not land, focus the first control inside,
-as the renderers' `focusControl` does. That helper is not exported.
+as the renderers' `focusControl` does. That helper is not exported; from `0.9.0`, `useGoToField`
+and `injectGoToField` take the field's path and do it, moving a paged form to its page first
+([0213](docs/decisions/0213-a-host-can-take-a-person-to-a-question.md)).
 
 **If you draw a field through the registry**, put the id on your control, or on the group around
 several; the React and Angular start pages say how. A component that draws it nowhere is a field

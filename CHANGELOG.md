@@ -8,7 +8,31 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.9.0 — 2026-10-29
+
+**A minor release; the spec version stays 5.** `0.9.0` reads and writes what `0.8.0` does, so a
+document moves between the two either way and nothing migrates. It fixes the control defects
+`0.7.0` and `0.8.0` shipped knowing about: a radio group, React's rating and a signature that a rule
+disables took an answer, a required tag picker said nowhere that it was required, and a signature's
+typed box carried none of its field's error or required state. It also fixes two found after `0.8.0`
+was published: under Material, eight controls drew no description, and the server image carried
+none of GitHub's build provenance, though `RELEASING.md` told a verifier to check it. Two rules now
+hold every type and widget, in each renderer and under Material: a field a rule disables has nothing
+a person can operate, and a field names no id it does not draw. And a host can take a person to a
+question. The server's code is unchanged since `0.8.0`. It is a minor release because a host's
+tests can see it, where a breaking change lands before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)).
+**A host takes it by choosing it**: one on `^0.8.0` keeps `0.8.0` until it moves to `^0.9.0`, and
+a server run from `compose.published.yaml` runs the tag `FORMANCY_VERSION` pins.
+
+**Breaking, for a host's tests.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to change for each.
+
+- **A signature's typed box is named after its field**: *Signature: type your name*, where it was
+  *Type your name*. A host that reworded `signature.typed` keeps its own words, without the field's
+  label, until it adds `{label}` (0212).
+- **A required tag picker carries `aria-required` on its box and names no hint**, so a test that
+  looked for the hint by its id finds nothing (0211).
+- **A radio group, a rating and a signature that a rule disables take no input**, so a test that
+  clicked one and saw the answer change sees it unchanged (0210).
 
 **A host can take a person to a question.** `useGoToField()` in `@formancy/react` and
 `injectGoToField()` in `@formancy/angular` return a function that takes a field's path and does what
@@ -65,6 +89,35 @@ pushed, from the next release on; the images already published keep only BuildKi
 `RELEASING.md` now says how to read, behind the cosign signature on the index. The command takes
 `--repo sharkysan/formancy.ai`, since `--owner` asks the organisations' endpoint and this
 repository is a user's ([0209](docs/decisions/0209-the-image-carries-githubs-build-provenance.md)).
+
+### What 0.9.0 knowingly does not have
+
+Everything 0.8.0 listed, and so everything 0.7.0 listed, still holds but the control defects
+above. `focusControl` stays unexported, since `useGoToField` and `injectGoToField` take a path and
+do what a host needed it for
+([0213](docs/decisions/0213-a-host-can-take-a-person-to-a-question.md)). Among what still holds:
+
+- **A default left alone is stored as the person's answer**, indistinguishable from one chosen
+  (0197; hazard A10).
+- **The review lists only what will be sent**, so a question skipped by mistake is not pointed
+  out there (0204).
+- **A rule's message is said for its code wherever the field carries it**, and nothing checks a
+  message against its rule (0198; hazard D20).
+- **The admin counts in the browser**, over every submission it fetched (0206, 0207).
+- **React's bundle is over its 4 kB budget**, and only core's budget is a gate (0208).
+- **A version stored with a field keyed `__proto__` cannot be opened**, and nothing finds such
+  versions for an operator (0185).
+- **A field drawn with no control**, such as a file field in a deployment that takes no uploads,
+  has no element carrying its id. A summary link to it does nothing, and `useGoToField` with its
+  path moves to its page and focuses nothing, read from their code.
+
+New, or found while making this release:
+
+- **Under Material, a field's description and its count sit outside the form field**, so they
+  are not inside the element that carries the field's path (0211).
+- **The images published before this one keep only BuildKit's provenance**: `gh attestation
+  verify` answers 404 for `v0.2.0` to `v0.8.0`, and `RELEASING.md` says how to read what they
+  carry (0209).
 
 ## 0.8.0 — 2026-10-28
 

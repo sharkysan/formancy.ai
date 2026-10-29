@@ -213,9 +213,9 @@ release page:
 cosign verify-attestation   --type cyclonedx   --certificate-identity-regexp 'https://github.com/sharkysan/formancy\.ai/.*'   --certificate-oidc-issuer https://token.actions.githubusercontent.com   "ghcr.io/sharkysan/formancy-server@${digest}"
 ```
 
-From the first release after `0.8.0`, the image also carries GitHub's own build
-provenance — the same statement the npm tarballs make, that this workflow at this
-commit produced these bytes. `--repo`, not `--owner`: the owner form asks the
+From `0.9.0`, the release attests the image with GitHub's own build provenance —
+the same statement the npm tarballs make, that this workflow at this commit produced
+these bytes; `v0.9.0`'s tag is the first run of that step. `--repo`, not `--owner`: the owner form asks the
 organisations' endpoint, and this repository belongs to a user.
 
 ```bash

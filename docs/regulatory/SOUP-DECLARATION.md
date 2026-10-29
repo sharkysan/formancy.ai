@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.8.0`.** Everything below is true of that
+**This document describes version `0.9.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,10 +17,10 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.8.0`, published to npm under the `@formancy` scope |
+| Package version | `0.9.0`, published to npm under the `@formancy` scope |
 | Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open: a construct needing one opens version `"6"`. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0 |
-| Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 reads and writes version 5 as 0.8.0 does, so the two read each other's documents |
+| Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. From 0.9.0 the release also attests the image with GitHub's build provenance, verified with `gh attestation verify`; every earlier image carries BuildKit's provenance inside its index and none of GitHub's ([0209](../decisions/0209-the-image-carries-githubs-build-provenance.md)). There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
 governs the code; the spec version governs the *documents and stored
@@ -244,8 +244,37 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.8.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0` to `0.8.0` fix, so that one still running them knows what it is upgrading away from.
+manufacturer characterising `0.9.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` to `0.9.0` fix, so that one still running them knows what it is upgrading away from.
+
+**Every release through `0.8.0` lets a radio group, React's rating and a signature that a rule
+disables take an answer.** Neither renderer set `disabled` on a radio group's radios; React's
+rating set it on its `role="radiogroup"` element, which disables nothing; and a signature's typed
+box, its Clear button and its drawing surface took input under the rule, in both renderers and
+under Material — so a click, a keystroke or a stroke changed the answer of a field the form had made
+read-only, and Clear erased it. Measured on 2026-10-20 in jsdom. Fixed in `0.9.0`: each radio, the
+signature's box and Clear carry `disabled`, its surface says `aria-disabled` and takes no stroke,
+and a rule in each renderer and under Material holds every type and widget to having nothing to
+operate under a `disabled` rule. Hazard B6a in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0210](../decisions/0210-a-disabled-field-has-nothing-to-operate.md).
+
+**Every release from `0.3.0` through `0.8.0` draws a required tag picker that says nowhere that it
+is required**, in both renderers: its box has no `aria-required` and is described by a hint no
+element carries, so neither a screen reader nor a theme says it. Measured on 2026-10-20 in jsdom.
+**And under Material, `0.8.0` draws no description for eight controls** — the text, the paragraph,
+the number, the date, the time, the select, the checkbox and the toggle — though each names its id
+in `aria-describedby`, so spec 5's help text is not on the page; `0.8.0`'s changelog says Material
+draws it. Found on 2026-10-28, after `0.8.0` was published. Fixed in `0.9.0`: the engine counts a
+tag picker as one control, Material draws the description under each, and a rule in each renderer
+and under Material holds every type and widget to naming no id it does not draw. Hazard D4, and
+[0211](../decisions/0211-every-id-a-field-names-is-drawn.md).
+
+**Every release from `0.3.0` through `0.8.0` gives a signature's typed box none of its field's
+state**: no `aria-required`, no `aria-invalid` and no `aria-describedby`, so a screen reader taken
+there from the error summary hears the box and not the problem; and names it *Type your name* under
+the visible label *Signature*, a WCAG 2.5.3 (Label in Name) failure no axe rule reports. Read from
+their code, and measured in React while making `0.7.0`. Fixed in `0.9.0`: the box carries the field's control props and is named *Signature: type your name*.
+Hazard D4, and [0212](../decisions/0212-a-signatures-box-says-what-its-field-says.md).
 
 **Every release through `0.7.0` stores an answer of another shape than its type where no
 constraint reads it.** The engine read a value's type only where a constraint needed it, so a
@@ -464,16 +493,13 @@ engine since `0.7.0` refuses it, so its public read answers `200` and every subm
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
-**Found after `0.8.0` was published:**
+**Found while making `0.9.0`, and not changed by it:**
 
-- **Under Material, a field's description is not drawn by eight controls** — the text, the
-  paragraph, the number, the date, the time, the select, the checkbox and the toggle — though each
-  names its id in `aria-describedby`, so the help text is not on the page and a screen reader is
-  pointed at an element that does not exist. Material's radio group and list of ticks draw it, and
-  the default controls draw it for every type. `0.8.0`'s changelog says Material draws it. Found on
-  2026-10-28. Hazard D4, and [0211](../decisions/0211-every-id-a-field-names-is-drawn.md).
+- **Under Material, a field's description and its count are drawn outside the form field**, so
+  they are not inside the element that carries the field's path, and a tool reading a field by
+  that element misses them ([0211](../decisions/0211-every-id-a-field-names-is-drawn.md)).
 
-**Found while making `0.8.0`, and not changed by it:**
+**Found while making `0.8.0`, and not changed by it or by `0.9.0`:**
 
 - **A default left alone is stored as the person's answer**, indistinguishable from the same
   answer chosen, and a required field with a default is answered before anybody reads it, so
@@ -488,23 +514,13 @@ stored documents for the key
   — words the engine's error too. Hazard D20, and
   [0198](../decisions/0198-a-rule-says-its-own-message.md).
 
-**Found while making `0.7.0`, and not changed by it or by `0.8.0`:**
+**Found while making `0.7.0`, and not changed by it, by `0.8.0` or by `0.9.0`:**
 
-- **A radio group a rule disables still takes a choice**, in both renderers, because its radios
-  are not disabled with the field; Material's radio group is. Measured on 2026-10-20 in jsdom,
-  and drawn so in every release, read from the renderers' code. **So does React's rating**:
-  `disabled` sits on its `role="radiogroup"` element, which disables nothing, and its radios
-  carry none — measured the same day, all eleven radios of a 0–10 rating enabled and a click
-  storing `3`, and drawn so since the rating arrived in `0.4.0`. Angular's rating, which
-  Material draws, disables each radio. Hazard B6a.
-- **A signature a rule disables still takes a typed name or a drawing, and its Clear button
-  erases the answer**, in both renderers and under Material, measured on 2026-10-20 in jsdom.
-  Its typed box is not described by the field's error, and is named *Type your name* under the
-  visible label *Signature*, a WCAG 2.5.3 (Label in Name) failure no axe rule reports (hazards
-  B6a and D4, [0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
-- **A required tag picker says nowhere that it is required.** Its text box is described by a
-  hint whose id no element carries, and has no `aria-required`, in both renderers: measured on
-  2026-10-20 in jsdom, and drawn so since `0.3.0`, read from their code. Hazard D4.
+- **A field drawn with no control** — a file field in a deployment that takes no uploads, a select
+  whose source the deployment lacks — has no element carrying its id, measured on 2026-10-20, so
+  the error summary's link to it does nothing; and since `0.9.0` `useGoToField` or
+  `injectGoToField` with its path moves to its page and focuses nothing, read from their code.
+  Hazard D4, and [0213](../decisions/0213-a-host-can-take-a-person-to-a-question.md).
 - **A submission is not required to be an object, and what a form does not define is stored as
   sent.** One sent as a list is stored with `201` unless a required field asks it something —
   `[1, 2]` was, measured on 2026-10-19 — and members the form does not define are stored as they
@@ -575,7 +591,29 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.7.0
+### Characterised by this document, and new since 0.8.0
+
+`0.9.0` reads and writes `specVersion: "5"`, as `0.8.0` does, and adds no dependency, table,
+setting or route; the server's code is unchanged. **What a person can do with a form changes**: a
+radio group, React's rating and a signature that a rule disables take no input, where they took
+it (above, hazard B6a). What a *host* sees is below;
+[`MIGRATIONS.md`](../../MIGRATIONS.md) has what must move.
+
+- **A required tag picker carries `aria-required` on its box and names no hint**, decided in the
+  engine's `buildFieldProps`, which no longer counts a list of ticks drawn as a tag picker as a
+  group (0211).
+- **A signature's typed box carries the field's control props**, and is named by the word
+  `signature.typed`, which now takes the field's label: *Signature: type your name* (0212).
+- **Under Material, eight controls draw the field's description** under the form field, at the
+  engine's id (0211).
+- **`useGoToField` in `@formancy/react` and `injectGoToField` in `@formancy/angular`** take a
+  field's path and move a paged form to its page and focus into its control, as the error
+  summary's links and the review's Change do, which call the same function
+  ([0213](../decisions/0213-a-host-can-take-a-person-to-a-question.md)).
+- **The server image is attested with GitHub's build provenance** as well as BuildKit's, by the
+  digest the release pushed (0209).
+
+### Characterised by an earlier version of this document, and new in 0.8.0
 
 `0.8.0` reads versions `"1"` to `"5"` and **writes `specVersion: "5"`**, so a form its builder
 authors is refused by a reader on `0.7.0` or earlier — loudly, as the format means it to be. A
