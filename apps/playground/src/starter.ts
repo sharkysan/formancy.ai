@@ -167,8 +167,9 @@ export const STARTER_SCHEMA = {
         type: 'repeater',
         label: { $t: 'recipients' },
         // Both bounds, set so a visitor meets them: one row on open with no remove button
-        // beside it, and at three rows the add button goes. The engine holds them, not the
-        // renderer, so a fourth row posted at a server is refused as well (0184).
+        // beside it, and at three rows the add button goes and the repeater says it is full
+        // (0220). The engine holds them, not the renderer, so a fourth row posted at a server
+        // is refused as well (0184).
         minItems: 1,
         maxItems: 3,
         addLabel: 'Add recipient',

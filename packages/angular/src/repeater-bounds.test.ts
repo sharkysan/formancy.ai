@@ -88,6 +88,32 @@ describe('the add and remove buttons', () => {
     expect(screen.getByRole('button', { name: 'Add guest' })).toBeDefined()
   })
 
+  // The Add button went with nothing said, so a person at the maximum was not told why there was
+  // no way to add another (0220). Said in a status region drawn before the repeater filled, so
+  // a screen reader, whose focus has gone into the new row (0219), hears it as it fills.
+  test('a repeater at its maxItems says so where its add button was, in a region drawn before it filled', async () => {
+    const { press } = await mount(guests({ maxItems: 2 }), { guests: [{ name: 'Ada' }] })
+    const status = within(group()).getByRole('status')
+    expect(status.textContent?.trim()).toBe('')
+
+    await press('Add guest')
+    expect(within(group()).getByRole('status')).toBe(status)
+    expect(status.textContent?.trim()).toBe('No more can be added: 2 at most.')
+
+    await press('Remove guest 2 of 2')
+    expect(status.textContent?.trim()).toBe('')
+  })
+
+  test('a repeater with no maxItems, or one a rule computes, says nothing of one', async () => {
+    await mount(guests(), { guests: [{ name: 'Ada' }] })
+    expect(within(group()).queryByRole('status')).toBeNull()
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+
+    await mount(guests({ maxItems: 1 }, [{ target: 'guests', kind: 'computed', cel: "[{'name': 'Ada'}]" }]))
+    expect(within(group()).queryByRole('status')).toBeNull()
+  })
+
   test('no remove button is offered at the repeater’s minItems', async () => {
     // Removing the only row of a `minItems: 1` repeater left none under React, and this
     // renderer's own effect put one back — two answers to one document (0023). The effect

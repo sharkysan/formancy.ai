@@ -145,6 +145,28 @@ describe('a German form', () => {
     ).toBeTruthy()
   })
 
+  // Said where the add button was once the repeater holds its maximum (0220): the renderer's word,
+  // since the document has none for it.
+  test('says a full repeater is full in German', async () => {
+    mount(
+      document([
+        {
+          key: 'contacts',
+          type: 'repeater',
+          label: 'Kontakt',
+          maxItems: 1,
+          fields: [{ key: 'email', type: 'text', label: 'E-Mail' }],
+        },
+      ]),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: de('repeater.add', { label: 'Kontakt' }) }))
+    await settle()
+
+    expect(screen.getByRole('status').textContent).toBe(de('repeater.full', { max: 1 }))
+    expect(screen.getByRole('status').textContent).not.toBe(en('repeater.full', { max: 1 }))
+  })
+
   test('says a group is required in German', () => {
     mount(
       document([

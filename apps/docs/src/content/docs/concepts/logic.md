@@ -68,6 +68,9 @@ repeater. The repeater's own `minItems` and `maxItems` are checked the same way,
 codes a `selectboxes` reports for the same questions, and a renderer offers no add button
 past `maxItems` and no remove button at `minItems`
 ([0184](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
+Where the add button was, a full repeater says so, *No more can be added: 3 at most.*, in a
+status region a screen reader hears as it fills
+([0220](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0220-a-full-repeater-says-so.md)).
 
 ## A computed field is read-only
 

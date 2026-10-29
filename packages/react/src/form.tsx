@@ -541,6 +541,13 @@ function RepeaterSection({
         rows
       )}
       {showError ? <ErrorText field={field} /> : null}
+      {/* Where the add button was, once the repeater is full: a region drawn before it fills, so
+          a screen reader hears it as it fills (0220). Not on one a rule computes, which nobody adds to. */}
+      {def?.maxItems === undefined || field.readOnly ? null : (
+        <p role="status" data-formancy-part="repeater-status">
+          {repeater.canAdd ? '' : text('repeater.full', { max: def.maxItems })}
+        </p>
+      )}
       {/* Not offered at `maxItems`, for the reason the remove button is not at `minItems`. */}
       {repeater.canAdd ? (
         <button type="button" ref={addButton} disabled={field.disabled} onClick={() => { repeater.addRow(); setFocusing({ row: repeater.rowCount, parts: [] }) }}>

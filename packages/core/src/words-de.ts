@@ -81,6 +81,7 @@ export const FORM_WORDS_DE = {
   'repeater.removeRow': '{remove}, {position} von {count}',
   'repeater.moveUp': '{label} {position} von {count} nach oben verschieben',
   'repeater.moveDown': '{label} {position} von {count} nach unten verschieben',
+  'repeater.full': 'Es können keine weiteren hinzugefügt werden: höchstens {max}.',
 
   'tabs.unnamed': 'Registerkarte {position}',
 

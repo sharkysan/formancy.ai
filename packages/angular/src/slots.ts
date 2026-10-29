@@ -275,6 +275,16 @@ interface RepeaterRow {
           @if (field.touched && field.errors.length > 0) {
             <p data-formancy-part="error" [id]="field.props.error.id" [formancyErrorText]="field"></p>
           }
+          <!-- Where the add button was, once the repeater is full: a region drawn before it
+               fills, so a screen reader hears it as it fills (0220). Not on one a rule
+               computes, which nobody adds to. -->
+          @if (s.maxItems !== undefined && !field.readOnly) {
+            <p role="status" data-formancy-part="repeater-status">
+              @if (!s.repeater.canAdd()) {
+                {{ 'repeater.full' | formancyText: { max: s.maxItems } }}
+              }
+            </p>
+          }
           <!-- Not offered at maxItems, for the reason the remove button is not at minItems. -->
           @if (s.repeater.canAdd()) {
             <button #addButton type="button" [disabled]="field.disabled" (click)="addRow(s.repeater)">{{ s.addLabel }}</button>
@@ -305,6 +315,8 @@ export class FormancyRepeaterSection implements OnInit {
     label: string
     addLabel: string
     removeLabel: string
+    /** The most rows the document allows, which a full repeater says where its add button was. */
+    maxItems: number | undefined
     rows: Signal<readonly RepeaterRow[]>
   }
 
@@ -398,6 +410,7 @@ export class FormancyRepeaterSection implements OnInit {
       // in the one language the author wrote — and the reader's language's otherwise (0171).
       addLabel: def?.addLabel ?? this.text('repeater.add', { label }),
       removeLabel: def?.removeLabel ?? this.text('repeater.remove', { label }),
+      maxItems: def?.maxItems,
       rows: computed(() =>
         Array.from({ length: repeater.rowCount() }, (_, index) => ({
           index,
