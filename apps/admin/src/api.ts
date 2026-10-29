@@ -1,6 +1,6 @@
 import { declinedAnswer, modelRequestKind } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import type { SchemaError } from '@formancy/spec/validate'
 import type { StoredFile, UploadOptions } from '@formancy/react'

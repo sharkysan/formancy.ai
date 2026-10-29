@@ -23,7 +23,8 @@ import {
   createBuilderSession,
   createBuilderText,
 } from '@formancy/builder-core'
-import type { FormEngine, Scenario } from '@formancy/core'
+import type { FormEngine } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { BuilderBlock, BuilderSession, BuilderText, Relay } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import type { BuilderTab, ModelRuns, PreviewState } from './angular-builder-host.js'

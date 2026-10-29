@@ -10,7 +10,7 @@ import {
   draftsOn,
 } from '@formancy/builder-core'
 import type { AskModel, BuilderSession, DraftRun } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 
 /**
  * Examples drafted by a model from what the author says the form should do, judged by the

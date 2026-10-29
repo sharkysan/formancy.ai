@@ -1,5 +1,5 @@
-import { runScenarios } from '@formancy/core'
-import type { Scenario } from '@formancy/core'
+import { runScenarios } from '@formancy/core/authoring'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import type { AskModel, AuthoringPrompt } from './answers.js'

@@ -1,4 +1,5 @@
-import type { FormEngine, Scenario } from '@formancy/core'
+import type { FormEngine } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { BuilderTab } from './angular-builder-host.js'
 import { useMemo } from 'react'
 import Editor from '@monaco-editor/react'

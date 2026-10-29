@@ -179,7 +179,9 @@ name — and `builtin-fixtures.ts` is generated from `fixtures/*.json` with the
 case list pinned in a test, so a case that silently stopped being embedded is
 caught.
 
-`core` also publishes `runScenarios`, which is the only answer this product has to a
+`core` also publishes `runScenarios`, from `@formancy/core/authoring` beside `expressionProblems`
+and `unknownReferences`, the entry an author's tools import and no form loads
+([0217](../decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)). It is the only answer this product has to a
 condition that type-checks and is still the wrong business rule: an example with its
 answer written down, run against the real engine in the mode asked for. It reports
 rather than asserts, because the caller is sometimes a test and sometimes a panel. Every path

@@ -1,4 +1,4 @@
-import type { Scenario, ScenarioOptions } from '@formancy/core'
+import type { Scenario, ScenarioOptions } from '@formancy/core/authoring'
 import type { AskModel } from './answers.js'
 import { createRunHolder } from './run-holder.js'
 import { draftScenarios, keepDraft } from './scenario-drafts.js'

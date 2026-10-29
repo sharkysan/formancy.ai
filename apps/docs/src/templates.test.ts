@@ -4,8 +4,9 @@ import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
-import { createFormEngine, engineRefusal, expressionProblems, runScenarios } from '@formancy/core'
-import type { Scenario } from '@formancy/core'
+import { createFormEngine, engineRefusal } from '@formancy/core'
+import { expressionProblems, runScenarios } from '@formancy/core/authoring'
+import type { Scenario } from '@formancy/core/authoring'
 
 const root = fileURLToPath(new URL('../../../templates/', import.meta.url))
 const read = <T>(path: string): T => JSON.parse(readFileSync(join(root, path), 'utf8')) as T

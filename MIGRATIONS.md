@@ -366,6 +366,24 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## An author's tools are imported from `@formancy/core/authoring` (unreleased)
+
+**If you import `runScenarios`, `expressionProblems`, `unknownReferences` or
+`MIXED_NUMERIC_LITERAL_EXAMPLE` from `@formancy/core`**, import them from
+`@formancy/core/authoring` instead, with their types — `Scenario`, `ScenarioOptions`,
+`ScenarioResult`, `ScenarioFailure`, `FailureAbout`, `ExpressionProblem`, `UnknownReference`
+([0217](docs/decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)):
+
+```ts
+import { createFormEngine } from '@formancy/core' // the engine, as before
+import { runScenarios } from '@formancy/core/authoring'
+import type { Scenario } from '@formancy/core/authoring'
+```
+
+Nothing a form does changes: these are what a builder, a publish or a test runs on a document,
+and no form calls any of them. The barrel no longer exports them, so an import of one from it
+fails to compile rather than resolving to `undefined`.
+
 ## A computed field with no read-only control is drawn as its answer (unreleased)
 
 **If a test of yours finds a computed field by its control**, it now finds a read-only text box

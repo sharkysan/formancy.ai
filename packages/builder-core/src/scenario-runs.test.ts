@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { ScenarioResult } from '@formancy/core'
+import type { ScenarioResult } from '@formancy/core/authoring'
 import { comparedToLastRun, createRunHistory, scenarioStatus } from './scenario-runs.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'

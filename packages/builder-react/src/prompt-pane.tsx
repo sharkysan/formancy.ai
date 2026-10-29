@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore }
 import type { ReactElement } from 'react'
 import { createPromptRun, proposalHeading, proposalStatus } from '@formancy/builder-core'
 import type { AskModel, BuilderSession, PromptRun } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 
 /**
  * Describing a form in words, seeing what that did, and then deciding.

@@ -3,7 +3,7 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession, createDraftRun, createTranslationRun } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import { ScenarioPane } from './scenario-pane.js'
 import { TranslationsPane } from './translations-pane.js'

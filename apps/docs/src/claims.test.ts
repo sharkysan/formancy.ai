@@ -806,7 +806,8 @@ describe('what the roadmap says is still to do', () => {
     // Unchanged on purpose: refusing here is the thing 0097 decided against.
     expect(validateSchema(document).valid).toBe(true)
 
-    const core = readFileSync(join(repo, 'packages', 'core', 'src', 'index.ts'), 'utf8')
+    // Exported from the entry an author's tools import, which no form loads (0217).
+    const core = readFileSync(join(repo, 'packages', 'core', 'src', 'authoring.ts'), 'utf8')
     expect(core, 'the unknown-path check is no longer exported').toMatch(
       /export \{ unknownReferences \}/,
     )

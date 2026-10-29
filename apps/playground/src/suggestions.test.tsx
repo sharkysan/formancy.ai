@@ -10,7 +10,7 @@ import {
   createTranslationRun,
   missingMessages,
 } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import { App } from './app.js'
 import { builderTextFor } from './builder-pane.js'

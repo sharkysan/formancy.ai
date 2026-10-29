@@ -1,5 +1,5 @@
 import type { AuditEntry } from './audit.js'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import type { Role } from './auth.js'
 

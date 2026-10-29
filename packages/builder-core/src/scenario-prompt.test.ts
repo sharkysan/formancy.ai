@@ -1,5 +1,6 @@
-import { createFormEngine, runScenarios } from '@formancy/core'
-import type { Scenario } from '@formancy/core'
+import { createFormEngine } from '@formancy/core'
+import { runScenarios } from '@formancy/core/authoring'
+import type { Scenario } from '@formancy/core/authoring'
 import { canonicalize } from '@formancy/spec'
 import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'

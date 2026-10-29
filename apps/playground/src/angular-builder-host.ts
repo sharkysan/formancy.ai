@@ -21,7 +21,7 @@ import type {
   Relay,
   TranslationRun,
 } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import { RELAY_CHAT } from './demo-capabilities.js'
 import { PlaygroundSuggestionsList } from './angular-suggestions-list.js'
 import type { Suggestion } from './suggestions.js'

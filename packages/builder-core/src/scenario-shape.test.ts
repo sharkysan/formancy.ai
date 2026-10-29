@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import { draftScenarios } from './scenario-drafts.js'
 import { readScenario } from './scenario-shape.js'
 import type { AskModel } from './answers.js'

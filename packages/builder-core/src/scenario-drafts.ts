@@ -1,5 +1,5 @@
-import { runScenarios } from '@formancy/core'
-import type { Scenario, ScenarioOptions, ScenarioResult } from '@formancy/core'
+import { runScenarios } from '@formancy/core/authoring'
+import type { Scenario, ScenarioOptions, ScenarioResult } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import { askChecked } from './answers.js'
 import type { AskModel, Checkable, Stop, Verdict } from './answers.js'

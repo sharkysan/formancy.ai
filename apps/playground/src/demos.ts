@@ -1,4 +1,4 @@
-import type { Scenario } from '@formancy/core'
+import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import catalog from '../../../templates/catalog.json'
 import { STARTER_SCHEMA } from './starter.js'

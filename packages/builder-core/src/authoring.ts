@@ -1,7 +1,8 @@
 import { authoringBriefing, canonicalize, DECLINE_KEY } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
-import { engineRefusal, expressionProblems } from '@formancy/core'
+import { engineRefusal } from '@formancy/core'
+import { expressionProblems } from '@formancy/core/authoring'
 import { askChecked } from './answers.js'
 import type { AskModel, Checkable, Stop, Verdict } from './answers.js'
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
-import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core'
+import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core/authoring'
 import { exportCsv, setFormAccess, listForms, listSubmissions, listVersions, resolveForm, resumeDraft, saveDraft, startDraft } from './use-cases.js'
 import { createSubmission, formToFill } from './submitting.js'
 import { publishForm } from './publishing.js'

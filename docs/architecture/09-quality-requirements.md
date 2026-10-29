@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.54 ms, the median of seven runs re-measured 2026-10-19; 0.34 on the same machine before [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md) |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **17.97 kB** — the index and the chunk it shares with `/words`, re-measured 2026-10-29 once a computed field was drawn as its answer in words ([0216](../decisions/0216-a-computed-answer-is-read-not-operated.md)), 0.03 kB inside its budget: the next growth needs a decision, not a figure. 17.88 kB before it; 17.8 kB on 2026-10-28, within its budget for the first time once the published JavaScript carried no JSDoc ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 25.8 kB the day before with it, after spec 5's defaults, rule messages, `ticked`, the shuffled order, the character count and the review |
+| `@formancy/core` bundle | 18 kB brotli | **16.1 kB** — the index and every chunk it imports, re-measured 2026-10-29 once what only an author's tools run left it for `@formancy/core/authoring` ([0217](../decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)); 17.97 kB before, 0.03 kB inside its budget once a computed field was drawn as its answer in words ([0216](../decisions/0216-a-computed-answer-is-read-not-operated.md)); 17.88 kB before that; 17.8 kB on 2026-10-28, within its budget for the first time once the published JavaScript carried no JSDoc ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 25.8 kB the day before with it, after spec 5's defaults, rule messages, `ticked`, the shuffled order, the character count and the review |
 | `@formancy/spec` bundle | — | 16.3 kB for the whole barrel — the index and the chunk it shares with `/validate` — re-measured 2026-10-28 with no JSDoc in the JavaScript ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 30.1 kB with it |
 | `@formancy/react` bundle | 4 kB brotli | **15.7 kB** for the whole barrel, re-measured 2026-10-29 once a computed field was drawn as its answer in words ([0216](../decisions/0216-a-computed-answer-is-read-not-operated.md)), 15.52 kB before, and 15.25 kB before a list of ticks and the tag picker drew a source's rows ([0215](../decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)). 15.2 kB on 2026-10-28 with no JSDoc in the JavaScript ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)); 26.1 kB with it, after the descriptions, the character count and the review |
 | `@formancy/core/words` bundle | — | 9.9 kB with the chunk it shares with the index — the renderers' words in English, German and French, every error said, a submission read back and the answers to review before sending, a question left unanswered among them — an entry of its own, re-measured 2026-10-29 with a computed field's answer in words ([0216](../decisions/0216-a-computed-answer-is-read-not-operated.md)), 9.82 kB before it and 9.75 kB before a list of ticks' words over a source ([0215](../decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)); and 9.5 kB before the review named unanswered questions ([0214](../decisions/0214-the-review-names-a-question-left-unanswered.md)). Measured on 2026-10-28 with no JSDoc in the JavaScript ([0208](../decisions/0208-the-published-javascript-carries-no-jsdoc.md)), and 13.1 kB with it |
@@ -93,7 +93,13 @@ tried and reverted: `tsdown` code-splits a two-entry build, after which
 reported a 15 kB improvement that is pure accounting. **A measurement that improves
 because the build changed shape is worse than a number over budget.**
 
-So the figure is the truth and the budget is breached. What makes it tolerable rather
+That was before the guard measured a barrel's whole import closure. Since it does, a split moves
+nothing it does not take out, and on 2026-10-29 `runScenarios`, `expressionProblems` and
+`unknownReferences` left for `@formancy/core/authoring`
+([0217](../decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)): the barrel, the engine
+now a chunk the new entry shares, measures 16.06 kB where it measured 17.97.
+
+So the figure was the truth and the budget was breached. What makes it tolerable rather
 than urgent is that the package declares `sideEffects: false`, so a consumer that never
 imports `runScenarios` does not ship it — this row is the package, not what a renderer
 pulls. What would actually fix it is measuring an entry point's dependency closure
