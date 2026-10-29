@@ -65,6 +65,8 @@ repeater.
 - **`packages/react/src/form.tsx` is at 599 lines of its 600.** The repeater cannot leave it,
   since a slot and a repeater draw each other, and the file's own comment says mutual recursion is
   not a seam. The next change there splits by another seam, or makes room.
+- **0.31 kB of React's barrel**, which measures 16.05 kB where it measured 15.74 kB, against a
+  budget of 4 kB that is not a gate (0208); §9.3 has the figure.
 - **A helper written twice**, `focus-row.ts` in each renderer, as `focus-control.ts` is: DOM code
   that core, which runs on the server, has no types for.
 
