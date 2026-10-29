@@ -122,7 +122,8 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
   if (remote?.unavailable === true) {
     return (
       <FieldShell path={path} field={field} label={label}>
-        <p data-formancy-part="options-unavailable">
+        {/* The control's id on the sentence in its place, so a summary's link lands here (0221). */}
+        <p data-formancy-part="options-unavailable" id={field.controlProps.id} tabIndex={-1}>
           {text('options.unavailable', { source: field.def.optionsSource ?? '' })}
         </p>
       </FieldShell>
@@ -306,9 +307,9 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
       <RequiredHint field={field} />
       <Description field={field} />
       {/* A source the deployment does not have: said where the boxes would be, rather than
-          an empty group that collects nothing. */}
+          an empty group that collects nothing. Focus moved by the group's id lands here (0221). */}
       {remote?.unavailable === true ? (
-        <p data-formancy-part="options-unavailable">
+        <p data-formancy-part="options-unavailable" tabIndex={-1}>
           {text('options.unavailable', { source: field.def.optionsSource ?? '' })}
         </p>
       ) : null}

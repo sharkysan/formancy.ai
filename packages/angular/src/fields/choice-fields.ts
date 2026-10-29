@@ -78,7 +78,8 @@ export class FormancyCheckboxField extends FieldComponentBase {
            announced "No options match" -- which says the list has no such row, when
            the truth is that there is no list. The React binding orders it the same. -->
       <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-        <p data-formancy-part="options-unavailable">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
+        <!-- The control's id on the sentence in its place, so a summary's link lands here (0221). -->
+        <p data-formancy-part="options-unavailable" [id]="field.snapshot().ids.control" tabindex="-1">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
       </formancy-field-shell>
     } @else if (typeahead()) {
       <!-- A widget changes the CONTROL and nothing else: same field, same

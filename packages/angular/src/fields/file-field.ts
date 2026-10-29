@@ -35,7 +35,8 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       @if (upload === null) {
-        <p data-formancy-part="file-unavailable">{{ 'file.unavailable' | formancyText }}</p>
+        <!-- The control's id on the sentence in its place, so a summary's link lands here (0221). -->
+        <p data-formancy-part="file-unavailable" [id]="field.snapshot().ids.control" tabindex="-1">{{ 'file.unavailable' | formancyText }}</p>
       } @else {
         <!--
           The picker inside a drop target, not instead of one.
