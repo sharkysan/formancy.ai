@@ -366,7 +366,7 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
-## An author's tools are imported from `@formancy/core/authoring` (unreleased)
+## An author's tools are imported from `@formancy/core/authoring` (0.10.0)
 
 **If you import `runScenarios`, `expressionProblems`, `unknownReferences` or
 `MIXED_NUMERIC_LITERAL_EXAMPLE` from `@formancy/core`**, import them from
@@ -384,7 +384,7 @@ Nothing a form does changes: these are what a builder, a publish or a test runs 
 and no form calls any of them. The barrel no longer exports them, so an import of one from it
 fails to compile rather than resolving to `undefined`.
 
-## A computed field with no read-only control is drawn as its answer (unreleased)
+## A computed field with no read-only control is drawn as its answer (0.10.0)
 
 **If a test of yours finds a computed field by its control**, it now finds a read-only text box
 named by the field's label, holding the answer in words. This applies to a tick box, a choice,
@@ -403,6 +403,25 @@ anyway, and draw it read-only from `snapshot.readOnly`.
 
 **A computed radio group, list of ticks, ranking or matrix is one control now**, not a group: a
 required one carries `aria-required` on its box and names no hint.
+
+## The review lists a question left unanswered (0.10.0)
+
+**If a test of yours expects the review before sending to be empty, or to have a line for each
+answer**, it now has a line for every question the form asks, in its place: one nobody answered
+says *Not answered*, the word `answer.none`, with its Change. A question a rule hides, a skipped
+page holds, a rule disables or computes, and a `hidden` field have none
+([0214](docs/decisions/0214-the-review-names-a-question-left-unanswered.md)). The empty review's
+words are said only by a form that asks nothing.
+
+**If you draw your own review from `answersToReview`** in `@formancy/core/words`, its list now
+holds those lines too, each with `answered: false`. Leave them out to keep what you drew before,
+or draw them apart, as the shipped review does with the `review-unanswered` part:
+
+```ts
+const answered = answersToReview(engine, text).filter((answer) => answer.answered)
+```
+
+A submission read back, from `answersInWords`, is unchanged: it lists only what was sent.
 
 ## A signature's typed box is named after its field (0.9.0)
 

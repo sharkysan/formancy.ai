@@ -25,7 +25,7 @@ and the CycloneDX attestation before starting anything
 and signs the image; `v0.1.0` predates those steps, so no `v0.1.0` image exists. The file
 was written ahead of the artefact deliberately — the first release to publish an image
 should not also be the release that discovers nobody can run it. Checked 2026-10-29 with
-`docker manifest inspect`: `v0.2.0` to `v0.8.0` are in the registry, `v0.1.0` and `latest`
+`docker manifest inspect`: `v0.2.0` to `v0.9.0` are in the registry, `v0.1.0` and `latest`
 are not.
 
 Host port **5439**, not 5432, and the reason is written in the compose file: a

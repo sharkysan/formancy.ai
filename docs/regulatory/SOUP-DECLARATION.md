@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.9.0`.** Everything below is true of that
+**This document describes version `0.10.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.9.0`, published to npm under the `@formancy` scope |
+| Package version | `0.10.0`, published to npm under the `@formancy` scope |
 | Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open: a construct needing one opens version `"6"`. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 reads and writes version 5 as 0.8.0 does, so the two read each other's documents |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 and 0.10.0 read and write version 5 as 0.8.0 does, so the three read each other's documents |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. From 0.9.0 the release also attests the image with GitHub's build provenance, verified with `gh attestation verify`; every earlier image carries BuildKit's provenance inside its index and none of GitHub's ([0209](../decisions/0209-the-image-carries-githubs-build-provenance.md)). There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -244,8 +244,33 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.9.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0` to `0.9.0` fix, so that one still running them knows what it is upgrading away from.
+manufacturer characterising `0.10.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` to `0.10.0` fix, so that one still running them knows what it is upgrading away from.
+
+**Every release from `0.6.0` through `0.9.0` draws a computed field whose control has no read-only
+state as an ordinary control**: a tick box, a choice, a list, a ranking, a matrix, a rating, a
+slider, a picker, rich text, a file or a signature that a `computed` rule writes. A person could
+tick or choose in it, and the engine refused the change. React drew the control back; the Angular
+binding went on showing it, so the screen showed one answer while the form held another — measured
+in jsdom on 2026-10-18, a ticked box over `false` and a select showing `b` over `a`. Fixed in
+`0.10.0`: each is drawn as its answer in words, in a read-only text box labelled by the field, and
+a rule in each renderer and under Material holds every type and widget but a repeater to having
+nothing a person can change under a `computed` rule. Hazard A3 in
+[`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0216](../decisions/0216-a-computed-answer-is-read-not-operated.md).
+
+**Every release from `0.3.0` through `0.9.0` draws none of the rows of a list of ticks that names an
+options source**, as tick boxes or as a tag picker, in both renderers, though the document is valid
+and the server checks every value of its answer: tick boxes over a source are an empty group, and
+a tag picker a combobox with nothing in its list. Read from their code, and measured in jsdom on
+the code after `0.9.0` by the tests of the fix. Fixed in `0.10.0`: both draw what the source returns, and a tick stores its row
+([0215](../decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)).
+
+**`0.8.0` and `0.9.0` leave a question nobody answered out of the review before sending**, so one
+skipped by mistake is missing at the moment the form asks the person to check, from a list that
+reads as complete. Fixed in `0.10.0`: the review lists every question the form asks, the
+unanswered ones as *Not answered*, each with its Change
+([0214](../decisions/0214-the-review-names-a-question-left-unanswered.md)).
 
 **Every release through `0.8.0` lets a radio group, React's rating and a signature that a rule
 disables take an answer.** Neither renderer set `disabled` on a radio group's radios; React's
@@ -493,28 +518,36 @@ engine since `0.7.0` refuses it, so its public read answers `200` and every subm
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
-**Found while making `0.9.0`, and not changed by it:**
+**Found while making `0.10.0`, and not changed by it:**
+
+- **A computed repeater is drawn as an ordinary repeater.** A rule may compute a whole repeater's
+  rows, and the engine refuses every change to them, but its add and remove buttons and its rows'
+  controls are drawn to take one. arc42 §11.2, and
+  [0216](../decisions/0216-a-computed-answer-is-read-not-operated.md).
+- **A computed field whose options come from a source is said by its stored value**, not its
+  row's label, since nothing asks the source for it (0216).
+
+**Found while making `0.9.0`, and not changed by it or by `0.10.0`:**
 
 - **Under Material, a field's description and its count are drawn outside the form field**, so
   they are not inside the element that carries the field's path, and a tool reading a field by
   that element misses them ([0211](../decisions/0211-every-id-a-field-names-is-drawn.md)).
 
-**Found while making `0.8.0`, and not changed by it or by `0.9.0`:**
+**Found while making `0.8.0`, and not changed by it, by `0.9.0` or by `0.10.0`:**
 
 - **A default left alone is stored as the person's answer**, indistinguishable from the same
   answer chosen, and a required field with a default is answered before anybody reads it, so
   `required` does not make a person look at that question. Where the difference matters — a
   clinical question, a consent — the field should have no default. Hazard A10, and
   [0197](../decisions/0197-a-default-is-where-something-fresh-starts.md).
-- **A review before sending lists only what will be sent**, so a question nobody answered has no
-  line there and one skipped by mistake is not pointed out; and nothing records that the person
-  looked ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+- **Nothing records that the person looked at the review before sending**
+  ([0204](../decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
 - **A rule's message is the author's, and nothing checks it against the rule.** It is said for its
   code wherever the field carries it, so a rule whose code is one the engine reports itself — `min`
   — words the engine's error too. Hazard D20, and
   [0198](../decisions/0198-a-rule-says-its-own-message.md).
 
-**Found while making `0.7.0`, and not changed by it, by `0.8.0` or by `0.9.0`:**
+**Found while making `0.7.0`, and not changed by it or by a release since:**
 
 - **A field drawn with no control** — a file field in a deployment that takes no uploads, a select
   whose source the deployment lacks — has no element carrying its id, measured on 2026-10-20, so
@@ -536,8 +569,6 @@ stored documents for the key
   `main.ts` composes `createApp` with no sources, so the image as shipped is such a deployment;
   hazard A7 had said a document naming an unconfigured source is refused at publish, which holds
   only where the deployment configures some.
-- **A `selectboxes` naming a source draws no rows** in either renderer, though the document is
-  valid and the server checks every value in it (arc42 §11.2).
 - **No expression totals a list.** `sum`, `fold` and their like are refused when the engine is
   built; the logic page says what a form can do instead.
 
@@ -591,7 +622,33 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.8.0
+### Characterised by this document, and new since 0.9.0
+
+`0.10.0` reads and writes `specVersion: "5"`, as `0.9.0` does, and adds no third-party dependency,
+table, setting or route; the server's code changes only in the path it imports an author's tools
+from. **What a person sees changes**: a computed field whose control has no read-only state is a
+read-only text box holding its answer in words (above, hazard A3), a list of ticks over a source
+draws its rows, and the review lists a question left unanswered. What a *host* sees is below;
+[`MIGRATIONS.md`](../../MIGRATIONS.md) has what must move.
+
+- **`@formancy/core/authoring`**, a fourth entry of `@formancy/core`, exports `runScenarios`,
+  `expressionProblems`, `unknownReferences` and `MIXED_NUMERIC_LITERAL_EXAMPLE` with their types,
+  and the engine's barrel no longer does
+  ([0217](../decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)).
+- **A field a computed rule writes, drawn by a control with no read-only state, is the renderer's
+  own read-only box**, chosen where each renderer picks a field's component: a control a host
+  registers for that field's path still draws it, one registered for its type does not.
+  `hasReadOnlyControl` in `@formancy/core` says which controls have a read-only state, and
+  `answerInWords` in `@formancy/core/words` says the answer (0216).
+- **`answersToReview` returns a line for every question asked**, each with `answered`, and an
+  unanswered one is drawn as the part `review-unanswered`, in the words `answer.none`
+  ([0214](../decisions/0214-the-review-names-a-question-left-unanswered.md)).
+- **A list of ticks over a source asks the deployment's options source**, as the select and the
+  typeahead do, and draws the parts `checkbox-status`, `tagpicker-status` and `checkbox-retry`
+  and the words `options.failedTicks` and `options.retry`
+  ([0215](../decisions/0215-a-list-of-ticks-draws-its-sources-rows.md)).
+
+### Characterised by an earlier version of this document, and new in 0.9.0
 
 `0.9.0` reads and writes `specVersion: "5"`, as `0.8.0` does, and adds no dependency, table,
 setting or route; the server's code is unchanged. **What a person can do with a form changes**: a

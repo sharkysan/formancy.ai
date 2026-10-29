@@ -8,7 +8,34 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.10.0 — 2026-10-29
+
+**A minor release; the spec version stays 5.** `0.10.0` reads and writes what `0.9.0` does, so a
+document moves between the two either way and nothing migrates. It fixes three things earlier
+releases drew wrong. The review before sending left out a question nobody answered, which
+`0.8.0` and `0.9.0` listed as a limit. A list of ticks naming an options source drew none of its
+rows, from `0.3.0`. And a computed field whose control has no read-only state was drawn as an
+ordinary control, so in Angular the screen could show an answer the form did not hold (hazard
+A3), from `0.6.0`. It also takes the tools only an author runs out of the engine's barrel, which
+every form loads: with the fixes above it measured 17.97 kB against its 18 kB gate, and it
+measures 16.06 kB. The server's code changes only in the path it imports those tools from. It
+is a minor release because a host's code and tests can see it, where a breaking change lands
+before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by choosing it**: one on
+`^0.9.0` keeps `0.9.0` until it moves to `^0.10.0`, and a server run from
+`compose.published.yaml` runs the tag `FORMANCY_VERSION` pins.
+
+**Breaking, for a host.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to change for each.
+
+- **`runScenarios`, `expressionProblems`, `unknownReferences` and
+  `MIXED_NUMERIC_LITERAL_EXAMPLE` are imported from `@formancy/core/authoring`**, with their
+  types. An import of one from `@formancy/core` fails to compile (0217).
+- **A computed field whose control has no read-only state is a read-only text box** holding its
+  answer in words, so a test that found a computed tick box by role `checkbox` finds a `textbox`
+  saying *Yes*. A control a host registers by type is not mounted for such a field; one
+  registered for its path still is (0216).
+- **The review lists a question left unanswered**, and so does `answersToReview`, with `answered:
+  false`, so a test that expected the empty review on a form with optional questions left
+  unanswered finds them listed (0214).
 
 **An author's tools leave the engine's barrel, for `@formancy/core/authoring`.** Every form loads
 `@formancy/core`, held to 18 kB since 0208, and it measured 17.97 kB, so almost any change to the
@@ -33,8 +60,7 @@ registers for that path still wins; one registered for the type is not used for 
 host's test that found a computed tick box by role `checkbox` finds a `textbox` saying *Yes* —
 [`MIGRATIONS.md`](MIGRATIONS.md) says what to change. New: `hasReadOnlyControl` in
 `@formancy/core`, `answerInWords` in `@formancy/core/words`, and in the playground's item rows a
-computed tick box, *Ten or more*. `@formancy/core` measures 17.97 kB
-against its 18 kB budget ([0216](docs/decisions/0216-a-computed-answer-is-read-not-operated.md),
+computed tick box, *Ten or more* ([0216](docs/decisions/0216-a-computed-answer-is-read-not-operated.md),
 which supersedes that part of 0181).
 
 **A list of ticks draws its source's rows, as tick boxes or as a tag picker.** Since spec 3 a
@@ -65,6 +91,35 @@ English, German and French. A host's test that expected the empty review on a fo
 left unanswered now finds them listed
 ([0214](docs/decisions/0214-the-review-names-a-question-left-unanswered.md), which supersedes that
 part of 0204).
+
+### What 0.10.0 knowingly does not have
+
+Everything 0.9.0 listed still holds, but the review, which now names a question left unanswered
+([0214](docs/decisions/0214-the-review-names-a-question-left-unanswered.md)). Among what still
+holds:
+
+- **A default left alone is stored as the person's answer**, indistinguishable from one chosen
+  (0197; hazard A10).
+- **Nothing records that the person looked at the review** before sending (0204).
+- **A rule's message is said for its code wherever the field carries it**, and nothing checks a
+  message against its rule (0198; hazard D20).
+- **The admin counts in the browser**, over every submission it fetched (0206, 0207).
+- **React's bundle is over its 4 kB budget**, and only core's budget is a gate (0208).
+- **A version stored with a field keyed `__proto__` cannot be opened**, and nothing finds such
+  versions for an operator (0185).
+- **A field drawn with no control**, such as a file field in a deployment that takes no uploads,
+  has no element carrying its id. A summary link to it does nothing, and `useGoToField` with its
+  path moves to its page and focuses nothing, read from their code.
+- **Under Material, a field's description and its count sit outside the form field** (0211).
+- **The images published before `v0.9.0` keep only BuildKit's provenance** (0209).
+
+New, or found while making this release:
+
+- **A computed repeater is drawn as an ordinary repeater.** The engine refuses every change to
+  its rows, and its add and remove buttons and its rows' controls are drawn to take them (0216;
+  arc42 §11.2).
+- **A computed field whose options come from a source is said by its stored value**, not its
+  row's label, since nothing asks the source for it (0216).
 
 ## 0.9.0 — 2026-10-29
 
