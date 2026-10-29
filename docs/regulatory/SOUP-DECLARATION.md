@@ -520,10 +520,18 @@ stored documents for the key
 
 **Found while making `0.10.0`, and not changed by it:**
 
-- **A computed repeater is drawn as an ordinary repeater.** A rule may compute a whole repeater's
-  rows, and the engine refuses every change to them, but its add and remove buttons and its rows'
-  controls are drawn to take one. arc42 §11.2, and
-  [0216](../decisions/0216-a-computed-answer-is-read-not-operated.md).
+- **A repeater a computed rule writes cannot be drawn once the rule has written a row.** The rows
+  a rule writes carry no row id, and both renderers key a row by its id, so each throws
+  `Row 0 of "…" has no _id` drawing it. Before the rule writes a row, the repeater is drawn as an
+  ordinary one: its rows' fields say they are not read-only, and a row can be added and typed
+  into. While the expression cannot be evaluated the rule writes nothing back, so such a row stands
+  on the screen, and the server, which drops what arrives for a computed field, stores none of it.
+  And a repeater's `minItems` is met with an empty row, which the server's replay stores as
+  `[{ "_id": "r1" }]` for a submission that sent nothing. Measured on 2026-10-29 on `0.10.0`'s code,
+  after it was published; earlier releases were not run. `0.10.0`'s changelog says only that such
+  a repeater is drawn as an ordinary one. Hazard A3, and
+  [0218](../decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md), which fixes it after
+  `0.10.0`.
 - **A computed field whose options come from a source is said by its stored value**, not its
   row's label, since nothing asks the source for it (0216).
 

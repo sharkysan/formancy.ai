@@ -195,11 +195,11 @@ interface RepeaterRow {
                  so a drag affordance can only ever be a second route to these.
                  Absent at the ends rather than disabled: a disabled button is still in
                  the tab order in some browsers and announces a control that does
-                 nothing. -->
-            @if (row.index > 0) {
+                 nothing. Absent too from a repeater a computed rule writes (0218). -->
+            @if (row.index > 0 && !state!.field.snapshot().readOnly) {
               <button type="button" data-formancy-part="row-up" [disabled]="state!.field.snapshot().disabled" (click)="state!.repeater.moveRow(row.index, row.index - 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveUp' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
             }
-            @if (row.index < count - 1) {
+            @if (row.index < count - 1 && !state!.field.snapshot().readOnly) {
               <button type="button" data-formancy-part="row-down" [disabled]="state!.field.snapshot().disabled" (click)="state!.repeater.moveRow(row.index, row.index + 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveDown' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
             }
           </ng-template>

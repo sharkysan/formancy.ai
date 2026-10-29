@@ -8,6 +8,26 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**A repeater a computed rule writes is drawn, and is the rule's row by row.** A rule may compute a
+whole repeater, its expression returning the rows. The rows it wrote carried no row id, and both
+renderers key a row by its id, so once the rule had written a row, drawing the repeater threw
+`Row 0 of "…" has no _id` — `0.10.0`'s entry below says only that it was drawn as an ordinary
+repeater. Until the rule wrote a row, it was: its rows' fields said they were not read-only, and a
+row could be added and typed into. While the expression could not be evaluated, the rule wrote
+nothing back, so that row stood on the screen and the server, which drops what arrives for a
+computed field, stored none of it (hazard A3). And a minimum of rows was met with an empty one,
+which the server's replay stored for a submission that sent nothing. Now a field inside a computed
+one is read-only, and `setValue` on it does nothing. A computed repeater's rows are not topped up,
+and `addRow`, `removeRow` and `moveRow` do nothing on it, as `setValue` on a computed field does.
+`canAddRow` and `canRemoveRow` say `false`, and both renderers draw no button to add, remove or move
+a row. The rows a rule writes are given ids by position, the same each run, so **a computed
+repeater's rows are stored with an `_id`**, as every other repeater's are, where they were stored
+without one. A submission stored earlier keeps its rows without
+([0218](docs/decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md), which supersedes that
+part of 0216).
+
 ## 0.10.0 — 2026-10-29
 
 **A minor release; the spec version stays 5.** `0.10.0` reads and writes what `0.9.0` does, so a

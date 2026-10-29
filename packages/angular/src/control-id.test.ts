@@ -236,16 +236,16 @@ describe('every field drawn with a control', () => {
     expect(operable(await drawnUnder(field, 'true'))).toEqual([])
   })
 
-  // The React binding's rule, by the same function. A repeater is rows of fields, each drawn by its
-  // own control; a rule computing every row is recorded in §11.2.
-  test.each(DRAWN.filter(({ field }) => field.type !== 'repeater'))('$name, written by a computed rule, has nothing in it a person can change, and a read-only box to read', async ({ field }) => {
+  // The React binding's rule, by the same function.
+  test.each(DRAWN)('$name, written by a computed rule, has nothing in it a person can change, and a read-only box to read', async ({ field }) => {
     // A computed value is the engine's (0181). Every control but a box a person types into drew
     // the field as one a person could change, and here the change stayed on screen over the
-    // engine's value (A3); each is drawn as its answer in words, in a read-only box (0216).
+    // engine's value (A3); each is drawn as its answer in words, in a read-only box (0216). A
+    // repeater is written two rows, drawn read-only, with no button to add, remove or move (0218).
     expect(changeable(await drawnWith(field, { kind: 'disabled', cel: 'false' }))).not.toEqual([])
     TestBed.resetTestingModule()
     document.body.innerHTML = ''
-    const written = await drawnWith(field, { kind: 'computed', cel: 'null' })
+    const written = await drawnWith(field, { kind: 'computed', cel: field.type === 'repeater' ? "[{'x': 'a'}, {'x': 'b'}]" : 'null' })
     expect(changeable(written)).toEqual([])
     expect(written.querySelector('input[readonly], textarea[readonly]')).not.toBeNull()
   })

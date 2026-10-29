@@ -406,15 +406,16 @@ function RepeaterSection({
 
           Absent at the ends rather than disabled. A disabled button is still in
           the tab order in some browsers and announces a control that does
-          nothing; a row that cannot move up simply has no such button. */}
-      {index > 0 ? (
+          nothing; a row that cannot move up simply has no such button. Absent
+          too from a repeater a computed rule writes, whose rows are its (0218). */}
+      {index > 0 && !field.readOnly ? (
         <button type="button" data-formancy-part="row-up" disabled={field.disabled} onClick={() => repeater.moveRow(index, index - 1)}>
           <span data-formancy-part="row-action-text">
             {text('repeater.moveUp', { label, position: index + 1, count: repeater.rowCount })}
           </span>
         </button>
       ) : null}
-      {index < repeater.rowCount - 1 ? (
+      {index < repeater.rowCount - 1 && !field.readOnly ? (
         <button type="button" data-formancy-part="row-down" disabled={field.disabled} onClick={() => repeater.moveRow(index, index + 1)}>
           <span data-formancy-part="row-action-text">
             {text('repeater.moveDown', { label, position: index + 1, count: repeater.rowCount })}

@@ -537,12 +537,12 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     expect(operable(await drawnUnder('true'))).toEqual([])
   })
 
-  test.each(DRAWN.filter(({ field }) => field.type !== 'repeater'))('$name, written by a computed rule, has nothing in it a person can change, and a read-only box to read', async ({ field }) => {
+  test.each(DRAWN)('$name, written by a computed rule, has nothing in it a person can change, and a read-only box to read', async ({ field }) => {
     // The rule both renderers hold their controls to, by the same function, with Material's
     // registry provided: a computed value is the engine's (0181), and a control registered by
     // type does not draw a field whose own control has no read-only state; its answer in words
     // does, in a read-only box (0216). Material's tick box, select and radio group took a change
-    // the engine refused. A repeater is recorded in §11.2, as in the two renderers' rule.
+    // the engine refused. A repeater is written two rows, as in the two renderers' rule (0218).
     const drawnWith = async (rule: { kind: 'disabled' | 'computed'; cel: string }): Promise<Element> => {
       const engine = createFormEngine({
         schema: { ...form([field]), logic: { rules: [{ target: 'f', ...rule }] } } as unknown as FormSchema,
@@ -565,7 +565,7 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     expect(changeable(await drawnWith({ kind: 'disabled', cel: 'false' }))).not.toEqual([])
     TestBed.resetTestingModule()
     document.body.innerHTML = ''
-    const written = await drawnWith({ kind: 'computed', cel: 'null' })
+    const written = await drawnWith({ kind: 'computed', cel: field.type === 'repeater' ? "[{'x': 'a'}, {'x': 'b'}]" : 'null' })
     expect(changeable(written)).toEqual([])
     expect(written.querySelector('input[readonly], textarea[readonly]')).not.toBeNull()
   })

@@ -22,7 +22,7 @@ import { formatPath, parsePath, templateWire, topSegment, withinAny } from './pa
 import { buildFieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
-import { computedTargets, isTarget, staticTargets, withoutValuesAt } from './computed-targets.js'
+import { computedTargets, staticTargets, withinTarget, withoutValuesAt } from './computed-targets.js'
 import { computedWriter } from './computed-value.js'
 import { filled, refusedDefault, reopened } from './defaults.js'
 import { getAt, setAt } from './value.js'
@@ -108,13 +108,13 @@ export interface FormEngine {
   value(): unknown
   rowCount(path: Path): number
   /**
-   * Add an empty row. Past the repeater's `maxItems` it throws, as a row index that is not
-   * a row does, rather than storing a row the document forbids (0184).
+   * Add an empty row. Past the repeater's `maxItems` it throws, as a row index that is not a
+   * row does (0184). On a repeater a computed rule writes, it does nothing, as `setValue` (0218).
    */
   addRow(path: Path): void
   /** Whether `addRow` would add one: what a renderer asks before offering the button. */
   canAddRow(path: Path): boolean
-  /** Remove a row. Below the repeater's `minItems` it throws, as `addRow` does past its maximum. */
+  /** Remove a row. Below `minItems` it throws, as `addRow` does; on a computed repeater, nothing. */
   removeRow(path: Path, index: number): void
   /** Whether `removeRow` would remove one, which is the same answer for every row. */
   canRemoveRow(path: Path): boolean
@@ -125,9 +125,9 @@ export interface FormEngine {
    * from `items[0]` recomputes. Moving a row to where it already is changes nothing and
    * says nothing — a cancelled drag should not re-render every row of every subscriber.
    *
-   * An index that is not a row throws, as `removeRow` does. A silent clamp would move a
-   * row somewhere the caller did not ask for, and a drag ending off the end of the list
-   * is exactly how that gets called.
+   * An index that is not a row throws, as `removeRow` does: a silent clamp would move a row
+   * somewhere the caller did not ask for, as a drag ending off the list would. On a repeater
+   * a computed rule writes, it does nothing, and the renderers offer no move (0218).
    */
   moveRow(path: Path, from: number, to: number): void
   /**
@@ -139,7 +139,7 @@ export interface FormEngine {
   pageOf(path: Path): number
   /** A field's state — or a repeater's, whose errors are its bounds' and its rules' (0184). */
   getFieldSnapshot(path: Path): FieldSnapshot
-  /** Not on a field a computed rule writes, whose value is the rule's (`readOnly`, 0181). */
+  /** Not on a field a computed rule writes, or inside one: its value is the rule's (`readOnly`, 0181). */
   setValue(path: Path, value: unknown): void
   touch(path: Path): void
   subscribeField(path: Path, listener: () => void): () => void
@@ -526,7 +526,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // A new form starts with the document's defaults; anything handed in, as it was handed (0197).
   const store = createValueStore(withoutValuesAt(options.initialValue ?? filled(schema.model.fields, {}), unwritable))
   const interaction = createInteractionState()
-  const rows = createRows(store, interaction)
+  const rows = createRows(store, interaction, (repeater) => withinTarget(computed, repeater.wire))
   const errorsByWire = new Map<string, string[]>()
   const serverErrorsByWire = new Map<string, string[]>()
 
@@ -745,9 +745,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           })
         }
 
-        // A repeater shown again opens as it opened the first time, with its minimum —
-        // not with the rows its hiding cleared and an error for rows nobody removed (0023).
+        // A repeater shown again opens as it opened the first time, with its minimum, not with the
+        // rows its hiding cleared (0023); and the rows a rule wrote are given ids to be drawn by (0218).
         for (const repeater of repeaters) {
+          rows.adopt(repeater)
           const under = shown.some((wire) => repeater.wire === wire || repeater.wire.startsWith(`${wire}.`))
           if (under && !hiddenAt(repeater.path)) seeded = rows.topUp(repeater) || seeded
         }
@@ -1066,10 +1067,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   let visibleErrorsCache: ReadonlyArray<{ path: string; codes: readonly string[] }> | undefined
   let visibleErrorsCacheVersion = -1
 
-  // minItems is a MODEL property, so the engine honours it rather than each
-  // renderer seeding rows in a mount effect — which is both duplicated work
-  // and, under React StrictMode's double-invoked effects, a source of extra
-  // rows nobody asked for.
+  // minItems is a MODEL property, so the engine honours it rather than each renderer seeding rows
+  // in a mount effect — which is both duplicated work and, under React StrictMode's double-invoked
+  // effects, a source of extra rows nobody asked for.
   for (const repeater of repeaters) {
     // Adopt first: a seeded row must not be handed an id that rows already in
     // the data are using.
@@ -1139,7 +1139,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         required,
         visible: !hiddenAt(node.path),
         disabled,
-        readOnly: isTarget(computed, wire),
+        readOnly: withinTarget(computed, wire),
         touched,
         errors,
         ids,
@@ -1151,7 +1151,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           touched,
           errors,
           def: node.def,
-          readOnly: isTarget(computed, wire),
+          readOnly: withinTarget(computed, wire),
           checking: checkingWires.has(wire),
         }),
       })
@@ -1160,7 +1160,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     },
 
     setValue: (path, value) => {
-      if (!isTarget(unwritable, formatPath(path))) store.set(path, value)
+      if (!withinTarget(unwritable, formatPath(path))) store.set(path, value)
     },
     touch: (path) => interaction.touch(path),
 

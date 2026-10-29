@@ -129,3 +129,92 @@ describe('a value handed in for a computed field is not its value', () => {
     expect(engine.value()).toEqual({ price: 2 })
   })
 })
+
+describe('a repeater a computed rule writes is the rule’s, row by row', () => {
+  // A rule may compute a whole repeater's rows. The engine kept its value as it keeps a computed
+  // field's, but asked nothing of what lies inside it: its rows' fields said they were not
+  // read-only, a row could be added, removed or moved, and a value could be set in one. While
+  // the expression could not be evaluated, the rule wrote nothing back, so a row a person added
+  // and typed into stood in the browser — and the server, which drops what arrives for a
+  // computed field, stored none of it (SAFETY-ANALYSIS A3).
+  const rows: FormSchema = {
+    specVersion: '1',
+    id: 'lines',
+    title: 'Lines',
+    model: {
+      fields: [
+        { key: 'count', type: 'number' },
+        { key: 'lines', type: 'repeater', fields: [{ key: 'name', type: 'text' }] },
+      ],
+    },
+    logic: { rules: [{ target: 'lines', kind: 'computed', cel: "count > 1.0 ? [{'name': 'computed'}] : []" }] },
+  }
+  const written = () => createFormEngine({ schema: rows, capabilities: FIXED_CLOCK })
+
+  test('each field in its rows is read-only', () => {
+    const engine = written()
+    engine.setValue(['count'], 2.0)
+
+    expect(engine.getFieldSnapshot(['lines', 0, 'name']).readOnly).toBe(true)
+  })
+
+  // A renderer keys each row by its id, and the rows a rule wrote had none: drawing one threw,
+  // `Row 0 of "lines" has no _id`, in both renderers. The same id each run, so a row is kept.
+  test('its rows have ids, the same each time the rule runs', () => {
+    const engine = written()
+    engine.setValue(['count'], 2.0)
+    const id = engine.rowId(['lines'], 0)
+
+    engine.setValue(['count'], 3.0)
+
+    expect(engine.rowId(['lines'], 0)).toBe(id)
+    expect(engine.value()).toEqual({ count: 3, lines: [{ _id: id, name: 'computed' }] })
+  })
+
+  test('it offers no row to add or remove', () => {
+    const engine = written()
+    engine.setValue(['count'], 2.0)
+
+    expect(engine.canAddRow(['lines'])).toBe(false)
+    expect(engine.canRemoveRow(['lines'])).toBe(false)
+  })
+
+  // The case that stood: `count > 1.0` cannot be evaluated while `count` is empty.
+  test('a row added and typed into does not take, while the expression cannot be evaluated', () => {
+    const engine = written()
+
+    engine.addRow(['lines'])
+    engine.setValue(['lines', 0, 'name'], 'typed')
+
+    expect(engine.value()).toEqual({})
+  })
+
+  // A repeater's minimum is met by adding empty rows as the form opens (0184). For one a rule
+  // writes, those rows were nobody's: the server's replay stored `[{}]` for a submission that
+  // sent nothing, while the expression could not be evaluated.
+  test('and none is added to meet its minimum, so the server stores no row the rule did not write', async () => {
+    const least: FormSchema = {
+      ...rows,
+      model: {
+        fields: rows.model.fields.map((field) => (field.key === 'lines' ? { ...field, minItems: 1 } : field)),
+      },
+    }
+    const engine = createFormEngine({ schema: least, capabilities: FIXED_CLOCK, initialValue: {}, mode: 'server' })
+    await engine.settle()
+
+    expect(engine.value()).toEqual({})
+  })
+
+  test('nor once it can', () => {
+    const engine = written()
+    engine.setValue(['count'], 2.0)
+
+    engine.setValue(['lines', 0, 'name'], 'typed')
+    engine.addRow(['lines'])
+    engine.moveRow(['lines'], 0, 0)
+    engine.removeRow(['lines'], 0)
+
+    expect(engine.getFieldSnapshot(['lines', 0, 'name']).value).toBe('computed')
+    expect(engine.rowCount(['lines'])).toBe(1)
+  })
+})
