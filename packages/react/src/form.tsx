@@ -9,6 +9,8 @@ import { useFormEngine, useFormText } from './context.js'
 import { useField } from './use-field.js'
 import type { FieldBinding } from './use-field.js'
 import { useRepeater } from './use-repeater.js'
+import { focusRow } from './focus-row.js'
+import type { RowFocus } from './focus-row.js'
 import { CheckAnswersButton, Review, SubmitButton, useReview } from './review.js'
 import { useWizard } from './use-wizard.js'
 import { RichText } from './rich-text.js'
@@ -311,6 +313,16 @@ function RepeaterSection({
   // the one language the author wrote — and the reader's language's otherwise (0171).
   const addLabel = def?.addLabel ?? text('repeater.add', { label })
   const removeLabel = def?.removeLabel ?? text('repeater.remove', { label })
+  // Where focus goes once a row a person added, removed or moved is drawn: the button pressed
+  // may have gone with its row, or with the room for another (0219).
+  const fieldset = useRef<HTMLFieldSetElement>(null)
+  const addButton = useRef<HTMLButtonElement>(null)
+  const [focusing, setFocusing] = useState<RowFocus | undefined>(undefined)
+  useEffect(() => {
+    if (focusing === undefined || fieldset.current === null) return
+    focusRow(fieldset.current, focusing, addButton.current)
+    setFocusing(undefined)
+  }, [focusing])
 
   const fallbackFor = (instanceWire: string): string | undefined => {
     const template = instanceWire.replace(/\[\d+\]/, '[]')
@@ -391,7 +403,7 @@ function RepeaterSection({
       {/* Absent at the repeater's `minItems`, as the move buttons are at the ends: the
           engine would refuse the row, and a button that does nothing announces one. */}
       {repeater.canRemove ? (
-        <button type="button" data-formancy-part="row-remove" disabled={field.disabled} onClick={() => repeater.removeRow(index)}>
+        <button type="button" data-formancy-part="row-remove" disabled={field.disabled} onClick={() => { repeater.removeRow(index); setFocusing(repeater.rowCount === 1 ? 'add' : { row: Math.min(index, repeater.rowCount - 2), parts: [] }) }}>
           <span data-formancy-part="row-action-text">
             {text('repeater.removeRow', { remove: removeLabel, position: index + 1, count: repeater.rowCount })}
           </span>
@@ -409,14 +421,14 @@ function RepeaterSection({
           nothing; a row that cannot move up simply has no such button. Absent
           too from a repeater a computed rule writes, whose rows are its (0218). */}
       {index > 0 && !field.readOnly ? (
-        <button type="button" data-formancy-part="row-up" disabled={field.disabled} onClick={() => repeater.moveRow(index, index - 1)}>
+        <button type="button" data-formancy-part="row-up" disabled={field.disabled} onClick={() => { repeater.moveRow(index, index - 1); setFocusing({ row: index - 1, parts: ['row-up', 'row-down'] }) }}>
           <span data-formancy-part="row-action-text">
             {text('repeater.moveUp', { label, position: index + 1, count: repeater.rowCount })}
           </span>
         </button>
       ) : null}
       {index < repeater.rowCount - 1 && !field.readOnly ? (
-        <button type="button" data-formancy-part="row-down" disabled={field.disabled} onClick={() => repeater.moveRow(index, index + 1)}>
+        <button type="button" data-formancy-part="row-down" disabled={field.disabled} onClick={() => { repeater.moveRow(index, index + 1); setFocusing({ row: index + 1, parts: ['row-down', 'row-up'] }) }}>
           <span data-formancy-part="row-action-text">
             {text('repeater.moveDown', { label, position: index + 1, count: repeater.rowCount })}
           </span>
@@ -490,6 +502,7 @@ function RepeaterSection({
     // `focusControl` moves it to the first control inside. Described, as a radio group
     // is, by the required hint and its error, never `aria-invalid`, which a group lacks.
     <fieldset
+      ref={fieldset}
       data-formancy-part="repeater"
       data-formancy-field-path={wire}
       data-state={showError ? 'invalid' : 'valid'}
@@ -540,7 +553,7 @@ function RepeaterSection({
       {showError ? <ErrorText field={field} /> : null}
       {/* Not offered at `maxItems`, for the reason the remove button is not at `minItems`. */}
       {repeater.canAdd ? (
-        <button type="button" disabled={field.disabled} onClick={() => repeater.addRow()}>
+        <button type="button" ref={addButton} disabled={field.disabled} onClick={() => { repeater.addRow(); setFocusing({ row: repeater.rowCount, parts: [] }) }}>
           {addLabel}
         </button>
       ) : null}

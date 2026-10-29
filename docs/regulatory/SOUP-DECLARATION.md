@@ -518,8 +518,13 @@ engine since `0.7.0` refuses it, so its public read answers `200` and every subm
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
-**Found while making `0.10.0`, and not changed by it:**
+**Found while making `0.10.0` or since, and not changed by it:**
 
+- **Focus falls to the page after a person removes a row**, adds the last row a repeater allows,
+  or moves a row to an end, in both renderers. The button pressed is drawn out with the change and
+  nothing moves focus, so the next Tab starts from the top of the form (WCAG 2.4.3). Measured in
+  jsdom on 2026-10-29, after `0.10.0` was published; fixed after it by
+  [0219](../decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md).
 - **A repeater a computed rule writes cannot be drawn once the rule has written a row.** The rows
   a rule writes carry no row id, and both renderers key a row by its id, so each throws
   `Row 0 of "…" has no _id` drawing it. Before the rule writes a row, the repeater is drawn as an
