@@ -148,7 +148,7 @@ Deliberately small, and structurally parallel:
 | Repeater | `use-repeater.ts` | `repeater.ts` |
 | Wizard | `use-wizard.ts` | `wizard.ts` |
 | Component resolution | `context.tsx` | `registry.ts`, `provide.ts` |
-| Default controls | `form.tsx` | `fields.ts` |
+| Default controls | `fields.ts` | `fields.ts` |
 | Error summary | `error-summary.tsx` | `error-summary.ts` |
 | The form's own words | `useFormText()`, from `FormancyProvider` | `injectFormText()` and the `formancyText` pipe, from `provideFormancy`, which Material's groups use too |
 | A design system's registry | — | `material/src/` — `@formancy/angular/material`, Angular Material for the types it has an equivalent for, the default control for the rest ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |

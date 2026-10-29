@@ -3,7 +3,7 @@ import type { ComponentType, CSSProperties, KeyboardEvent, ReactNode } from 'rea
 import { hasReadOnlyControl, parsePath, placedGroup, placedPage } from '@formancy/core'
 import type { PlacedGroup } from '@formancy/core'
 import { applyRichCommand, datagridColumns, narrowOptionsByLabel, resolveText } from '@formancy/spec'
-import type { DataGridColumn, FieldDef, FieldType, RichCommand } from '@formancy/spec'
+import type { DataGridColumn, FieldDef, RichCommand } from '@formancy/spec'
 import { LayoutTree, placedPaths } from './layout.js'
 import { useFormEngine, useFormText } from './context.js'
 import { useField } from './use-field.js'
@@ -23,18 +23,8 @@ import { useSourcedOptions } from './use-sourced-options.js'
 import { useUploader } from './uploads.js'
 import type { StoredFile } from './uploads.js'
 
-import { CheckboxField, RadioGroupField, SelectField } from './fields/choice-fields.js'
 import { ComputedAnswerField } from './fields/computed-answer.js'
-import { FileField } from './fields/file-field.js'
-import { RichTextField } from './fields/rich-text-field.js'
-import { SelectBoxesSwitch } from './fields/selectboxes-field.js'
-import { RankingField } from './fields/ranking-field.js'
-import { MatrixField } from './fields/matrix-field.js'
-import { NumberSwitch } from './fields/scale-fields.js'
-import { SignatureField } from './fields/signature-field.js'
-import { StaticField } from './fields/static-field.js'
-import { DateField, DateTimeField, TimeField } from './fields/temporal-fields.js'
-import { TextField, TextareaField } from './fields/text-fields.js'
+import { DEFAULT_COMPONENTS } from './fields.js'
 import { Description, ErrorText, RequiredHint } from './fields/internals.js'
 import type { FieldComponent, FormancyFormProps, Registry } from './fields/internals.js'
 
@@ -559,35 +549,6 @@ function RepeaterSection({
       ) : null}
     </fieldset>
   )
-}
-
-/**
- * The built-in unstyled components. `null` means the type renders nothing here:
- * a hidden field is carried in the submission and never shown, and the
- * container types are laid out by their own machinery rather than by a leaf
- * slot.
- */
-const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
-  text: TextField,
-  textarea: TextareaField,
-  number: NumberSwitch,
-  checkbox: CheckboxField,
-  date: DateField,
-  time: TimeField,
-  datetime: DateTimeField,
-  select: SelectField,
-  radio: RadioGroupField,
-  selectboxes: SelectBoxesSwitch,
-  ranking: RankingField,
-  matrix: MatrixField,
-  file: FileField,
-  richtext: RichTextField,
-  signature: SignatureField,
-  hidden: null,
-  static: StaticField,
-  group: null,
-  page: null,
-  repeater: null,
 }
 
 export type {
