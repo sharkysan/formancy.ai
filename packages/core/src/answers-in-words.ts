@@ -42,8 +42,33 @@ export function answersInWords(
   text: FormText,
   locale: string = schema.i18n?.defaultLocale ?? '',
 ): SaidAnswer[] {
+  return readAnswers(schema, data, text, locale, () => false).map(({ line }) => line)
+}
+
+/** A line of `readAnswers`: an answer in words, or a question asked and left without one. */
+export interface ReadAnswer {
+  readonly line: SaidAnswer
+  readonly answered: boolean
+}
+
+/*
+ * The one walk over a form's answers, which a submission read back and a review both take, so
+ * the two cannot disagree about what counts as answered (0214). `asked` says of a field with no
+ * answer whether the person is being asked it — a review's question, never a stored
+ * submission's — and such a field has a line saying so, in its place.
+ */
+export function readAnswers(
+  schema: FormSchema,
+  data: unknown,
+  text: FormText,
+  locale: string,
+  asked: (field: string) => boolean,
+): ReadAnswer[] {
   const language = text.locale === '' ? 'en-GB' : text.locale
-  const out: SaidAnswer[] = []
+  const out: ReadAnswer[] = []
+  const unanswered = (path: string, field: string, label: string): void => {
+    if (asked(field)) out.push({ line: { path, field, label, said: text('answer.none') }, answered: false })
+  }
   const labelOf = (def: FieldDef): string => resolveText(schema, def.label, locale) ?? def.key
   const optionLabel = (options: readonly FieldOption[] | undefined, value: unknown): string => {
     const option = options?.find((candidate) => candidate.value === value)
@@ -73,16 +98,20 @@ export function answersInWords(
         })
         continue
       }
-      if (shape === 'matrix' && isRecord(held)) {
+      // A matrix answers row by row; one stored as something else is said as stored, below.
+      if (shape === 'matrix' && (held === undefined || held === null || isRecord(held))) {
         for (const row of def.rows ?? []) {
-          const column = ownValue(held, row.value)
-          if (column === undefined || column === null) continue
-          out.push({ path: `${path}.${row.value}`, field: path, label: `${label} › ${resolveText(schema, row.label, locale) ?? row.value}`, said: optionLabel(def.options, column) })
+          const column = isRecord(held) ? ownValue(held, row.value) : undefined
+          const rowPath = `${path}.${row.value}`
+          const rowLabel = `${label} › ${resolveText(schema, row.label, locale) ?? row.value}`
+          if (column === undefined || column === null) unanswered(rowPath, path, rowLabel)
+          else out.push({ line: { path: rowPath, field: path, label: rowLabel, said: optionLabel(def.options, column) }, answered: true })
         }
         continue
       }
       const said = sayAnswer(def, held, optionLabel, text, language)
-      if (said !== undefined) out.push({ path, field: path, label, said })
+      if (said === undefined) unanswered(path, path, label)
+      else out.push({ line: { path, field: path, label, said }, answered: true })
     }
   }
   visit(schema.model.fields, data, '', '')

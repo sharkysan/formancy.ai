@@ -120,7 +120,8 @@ translate: `addLabel` is a plain string in one language
 `<formancy-form [review]="true" />` puts a step between the last question and sending: where
 the form would send, it offers **Check your answers**, which validates the whole form as sending
 would, goes to the problem if there is one, and otherwise shows every answer in words with a
-**Change** back to its question. The form is sent from there, through the same `(submitted)`
+**Change** back to its question, and every question asked and left unanswered as *Not answered*
+([0214](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0214-the-review-names-a-question-left-unanswered.md)). The form is sent from there, through the same `(submitted)`
 output. The React binding's `review` prop does the same, from the same list
 ([0204](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
 

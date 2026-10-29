@@ -1,6 +1,7 @@
 # 0204 — The answers can be checked before they are sent, in words, from one list
 
-- **Status:** accepted
+- **Status:** accepted; a question nobody answered having no line, superseded in part by
+  [0214](0214-the-review-names-a-question-left-unanswered.md)
 - **Date:** 2026-10-28
 - **Extends:** [0193](0193-a-submission-is-read-back-in-words.md), whose `answersInWords` the review
   reads, and the wizard's failed-send navigation, which checking reuses

@@ -70,6 +70,7 @@ export const FORM_WORDS_FR = {
   'answer.no': 'Non',
   'answer.drawnSignature': 'Une signature dessinée',
   'answer.row': '{label} {position}',
+  'answer.none': 'Sans réponse',
 
   'repeater.add': 'Ajouter {label}',
   'repeater.remove': 'Supprimer {label}',

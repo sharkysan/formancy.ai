@@ -2043,4 +2043,9 @@
 [data-formancy-theme='paper'] [data-formancy-part='review-empty'] {
   color: var(--fm-muted);
 }
+/* A question left unanswered says so in words; set apart so a skipped one is seen (0214). */
+[data-formancy-theme='paper'] [data-formancy-part='review-unanswered'] {
+  color: var(--fm-muted);
+  font-style: italic;
+}
 

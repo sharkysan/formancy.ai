@@ -7,9 +7,10 @@ import { injectFormText } from './text.js'
 let nextId = 0
 
 /**
- * The answers in words before they are sent (0204) — the React binding's `Review`, row for row,
- * since both draw `answersToReview`. Each "Change" names its question for a screen reader, focus
- * is on the heading when it opens, and what sends the form is projected in.
+ * The answers in words before they are sent (0204), and a question left unanswered as such
+ * (0214) — the React binding's `Review`, row for row, since both draw `answersToReview`. Each
+ * "Change" names its question for a screen reader, focus is on the heading when it opens, and
+ * what sends the form is projected in.
  */
 @Component({
   selector: 'formancy-review',
@@ -24,7 +25,11 @@ let nextId = 0
           @for (answer of answers(); track answer.path) {
             <div data-formancy-part="review-answer">
               <dt>{{ answer.label }}</dt>
-              <dd>{{ answer.said }}</dd>
+              @if (answer.answered) {
+                <dd>{{ answer.said }}</dd>
+              } @else {
+                <dd data-formancy-part="review-unanswered">{{ answer.said }}</dd>
+              }
               <dd><button type="button" (click)="changed.emit(answer)">{{ text('review.change') }} <span data-formancy-part="visually-hidden">{{ answer.label }}</span></button></dd>
             </div>
           }
