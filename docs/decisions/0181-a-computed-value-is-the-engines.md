@@ -1,6 +1,7 @@
 # 0181 — A computed value is the engine's: nothing else writes it, and its control is read-only
 
-- **Status:** accepted
+- **Status:** accepted; every other control drawn as before, superseded in part by
+  [0216](0216-a-computed-answer-is-read-not-operated.md)
 - **Date:** 2026-10-18
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/core/src/computed-targets.test.ts`. The snapshot says `readOnly`

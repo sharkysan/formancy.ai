@@ -70,10 +70,7 @@ export function readAnswers(
     if (asked(field)) out.push({ line: { path, field, label, said: text('answer.none') }, answered: false })
   }
   const labelOf = (def: FieldDef): string => resolveText(schema, def.label, locale) ?? def.key
-  const optionLabel = (options: readonly FieldOption[] | undefined, value: unknown): string => {
-    const option = options?.find((candidate) => candidate.value === value)
-    return option === undefined ? String(value) : (resolveText(schema, option.label, locale) ?? option.value)
-  }
+  const optionLabel = optionLabeller(schema, locale)
 
   const visit = (fields: readonly FieldDef[], value: unknown, pathPrefix: string, labelPrefix: string): void => {
     for (const def of fields) {
@@ -116,6 +113,39 @@ export function readAnswers(
   }
   visit(schema.model.fields, data, '', '')
   return out
+}
+
+/**
+ * One field's answer in words, as a submission read back says it — a matrix's rows joined as a
+ * list, "Food: High and Room: Low" — or nothing when it has none. What a field a computed rule
+ * writes is drawn as, where its own control has no read-only state (0216).
+ */
+export function answerInWords(
+  schema: FormSchema,
+  def: FieldDef,
+  value: unknown,
+  text: FormText,
+  locale: string = schema.i18n?.defaultLocale ?? '',
+): string {
+  const language = text.locale === '' ? 'en-GB' : text.locale
+  const optionLabel = optionLabeller(schema, locale)
+  if (ANSWER_KINDS[def.type].shape === 'matrix' && isRecord(value)) {
+    const rows = (def.rows ?? []).flatMap((row) => {
+      const column = ownValue(value, row.value)
+      if (column === undefined || column === null) return []
+      return [`${resolveText(schema, row.label, locale) ?? row.value}: ${optionLabel(def.options, column)}`]
+    })
+    return list(rows, language)
+  }
+  return sayAnswer(def, value, optionLabel, text, language) ?? ''
+}
+
+/** An option's label in the document's language, or what was stored when no option has it. */
+function optionLabeller(schema: FormSchema, locale: string) {
+  return (options: readonly FieldOption[] | undefined, value: unknown): string => {
+    const option = options?.find((candidate) => candidate.value === value)
+    return option === undefined ? String(value) : (resolveText(schema, option.label, locale) ?? option.value)
+  }
 }
 
 /** One answer in words, or `undefined` when there is none to say. */

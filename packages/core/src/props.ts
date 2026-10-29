@@ -2,6 +2,7 @@ import type { FieldDef } from '@formancy/spec'
 import { describedBy } from './ids.js'
 import type { FieldIds } from './ids.js'
 import { showsCount } from './counted.js'
+import { hasReadOnlyControl } from './read-only-control.js'
 
 /**
  * The prop getters — theming mechanism number one, and the floor under every
@@ -87,6 +88,11 @@ export interface FieldPropsInput {
    * are not given — what the engine hands, so the three are decided here and nowhere else.
    */
   def?: Pick<FieldDef, 'type' | 'widget' | 'description' | 'maxLength'>
+  /**
+   * A computed rule writes the field (0181). One whose own control has no read-only state is
+   * drawn as its answer in a single read-only box (0216), so it is one control, never a group.
+   */
+  readOnly?: boolean
   /** A check about this answer is waiting for the deployment to answer. */
   checking?: boolean
   disabled: boolean
@@ -98,8 +104,11 @@ export function buildFieldProps(input: FieldPropsInput): FieldProps {
   const showError = input.touched && input.errors.length > 0
   const { def } = input
   // A list of ticks drawn as a tag picker is one combobox, which supports `aria-required`, and
-  // draws no hint: decided as a group, its box pointed at a hint nothing carried (D4, 0211).
-  const grouped = input.grouped ?? (def !== undefined && GROUPED_FIELD_TYPES.has(def.type) && def.widget !== 'tagpicker')
+  // draws no hint: decided as a group, its box pointed at a hint nothing carried (D4, 0211). A
+  // computed group of controls is drawn as one read-only box, and says so the same way (0216).
+  const answerBox = input.readOnly === true && def !== undefined && !hasReadOnlyControl(def)
+  const grouped =
+    input.grouped ?? (def !== undefined && GROUPED_FIELD_TYPES.has(def.type) && def.widget !== 'tagpicker' && !answerBox)
   const described = input.described ?? def?.description !== undefined
   const counted = input.counted ?? (def !== undefined && showsCount(def))
 

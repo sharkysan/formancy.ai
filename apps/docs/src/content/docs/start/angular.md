@@ -167,7 +167,9 @@ accessibility wiring — the correctness lives in one place instead of two.
 A field a `computed` rule writes has `snapshot().readOnly` set, and `setValue` on
 it does nothing: its value is the rule's. Bind `[readOnly]` to it as the built-in
 controls do, or the person types into a box that does not keep what they type
-([logic](/docs/concepts/logic/#a-computed-field-is-read-only)).
+([logic](/docs/concepts/logic/#a-computed-field-is-read-only)). A control you register by type for
+a type with no read-only box — a tick box, a choice, a list — is not mounted for such a field: the
+renderer draws its answer in words instead. Register it for the field's path to draw it yourself.
 
 ## The other inject helpers
 

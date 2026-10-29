@@ -11,6 +11,7 @@ import {
   runInInjectionContext,
 } from '@angular/core'
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
+import { hasReadOnlyControl } from '@formancy/core'
 import type { FieldSnapshot, PlacedGroup } from '@formancy/core'
 import {
   datagridColumns,
@@ -18,6 +19,7 @@ import {
 } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
 import { DEFAULT_FIELD_COMPONENTS } from './fields.js'
+import { FormancyComputedAnswerField } from './fields/computed-answer.js'
 import { injectField } from './field.js'
 import type { FieldBinding } from './field.js'
 import { injectRepeater } from './repeater.js'
@@ -102,8 +104,12 @@ export class FormancyFieldSlot implements OnInit {
     const path = this.path()
     const binding = runInInjectionContext(this.injector, () => injectField(path))
     const snapshot = binding.snapshot
+    // A computed value is read, never operated: a field whose own control has no read-only state
+    // is drawn as its answer in words, whoever supplies the control for its type, Material
+    // included; a host's control for this one path still wins (0216).
     const component =
       this.registry?.byPath?.[path] ??
+      (snapshot().readOnly && !hasReadOnlyControl(snapshot().def) ? FormancyComputedAnswerField : undefined) ??
       this.registry?.byType?.[snapshot().type] ??
       DEFAULT_FIELD_COMPONENTS[snapshot().type]
     // Labels ride on the model definition (version-0 presentation-lite); the

@@ -366,6 +366,26 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A computed field with no read-only control is drawn as its answer (unreleased)
+
+**If a test of yours finds a computed field by its control**, it now finds a read-only text box
+named by the field's label, holding the answer in words. This applies to a tick box, a choice,
+a list, a ranking, a matrix, a rating, a slider, a picker, rich text, a file or a signature that a
+`computed` rule writes
+([0216](docs/decisions/0216-a-computed-answer-is-read-not-operated.md)):
+
+```ts
+screen.getByRole('textbox', { name: 'Eligible' }) // value "Yes", where it was a checkbox
+```
+
+**If you register a control by type** — `byType.checkbox`, a design system's select — it is not
+mounted for a field a computed rule writes when that type has no read-only box of its own. The
+renderer draws the answer instead. Register it for the field's path if it should draw that field
+anyway, and draw it read-only from `snapshot.readOnly`.
+
+**A computed radio group, list of ticks, ranking or matrix is one control now**, not a group: a
+required one carries `aria-required` on its box and names no hint.
+
 ## A signature's typed box is named after its field (0.9.0)
 
 **If a test of yours finds a signature's typed box by its name**, the name now starts with the

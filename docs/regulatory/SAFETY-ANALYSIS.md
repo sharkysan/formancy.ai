@@ -152,6 +152,18 @@ date-and-time controls read-only. Held by each renderer's `computed-field` test
 and by the `calculated-value` conformance fixture, whose first step expects a
 value handed in for the total not to be shown.
 
+*And what the screen showed was not always what the form held.* Every other control had no
+read-only state and was drawn as an ordinary one — a tick box, a choice, a list, a ranking, a
+matrix, a rating, a slider, a picker, rich text, a file, a signature. A change made in it did not
+take, and the Angular binding went on showing it: measured in jsdom on 2026-10-18, a ticked box
+over `false` and a select showing `b` over `a`. Every release from `0.6.0`, which made computed
+values the engine's, to `0.9.0` draws them so. Now each is drawn as its answer in words, in a
+read-only box, wherever the renderer picks the field's component, Material's controls included
+([0216](../decisions/0216-a-computed-answer-is-read-not-operated.md)). Held over every type and
+widget but a repeater by *written by a computed rule, has nothing in it a person can change* in
+each renderer's `control-id` test and Material's `controls.test.ts`, which failed before the
+change on fourteen controls in each.
+
 *Residual:*
 
 - **What the person saw is not always what is stored.** A computed rule that
@@ -159,14 +171,9 @@ value handed in for the total not to be shown.
   starts from nothing. A form submitted after an input was emptied showed the
   last total and stores none. The stored record agrees with its own inputs, and
   the screen did not.
-- **A control with no read-only state is drawn as an ordinary control.** That
-  covers a tick box, a choice, a slider, a picker and the rest. A change made in
-  it does not take. React draws the control back to the engine's value. The
-  Angular binding can go on showing the change: measured in jsdom on
-  2026-10-18, a ticked box over `false` and a select showing `b` over `a`. That
-  was already true before this change of any computed value whose expression
-  could be evaluated. A `disabled` rule on such a field is the documented
-  remedy.
+- **A computed repeater is drawn as an ordinary repeater.** The engine refuses
+  every change to its rows, but its buttons and its rows' controls look as though
+  they take one.
 - **A host writing a whole row or group** with `setValue` on its parent path
   writes a computed member's value with it. The next pass overwrites that value
   when it can evaluate the expression, and keeps it until then. The server is

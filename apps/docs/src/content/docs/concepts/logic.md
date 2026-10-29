@@ -84,18 +84,24 @@ leaves the value in the tab order and announced as read-only. Not `disabled`:
 that would take it out of the tab order and grey out a number somebody is meant
 to read.
 
+**Every other control is drawn as the field's answer in words**, in one read-only text box
+labelled by the field. That covers a tick box, a choice, a list, a ranking or a matrix, a rating, a
+slider, a typeahead or a tag picker, rich text, a file, a signature, and a text box with a
+scanner. A computed tick box reads *Yes* or *No*, a choice its option's label, and a list the
+labels joined as the language joins them. Nothing in it can be ticked or chosen, so the screen
+never shows an answer the form does not hold. A control a host registers for the field's path still
+draws it
+([0216](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0216-a-computed-answer-is-read-not-operated.md)).
+
 What this does not do:
 
-- **Every other control is drawn as it always is** — a tick box, a choice, a
-  ranking or a matrix, a rating, a slider, a typeahead or a tag picker, rich
-  text, a file, a signature, and a scanner's button beside a read-only text box
-  — and a change made in it does not take: the value stays the rule's. React
-  draws the control back to it; the Angular binding can go on showing the
-  change until the value next moves. Give such a field a `disabled` rule as
-  well.
+- **A computed repeater is drawn as a repeater.** The engine refuses every change to its rows, but
+  its add and remove buttons and its rows' controls are drawn as an ordinary repeater's.
+- **A computed field whose options come from a source is said by its stored value**, not its
+  label.
 - **No shipped theme styles a read-only box differently** from one that takes
   typing. If yours should look like a result rather than a question, style
-  `[readonly]`, or add a `disabled` rule.
+  `[readonly]`.
 
 ## Why CEL
 

@@ -141,4 +141,17 @@ describe('a list of ticks drawn as a tag picker', () => {
     expect(snapshot.props.control['aria-required']).toBeUndefined()
     expect(snapshot.props.control['aria-describedby']).toContain(snapshot.ids.hint)
   })
+
+  // A computed list is drawn as its answer in one read-only box (0216), not as boxes in a
+  // fieldset, so it says it is required as one control does: its hint would name a fieldset's
+  // element that is not drawn.
+  test('written by a computed rule, is one box, so a required one carries aria-required and names no hint', () => {
+    const snapshot = createFormEngine({
+      schema: { ...topics(), logic: { rules: [{ target: 'topics', kind: 'computed', cel: '["a"]' }] } },
+      capabilities: { now: () => 0, today: () => '2026-10-29', random: () => 0.5 },
+    }).getFieldSnapshot(['topics'])
+
+    expect(snapshot.props.control['aria-required']).toBe(true)
+    expect(snapshot.props.control['aria-describedby'] ?? '').not.toContain(snapshot.ids.hint)
+  })
 })

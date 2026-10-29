@@ -537,6 +537,39 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     expect(operable(await drawnUnder('true'))).toEqual([])
   })
 
+  test.each(DRAWN.filter(({ field }) => field.type !== 'repeater'))('$name, written by a computed rule, has nothing in it a person can change, and a read-only box to read', async ({ field }) => {
+    // The rule both renderers hold their controls to, by the same function, with Material's
+    // registry provided: a computed value is the engine's (0181), and a control registered by
+    // type does not draw a field whose own control has no read-only state; its answer in words
+    // does, in a read-only box (0216). Material's tick box, select and radio group took a change
+    // the engine refused. A repeater is recorded in §11.2, as in the two renderers' rule.
+    const drawnWith = async (rule: { kind: 'disabled' | 'computed'; cel: string }): Promise<Element> => {
+      const engine = createFormEngine({
+        schema: { ...form([field]), logic: { rules: [{ target: 'f', ...rule }] } } as unknown as FormSchema,
+        capabilities: { now: () => 0, today: () => '2026-10-29', random: () => 0.5 },
+      })
+      const view = await render(FormancyForm, {
+        providers: [
+          provideZonelessChangeDetection(),
+          provideFormancy(engine),
+          provideFormancyUploader(upload),
+          ...provideFormancyMaterial(),
+        ],
+      })
+      await view.fixture.whenStable()
+      const drawn = document.querySelector('[data-formancy-field-path="f"]')
+      if (drawn === null) throw new Error('the field drew nothing to look inside')
+      return drawn
+    }
+
+    expect(changeable(await drawnWith({ kind: 'disabled', cel: 'false' }))).not.toEqual([])
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+    const written = await drawnWith({ kind: 'computed', cel: 'null' })
+    expect(changeable(written)).toEqual([])
+    expect(written.querySelector('input[readonly], textarea[readonly]')).not.toBeNull()
+  })
+
   test.each(DRAWN)('$name, required, described and sent empty, names no id that is not drawn', async ({ field }) => {
     // The rule the default renderer's and React's controls are held to (D4, 0211), with
     // Material's registry provided: whatever draws the field draws every element its ARIA names.
@@ -575,9 +608,10 @@ describe('every field, under Material, under the engine’s control id (0186)', 
  * a keyboard reaches that does not say `aria-disabled`. The same function as the default
  * renderer's and React's.
  */
-function operable(root: Element): string[] {
+function operable(root: Element, unchangeable: (element: HTMLElement) => boolean = () => false): string[] {
   const live: string[] = []
   for (const element of Array.from(root.querySelectorAll<HTMLElement>('*'))) {
+    if (unchangeable(element)) continue
     const name = `${element.tagName.toLowerCase()}${element.getAttribute('role') ? `[role=${element.getAttribute('role')}]` : ''}${element.getAttribute('type') ? `[type=${element.getAttribute('type')}]` : ''}`
     if (element.matches('input, select, textarea, button')) {
       if (element.matches('input[type=hidden]')) continue
@@ -590,6 +624,11 @@ function operable(root: Element): string[] {
     }
   }
   return live
+}
+
+/** `operable`'s list, less a box drawn `readonly`: the same function as the two renderers'. */
+function changeable(root: Element): string[] {
+  return operable(root, (element) => element.matches('input[readonly], textarea[readonly]'))
 }
 
 /** Every id an element inside `root`, or `root` itself, points at, with the attribute that names it. */

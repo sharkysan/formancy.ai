@@ -125,6 +125,9 @@ export const STARTER_SCHEMA = {
           { key: 'unitPrice', type: 'number', label: { $t: 'items.unitPrice' } },
           // Computed per row, and never typed into.
           { key: 'lineTotal', type: 'number', label: { $t: 'items.lineTotal' } },
+          // Computed too, and a tick box has no read-only state of its own, so it is drawn as
+          // its answer in words, "Yes" or "No", in a read-only box (0216).
+          { key: 'bulk', type: 'checkbox', label: { $t: 'items.bulk' } },
         ],
       },
 
@@ -518,6 +521,7 @@ export const STARTER_SCHEMA = {
         kind: 'computed',
         cel: '(item.qty == null || item.unitPrice == null) ? 0.0 : item.qty * item.unitPrice',
       },
+      { target: 'items[].bulk', kind: 'computed', cel: 'item.qty != null && item.qty >= 10.0' },
       {
         target: 'items[].qty',
         kind: 'validate',

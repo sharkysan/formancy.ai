@@ -201,7 +201,6 @@ const NO_ERRORS: readonly string[] = Object.freeze([])
 /** Variables every row-scoped rule sees on top of the form's fields. */
 const ROW_VARIABLES: Record<string, DeclaredType> = { item: 'map', index: 'int' }
 
-
 /*
  * The engine assembly for spec version 0.
  *
@@ -1152,6 +1151,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           touched,
           errors,
           def: node.def,
+          readOnly: isTarget(computed, wire),
           checking: checkingWires.has(wire),
         }),
       })

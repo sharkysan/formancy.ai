@@ -10,6 +10,24 @@ later.
 
 ## Unreleased
 
+**A computed field shows the engine's answer, in words, and nothing in it can be changed.** Only a
+box a person types into has a read-only state, so a tick box, a choice, a list, a ranking, a
+matrix, a rating, a slider, a picker, rich text, a file or a signature that a `computed` rule
+writes was drawn as an ordinary control. A person could tick or choose in it, and the engine
+refused the change. The Angular binding went on showing it — measured, a ticked box over `false` —
+so the screen said one answer while the form held another (hazard A3). Each is now drawn as its
+answer in words — *Yes*, a choice by its label, a list joined as the language joins one — in a
+read-only text box labelled by the field. Like a computed number's box, it stays in the tab order
+and is never disabled. A `disabled` rule is no longer needed as a workaround. It is decided where
+each renderer picks a field's component, so Material's controls are covered too. A control a host
+registers for that path still wins; one registered for the type is not used for such a field. A
+host's test that found a computed tick box by role `checkbox` finds a `textbox` saying *Yes* —
+[`MIGRATIONS.md`](MIGRATIONS.md) says what to change. New: `hasReadOnlyControl` in
+`@formancy/core`, `answerInWords` in `@formancy/core/words`, and in the playground's item rows a
+computed tick box, *Ten or more*. `@formancy/core` measures 17.97 kB
+against its 18 kB budget ([0216](docs/decisions/0216-a-computed-answer-is-read-not-operated.md),
+which supersedes that part of 0181).
+
 **A list of ticks draws its source's rows, as tick boxes or as a tag picker.** Since spec 3 a
 `selectboxes` may name an `optionsSource`, and the server checks every value of its answer, but
 neither renderer drew the source's rows: tick boxes over a source were an empty group and a tag
