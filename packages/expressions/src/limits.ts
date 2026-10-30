@@ -78,8 +78,7 @@ export function resolveLimits(overrides?: Partial<StructuralLimits> | undefined)
   return Object.freeze({
     maxAstNodes: overrides.maxAstNodes ?? DEFAULT_LIMITS.maxAstNodes,
     maxDepth: overrides.maxDepth ?? DEFAULT_LIMITS.maxDepth,
-    maxStringLiteralLength:
-      overrides.maxStringLiteralLength ?? DEFAULT_LIMITS.maxStringLiteralLength,
+    maxStringLiteralLength: overrides.maxStringLiteralLength ?? DEFAULT_LIMITS.maxStringLiteralLength,
     maxListElements: overrides.maxListElements ?? DEFAULT_LIMITS.maxListElements,
     maxMapEntries: overrides.maxMapEntries ?? DEFAULT_LIMITS.maxMapEntries,
     maxCallArguments: overrides.maxCallArguments ?? DEFAULT_LIMITS.maxCallArguments,
@@ -87,13 +86,7 @@ export function resolveLimits(overrides?: Partial<StructuralLimits> | undefined)
   })
 }
 
-const COMPREHENSION_MACROS: ReadonlySet<string> = new Set([
-  'all',
-  'exists',
-  'exists_one',
-  'filter',
-  'map',
-])
+const COMPREHENSION_MACROS: ReadonlySet<string> = new Set(['all', 'exists', 'exists_one', 'filter', 'map'])
 
 /**
  * The limits the CEL parser can enforce for us while it builds the AST.
@@ -116,22 +109,11 @@ export function parserLimits(limits: StructuralLimits): {
 }
 
 /** The first limit the parsed expression breaks, or undefined when it fits. */
-export function findLimitViolation(
-  node: CelNode,
-  limits: StructuralLimits,
-  source: string,
-): ExpressionError | undefined {
-  return (
-    findStringViolation(node, limits, source) ??
-    findComprehensionViolation(node, limits, source, 0)
-  )
+export function findLimitViolation(node: CelNode, limits: StructuralLimits, source: string): ExpressionError | undefined {
+  return findStringViolation(node, limits, source) ?? findComprehensionViolation(node, limits, source, 0)
 }
 
-function findStringViolation(
-  node: CelNode,
-  limits: StructuralLimits,
-  source: string,
-): ExpressionError | undefined {
+function findStringViolation(node: CelNode, limits: StructuralLimits, source: string): ExpressionError | undefined {
   if (node.op === 'value' && typeof node.args === 'string') {
     if (node.args.length > limits.maxStringLiteralLength) {
       return new ExpressionError({
@@ -150,12 +132,7 @@ function findStringViolation(
   return undefined
 }
 
-function findComprehensionViolation(
-  node: CelNode,
-  limits: StructuralLimits,
-  source: string,
-  depth: number,
-): ExpressionError | undefined {
+function findComprehensionViolation(node: CelNode, limits: StructuralLimits, source: string, depth: number): ExpressionError | undefined {
   const macro = asComprehension(node)
   if (macro === undefined) {
     for (const child of childNodes(node)) {
@@ -190,9 +167,7 @@ function findComprehensionViolation(
   return undefined
 }
 
-function asComprehension(
-  node: CelNode,
-): { readonly receiver: CelNode; readonly args: readonly CelNode[] } | undefined {
+function asComprehension(node: CelNode): { readonly receiver: CelNode; readonly args: readonly CelNode[] } | undefined {
   if (node.op !== 'rcall') return undefined
   const [name, receiver, macroArgs] = node.args as [string, CelNode, CelNode[]]
   if (!COMPREHENSION_MACROS.has(name) || !Array.isArray(macroArgs) || macroArgs.length < 2) {

@@ -2,7 +2,6 @@ import { useField } from '../use-field.js'
 import { FieldShell } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
-
 /**
  * The temporal controls, each holding one canonical fixed-width string.
  *
@@ -94,8 +93,7 @@ export function DateTimeField({ path, label }: FieldComponentProps) {
     // browser labels as local, so the reader would see an hour they did not type.
     const pad = (part: number): string => String(part).padStart(2, '0')
     return (
-      `${String(instant.getFullYear())}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}` +
-      `T${pad(instant.getHours())}:${pad(instant.getMinutes())}`
+      `${String(instant.getFullYear())}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}` + `T${pad(instant.getHours())}:${pad(instant.getMinutes())}`
     )
   }
 
@@ -116,11 +114,7 @@ export function DateTimeField({ path, label }: FieldComponentProps) {
           // A control can hand back something unparseable mid-edit. Writing null
           // rather than a malformed string keeps the stored answer always either
           // empty or canonical, which is what the engine's shape check assumes.
-          field.setValue(
-            Number.isNaN(instant.getTime())
-              ? null
-              : `${instant.toISOString().slice(0, 19)}Z`,
-          )
+          field.setValue(Number.isNaN(instant.getTime()) ? null : `${instant.toISOString().slice(0, 19)}Z`)
         }}
         onBlur={() => field.touch()}
       />

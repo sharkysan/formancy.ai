@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
 import {
   addOtherOption,
   changeFieldType,
@@ -18,13 +11,7 @@ import {
 } from '@formancy/builder-core'
 import type { BuilderText, PaletteEntry } from '@formancy/builder-core'
 import type { FieldType } from '@formancy/spec'
-import type {
-  BuilderSession,
-  DataGridColumn,
-  EditableProperty,
-  FieldDef,
-  FieldOption,
-} from './types.js'
+import type { BuilderSession, DataGridColumn, EditableProperty, FieldDef, FieldOption } from './types.js'
 import { takeHostOutOfLayout } from './host.js'
 import { FormancyColumnsEditor } from './columns-editor.js'
 import { FormancyOptionsEditor } from './options-editor.js'
@@ -148,9 +135,7 @@ export class FormancyProperty {
   /** What this control last sent, so its own echo is not adopted as a change. */
   private pushed = ''
 
-  protected readonly hintId = computed(() =>
-    this.property().description === '' ? null : `${this.id}-hint`,
-  )
+  protected readonly hintId = computed(() => (this.property().description === '' ? null : `${this.id}-hint`))
 
   protected readonly draft = computed((): string => {
     const incoming = this.asText(this.value())
@@ -291,11 +276,7 @@ export class FormancyPropertyPanel {
 
   protected readonly def = computed((): FieldDef | undefined => {
     const path = this.keyPath()
-    return this.view().nodes.find(
-      (candidate) =>
-        candidate.keyPath.length === path.length &&
-        candidate.keyPath.every((key, at) => key === path[at]),
-    )?.def
+    return this.view().nodes.find((candidate) => candidate.keyPath.length === path.length && candidate.keyPath.every((key, at) => key === path[at]))?.def
   })
   protected readonly heading = computed(() => {
     const field = this.def()
@@ -343,10 +324,6 @@ export class FormancyPropertyPanel {
     // An empty box means "no value", not "the empty string". Writing '' would put
     // a property into the document the author just cleared, and `minLength: ''`
     // is not a thing the schema accepts.
-    this.session().setFieldProperty(
-      this.keyPath(),
-      name,
-      value === '' || value === undefined ? undefined : value,
-    )
+    this.session().setFieldProperty(this.keyPath(), name, value === '' || value === undefined ? undefined : value)
   }
 }

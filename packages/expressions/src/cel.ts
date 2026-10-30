@@ -5,12 +5,7 @@
  * maintainer. Keeping every reference to it behind this file means swapping in
  * `@bufbuild/cel` or a fork is a one-file change rather than a migration.
  */
-import {
-  Environment,
-  ParseError,
-  EvaluationError,
-  TypeError as CelTypeError,
-} from '@marcbachmann/cel-js'
+import { Environment, ParseError, EvaluationError, TypeError as CelTypeError } from '@marcbachmann/cel-js'
 import { childNodes } from './ast.js'
 import type { CelNode } from './ast.js'
 import type { Meter } from './budget.js'
@@ -47,9 +42,7 @@ export interface CelProgram {
   run(values: Record<string, unknown>, pass: EvaluationPass): unknown
 }
 
-export type CelCheckOutcome =
-  | { readonly valid: true; readonly type: ResultType }
-  | { readonly valid: false; readonly error: unknown }
+export type CelCheckOutcome = { readonly valid: true; readonly type: ResultType } | { readonly valid: false; readonly error: unknown }
 
 export interface CelRuntime {
   parse(source: string): CelProgram
@@ -176,13 +169,10 @@ function registerDecimal(environment: Environment, current: PassAccessor): void 
   })
   // There is no `/` for decimals: division does not stay exact, so the number
   // of places is the author's decision and has to be written down.
-  environment.registerFunction(
-    'divide(decimal, decimal, int): decimal',
-    (a: Decimal, b: Decimal, places: bigint) => {
-      current('divide')
-      return divideDecimal(a, b, Number(places))
-    },
-  )
+  environment.registerFunction('divide(decimal, decimal, int): decimal', (a: Decimal, b: Decimal, places: bigint) => {
+    current('divide')
+    return divideDecimal(a, b, Number(places))
+  })
   environment.registerFunction('string(decimal): string', (value: Decimal) => {
     current('string')
     return decimalToString(value)
@@ -205,8 +195,7 @@ function registerDecimal(environment: Environment, current: PassAccessor): void 
     environment.registerOperator(`decimal == ${otherType}`, (a: unknown, b: unknown) => {
       const other = a instanceof Decimal ? b : a
       throw new RangeError(
-        `A decimal can only be compared to another decimal, not to a ${runtimeTypeName(other)}; ` +
-          'convert the other side with dec() first',
+        `A decimal can only be compared to another decimal, not to a ${runtimeTypeName(other)}; ` + 'convert the other side with dec() first',
       )
     })
   }
@@ -355,8 +344,7 @@ function instrumentForMetering(root: SurgicalNode, environment: Environment): vo
     check: template.meta.check,
     evaluate: template.meta.evaluate,
   }
-  const wrapCall = (name: string, inner: SurgicalNode): SurgicalNode =>
-    inner.clone(callOp, [name, [inner]])
+  const wrapCall = (name: string, inner: SurgicalNode): SurgicalNode => inner.clone(callOp, [name, [inner]])
 
   /** Nodes some wrapper already prices, so a second one would double-charge. */
   const sizeCharged = new Set<SurgicalNode>()
@@ -374,9 +362,7 @@ function instrumentForMetering(root: SurgicalNode, environment: Environment): vo
     // tree if the implementation ever grows a macro named like these calls.
     if (node.meta.macro !== undefined) return
     sizeCharged.add(node)
-    const inner =
-      node.meta.alternate ??
-      node.clone({ name: node.op, check: node.meta.check, evaluate: node.meta.evaluate }, node.args)
+    const inner = node.meta.alternate ?? node.clone({ name: node.op, check: node.meta.check, evaluate: node.meta.evaluate }, node.args)
     node.setMeta('alternate', wrapCall(SIZE_FUNCTION, inner))
   }
 

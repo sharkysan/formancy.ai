@@ -20,8 +20,7 @@ export function logLevelFrom(env: Readonly<Record<string, string | undefined>>):
   const level = LOG_LEVELS.find((known) => known === value)
   if (level === undefined) {
     throw new Error(
-      `FORMANCY_LOG_LEVEL is "${value}", which is not a level this server has. Write one of ` +
-        `off, ${LOG_LEVELS.join(', ')} — or leave it unset for info.`,
+      `FORMANCY_LOG_LEVEL is "${value}", which is not a level this server has. Write one of ` + `off, ${LOG_LEVELS.join(', ')} — or leave it unset for info.`,
     )
   }
   return level

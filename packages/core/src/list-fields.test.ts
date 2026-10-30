@@ -29,8 +29,7 @@ const engineFor = (fields: FormSchema['model']['fields']) =>
     capabilities: CAPABILITIES,
   })
 
-const errorsOn = (engine: ReturnType<typeof engineFor>, wire: string): readonly string[] =>
-  engine.getFieldSnapshot(parsePath(wire)).errors
+const errorsOn = (engine: ReturnType<typeof engineFor>, wire: string): readonly string[] => engine.getFieldSnapshot(parsePath(wire)).errors
 
 describe('selectboxes', () => {
   const topics = (over: Record<string, unknown> = {}) => [
@@ -118,9 +117,7 @@ describe('file', () => {
   const pdf = { id: 'f1', name: 'report.pdf', size: 1024, contentType: 'application/pdf', storageKey: 'k1' }
   const png = { id: 'f2', name: 'shot.PNG', size: 9_000_000, contentType: 'image/png', storageKey: 'k2' }
 
-  const evidence = (over: Record<string, unknown> = {}) => [
-    { key: 'evidence', type: 'file' as const, label: 'Evidence', ...over },
-  ]
+  const evidence = (over: Record<string, unknown> = {}) => [{ key: 'evidence', type: 'file' as const, label: 'Evidence', ...over }]
 
   test('the answer is what each file is and where it went, never its bytes', () => {
     const engine = engineFor(evidence())
@@ -130,9 +127,19 @@ describe('file', () => {
     expect(engine.value()).toEqual({ evidence: [pdf] })
   })
 
-  test.each([null, 1, 'file', [], {}, { ...pdf, size: undefined },
-    { ...pdf, size: -1 }, { ...pdf, size: 1.5 }, { ...pdf, size: Infinity },
-    { ...pdf, id: '' }, { ...pdf, storageKey: undefined }, { ...pdf, contentType: null },
+  test.each([
+    null,
+    1,
+    'file',
+    [],
+    {},
+    { ...pdf, size: undefined },
+    { ...pdf, size: -1 },
+    { ...pdf, size: 1.5 },
+    { ...pdf, size: Infinity },
+    { ...pdf, id: '' },
+    { ...pdf, storageKey: undefined },
+    { ...pdf, contentType: null },
   ])('malformed attachment metadata is rejected without throwing: %j', (file) => {
     for (const constraints of [{}, { maxFileSize: 100 }, { accept: ['application/pdf'] }]) {
       const engine = engineFor(evidence(constraints))
@@ -206,9 +213,7 @@ describe('file', () => {
 
 describe('richtext', () => {
   test('the answer is a string, bounded by maxLength like any other text', () => {
-    const engine = engineFor([
-      { key: 'notes', type: 'richtext', label: 'Notes', maxLength: 10 },
-    ])
+    const engine = engineFor([{ key: 'notes', type: 'richtext', label: 'Notes', maxLength: 10 }])
 
     engine.setValue(parsePath('notes'), '**far** too long to fit')
     engine.submit()
@@ -217,9 +222,7 @@ describe('richtext', () => {
   })
 
   test('it is counted in the stored markup, which is what the cap protects', () => {
-    const engine = engineFor([
-      { key: 'notes', type: 'richtext', label: 'Notes', maxLength: 8 },
-    ])
+    const engine = engineFor([{ key: 'notes', type: 'richtext', label: 'Notes', maxLength: 8 }])
 
     // Four characters of text, eight of markup. The cap exists to bound what
     // is stored and sent, so it counts what is stored and sent.
@@ -256,9 +259,7 @@ describe('an untouched list answer is an empty list, not nothing', () => {
               key: 'topics',
               type,
               label: 'Topics',
-              ...(type === 'selectboxes'
-                ? { options: [{ value: 'migration', label: 'Migration' }] }
-                : {}),
+              ...(type === 'selectboxes' ? { options: [{ value: 'migration', label: 'Migration' }] } : {}),
             },
             { key: 'detail', type: 'text', label: 'Detail' },
           ],

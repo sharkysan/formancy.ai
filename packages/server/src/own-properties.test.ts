@@ -24,9 +24,7 @@ afterEach(async () => {
 
 const ROOT = { email: 'root@test.ch', password: 'root-password-1' }
 
-async function serve(
-  storage: Storage = createMemoryStorage(),
-): Promise<{ app: FastifyInstance; asRoot: Record<string, string> }> {
+async function serve(storage: Storage = createMemoryStorage()): Promise<{ app: FastifyInstance; asRoot: Record<string, string> }> {
   app = await createApp(storage, {
     authSecret: 'a-test-secret-that-is-long-enough-to-sign',
     bootstrapAdmin: ROOT,
@@ -42,11 +40,7 @@ function form(id: string, fields: readonly unknown[], rules?: readonly unknown[]
 }
 
 /** Publish a form open to anyone, through the API, as an operator would. */
-async function publishPublic(
-  app: FastifyInstance,
-  asRoot: Record<string, string>,
-  schema: Record<string, unknown>,
-): Promise<void> {
+async function publishPublic(app: FastifyInstance, asRoot: Record<string, string>, schema: Record<string, unknown>): Promise<void> {
   const path = schema['id'] as string
   const published = await app.inject({ method: 'POST', url: '/forms', headers: asRoot, payload: { path, schema } })
   expect(published.statusCode).toBe(201)
@@ -127,9 +121,7 @@ describe('a form with a field keyed __proto__', () => {
       headers: asRoot,
       payload: {
         path: 'remarks',
-        schema: form('remarks', [
-          { key: 'outer', type: 'group', label: 'Outer', fields: [{ key: '__proto__', type: 'text', label: 'Remarks' }] },
-        ]),
+        schema: form('remarks', [{ key: 'outer', type: 'group', label: 'Outer', fields: [{ key: '__proto__', type: 'text', label: 'Remarks' }] }]),
       },
     })
 

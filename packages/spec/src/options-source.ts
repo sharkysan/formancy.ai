@@ -97,10 +97,7 @@ export function acceptRemoteOptions(rows: unknown): readonly RemoteOption[] | un
  * Its `total` is true only of rows that are every row there is. A page that goes on has
  * no total, so a page goes through `capRemoteAnswer`, which says what this cannot.
  */
-export function capRemoteOptions(
-  rows: readonly RemoteOption[],
-  limit: number,
-): { shown: readonly RemoteOption[]; total: number; capped: boolean } {
+export function capRemoteOptions(rows: readonly RemoteOption[], limit: number): { shown: readonly RemoteOption[]; total: number; capped: boolean } {
   if (!Number.isFinite(limit) || limit < 1) return { shown: rows, total: rows.length, capped: false }
   return {
     shown: rows.slice(0, limit),
@@ -208,10 +205,7 @@ export function acceptRemoteAnswer(answer: unknown): Required<RemoteOptionsPage>
  * - **`complete`** only when nothing was cut, nothing more matches and nothing was
  *   withheld. A list is never silently partial.
  */
-export function capRemoteAnswer(
-  answer: Required<RemoteOptionsPage>,
-  limit: number,
-): { shown: readonly RemoteOption[]; completeness: RemoteCompleteness } {
+export function capRemoteAnswer(answer: Required<RemoteOptionsPage>, limit: number): { shown: readonly RemoteOption[]; completeness: RemoteCompleteness } {
   const { shown, total, capped } = capRemoteOptions(answer.options, limit)
   if (answer.more) return { shown, completeness: { kind: 'more', shown: shown.length } }
   if (capped) return { shown, completeness: { kind: 'capped', shown: shown.length, total } }

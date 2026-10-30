@@ -53,9 +53,8 @@ export function Licence(): ReactElement {
         <p className="eyebrow">Licence</p>
         <h2>Apache-2.0. The whole thing.</h2>
         <p className="lede">
-          The spec, the engine, both renderers, the builder and the backend. No paywalled
-          accessibility, no premium components, no clause that turns running it for your own
-          users into distribution.
+          The spec, the engine, both renderers, the builder and the backend. No paywalled accessibility, no premium components, no clause that turns running it
+          for your own users into distribution.
         </p>
         <div className="actions">
           <a className="action" href={REPO} rel="noreferrer noopener">
@@ -71,24 +70,15 @@ export function Licence(): ReactElement {
       <dl className="licence-terms">
         <div>
           <dt>An express patent grant</dt>
-          <dd>
-            With a retaliation clause, which is the term an acquirer&rsquo;s open-source
-            office looks for first. MIT has none.
-          </dd>
+          <dd>With a retaliation clause, which is the term an acquirer&rsquo;s open-source office looks for first. MIT has none.</dd>
         </div>
         <div>
           <dt>Running it is not distributing it</dt>
-          <dd>
-            Offering a form to your own users triggers nothing. No source disclosure, no
-            obligation that arrives with your first visitor.
-          </dd>
+          <dd>Offering a form to your own users triggers nothing. No source disclosure, no obligation that arrives with your first visitor.</dd>
         </div>
         <div>
           <dt>Attribution that travels</dt>
-          <dd>
-            A NOTICE file ships in every package, and the licence text with it — checked
-            before a release can publish.
-          </dd>
+          <dd>A NOTICE file ships in every package, and the licence text with it — checked before a release can publish.</dd>
         </div>
       </dl>
 
@@ -98,11 +88,9 @@ export function Licence(): ReactElement {
           since a link is often reached alone — by tab, or from a list of links. */}
       <div className="licence-modules">
         <p className="licence-modules-lede">
-          <strong>Not free: the modules built on formancy.</strong> Each has a repository and a
-          source-available licence of its own, not Apache-2.0. Reading the source, evaluating
-          and developing with it cost nothing, in a company too; running it in production needs
-          a paid licence. There is no published price yet — ask at{' '}
-          <a href="mailto:info@formancy.ai">info@formancy.ai</a>.
+          <strong>Not free: the modules built on formancy.</strong> Each has a repository and a source-available licence of its own, not Apache-2.0. Reading the
+          source, evaluating and developing with it cost nothing, in a company too; running it in production needs a paid licence. There is no published price
+          yet — ask at <a href="mailto:info@formancy.ai">info@formancy.ai</a>.
         </p>
         <ul>
           {MODULES.map((module) => (
@@ -129,9 +117,8 @@ export function Licence(): ReactElement {
           together -- `apps/docs/src/claims.test.ts` fails if either is left behind,
           and if a document named here is not where the link says. */}
       <p className="licence-provenance">
-        <strong>Built to be incorporated.</strong> formancy is not a medical device and
-        claims no conformity. It ships the characterisation a manufacturer needs under
-        IEC 62304 to treat it as software of known provenance — a{' '}
+        <strong>Built to be incorporated.</strong> formancy is not a medical device and claims no conformity. It ships the characterisation a manufacturer needs
+        under IEC 62304 to treat it as software of known provenance — a{' '}
         <a href={`${REPO}/blob/main/docs/regulatory/SOUP-DECLARATION.md`} rel="noreferrer noopener">
           SOUP declaration
         </a>

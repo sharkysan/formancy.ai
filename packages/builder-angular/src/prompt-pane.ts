@@ -203,12 +203,7 @@ export class FormancyPromptPane {
    */
   protected readonly failure = computed(() => {
     const outcome = this.state().result
-    return outcome === undefined ||
-      outcome.ok ||
-      outcome.ended === 'declined' ||
-      outcome.problems.length === 0
-      ? undefined
-      : outcome
+    return outcome === undefined || outcome.ok || outcome.ended === 'declined' || outcome.problems.length === 0 ? undefined : outcome
   })
 
   private readonly writeButton = viewChild<ElementRef<HTMLButtonElement>>('writeButton')
@@ -263,8 +258,7 @@ export class FormancyPromptPane {
     if (ask === undefined) return
     // The examples in force with the document the answer is for, taken together.
     const scenarios = this.scenarios()
-    const examples =
-      scenarios === undefined ? undefined : { scenarios, initialValue: this.initialValue(), mode: this.mode() }
+    const examples = scenarios === undefined ? undefined : { scenarios, initialValue: this.initialValue(), mode: this.mode() }
     void this.held().write(ask, this.session(), { examples, attempts: this.attempts() })
   }
 }

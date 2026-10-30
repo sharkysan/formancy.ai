@@ -217,8 +217,14 @@ describe('the layout section', () => {
     // second time, bound to the same answer -- the duplicate above, reached through a
     // group. Reported at the field, wherever it stands.
     for (const order of [
-      [{ kind: 'field', path: 'address' }, { kind: 'field', path: 'address.city' }],
-      [{ kind: 'field', path: 'address.city' }, { kind: 'field', path: 'address' }],
+      [
+        { kind: 'field', path: 'address' },
+        { kind: 'field', path: 'address.city' },
+      ],
+      [
+        { kind: 'field', path: 'address.city' },
+        { kind: 'field', path: 'address' },
+      ],
     ] as const) {
       const both = JSON.parse(JSON.stringify(withLayout)) as FormSchema
       both.layouts![0]!.nodes = [...order]

@@ -26,9 +26,7 @@ function rows(): string[] {
   const section = page.split('## What the shipped fixtures cover')[1]?.split('\n## ')[0] ?? ''
   return section
     .split('\n')
-    .filter(
-      (line) => line.startsWith('| ') && !line.startsWith('| Fixture') && !line.startsWith('| ---'),
-    )
+    .filter((line) => line.startsWith('| ') && !line.startsWith('| Fixture') && !line.startsWith('| ---'))
     .map((line) => line.split('|')[1]?.trim() ?? '')
     .sort()
 }
@@ -41,8 +39,6 @@ describe('the conformance page', () => {
 
   test('and does not count them in prose, which is how it went stale', () => {
     const section = page.split('## What the shipped fixtures cover')[1]?.split('\n## ')[0] ?? ''
-    expect(section).not.toMatch(
-      /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d+) cases\b/i,
-    )
+    expect(section).not.toMatch(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d+) cases\b/i)
   })
 })

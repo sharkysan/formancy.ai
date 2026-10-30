@@ -72,9 +72,7 @@ export type RichTextEditorFactory = (mount: RichTextEditorMount) => RichTextEdit
  * put the bytes. A missing editor costs only the WYSIWYG surface: the answer is
  * still editable, still valid, and still the same grammar.
  */
-export const FORMANCY_RICH_TEXT_EDITOR = new InjectionToken<RichTextEditorFactory>(
-  'formancy.richTextEditor',
-)
+export const FORMANCY_RICH_TEXT_EDITOR = new InjectionToken<RichTextEditorFactory>('formancy.richTextEditor')
 
 export function injectRichTextEditorFactory(): RichTextEditorFactory | null {
   return inject(FORMANCY_RICH_TEXT_EDITOR, { optional: true })

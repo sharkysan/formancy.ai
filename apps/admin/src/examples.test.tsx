@@ -129,8 +129,7 @@ function serve({
       const method = init?.method ?? 'GET'
       const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as unknown) : undefined
       calls.push({ url: input, method, body })
-      const json = (value: unknown, status = 200): Response =>
-        new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } })
+      const json = (value: unknown, status = 200): Response => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } })
 
       // The server's answer when it has no model, as it gives it since 0183.
       if (input === '/api/model') return json(model ?? { provider: null, model: null })
@@ -429,9 +428,7 @@ describe('drafting examples', () => {
     expect(turns).toHaveLength(1)
     expect(turns[0]?.body).toMatchObject({ kind: 'scenarios' })
     expect(turns[0]?.body).not.toHaveProperty('system')
-    await waitFor(() =>
-      expect(saves(calls)).toEqual([{ scenarios: [ASKS_FOR_A_CANTON, GERMANY_DOES_NOT, draft], sample: SAMPLE }]),
-    )
+    await waitFor(() => expect(saves(calls)).toEqual([{ scenarios: [ASKS_FOR_A_CANTON, GERMANY_DOES_NOT, draft], sample: SAMPLE }]))
     for (const call of calls) expect(call.url.startsWith('/api/'), call.url).toBe(true)
   })
 })
@@ -445,9 +442,7 @@ describe('what the examples say elsewhere in the build tab', () => {
     await user.type(await screen.findByLabelText(/Describe the form/), 'Show the canton outside Switzerland.')
     await user.click(screen.getByRole('button', { name: 'Write it' }))
 
-    expect(
-      await screen.findByRole('region', { name: /would stop holding: Switzerland asks for a canton/ }, { timeout: 5000 }),
-    ).toBeTruthy()
+    expect(await screen.findByRole('region', { name: /would stop holding: Switzerland asks for a canton/ }, { timeout: 5000 })).toBeTruthy()
   })
 
   test('and the review runs them as the publish will', async () => {
@@ -463,9 +458,7 @@ describe('what the examples say elsewhere in the build tab', () => {
     await user.type(await screen.findByLabelText(/Describe the form/), 'Check the address in the browser.')
     await user.click(screen.getByRole('button', { name: 'Write it' }))
 
-    expect(
-      await screen.findByRole('region', { name: /would stop holding: A German address is refused/ }, { timeout: 5000 }),
-    ).toBeTruthy()
+    expect(await screen.findByRole('region', { name: /would stop holding: A German address is refused/ }, { timeout: 5000 })).toBeTruthy()
   })
 
   test('the publish note names an example the publish says stops holding', async () => {

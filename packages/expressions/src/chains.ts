@@ -29,13 +29,7 @@ export interface Chain {
  * engine: reporting `x` invents a dependency on a field that does not exist,
  * and skipping `items` loses the one that does.
  */
-const COMPREHENSION_MACROS: ReadonlySet<string> = new Set([
-  'all',
-  'exists',
-  'exists_one',
-  'filter',
-  'map',
-])
+const COMPREHENSION_MACROS: ReadonlySet<string> = new Set(['all', 'exists', 'exists_one', 'filter', 'map'])
 
 /**
  * The macros whose three-argument form names TWO local variables, key and
@@ -136,10 +130,7 @@ function visitComprehension(node: CelNode, found: Chain[], scope: ReadonlySet<st
 
   // The two-variable form binds a second local — `m.all(k, v, …)` — and that
   // slot is a NAME, not a read; visiting it would report a phantom field.
-  const secondVariable =
-    TWO_VARIABLE_MACROS.has(name) && macroArgs.length === 3 && macroArgs[1] !== undefined
-      ? identifierName(macroArgs[1])
-      : undefined
+  const secondVariable = TWO_VARIABLE_MACROS.has(name) && macroArgs.length === 3 && macroArgs[1] !== undefined ? identifierName(macroArgs[1]) : undefined
 
   const inner = new Set(scope)
   inner.add(iterationVariable)

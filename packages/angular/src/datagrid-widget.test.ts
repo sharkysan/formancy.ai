@@ -86,13 +86,9 @@ async function mount(widget?: 'datagrid'): Promise<void> {
 }
 
 const namedControls = (): Array<[string, string]> =>
-  [...document.querySelectorAll('input, select, textarea, button')].map((element) => [
-    element.tagName.toLowerCase(),
-    computeAccessibleName(element),
-  ])
+  [...document.querySelectorAll('input, select, textarea, button')].map((element) => [element.tagName.toLowerCase(), computeAccessibleName(element)])
 
-const parts = (name: string): HTMLElement[] =>
-  [...document.querySelectorAll(`[data-formancy-part="${name}"]`)] as HTMLElement[]
+const parts = (name: string): HTMLElement[] => [...document.querySelectorAll(`[data-formancy-part="${name}"]`)] as HTMLElement[]
 
 const reset = (): void => {
   TestBed.resetTestingModule()
@@ -132,9 +128,7 @@ describe('a repeater with the datagrid widget', () => {
     // with `exclusiveMinimum: 0`: 1.5 is legal and nothing bounds it from above.
     await mount('datagrid')
 
-    expect(parts('datagrid')[0]?.style.getPropertyValue('--fm-datagrid-columns')).toBe(
-      '3fr 1.5fr 1fr 1fr',
-    )
+    expect(parts('datagrid')[0]?.style.getPropertyValue('--fm-datagrid-columns')).toBe('3fr 1.5fr 1fr 1fr')
   })
 
   test('shows a column for every answer, in the order the columns ask for', async () => {
@@ -143,12 +137,7 @@ describe('a repeater with the datagrid widget', () => {
     // would be an answer nobody can give.
     await mount('datagrid')
 
-    expect(parts('datagrid-heading').map((heading) => heading.textContent?.trim())).toEqual([
-      'Item name',
-      'Quantity ordered',
-      'Unit',
-      'Line total',
-    ])
+    expect(parts('datagrid-heading').map((heading) => heading.textContent?.trim())).toEqual(['Item name', 'Quantity ordered', 'Unit', 'Line total'])
   })
 
   test('a heading is static text and names nothing', async () => {
@@ -187,12 +176,7 @@ describe('a repeater with the datagrid widget', () => {
     await mount('datagrid')
 
     const rows = parts('datagrid-row')
-    const cellCounts = rows.map(
-      (row) =>
-        [...row.children].filter(
-          (child) => child.getAttribute('data-formancy-part') === 'datagrid-cell',
-        ).length,
-    )
+    const cellCounts = rows.map((row) => [...row.children].filter((child) => child.getAttribute('data-formancy-part') === 'datagrid-cell').length)
     expect(cellCounts).toEqual([4, 4])
     expect(parts('datagrid-actions')).toHaveLength(rows.length)
   })
@@ -201,9 +185,7 @@ describe('a repeater with the datagrid widget', () => {
     // The only mechanical guard on "this is not a role=grid". Both drivers operate
     // controls with fireEvent and never press Tab, so a grid that swallowed Tab would
     // pass every fixture while making the form unusable by keyboard.
-    const tabbables = (): number =>
-      document.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])')
-        .length
+    const tabbables = (): number => document.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])').length
 
     await mount(undefined)
     const asBlocks = tabbables()

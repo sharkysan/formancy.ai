@@ -180,9 +180,7 @@ describe('a hidden repeater', () => {
     // A rule hiding the repeater cleared its rows and left its fieldset and its add button on
     // the screen, so a person could add rows to a question that was withdrawn.
     const { engine, view } = await mount(
-      guests({}, [{ target: 'guests', kind: 'visible', cel: 'coming == true' }], [
-        { key: 'coming', type: 'checkbox', label: 'Coming' },
-      ]),
+      guests({}, [{ target: 'guests', kind: 'visible', cel: 'coming == true' }], [{ key: 'coming', type: 'checkbox', label: 'Coming' }]),
     )
     expect(screen.queryByRole('group', { name: /^Guests/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Add guest' })).toBeNull()

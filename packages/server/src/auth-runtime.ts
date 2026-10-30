@@ -45,9 +45,7 @@ export interface SessionTokens {
 
 export function createSessionTokens(secret: string): SessionTokens {
   if (secret.length < 32) {
-    throw new Error(
-      'FORMANCY_AUTH_SECRET must be at least 32 characters. Generate one: openssl rand -base64 33',
-    )
+    throw new Error('FORMANCY_AUTH_SECRET must be at least 32 characters. Generate one: openssl rand -base64 33')
   }
   const key = new TextEncoder().encode(secret)
 
@@ -66,11 +64,7 @@ export function createSessionTokens(secret: string): SessionTokens {
         const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] })
         const role = payload['role']
         const kind = payload['kind']
-        if (
-          typeof payload.sub !== 'string' ||
-          (role !== 'admin' && role !== 'editor' && role !== 'viewer') ||
-          (kind !== 'user' && kind !== 'apiKey')
-        ) {
+        if (typeof payload.sub !== 'string' || (role !== 'admin' && role !== 'editor' && role !== 'viewer') || (kind !== 'user' && kind !== 'apiKey')) {
           return undefined
         }
         return { id: payload.sub, role: role as Role, kind }

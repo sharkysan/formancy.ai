@@ -11,13 +11,7 @@
 import type { FieldDef, FieldOption, FormSchema } from '@formancy/spec'
 
 /** JSON, and nothing but JSON. A fixture must survive a file round-trip unchanged. */
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | readonly JsonValue[]
-  | { readonly [key: string]: JsonValue }
+export type JsonValue = string | number | boolean | null | readonly JsonValue[] | { readonly [key: string]: JsonValue }
 
 /**
  * A field as a fixture declares it.

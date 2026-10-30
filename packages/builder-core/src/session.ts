@@ -1,24 +1,9 @@
 import { createBuilderText } from './messages.js'
 import type { BuilderText } from './messages.js'
 import { translationCommands } from './translation.js'
-import {
-  CONTAINER_TYPES,
-  containerAt,
-  containerPaths,
-  dataPathOf,
-  layoutPointer,
-  locate,
-  locateLayout,
-  neighbouringPage,
-} from './navigate.js'
+import { CONTAINER_TYPES, containerAt, containerPaths, dataPathOf, layoutPointer, locate, locateLayout, neighbouringPage } from './navigate.js'
 import type { FieldDef, FormSchema, LayoutNode, LogicRule, SpecVersion, Text } from '@formancy/spec'
-import {
-  CURRENT_SPEC_VERSION,
-  unreferencedPaths,
-  LAYOUT_LEAF_KINDS,
-  layoutChildren,
-  PAGE_TARGETED_RULE_KINDS,
-} from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, unreferencedPaths, LAYOUT_LEAF_KINDS, layoutChildren, PAGE_TARGETED_RULE_KINDS } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import {
@@ -31,14 +16,7 @@ import {
   samePath,
 } from './layout.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
-import {
-  repathEverywhere,
-  repathRules,
-  underPath,
-  unplaceEverywhere,
-  unplaceOnly,
-  unskipEverywhere,
-} from './repath.js'
+import { repathEverywhere, repathRules, underPath, unplaceEverywhere, unplaceOnly, unskipEverywhere } from './repath.js'
 
 /**
  * The headless document engine under the form builder.
@@ -351,11 +329,7 @@ export interface BuilderSession {
    * Like every command here it is attempted against the validator, so an illegal value
    * leaves the document where it was rather than requiring the panel to know the rules.
    */
-  setLayoutNodeProperty(
-    address: LayoutAddress,
-    property: string,
-    value: unknown,
-  ): CommandOutcome
+  setLayoutNodeProperty(address: LayoutAddress, property: string, value: unknown): CommandOutcome
 
   /**
    * Every position a layout node may legally occupy: a new node (pass it) or
@@ -376,7 +350,6 @@ export interface BuilderSession {
    */
   upgradeSpec(to?: SpecVersion): CommandOutcome
 }
-
 
 /** Document order: earlier position first, and a parent before its child. */
 function comparePaths(a: readonly number[], b: readonly number[]): number {
@@ -559,16 +532,10 @@ export function createBuilderSession(
         const where = keyPath.join('.')
 
         if (!CONTAINER_TYPES.has(field.type)) {
-          return refuse(
-            '/model/fields',
-            text('refuse.unwrapLeaf', { where }),
-          )
+          return refuse('/model/fields', text('refuse.unwrapLeaf', { where }))
         }
         if (field.type === 'repeater') {
-          return refuse(
-            '/model/fields',
-            text('refuse.unwrapRepeater', { where }),
-          )
+          return refuse('/model/fields', text('refuse.unwrapRepeater', { where }))
         }
 
         const children = [...(field.fields ?? [])]
@@ -583,9 +550,7 @@ export function createBuilderSession(
           // make the command unavailable on exactly the forms somebody arranged.
           // Its children's placements are repointed rather than pruned.
           unplaceOnly(draft, container)
-          const parent = container.includes('.')
-            ? container.slice(0, container.lastIndexOf('.'))
-            : ''
+          const parent = container.includes('.') ? container.slice(0, container.lastIndexOf('.')) : ''
           for (const child of children) {
             const from = `${container}.${child.key}`
             const to = parent === '' ? child.key : `${parent}.${child.key}`
@@ -596,10 +561,7 @@ export function createBuilderSession(
             // `rewritePath` splices the spans the parser reports.
             const refused = repathRules(draft, from, to, text)
             if (refused !== undefined) {
-              return refuse(
-                '/logic/rules',
-                text('refuse.unwrapRenames', { where, from, to, refused }),
-              )
+              return refuse('/logic/rules', text('refuse.unwrapRenames', { where, from, to, refused }))
             }
           }
         }
@@ -614,10 +576,7 @@ export function createBuilderSession(
             // Appended after a preceding page's questions, prepended before a
             // following one's: both are the position that leaves the document in
             // the order somebody typed it.
-            into.fields =
-              host < found.index
-                ? [...(into.fields ?? []), ...children]
-                : [...children, ...(into.fields ?? [])]
+            into.fields = host < found.index ? [...(into.fields ?? []), ...children] : [...children, ...(into.fields ?? [])]
             found.siblings.splice(found.index, 1)
           }
           unskipEverywhere(draft, field.key)
@@ -631,10 +590,7 @@ export function createBuilderSession(
 
     moveField(from, to) {
       if (isPrefix(from, to.parent)) {
-        return refuse(
-          '/model/fields',
-          text('refuse.moveIntoItself', { path: from.join('.') }),
-        )
+        return refuse('/model/fields', text('refuse.moveIntoItself', { path: from.join('.') }))
       }
       return attempt((draft) => {
         const found = locate(draft, from)
@@ -678,10 +634,7 @@ export function createBuilderSession(
           // for the life of the form.
           const refused = repathRules(draft, before, after, text)
           if (refused !== undefined) {
-            return refuse(
-              '/logic/rules',
-              text('refuse.renameFollows', { before, after, refused }),
-            )
+            return refuse('/logic/rules', text('refuse.renameFollows', { before, after, refused }))
           }
         }
         baselineByCurrentKey.set(newKey, baseline)
@@ -781,10 +734,7 @@ export function createBuilderSession(
         if (found === undefined) return noSuchNode(text, address)
         const node = found.node
         if (!isLayoutContainer(node)) {
-          return refuse(
-            layoutPointer(address),
-            text('refuse.fieldNodeHoldsNothing'),
-          )
+          return refuse(layoutPointer(address), text('refuse.fieldNodeHoldsNothing'))
         }
         found.siblings.splice(found.index, 1, ...node.children)
         return undefined
@@ -793,17 +743,11 @@ export function createBuilderSession(
 
     wrapLayoutNodes(layout, addresses, container, positionOf) {
       if (addresses.length < 2) {
-        return refuse(
-          `/layouts/${layout}`,
-          text('refuse.wrapNeedsTwo'),
-        )
+        return refuse(`/layouts/${layout}`, text('refuse.wrapNeedsTwo'))
       }
 
       if (!isLayoutContainer(container)) {
-        return refuse(
-          `/layouts/${layout}`,
-          text('refuse.wrapperNotContainer'),
-        )
+        return refuse(`/layouts/${layout}`, text('refuse.wrapperNotContainer'))
       }
 
       for (let outer = 0; outer < addresses.length; outer += 1) {
@@ -814,16 +758,10 @@ export function createBuilderSession(
           if (samePath(a, b)) {
             // Spliced out once and inserted twice would place one field in two
             // positions, which stays syntactically fine and fails at publish.
-            return refuse(
-              layoutPointer({ layout, path: a }),
-              text('refuse.nodeListedTwice'),
-            )
+            return refuse(layoutPointer({ layout, path: a }), text('refuse.nodeListedTwice'))
           }
           if (encloses(a, b)) {
-            return refuse(
-              layoutPointer({ layout, path: a }),
-              text('refuse.wrapContainerWithChild'),
-            )
+            return refuse(layoutPointer({ layout, path: a }), text('refuse.wrapContainerWithChild'))
           }
         }
       }
@@ -843,10 +781,7 @@ export function createBuilderSession(
         // the caller meant. `at` when given -- a drop wants the target's place,
         // not the dragged node's -- and otherwise the earliest in document
         // order, which is the sensible default when nothing prefers one.
-        const anchorPath =
-          positionOf !== undefined && addresses.some((path) => samePath(path, positionOf))
-            ? positionOf
-            : [...addresses].sort(comparePaths)[0]!
+        const anchorPath = positionOf !== undefined && addresses.some((path) => samePath(path, positionOf)) ? positionOf : [...addresses].sort(comparePaths)[0]!
         const home = locateLayout(draft, { layout, path: anchorPath })
         if (home === undefined) return noSuchNode(text, { layout, path: anchorPath })
         const parent = home.siblings
@@ -870,16 +805,10 @@ export function createBuilderSession(
       // would silently unplace it where it came from — a deletion wearing the
       // word "move". Two commands, deliberately, so the second is deliberate.
       if (from.layout !== to.layout) {
-        return refuse(
-          layoutPointer(from),
-          text('refuse.crossLayout', { from: from.layout, to: to.layout }),
-        )
+        return refuse(layoutPointer(from), text('refuse.crossLayout', { from: from.layout, to: to.layout }))
       }
       if (encloses(from.path, to.parent)) {
-        return refuse(
-          layoutPointer(from),
-          text('refuse.moveNodeIntoItself'),
-        )
+        return refuse(layoutPointer(from), text('refuse.moveNodeIntoItself'))
       }
 
       return attempt((draft) => {
@@ -918,16 +847,10 @@ export function createBuilderSession(
         const found = locateLayout(draft, address)
         if (found === undefined) return noSuchNode(text, address)
         if (STRUCTURAL_LAYOUT_PROPERTIES.has(property)) {
-          return refuse(
-            `${layoutPointer(address)}/${property}`,
-            text('refuse.notASetting', { property }),
-          )
+          return refuse(`${layoutPointer(address)}/${property}`, text('refuse.notASetting', { property }))
         }
         if (property === '__proto__' || property === 'prototype' || property === 'constructor') {
-          return refuse(
-            `${layoutPointer(address)}/${property}`,
-            text('refuse.settingName', { property }),
-          )
+          return refuse(`${layoutPointer(address)}/${property}`, text('refuse.settingName', { property }))
         }
         const node = found.node as unknown as Record<string, unknown>
         if (value === undefined) Reflect.deleteProperty(node, property)
@@ -945,8 +868,7 @@ export function createBuilderSession(
 
     validLayoutTargets(layout, what) {
       const movingPath = Array.isArray(what) ? (what as readonly number[]) : undefined
-      const probe =
-        movingPath === undefined ? (what as LayoutNode) : layoutNodeAt(present, layout, movingPath)
+      const probe = movingPath === undefined ? (what as LayoutNode) : layoutNodeAt(present, layout, movingPath)
       if (probe === undefined) return []
       if (nodesOfLayout(present, layout) === undefined) return []
 
@@ -979,11 +901,7 @@ export function createBuilderSession(
         for (let index = 0; index <= container.length; index += 1) {
           // Within the container it came from, the slot it already occupies is
           // not a move. After the lift, that is the index it was lifted from.
-          if (
-            movingPath !== undefined &&
-            sameLayoutPath(parent, movingPath.slice(0, -1)) &&
-            index === movingPath[movingPath.length - 1]
-          ) {
+          if (movingPath !== undefined && sameLayoutPath(parent, movingPath.slice(0, -1)) && index === movingPath[movingPath.length - 1]) {
             continue
           }
           targets.push({ layout, parent, index })
@@ -999,10 +917,7 @@ export function createBuilderSession(
     upgradeSpec(to = CURRENT_SPEC_VERSION) {
       return attempt((draft) => {
         if (draft.specVersion > to) {
-          return refuse(
-            '/specVersion',
-            text('refuse.downgrade', { from: draft.specVersion, to }),
-          )
+          return refuse('/specVersion', text('refuse.downgrade', { from: draft.specVersion, to }))
         }
         draft.specVersion = to
         return undefined
@@ -1012,9 +927,7 @@ export function createBuilderSession(
     validTargets(what) {
       const movingPath = Array.isArray(what) ? (what as readonly string[]) : undefined
       const probe: FieldDef =
-        movingPath === undefined
-          ? (what as FieldDef)
-          : (locate(present, movingPath)?.siblings[locate(present, movingPath)!.index] as FieldDef)
+        movingPath === undefined ? (what as FieldDef) : (locate(present, movingPath)?.siblings[locate(present, movingPath)!.index] as FieldDef)
       if (probe === undefined) return []
 
       const targets: Location[] = []
@@ -1066,7 +979,6 @@ export function createBuilderSession(
   }
 }
 
-
 // ----------------------------------------------- keeping layouts in step
 
 /**
@@ -1078,9 +990,6 @@ export function createBuilderSession(
  * by the one-place-per-field rule.
  */
 const STRUCTURAL_LAYOUT_PROPERTIES = new Set(['kind', 'children', 'path'])
-
-
-
 
 function noSuchNode(text: BuilderText, address: LayoutAddress): Refusal {
   return {
@@ -1094,10 +1003,7 @@ function noSuchContainer(text: BuilderText, location: LayoutLocation): Refusal {
   return {
     ok: false,
     path: `/layouts/${location.layout}/nodes/${location.parent.join('/')}`,
-    message:
-      location.parent.length === 0
-        ? text('refuse.noLayout', { name: location.layout })
-        : text('refuse.notAContainerNode', { layout: location.layout }),
+    message: location.parent.length === 0 ? text('refuse.noLayout', { name: location.layout }) : text('refuse.notAContainerNode', { layout: location.layout }),
   }
 }
 
@@ -1109,10 +1015,7 @@ function noSuchContainer(text: BuilderText, location: LayoutLocation): Refusal {
  * shifted up one — and walking the unshifted path now arrives at a different
  * node entirely, which is the silent kind of wrong.
  */
-function shiftAfterLift(
-  parent: readonly number[],
-  lifted: readonly number[] | undefined,
-): number[] {
+function shiftAfterLift(parent: readonly number[], lifted: readonly number[] | undefined): number[] {
   if (lifted === undefined) return [...parent]
   const depth = lifted.length - 1
   if (parent.length <= depth) return [...parent]

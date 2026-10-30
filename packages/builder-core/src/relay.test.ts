@@ -287,9 +287,7 @@ describe('one turn at a time', () => {
 
     expect(translating).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
     expect(translating).not.toHaveProperty('reason')
-    expect(translationStatus({ busy: false, result: translating, proposal: undefined, refusal: undefined }, text)).toBe(
-      text('prompt.status.busy'),
-    )
+    expect(translationStatus({ busy: false, result: translating, proposal: undefined, refusal: undefined }, text)).toBe(text('prompt.status.busy'))
     expect(relay.waiting()).toBe(editTurn)
     relay.answer(WITH_PHONE)
     expect(await editing).toMatchObject({ ok: true })
@@ -301,13 +299,9 @@ describe('one turn at a time', () => {
 
     expect(second).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
     expect(second).not.toHaveProperty('reason')
-    expect(proposalStatus({ busy: false, result: second, proposal: undefined, refusal: undefined }, text)).toBe(
-      text('prompt.status.busy'),
-    )
+    expect(proposalStatus({ busy: false, result: second, proposal: undefined, refusal: undefined }, text)).toBe(text('prompt.status.busy'))
     expect(relay.waiting()).toBe(translationTurn)
-    relay.answer(
-      JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }),
-    )
+    relay.answer(JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }))
     expect(await translation).toMatchObject({ ok: true })
   })
 
@@ -342,9 +336,7 @@ describe('one turn at a time', () => {
     expect(relay.waiting()).toBe(waiting)
     expect(translation.state().busy).toBe(true)
 
-    relay.answer(
-      JSON.stringify({ locale: 'fr', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'Courriel' }] }),
-    )
+    relay.answer(JSON.stringify({ locale: 'fr', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'Courriel' }] }))
     await vi.waitFor(() => expect(translation.state().proposal).toBeDefined())
 
     // And the other way round: a draft waiting refuses a translation.
@@ -446,25 +438,22 @@ describe('what the pane says leaves with a request', () => {
   /** A kind's sentence in English, German and French, as the pane draws it. */
   const sentences = (kind: ModelRequestKind): string[] => LANGUAGES.map((text) => relayLeaves(kind, text))
 
-  test.each(LANGUAGES.map((text) => [text('relay.title'), text] as const))(
-    'is a sentence of its own for each kind of request, in “%s”',
-    (_, text) => {
-      // One sentence for two kinds is the defect this replaces: whichever kind it was written
-      // for, it is wrong about the other. And a German or French sentence that is the English
-      // one is a person told what leaves in a language they did not choose.
-      const english = createBuilderText()
-      const said = MODEL_REQUEST_KINDS.map((kind) => relayLeaves(kind, text))
-      expect(new Set(said).size).toBe(MODEL_REQUEST_KINDS.length)
-      for (const sentence of said) {
-        expect(sentence.trim()).not.toBe('')
-        expect(sentence).not.toMatch(/[{}]/)
-      }
-      if (text('relay.title') !== english('relay.title')) {
-        const inEnglish = MODEL_REQUEST_KINDS.map((kind) => relayLeaves(kind, english))
-        expect(said.filter((sentence, index) => sentence === inEnglish[index])).toEqual([])
-      }
-    },
-  )
+  test.each(LANGUAGES.map((text) => [text('relay.title'), text] as const))('is a sentence of its own for each kind of request, in “%s”', (_, text) => {
+    // One sentence for two kinds is the defect this replaces: whichever kind it was written
+    // for, it is wrong about the other. And a German or French sentence that is the English
+    // one is a person told what leaves in a language they did not choose.
+    const english = createBuilderText()
+    const said = MODEL_REQUEST_KINDS.map((kind) => relayLeaves(kind, text))
+    expect(new Set(said).size).toBe(MODEL_REQUEST_KINDS.length)
+    for (const sentence of said) {
+      expect(sentence.trim()).not.toBe('')
+      expect(sentence).not.toMatch(/[{}]/)
+    }
+    if (text('relay.title') !== english('relay.title')) {
+      const inEnglish = MODEL_REQUEST_KINDS.map((kind) => relayLeaves(kind, english))
+      expect(said.filter((sentence, index) => sentence === inEnglish[index])).toEqual([])
+    }
+  })
 
   /** What the pane says leaves with an edit — the claims the next two cases check. */
   const AUTHORING = [
@@ -541,9 +530,7 @@ describe('what the pane says leaves with a request', () => {
     expect(sentences('scenarios')).toEqual(SCENARIOS)
     const existing = [{ name: 'Germany asks for no canton', changes: { country: 'DE' }, valid: true }]
     const start = { country: 'DE' }
-    const turn = await turnOf((ask) =>
-      draftScenarios(ask, STAY, 'Only Switzerland asks for a canton.', { initialValue: start, existing }),
-    )
+    const turn = await turnOf((ask) => draftScenarios(ask, STAY, 'Only Switzerland asks for a canton.', { initialValue: start, existing }))
 
     expect(turn.prompt.kind).toBe('scenarios')
     for (const words of [STAY.title, ...WORDS, 'cantonTooShort', existing[0]!.name, JSON.stringify(start)]) {

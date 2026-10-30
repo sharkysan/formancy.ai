@@ -1,13 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  CHALLENGE_TTL_SECONDS,
-  decodeSolution,
-  encodeSolution,
-  hashOf,
-  mintChallenge,
-  solveChallenge,
-  verifySolution,
-} from './challenge.js'
+import { CHALLENGE_TTL_SECONDS, decodeSolution, encodeSolution, hashOf, mintChallenge, solveChallenge, verifySolution } from './challenge.js'
 import type { Solution } from './challenge.js'
 
 /**
@@ -23,13 +15,14 @@ const SECRET = 'a-signing-key-long-enough-to-be-real'
 const NOW = 1_800_000_000
 
 /** Deterministic bytes, so a test can mint the same challenge twice. */
-const bytesFrom = (seed: number) => (length: number): Uint8Array =>
-  Uint8Array.from({ length }, (_, at) => (seed + at * 31) % 256)
+const bytesFrom =
+  (seed: number) =>
+  (length: number): Uint8Array =>
+    Uint8Array.from({ length }, (_, at) => (seed + at * 31) % 256)
 
 // A small ceiling: the search here is exhaustive, and a hundred thousand
 // hashes per test would make the suite slow to prove nothing extra.
-const mint = (seed = 7, maxNumber = 400) =>
-  mintChallenge({ secret: SECRET, nowSeconds: NOW, maxNumber, randomBytes: bytesFrom(seed) })
+const mint = (seed = 7, maxNumber = 400) => mintChallenge({ secret: SECRET, nowSeconds: NOW, maxNumber, randomBytes: bytesFrom(seed) })
 
 describe('solving one', () => {
   test('the browser finds the number and the server accepts it', async () => {
@@ -38,9 +31,7 @@ describe('solving one', () => {
     const number = await solveChallenge(challenge)
     expect(number).toBeTypeOf('number')
 
-    expect(verifySolution(SECRET, { ...challenge, number: number as number }, NOW)).toMatchObject(
-      { ok: true },
-    )
+    expect(verifySolution(SECRET, { ...challenge, number: number as number }, NOW)).toMatchObject({ ok: true })
   })
 
   test('the solver and the verifier agree, because there is one definition', async () => {
@@ -50,9 +41,7 @@ describe('solving one', () => {
     for (const seed of [1, 42, 99]) {
       const challenge = await mint(seed)
       const number = await solveChallenge(challenge)
-      expect((verifySolution(SECRET, { ...challenge, number: number as number }, NOW)).ok).toBe(
-        true,
-      )
+      expect(verifySolution(SECRET, { ...challenge, number: number as number }, NOW).ok).toBe(true)
     }
   })
 
@@ -62,10 +51,7 @@ describe('solving one', () => {
     // interval so proving the callback fires costs fifty hashes rather than
     // six thousand. The previous version did the six thousand and timed out
     // on a loaded machine.
-    await solveChallenge(
-      { salt: 'x.1', challenge: 'no-answer-here', maxNumber: 50 },
-      { onProgress: (tried) => void seen.push(tried), progressEvery: 10 },
-    )
+    await solveChallenge({ salt: 'x.1', challenge: 'no-answer-here', maxNumber: 50 }, { onProgress: (tried) => void seen.push(tried), progressEvery: 10 })
 
     // A caller that ignores this gets a busy loop, which is why the advice is
     // a Web Worker — but it has to be offered.
@@ -73,9 +59,7 @@ describe('solving one', () => {
   })
 
   test('a challenge from another scheme is answered, not thrown at', async () => {
-    expect(
-      await solveChallenge({ salt: 'x.1', challenge: 'not-a-hash-of-anything', maxNumber: 50 }),
-    ).toBeUndefined()
+    expect(await solveChallenge({ salt: 'x.1', challenge: 'not-a-hash-of-anything', maxNumber: 50 })).toBeUndefined()
   })
 })
 
@@ -124,7 +108,7 @@ describe('the ways past it', () => {
   })
 
   test('and is still good a second before it is not', async () => {
-    expect((verifySolution(SECRET, await valid(), NOW + CHALLENGE_TTL_SECONDS)).ok).toBe(true)
+    expect(verifySolution(SECRET, await valid(), NOW + CHALLENGE_TTL_SECONDS).ok).toBe(true)
   })
 
   test('rubbish is malformed rather than a crash', async () => {
@@ -136,7 +120,7 @@ describe('the ways past it', () => {
     ]
 
     for (const candidate of cases) {
-      expect((verifySolution(SECRET, candidate as Solution, NOW)).ok).toBe(false)
+      expect(verifySolution(SECRET, candidate as Solution, NOW).ok).toBe(false)
     }
   })
 })

@@ -83,10 +83,7 @@ export interface FillPaneProps {
   quietMs?: number
 }
 
-type Status =
-  | { kind: 'loading' }
-  | { kind: 'failed'; message: string }
-  | { kind: 'ready' }
+type Status = { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 'ready' }
 
 export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElement {
   const [status, setStatus] = useState<Status>({ kind: 'loading' })
@@ -237,10 +234,7 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
 
   return (
     <div className="wb-fill">
-      <ResumeNotice
-        {...(migration === undefined ? {} : { migration })}
-        labels={labelsOf(schema)}
-      />
+      <ResumeNotice {...(migration === undefined ? {} : { migration })} labels={labelsOf(schema)} />
 
       {readOnly ? (
         <p className="wb-hint">

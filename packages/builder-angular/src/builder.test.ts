@@ -101,8 +101,7 @@ const mount = async (form: FormSchema = schema): Promise<Mounted> => {
   }
 }
 
-const keys = (): string[] =>
-  screen.getAllByRole('treeitem').map((item) => item.textContent?.trim() ?? '')
+const keys = (): string[] => screen.getAllByRole('treeitem').map((item) => item.textContent?.trim() ?? '')
 
 /** A dialog's choices, which are its buttons minus the way out of it. */
 const choices = (dialog: HTMLElement): HTMLElement[] =>
@@ -183,10 +182,7 @@ describe('the structure tree', () => {
     await press('{Delete}')
 
     await press('{Control>}z{/Control}')
-    expect(session.document().model.fields.map((field) => field.key)).toEqual([
-      'customer',
-      'billing',
-    ])
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['customer', 'billing'])
 
     await press('{Control>}y{/Control}')
     expect(session.document().model.fields.map((field) => field.key)).toEqual(['billing'])
@@ -272,10 +268,7 @@ describe('moving a field', () => {
     const dialog = screen.getByRole('dialog', { name: /move/i })
     await click(choices(dialog).at(-1)!)
 
-    expect(session.document().model.fields.map((field) => field.key)).not.toEqual([
-      'customer',
-      'billing',
-    ])
+    expect(session.document().model.fields.map((field) => field.key)).not.toEqual(['customer', 'billing'])
     expect(screen.getByRole('status').textContent).toMatch(/moved/i)
   })
 
@@ -316,10 +309,7 @@ describe('making and unmaking a wizard', () => {
 
     await press('u')
 
-    expect(session.document().model.fields.map((field) => field.key)).toEqual([
-      'customer',
-      'billing',
-    ])
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['customer', 'billing'])
     expect(screen.getByRole('status').textContent).toMatch(/wizard/i)
   })
 })
@@ -335,12 +325,10 @@ describe('what the tree says it is', () => {
     }
   })
 
-  test("and carries the part names a theme dresses, with the React builder spelling", async () => {
+  test('and carries the part names a theme dresses, with the React builder spelling', async () => {
     const { press, tab, click } = await mount()
 
-    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     for (const part of ['builder', 'builder-tree', 'builder-node', 'builder-keys']) {
       expect(parts, `no ${part}`).toContain(part)
     }
@@ -465,7 +453,12 @@ describe('d duplicates the focused field', () => {
       specVersion: '4',
       id: 'contact',
       title: 'Contact',
-      model: { fields: [{ key: 'email', type: 'text', label: 'Email' }, { key: 'phone', type: 'text', label: 'Phone' }] },
+      model: {
+        fields: [
+          { key: 'email', type: 'text', label: 'Email' },
+          { key: 'phone', type: 'text', label: 'Phone' },
+        ],
+      },
     } as FormSchema)
     await tab()
     await press('d')

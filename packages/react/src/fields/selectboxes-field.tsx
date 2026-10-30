@@ -8,7 +8,6 @@ import { useSourcedOptions } from '../use-sourced-options.js'
 import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps, ResolvedOption } from './internals.js'
 
-
 /**
  * Many answers from a set, as checkboxes or as a tag picker.
  *
@@ -34,11 +33,7 @@ import type { FieldComponentProps, ResolvedOption } from './internals.js'
 /** A `selectboxes` is chips when the author asked for them, tick boxes otherwise. */
 export function SelectBoxesSwitch(props: FieldComponentProps) {
   const field = useField(props.path)
-  return field.def?.widget === 'tagpicker' ? (
-    <TagPickerField {...props} />
-  ) : (
-    <SelectBoxesField {...props} />
-  )
+  return field.def?.widget === 'tagpicker' ? <TagPickerField {...props} /> : <SelectBoxesField {...props} />
 }
 
 /**
@@ -114,8 +109,7 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
     field.setValue(chosen.filter((candidate) => candidate !== value))
   }
 
-  const labelFor = (value: string): string =>
-    options.find((option) => option.value === value)?.label ?? value
+  const labelFor = (value: string): string => options.find((option) => option.value === value)?.label ?? value
 
   // The document names a source this deployment does not have: said where the combobox
   // would be, which could never answer, as the select says it.
@@ -203,13 +197,7 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
               field.touch()
             }}
           />
-          <ul
-            id={listboxId}
-            role="listbox"
-            aria-label={text('options.suggestions', { label })}
-            data-formancy-part="tagpicker-listbox"
-            hidden={!expanded}
-          >
+          <ul id={listboxId} role="listbox" aria-label={text('options.suggestions', { label })} data-formancy-part="tagpicker-listbox" hidden={!expanded}>
             {matches.map((option) => (
               <li
                 key={option.value}

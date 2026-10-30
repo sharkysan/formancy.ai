@@ -48,9 +48,7 @@ export async function checkUploadThumbnails(browser, url, check) {
       const region = page.getByRole('region', { name: renderer, exact: true })
       // The artwork field is shown once gift wrapping is chosen: a rule in the starter.
       await region.getByRole('checkbox', { name: 'Gift wrapping' }).check()
-      await region
-        .getByLabel('Artwork for the gift wrap')
-        .setInputFiles({ name: 'swatch.png', mimeType: 'image/png', buffer: redPng(40, 20) })
+      await region.getByLabel('Artwork for the gift wrap').setInputFiles({ name: 'swatch.png', mimeType: 'image/png', buffer: redPng(40, 20) })
 
       const thumbnail = region.locator('[data-formancy-part="file-thumbnail"]')
       await thumbnail.waitFor({ timeout: 10_000 })
@@ -58,16 +56,13 @@ export async function checkUploadThumbnails(browser, url, check) {
         (canvas) =>
           new Promise((done) => {
             const started = Date.now()
-            const wait = () =>
-              canvas.width > 0 || Date.now() - started > 5000 ? done() : requestAnimationFrame(wait)
+            const wait = () => (canvas.width > 0 || Date.now() - started > 5000 ? done() : requestAnimationFrame(wait))
             wait()
           }),
       )
       const seen = await thumbnail.evaluate((canvas) => {
         const box = canvas.getBoundingClientRect()
-        const centre = canvas
-          .getContext('2d')
-          .getImageData(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1).data
+        const centre = canvas.getContext('2d').getImageData(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1).data
         return {
           drawn: [canvas.width, canvas.height],
           shown: [box.width, box.height],
@@ -77,17 +72,11 @@ export async function checkUploadThumbnails(browser, url, check) {
 
       check(
         `${renderer}: a picked image is drawn from its own bytes`,
-        seen.pixel[3] === 255 && seen.pixel[0] > 200 && seen.pixel[1] < 50 && seen.pixel[2] < 50
-          ? null
-          : `the centre pixel is rgba(${seen.pixel.join(', ')})`,
+        seen.pixel[3] === 255 && seen.pixel[0] > 200 && seen.pixel[1] < 50 && seen.pixel[2] < 50 ? null : `the centre pixel is rgba(${seen.pixel.join(', ')})`,
       )
       check(
         `${renderer}: at the image's own shape, and shown no larger than the theme allows`,
-        seen.drawn[0] === 40 &&
-          seen.drawn[1] === 20 &&
-          seen.shown[0] > 0 &&
-          seen.shown[0] <= 32 &&
-          Math.abs(seen.shown[0] - 2 * seen.shown[1]) <= 1
+        seen.drawn[0] === 40 && seen.drawn[1] === 20 && seen.shown[0] > 0 && seen.shown[0] <= 32 && Math.abs(seen.shown[0] - 2 * seen.shown[1]) <= 1
           ? null
           : `drawn ${seen.drawn.join('×')}, shown ${seen.shown.join('×')}`,
       )

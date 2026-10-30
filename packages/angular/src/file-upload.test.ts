@@ -19,8 +19,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const schema = (fields: unknown[]): FormSchema =>
-  ({ specVersion: '4', id: 'claim', title: 'Claim', model: { fields } }) as unknown as FormSchema
+const schema = (fields: unknown[]): FormSchema => ({ specVersion: '4', id: 'claim', title: 'Claim', model: { fields } }) as unknown as FormSchema
 
 const EVIDENCE = { key: 'evidence', type: 'file', label: 'Evidence' }
 
@@ -32,11 +31,7 @@ const engineFor = (document: FormSchema): FormEngine =>
 
 async function renderForm(engine: FormEngine, uploader: Uploader) {
   const view = await render(FormancyForm, {
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine),
-      provideFormancyUploader(uploader),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine), provideFormancyUploader(uploader)],
   })
   await view.fixture.whenStable()
   return view
@@ -63,8 +58,7 @@ function controlled() {
     resolve: (file: StoredFile) => void
     reject: (error: unknown) => void
   }> = []
-  const uploader: Uploader = (file, options) =>
-    new Promise<StoredFile>((resolve, reject) => calls.push({ file, options, resolve, reject }))
+  const uploader: Uploader = (file, options) => new Promise<StoredFile>((resolve, reject) => calls.push({ file, options, resolve, reject }))
   return { calls, uploader }
 }
 
@@ -115,10 +109,7 @@ describe('a file on its way', () => {
   })
 
   test('that failed stays, says why, and can be tried again', async () => {
-    const upload = vi
-      .fn<Uploader>()
-      .mockRejectedValueOnce(new Error('the network went away'))
-      .mockResolvedValueOnce(stored('report.pdf'))
+    const upload = vi.fn<Uploader>().mockRejectedValueOnce(new Error('the network went away')).mockResolvedValueOnce(stored('report.pdf'))
     const engine = engineFor(schema([EVIDENCE]))
     await renderForm(engine, upload)
     pick('Evidence', [pdf('report.pdf')])
@@ -192,9 +183,7 @@ describe('a file on its way', () => {
         items: [{}, { what: 'taxi', receipt: [stored('taxi.pdf')] }],
       }),
     )
-    expect(
-      (engine.value() as { items: Array<Record<string, unknown>> }).items[0],
-    ).not.toHaveProperty('receipt')
+    expect((engine.value() as { items: Array<Record<string, unknown>> }).items[0]).not.toHaveProperty('receipt')
   })
 
   test('is stopped when the form goes away', async () => {
@@ -223,11 +212,7 @@ describe('the files in the answer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Move a.pdf, 1 of 2, down' }))
 
-    await waitFor(() =>
-      expect(
-        (engine.value() as { evidence: StoredFile[] }).evidence.map((file) => file.name),
-      ).toEqual(['b.pdf', 'a.pdf']),
-    )
+    await waitFor(() => expect((engine.value() as { evidence: StoredFile[] }).evidence.map((file) => file.name)).toEqual(['b.pdf', 'a.pdf']))
   })
 
   test('and a file that cannot move that way has no button for it', async () => {
@@ -254,9 +239,7 @@ describe('a picture of an image', () => {
 
   test('is drawn from the file’s own bytes, at the size the React binding draws', async () => {
     const { bitmap, drawImage } = drawing()
-    await renderForm(engineFor(schema([EVIDENCE])), (file) =>
-      Promise.resolve({ ...stored(file.name), contentType: 'image/png' }),
-    )
+    await renderForm(engineFor(schema([EVIDENCE])), (file) => Promise.resolve({ ...stored(file.name), contentType: 'image/png' }))
 
     pick('Evidence', [new File(['png'], 'photo.png', { type: 'image/png' })])
 

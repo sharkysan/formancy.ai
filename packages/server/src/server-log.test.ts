@@ -189,9 +189,9 @@ describe('a request', () => {
     // while every row the route wrote did. Each is driven here beside rows the route writes.
     const storage = createMemoryStorage()
     const { app, log } = await serve('info', storage, { bootstrapAdmin: { email: 'root@test.ch', password: 'root-password-1' } })
-    const { token } = (
-      await app.inject({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })
-    ).json() as { token: string }
+    const { token } = (await app.inject({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })).json() as {
+      token: string
+    }
     const asRoot = { authorization: `Bearer ${token}` }
     const published = await app.inject({
       method: 'POST',
@@ -204,9 +204,7 @@ describe('a request', () => {
     })
     expect(published.statusCode).toBe(201)
     const { schemaHash } = published.json() as { schemaHash: string }
-    expect(
-      (await app.inject({ method: 'PUT', url: '/f/contact/access', headers: asRoot, payload: { submit: 'public' } })).statusCode,
-    ).toBe(204)
+    expect((await app.inject({ method: 'PUT', url: '/f/contact/access', headers: asRoot, payload: { submit: 'public' } })).statusCode).toBe(204)
     expect(
       (
         await app.inject({
@@ -287,7 +285,12 @@ describe('a request', () => {
     await ask()
     expect((await ask()).statusCode).toBe(429)
 
-    expect(log.lines().filter((line) => line['event'] === 'request').map((line) => line['status'])).toEqual([404, 429])
+    expect(
+      log
+        .lines()
+        .filter((line) => line['event'] === 'request')
+        .map((line) => line['status']),
+    ).toEqual([404, 429])
     expect(log.lines().at(-1)).toMatchObject({ route: '/f/:path/drafts', status: 429 })
     expect(log.text()).not.toContain('203.0.113.77')
   })
@@ -490,9 +493,7 @@ describe('what a line may hold', () => {
       `${PLANTED} in the message`,
     )
 
-    expect(log.lines()).toEqual([
-      { time: expect.any(String), level: 'error', event: 'audit.unwritten', action: 'auth.login.failed', kind: 'Error' },
-    ])
+    expect(log.lines()).toEqual([{ time: expect.any(String), level: 'error', event: 'audit.unwritten', action: 'auth.login.failed', kind: 'Error' }])
     expect(log.text()).not.toContain(PLANTED)
     for (const key of Object.keys(log.lines()[0] ?? {})) expect(LOG_FIELDS).toContain(key)
   })
@@ -567,9 +568,7 @@ describe('what a line may hold', () => {
       { time: expect.any(String), level: 'debug', event: 'database.notice', code: '42701' },
       { time: expect.any(String), level: 'warn', event: 'database.notice', code: '25P01' },
     ])
-    expect(notices('info').lines()).toEqual([
-      { time: expect.any(String), level: 'warn', event: 'database.notice', code: '25P01' },
-    ])
+    expect(notices('info').lines()).toEqual([{ time: expect.any(String), level: 'warn', event: 'database.notice', code: '25P01' }])
     expect(notices('debug').text()).not.toContain(PLANTED)
   })
 

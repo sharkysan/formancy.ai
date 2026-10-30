@@ -5,7 +5,6 @@ import { injectField } from '../field.js'
 import { injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
-
 /**
  * A combobox over the same answer a select holds.
  *
@@ -168,11 +167,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
    * see. A host wanting fetch-once-filter-locally composes `narrowOptionsByLabel` in
    * its own resolver, which is why that function lives in `@formancy/spec`.
    */
-  protected readonly matches = computed(() =>
-    this.remote.sourced()
-      ? this.offered()
-      : narrowOptionsByLabel(this.options(), this.query() ?? ''),
-  )
+  protected readonly matches = computed(() => (this.remote.sourced() ? this.offered() : narrowOptionsByLabel(this.options(), this.query() ?? '')))
 
   /** Collapsed whenever there is nothing on the screen, so `aria-expanded` never
    *  claims a popup a person cannot see. */
@@ -184,13 +179,9 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
 
   private readonly words = injectFormText()
 
-  protected readonly popupLabel = computed(() =>
-    this.words('options.suggestions', { label: this.context.label }),
-  )
+  protected readonly popupLabel = computed(() => this.words('options.suggestions', { label: this.context.label }))
 
-  private readonly activeIndex = computed(() =>
-    this.matches().findIndex((option) => option.value === this.activeValue()),
-  )
+  private readonly activeIndex = computed(() => this.matches().findIndex((option) => option.value === this.activeValue()))
 
   /** Absent rather than empty when nothing is active: an empty IDREF is a broken
    *  reference, not a way of saying "nothing". Angular omits an attribute bound to
@@ -228,9 +219,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
   protected readonly statusMessage = computed(() => {
     const fromSource = this.sourceStatus()
     if (fromSource !== '') return fromSource
-    return this.open() && this.matches().length === 0 && !this.remote.busy()
-      ? this.words('options.noMatch')
-      : ''
+    return this.open() && this.matches().length === 0 && !this.remote.busy() ? this.words('options.noMatch') : ''
   })
 
   /** What the region is saying, as a word a theme can select on. */
@@ -290,9 +279,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
       // The popup's keys while it is open. Left to the caret, a long list is
       // reachable only by holding Down.
       event.preventDefault()
-      this.activeValue.set(
-        (event.key === 'Home' ? matches[0]! : matches[matches.length - 1]!).value,
-      )
+      this.activeValue.set((event.key === 'Home' ? matches[0]! : matches[matches.length - 1]!).value)
       return
     }
 

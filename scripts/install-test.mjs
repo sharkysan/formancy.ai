@@ -53,9 +53,7 @@ const REACT = process.env.FORMANCY_REACT ?? '^19.3.0'
  * package's own suite runs the version each range starts at, which the workspace
  * catalog pins (0134). TypeScript, its third peer, this project has already.
  */
-const { eslint: ESLINT, prettier: PRETTIER } = JSON.parse(
-  readFileSync(join(repo, 'packages', 'code-style', 'package.json'), 'utf8'),
-).peerDependencies
+const { eslint: ESLINT, prettier: PRETTIER } = JSON.parse(readFileSync(join(repo, 'packages', 'code-style', 'package.json'), 'utf8')).peerDependencies
 
 /**
  * Packages a consumer imports, and why the others are not here.

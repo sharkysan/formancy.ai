@@ -36,10 +36,7 @@ describe('the Codecov configuration', () => {
      * thing that has happened here: prose written into the generated spec
      * reference was overwritten by the next build and the change looked merged.
      */
-    expect(
-      committed(),
-      'codecov.yml is not what the generator produces; run `node scripts/codecov-config.mjs --write`',
-    ).toBe(codecovConfig())
+    expect(committed(), 'codecov.yml is not what the generator produces; run `node scripts/codecov-config.mjs --write`').toBe(codecovConfig())
   })
 
   test('declares a component for every package that measures coverage, and for no others', () => {

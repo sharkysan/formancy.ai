@@ -229,9 +229,7 @@ describe('validateSchema semantic rules', () => {
       draft.model.fields.push({
         key: 'legs',
         type: 'repeater',
-        fields: [
-          { key: 'leg_detail', type: 'group', fields: [{ key: 'stops', type: 'repeater' }] },
-        ],
+        fields: [{ key: 'leg_detail', type: 'group', fields: [{ key: 'stops', type: 'repeater' }] }],
       })
     })
     const error = onlyError(validateSchema(nested))
@@ -260,8 +258,7 @@ describe('a key that can name no answer', () => {
     ['at the top of the form', (draft: FormSchema) => draft.model.fields.push({ key: '__proto__', type: 'text' }), '/model/fields/2/key'],
     [
       'inside a group',
-      (draft: FormSchema) =>
-        draft.model.fields.push({ key: 'outer', type: 'group', fields: [{ key: '__proto__', type: 'text' }] }),
+      (draft: FormSchema) => draft.model.fields.push({ key: 'outer', type: 'group', fields: [{ key: '__proto__', type: 'text' }] }),
       '/model/fields/2/fields/0/key',
     ],
   ])('refuses a field keyed __proto__ %s, whose answers no release has ever stored', (_where, edit, path) => {
@@ -273,8 +270,7 @@ describe('a key that can name no answer', () => {
       path,
       code: 'key.unstorable',
       values: { key: '__proto__' },
-      message:
-        '"__proto__" cannot name an answer: every JavaScript object already has it, so an answer stored under it would be lost. Choose another name.',
+      message: '"__proto__" cannot name an answer: every JavaScript object already has it, so an answer stored under it would be lost. Choose another name.',
     })
   })
 
@@ -327,15 +323,10 @@ const arbKey = fc.oneof(
   { arbitrary: fc.string({ maxLength: 4 }), weight: 1 },
 )
 
-const arbLeafType = fc.constantFrom(
-  ...FIELD_TYPES.filter((type) => !(CONTAINER_FIELD_TYPES as readonly string[]).includes(type)),
-)
+const arbLeafType = fc.constantFrom(...FIELD_TYPES.filter((type) => !(CONTAINER_FIELD_TYPES as readonly string[]).includes(type)))
 
 function arbField(depth: number): fc.Arbitrary<FieldDef> {
-  const leaf = fc.record(
-    { key: arbKey, type: arbLeafType, required: fc.boolean(), renamedFrom: arbKey },
-    { requiredKeys: ['key', 'type'] },
-  )
+  const leaf = fc.record({ key: arbKey, type: arbLeafType, required: fc.boolean(), renamedFrom: arbKey }, { requiredKeys: ['key', 'type'] })
   if (depth === 0) return leaf
 
   const container = fc.record(
@@ -375,9 +366,7 @@ describe('validateSchema, canonicalize and schemaHash together', () => {
 
         accepted += 1
         expect(schemaHash(result.schema)).toMatch(/^[0-9a-f]{64}$/)
-        expect(canonicalize(JSON.parse(canonicalize(result.schema)))).toBe(
-          canonicalize(result.schema),
-        )
+        expect(canonicalize(JSON.parse(canonicalize(result.schema)))).toBe(canonicalize(result.schema))
       }),
       { numRuns: 500 },
     )
@@ -387,9 +376,7 @@ describe('validateSchema, canonicalize and schemaHash together', () => {
   })
 
   test('the generator produces documents validateSchema rejects too', () => {
-    const rejected = fc
-      .sample(arbDocument, { numRuns: 500, seed: 1 })
-      .filter((document) => !validateSchema(document).valid)
+    const rejected = fc.sample(arbDocument, { numRuns: 500, seed: 1 }).filter((document) => !validateSchema(document).valid)
 
     expect(rejected.length).toBeGreaterThan(0)
   })
@@ -446,10 +433,14 @@ describe('span, which places a node across a table\u2019s columns', () => {
    *  arrangement every case here varies. */
   function withTable(edit: (table: { columns: number; children: unknown[] }) => void): FormSchema {
     return revise((draft) => {
-      const table = { kind: 'table', columns: 2, children: [
-        { kind: 'field', path: 'email' },
-        { kind: 'field', path: 'message' },
-      ] }
+      const table = {
+        kind: 'table',
+        columns: 2,
+        children: [
+          { kind: 'field', path: 'email' },
+          { kind: 'field', path: 'message' },
+        ],
+      }
       edit(table as unknown as { columns: number; children: unknown[] })
       draft.specVersion = '2'
       draft.layouts = [{ name: 'default', nodes: [table] }] as NonNullable<FormSchema['layouts']>
@@ -501,7 +492,7 @@ describe('span, which places a node across a table\u2019s columns', () => {
       validateSchema(
         revise((draft) => {
           draft.specVersion = '2'
-            draft.layouts = [
+          draft.layouts = [
             {
               name: 'default',
               nodes: [
@@ -609,17 +600,13 @@ describe('optionsSource', () => {
     // configuration, greppable across published versions, and unmistakably not an
     // address — which is the property the whole design rests on.
     for (const bad of ['https://example.test/cantons', 'Cantons', '', 'a b']) {
-      expect(validateSchema(sourced((field) => (field['optionsSource'] = bad))).valid, bad).toBe(
-        false,
-      )
+      expect(validateSchema(sourced((field) => (field['optionsSource'] = bad))).valid, bad).toBe(false)
     }
   })
 
   test('accepts the shapes a deployment would actually configure', () => {
     for (const good of ['cantons', 'sap-cost-centres', 'people2']) {
-      expect(validateSchema(sourced((field) => (field['optionsSource'] = good))).valid, good).toBe(
-        true,
-      )
+      expect(validateSchema(sourced((field) => (field['optionsSource'] = good))).valid, good).toBe(true)
     }
   })
 
@@ -645,9 +632,7 @@ describe('optionsSource', () => {
     const error = onlyError(
       validateSchema(
         revise((draft) => {
-          draft.model.fields = [
-            { key: 'canton', type: 'select', optionsSource: 'cantons' } as unknown as FieldDef,
-          ]
+          draft.model.fields = [{ key: 'canton', type: 'select', optionsSource: 'cantons' } as unknown as FieldDef]
         }),
       ),
     )

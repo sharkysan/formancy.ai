@@ -103,21 +103,11 @@ export function EditorPane({
   )
 
   return (
-    <section
-      className="pane editor"
-      id="pane-editor"
-      aria-label="Editor"
-      data-folded={folded ? 'true' : undefined}
-    >
+    <section className="pane editor" id="pane-editor" aria-label="Editor" data-folded={folded ? 'true' : undefined}>
       <h2>
         <FoldPane pane="Editor" folded={folded} onToggle={() => onFold()} />
         {(['build', 'schema', 'theme'] as const).map((candidate) => (
-          <button
-            key={candidate}
-            className="mode"
-            aria-pressed={mode === candidate}
-            onClick={() => onMode(candidate)}
-          >
+          <button key={candidate} className="mode" aria-pressed={mode === candidate} onClick={() => onMode(candidate)}>
             {candidate === 'build' ? 'Build' : candidate === 'schema' ? 'Schema' : 'Theme'}
           </button>
         ))}
@@ -146,14 +136,7 @@ export function EditorPane({
         )}
       </div>
       <div className="body theme" hidden={mode !== 'theme'}>
-        {mode !== 'theme' ? null : (
-          <ThemePane
-            theme={theme}
-            host={themeHost}
-            overrides={overrides}
-            onChange={(next) => onThemeChange(next)}
-          />
-        )}
+        {mode !== 'theme' ? null : <ThemePane theme={theme} host={themeHost} overrides={overrides} onChange={(next) => onThemeChange(next)} />}
       </div>
       <div className="body schema" hidden={mode !== 'schema'}>
         <Editor

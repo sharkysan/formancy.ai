@@ -48,10 +48,7 @@ async function seed(storage: Storage, deliveries: DeliveryRecord[]): Promise<voi
     consecutiveFailures: 0,
     openedAt: null,
   })
-  await storage.insertSubmission(
-    { id: 's1', formId: 'f1', formVersionId: 'v1', data: {}, submittedAt: NOW },
-    deliveries,
-  )
+  await storage.insertSubmission({ id: 's1', formId: 'f1', formVersionId: 'v1', data: {}, submittedAt: NOW }, deliveries)
 }
 
 /** Let the pass's promise chain settle without advancing the fake clock. */
@@ -118,9 +115,7 @@ describe('startOutboxWorker', () => {
       ...storage,
       claimDueDeliveries: vi
         .fn<Storage['claimDueDeliveries']>()
-        .mockRejectedValueOnce(
-          Object.assign(new Error(`Failed query: update "deliveries"\nparams: ${planted}`), { code: '57P01' }),
-        )
+        .mockRejectedValueOnce(Object.assign(new Error(`Failed query: update "deliveries"\nparams: ${planted}`), { code: '57P01' }))
         .mockImplementation(async (nowIso, limit) => storage.claimDueDeliveries(nowIso, limit)),
     }
     const written: string[] = []

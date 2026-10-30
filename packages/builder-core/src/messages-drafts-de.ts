@@ -35,13 +35,11 @@ export const DRAFT_MESSAGES_DE = {
   'drafts.status.kept': '{name} behalten. Es steht jetzt in der Liste der Szenarien.',
   'drafts.status.discarded': '{name} verworfen.',
   'drafts.status.taken': 'Nicht behalten: Es gibt schon ein Szenario namens {name}.',
-  'drafts.status.unknownPath':
-    'Nicht behalten: {name} nennt etwas, das keines der Felder dieses Formulars ist, und würde nichts prüfen.',
+  'drafts.status.unknownPath': 'Nicht behalten: {name} nennt etwas, das keines der Felder dieses Formulars ist, und würde nichts prüfen.',
   'drafts.status.stopped': 'Angehalten. Nichts wurde entworfen.',
   'drafts.status.unreachable': 'Nichts wurde entworfen. Das Modell war nicht erreichbar: {reason}',
   'drafts.status.unreachableNoReason': 'Nichts wurde entworfen. Das Modell war nicht erreichbar.',
-  'drafts.status.busy':
-    'Nichts wurde entworfen. Eine andere Anfrage wartet noch auf die Antwort des Modells: Schließe sie zuerst ab oder halte sie an.',
+  'drafts.status.busy': 'Nichts wurde entworfen. Eine andere Anfrage wartet noch auf die Antwort des Modells: Schließe sie zuerst ab oder halte sie an.',
   'drafts.status.declined': 'Nichts wurde entworfen. Das Modell hat diese Anfrage abgelehnt.',
   'drafts.status.failed': {
     one: 'Nichts wurde entworfen. {count} Versuch, und die Antwort enthielt kein verwendbares Beispiel.',
@@ -54,8 +52,7 @@ export const DRAFT_MESSAGES_DE = {
   'drafts.problem.empty': 'Die Liste von Beispielen in der letzten Antwort war leer.',
   'drafts.item': 'Eintrag {position}',
   'drafts.reason.notAnObject': '{item} ist gar kein Beispiel.',
-  'drafts.reason.unknownKey':
-    '{item} hat „{part}“, was ein Beispiel nicht hat, und würde weniger prüfen, als es sagt.',
+  'drafts.reason.unknownKey': '{item} hat „{part}“, was ein Beispiel nicht hat, und würde weniger prüfen, als es sagt.',
   'drafts.reason.noName': '{item} hat keinen Namen.',
   'drafts.reason.nameTaken': '{item}: Ein Szenario mit diesem Namen gibt es schon.',
   'drafts.reason.nameRepeated': '{item}: Ein Beispiel davor in der Antwort hat denselben Namen.',

@@ -153,9 +153,7 @@ describe('what a theme must not try to own', () => {
      * So: not in a theme. A theme owns the height, the border and the cursor.
      */
     for (const { name, css } of themes()) {
-      expect(css, `${name} sets touch-action, which the control owns and a stylesheet cannot win`).not.toMatch(
-        /touch-action\s*:/,
-      )
+      expect(css, `${name} sets touch-action, which the control owns and a stylesheet cannot win`).not.toMatch(/touch-action\s*:/)
     }
   })
 })
@@ -179,9 +177,7 @@ describe('what the package publishes', () => {
 
     // A guard on the guard: an empty directory listing would export everything it holds.
     expect(names).toEqual(expect.arrayContaining(['blueprint.css', 'workbench.css']))
-    expect(
-      names.filter((name) => manifest.exports[`./${name}`] !== `./${name}` || !manifest.files.includes(name)),
-    ).toEqual([])
+    expect(names.filter((name) => manifest.exports[`./${name}`] !== `./${name}` || !manifest.files.includes(name))).toEqual([])
   })
 })
 
@@ -225,9 +221,7 @@ describe('the theme contract', () => {
     const parts = emittedParts().filter((part) => NO_STYLING_NEEDED[part] === undefined)
 
     const gaps = themes().flatMap(({ name, css }) =>
-      parts
-        .filter((part) => !css.includes(`part='${part}'`) && !css.includes(`part="${part}"`))
-        .map((part) => `${name} does not style ${part}`),
+      parts.filter((part) => !css.includes(`part='${part}'`) && !css.includes(`part="${part}"`)).map((part) => `${name} does not style ${part}`),
     )
 
     // The failure this prevents: markup that exists and a control nobody can
@@ -294,9 +288,7 @@ describe('the theme contract', () => {
       // construction -- paper does that deliberately for square corners -- and the
       // first version of this flagged it, which would have made the guard's first
       // finding a false one.
-      const used = new Set(
-        [...css.matchAll(/var\((--fm-[a-z0-9-]+)\s*\)/g)].map((match) => match[1]),
-      )
+      const used = new Set([...css.matchAll(/var\((--fm-[a-z0-9-]+)\s*\)/g)].map((match) => match[1]))
       const defined = new Set([...css.matchAll(/(--fm-[a-z0-9-]+)\s*:/g)].map((match) => match[1]))
       return [...used]
         .filter((variable) => !defined.has(variable))
@@ -332,26 +324,20 @@ describe('the theme contract', () => {
         selector: (match[1] ?? '').trim(),
         body: match[2] ?? '',
       }))
-      const defined = (body: string): Set<string> =>
-        new Set([...body.matchAll(/(--fm-[a-z0-9-]+)\s*:/g)].map((match) => match[1]!))
+      const defined = (body: string): Set<string> => new Set([...body.matchAll(/(--fm-[a-z0-9-]+)\s*:/g)].map((match) => match[1]!))
       // The theme root, and only it: a selector that IS `:root` or `[data-formancy-theme=x]`,
       // or a comma list of those. Asking whether the selector CONTAINS the theme attribute
       // is what made the first version of this check vacuous -- every rule in the file
       // contains it, so paper's textarea counted as the root and the defect passed.
       const ROOT = /^(?::root|\[data-formancy-theme=[^\]]+\])(?:\s*,\s*(?::root|\[data-formancy-theme=[^\]]+\]))*$/
-      const atRoot = new Set(
-        rules.filter(({ selector }) => ROOT.test(selector)).flatMap(({ body }) => [...defined(body)]),
-      )
+      const atRoot = new Set(rules.filter(({ selector }) => ROOT.test(selector)).flatMap(({ body }) => [...defined(body)]))
 
       return rules.flatMap(({ selector, body }) => {
         const here = defined(body)
         return [...new Set([...body.matchAll(/var\((--fm-[a-z0-9-]+)\s*\)/g)].map((m) => m[1]!))]
           .filter((variable) => !atRoot.has(variable) && !here.has(variable))
           .sort()
-          .map(
-            (variable) =>
-              `${name}: \`${selector}\` uses ${variable} with no fallback, and it is defined neither at the theme root nor on this rule`,
-          )
+          .map((variable) => `${name}: \`${selector}\` uses ${variable} with no fallback, and it is defined neither at the theme root nor on this rule`)
       })
     })
 
@@ -386,12 +372,7 @@ describe('the theme contract', () => {
         body: match[2] ?? '',
       }))
       const declaring = (part: string, property: RegExp): boolean =>
-        rules.some(
-          ({ selector, body }) =>
-            selector.includes(`[data-formancy-part='${part}']`) &&
-            !selector.includes('::') &&
-            property.test(body),
-        )
+        rules.some(({ selector, body }) => selector.includes(`[data-formancy-part='${part}']`) && !selector.includes('::') && property.test(body))
 
       const problems: string[] = []
 
@@ -413,21 +394,22 @@ describe('the theme contract', () => {
 
       const popupOffsets = rules.filter(
         ({ selector, body }) =>
-          selector.includes(`[data-formancy-part='typeahead-listbox']`) &&
-          propertiesOf(body).some((property) => OFFSETS.includes(property)),
+          selector.includes(`[data-formancy-part='typeahead-listbox']`) && propertiesOf(body).some((property) => OFFSETS.includes(property)),
       )
       if (popupOffsets.length === 0) {
-        problems.push(`${name}: typeahead-listbox has no explicit block offset, so it takes its static position -- which inside a grid field is the field's own top edge`)
+        problems.push(
+          `${name}: typeahead-listbox has no explicit block offset, so it takes its static position -- which inside a grid field is the field's own top edge`,
+        )
       }
 
       // Half three: the FIELD must not be the containing block, which is what it was.
       const fieldAnchored = rules.some(
-        ({ selector, body }) =>
-          /\[data-formancy-part='field'\][^{]*:has\([^)]*typeahead/.test(selector) &&
-          /position:\s*(relative|absolute|sticky)/.test(body),
+        ({ selector, body }) => /\[data-formancy-part='field'\][^{]*:has\([^)]*typeahead/.test(selector) && /position:\s*(relative|absolute|sticky)/.test(body),
       )
       if (fieldAnchored) {
-        problems.push(`${name}: the field is positioned, so it is the popup's containing block again -- that is the arrangement the popup opened over its own label in`)
+        problems.push(
+          `${name}: the field is positioned, so it is the popup's containing block again -- that is the arrangement the popup opened over its own label in`,
+        )
       }
 
       return problems
@@ -464,9 +446,7 @@ describe('the theme contract', () => {
       // The base rule: `layout-cell` declaring grid-column, at full width.
       const base = wide.search(/\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column/)
       // The reset: the same part, back to auto, inside a query.
-      const reset = narrow.search(
-        /\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*auto/,
-      )
+      const reset = narrow.search(/\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*auto/)
 
       if (queries.length === 0) {
         return [`${name}: has no media query at all, so there is no narrow-screen reflow to win`]
@@ -482,9 +462,7 @@ describe('the theme contract', () => {
       // above, because a position in one string cannot be compared with a position in
       // another -- which is how a comparison can look like a check and be arithmetic.
       const baseAt = bare.search(/\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*(?!auto)/)
-      const resetAt = bare.search(
-        /\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*auto/,
-      )
+      const resetAt = bare.search(/\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*auto/)
       return resetAt > baseAt
         ? []
         : [
@@ -515,18 +493,7 @@ describe('the theme contract', () => {
      * whoever forgot. A decorator counts as shipping CSS, which is the wording the first
      * version lacked.
      */
-    const BELOW_THE_KIT = [
-      'core',
-      'spec',
-      'expressions',
-      'react',
-      'angular',
-      'builder-core',
-      'builder-react',
-      'server',
-      'server-core',
-      'conformance',
-    ]
+    const BELOW_THE_KIT = ['core', 'spec', 'expressions', 'react', 'angular', 'builder-core', 'builder-react', 'server', 'server-core', 'conformance']
 
     const offenders: string[] = []
     for (const name of BELOW_THE_KIT) {
@@ -580,15 +547,11 @@ describe('the theme contract', () => {
     // cannot distinguish from "does it work?".
     const wrong = themes().flatMap(({ name, css }) => {
       const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
-      const scopes = new Set(
-        [...bare.matchAll(/\[data-formancy-theme=['"]([^'"\]]+)['"]\]/g)].map((match) => match[1]!),
-      )
+      const scopes = new Set([...bare.matchAll(/\[data-formancy-theme=['"]([^'"\]]+)['"]\]/g)].map((match) => match[1]!))
       // Every theme scopes everything to exactly one name: its own. Which one that is
       // comes from the file rather than from its filename, so a renamed file is not a
       // silent exemption — and more than one name is the defect, whatever they are.
-      return scopes.size <= 1
-        ? []
-        : [`${name} scopes rules to more than one theme: ${[...scopes].sort().join(', ')}`]
+      return scopes.size <= 1 ? [] : [`${name} scopes rules to more than one theme: ${[...scopes].sort().join(', ')}`]
     })
 
     expect(wrong).toEqual([])
@@ -615,9 +578,7 @@ describe('the theme contract', () => {
       const problems: string[] = []
 
       const controls = rules.find(
-        ({ selector }) =>
-          ["'date'", "'time'", "'datetime-local'"].every((type) => selector.includes(`[type=${type}]`)) &&
-          !selector.includes('::'),
+        ({ selector }) => ["'date'", "'time'", "'datetime-local'"].every((type) => selector.includes(`[type=${type}]`)) && !selector.includes('::'),
       )
       if (!/(^|[\s;])appearance:\s*none/.test(controls?.body ?? '')) {
         problems.push(`${name}: no rule takes \`appearance\` off date, time and datetime-local inputs together`)
@@ -657,10 +618,7 @@ describe('the theme contract', () => {
         selector: (match[1] ?? '').trim(),
         body: match[2] ?? '',
       }))
-      const choice = rules.find(
-        ({ selector }) =>
-          /input:is\(\[type='checkbox'\],\s*\[type='radio'\]\)$/.test(selector),
-      )
+      const choice = rules.find(({ selector }) => /input:is\(\[type='checkbox'\],\s*\[type='radio'\]\)$/.test(selector))
       if (choice === undefined) return [`${name}: no rule draws checkboxes and radios together`]
       return /(^|[\s;])transition:\s*none\s*(;|$)/.test(choice.body)
         ? []
@@ -685,9 +643,7 @@ describe('the theme contract', () => {
       return rules
         .filter(
           ({ selector, body }) =>
-            /\[type='(checkbox|radio)'\]/.test(selector) &&
-            /::(before|after)/.test(selector) &&
-            /(^|[\s;])transition:\s*(?!none\s*(;|$))/.test(body),
+            /\[type='(checkbox|radio)'\]/.test(selector) && /::(before|after)/.test(selector) && /(^|[\s;])transition:\s*(?!none\s*(;|$))/.test(body),
         )
         .map(({ selector }) => `${name}: \`${selector}\` animates the mark that shows the choice`)
     })
@@ -727,9 +683,7 @@ describe('the theme contract', () => {
 
       const icon = (types: string[]) =>
         rulesOf(block).find(
-          ({ selector, body }) =>
-            types.every((type) => selector.includes(`[type='${type}']`)) &&
-            /background-image:\s*url\("data:image\/svg\+xml/.test(body),
+          ({ selector, body }) => types.every((type) => selector.includes(`[type='${type}']`)) && /background-image:\s*url\("data:image\/svg\+xml/.test(body),
         )
       const calendar = icon(['date', 'datetime-local'])
       const clock = icon(['time'])
@@ -746,10 +700,7 @@ describe('the theme contract', () => {
 
       // Outside the query nothing may draw one, or Chromium shows its own button and ours.
       const outside = bare.replace(IOS, '')
-      const leaked = rulesOf(outside).filter(
-        ({ selector, body }) =>
-          /\[type='(date|time|datetime-local)'\]/.test(selector) && /background-image:/.test(body),
-      )
+      const leaked = rulesOf(outside).filter(({ selector, body }) => /\[type='(date|time|datetime-local)'\]/.test(selector) && /background-image:/.test(body))
       if (leaked.length > 0) problems.push(`${name}: a date or time icon is drawn outside iOS, where the browser already draws one`)
 
       return problems
@@ -783,9 +734,7 @@ describe('the theme contract', () => {
       }))
 
       return [':hover', ':active'].flatMap((state) => {
-        const answering = rules.filter(
-          (rule) => CHOICE.test(rule.selector) && rule.selector.includes(state),
-        )
+        const answering = rules.filter((rule) => CHOICE.test(rule.selector) && rule.selector.includes(state))
         if (answering.length === 0) {
           return [
             `${name}: a checkbox and a radio have no ${state} of their own, so they fall to the text field's -- a fill change nobody can see on an 18px control`,
@@ -805,9 +754,7 @@ describe('the theme contract', () => {
 
         return beyondFill.length > 0
           ? []
-          : [
-              `${name}: the ${state} on a checkbox and a radio only changes the fill (${declared.join(', ')}), which is what was already invisible`,
-            ]
+          : [`${name}: the ${state} on a checkbox and a radio only changes the fill (${declared.join(', ')}), which is what was already invisible`]
       })
     })
 
@@ -855,34 +802,22 @@ describe('the theme contract', () => {
             .map(family),
         )
 
-      const named = (selector: string): boolean =>
-        NAMES_CHOICE.test(selector.replace(/:not\([^)]*\)/g, ''))
-      const excluded = (selector: string): boolean =>
-        (selector.match(/:not\([^)]*\)/g) ?? []).some((part) => NAMES_CHOICE.test(part))
+      const named = (selector: string): boolean => NAMES_CHOICE.test(selector.replace(/:not\([^)]*\)/g, ''))
+      const excluded = (selector: string): boolean => (selector.match(/:not\([^)]*\)/g) ?? []).some((part) => NAMES_CHOICE.test(part))
 
-      const chosen = new Set(
-        families(rules.filter((rule) => named(rule.selector) && rule.selector.includes(':checked'))),
-      )
+      const chosen = new Set(families(rules.filter((rule) => named(rule.selector) && rule.selector.includes(':checked'))))
       // A guard on the guard: with no chosen state found there is nothing to clash
       // with, and this would pass whatever the hover did.
       if (chosen.size === 0) return [`${name}: no rule paints a chosen checkbox or radio at all`]
 
       const everyControl = rules.filter(
-        (rule) =>
-          rule.selector.includes(':hover') &&
-          rule.selector.includes(':is(input,') &&
-          !named(rule.selector) &&
-          !excluded(rule.selector),
+        (rule) => rule.selector.includes(':hover') && rule.selector.includes(':is(input,') && !named(rule.selector) && !excluded(rule.selector),
       )
-      const clashing = [...new Set(families(everyControl))].filter((property) =>
-        chosen.has(property),
-      )
+      const clashing = [...new Set(families(everyControl))].filter((property) => chosen.has(property))
 
       return clashing.length === 0
         ? []
-        : [
-            `${name}: hovering repaints a chosen checkbox or radio (${clashing.join(', ')}), because the rule for every control outranks the chosen one`,
-          ]
+        : [`${name}: hovering repaints a chosen checkbox or radio (${clashing.join(', ')}), because the rule for every control outranks the chosen one`]
     })
 
     expect(wrong).toEqual([])
@@ -1048,14 +983,10 @@ describe('which side a theme puts things on', () => {
 
   test('is reading order, never a side', () => {
     const named = stylesheets().flatMap(({ name, css }) =>
-      PHYSICAL.filter(({ pattern }) => pattern.test(withoutComments(css))).map(
-        ({ instead }) => `${name}: use ${instead}`,
-      ),
+      PHYSICAL.filter(({ pattern }) => pattern.test(withoutComments(css))).map(({ instead }) => `${name}: use ${instead}`),
     )
 
-    expect(named, 'a theme that names a side is a theme that cannot be read right to left').toEqual(
-      [],
-    )
+    expect(named, 'a theme that names a side is a theme that cannot be read right to left').toEqual([])
   })
 
   test('and names none by position either, in a shorthand with a left unlike its right', () => {
@@ -1104,10 +1035,7 @@ describe('which side a theme puts things on', () => {
      */
     const opposite: Readonly<Record<string, string>> = { left: 'right', right: 'left' }
 
-    const sidesIn = (text: string): Set<string> =>
-      new Set(
-        [...text.matchAll(/background-position:\s*(left|right)\b/g)].map((match) => match[1]!),
-      )
+    const sidesIn = (text: string): Set<string> => new Set([...text.matchAll(/background-position:\s*(left|right)\b/g)].map((match) => match[1]!))
 
     const unpaired = stylesheets().flatMap(({ name, css }) => {
       const clean = withoutComments(css)
@@ -1118,16 +1046,10 @@ describe('which side a theme puts things on', () => {
       const inside = sidesIn(flipped)
       return [...sidesIn(plain)]
         .filter((side) => !inside.has(opposite[side]!))
-        .map(
-          (side) =>
-            `${name}: background-position names ${side}, and nothing names ${opposite[side]!} for :dir(rtl)`,
-        )
+        .map((side) => `${name}: background-position names ${side}, and nothing names ${opposite[side]!} for :dir(rtl)`)
     })
 
-    expect(
-      unpaired,
-      'a theme puts an icon on a fixed side while its padding moves with the reading order',
-    ).toEqual([])
+    expect(unpaired, 'a theme puts an icon on a fixed side while its padding moves with the reading order').toEqual([])
   })
 
   test('and a bar drawn down one side by an inset shadow is drawn down the other for :dir(rtl)', () => {
@@ -1167,19 +1089,14 @@ describe('which side a theme puts things on', () => {
                 bars += 1
                 return !flipped.get(selector)?.has(opposite[side])
               })
-              .map(
-                (side) =>
-                  `${name}: ${selector} draws a bar on the ${side}, and no :dir(rtl) rule draws it on the ${opposite[side]}`,
-              ),
+              .map((side) => `${name}: ${selector} draws a bar on the ${side}, and no :dir(rtl) rule draws it on the ${opposite[side]}`),
           ),
       )
     })
 
     // Absence of a fault proves nothing if no bar was found to judge.
     expect(bars).toBeGreaterThan(5)
-    expect(unpaired, 'a marker stays on one side while the text it marks reads from the other').toEqual(
-      [],
-    )
+    expect(unpaired, 'a marker stays on one side while the text it marks reads from the other').toEqual([])
   })
 
   test('and every theme really does say which side in reading order somewhere', () => {
@@ -1198,12 +1115,7 @@ describe('which side a theme puts things on', () => {
       rulesOf(withoutComments(css)).some(({ selectors }) => selectors.some((selector) => selector !== ':root'))
     const silent = stylesheets()
       .filter(laysOut)
-      .filter(
-        ({ css }) =>
-          !/margin-inline|padding-inline|inset-inline|border-inline|text-align\s*:\s*(start|end)/.test(
-            css,
-          ),
-      )
+      .filter(({ css }) => !/margin-inline|padding-inline|inset-inline|border-inline|text-align\s*:\s*(start|end)/.test(css))
       .map(({ name }) => name)
 
     expect(silent, 'a theme positions nothing, so the case above asserts nothing').toEqual([])

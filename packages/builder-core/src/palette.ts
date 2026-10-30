@@ -47,15 +47,10 @@ const allowedIn = (specVersion: SpecVersion | undefined, type: string): boolean 
  * as a broken builder rather than as a document that needs upgrading, which
  * is a thing the builder can offer to do.
  */
-export function paletteEntries(
-  specVersion?: SpecVersion,
-  text: BuilderText = createBuilderText(),
-): PaletteEntry[] {
+export function paletteEntries(specVersion?: SpecVersion, text: BuilderText = createBuilderText()): PaletteEntry[] {
   return (
     (root.$defs['fieldType']?.oneOf ?? [])
-      .filter(
-        (branch): branch is TypeBranch & { const: string } => typeof branch.const === 'string',
-      )
+      .filter((branch): branch is TypeBranch & { const: string } => typeof branch.const === 'string')
       // `page` is left out: pages may only sit at the top level, so offering one
       // from a palette that can target any container would offer a choice that is
       // refused most of the time. Adding a page is its own command.
@@ -95,10 +90,7 @@ export function nextSpecVersion(current: SpecVersion): SpecVersion | undefined {
  * So the builder can say "these need spec 2" and offer the upgrade, rather
  * than silently showing a shorter list than the spec reference documents.
  */
-export function typesNeedingUpgrade(
-  specVersion: SpecVersion,
-  text: BuilderText = createBuilderText(),
-): PaletteEntry[] {
+export function typesNeedingUpgrade(specVersion: SpecVersion, text: BuilderText = createBuilderText()): PaletteEntry[] {
   return paletteEntries(undefined, text).filter((entry) => !allowedIn(specVersion, entry.type))
 }
 
@@ -118,11 +110,7 @@ const CHOICE_TYPES = new Set(['select', 'radio', 'selectboxes'])
  * the spec requires at least one field inside one. Inserting something that is
  * immediately invalid would make the very first edit a refusal.
  */
-export function newFieldOfType(
-  type: string,
-  existingKeys: ReadonlySet<string>,
-  text: BuilderText = createBuilderText(),
-): FieldDef {
+export function newFieldOfType(type: string, existingKeys: ReadonlySet<string>, text: BuilderText = createBuilderText()): FieldDef {
   const key = uniqueKey(type, existingKeys)
   // In the author's language, because it is written into the form as the label.
   const title = paletteEntries(undefined, text).find((entry) => entry.type === type)?.title ?? type

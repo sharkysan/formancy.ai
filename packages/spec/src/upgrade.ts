@@ -15,10 +15,7 @@ import type { FormSchema, SpecVersion } from './types.js'
  * answers — drop the field, or turn it into a text box — are both silent data
  * loss dressed up as a conversion.
  */
-export function upgradeSpecVersion(
-  document: FormSchema,
-  to: SpecVersion = CURRENT_SPEC_VERSION,
-): FormSchema {
+export function upgradeSpecVersion(document: FormSchema, to: SpecVersion = CURRENT_SPEC_VERSION): FormSchema {
   if (document.specVersion === to) return document
   if (document.specVersion > to) {
     throw new Error(

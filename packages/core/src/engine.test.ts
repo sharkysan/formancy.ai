@@ -39,9 +39,7 @@ describe('createFormEngine: the schema walk', () => {
   test('lists every input field with its data path', () => {
     const engine = createFormEngine({ schema })
 
-    expect(engine.fieldPaths().sort()).toEqual(
-      ['email', 'address.city', 'address.zip', 'newsletter', 'message'].sort(),
-    )
+    expect(engine.fieldPaths().sort()).toEqual(['email', 'address.city', 'address.zip', 'newsletter', 'message'].sort())
   })
 
   test('a group scopes its children into a nested object path', () => {

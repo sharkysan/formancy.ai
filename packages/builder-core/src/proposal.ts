@@ -90,11 +90,7 @@ export interface ProposalExamples {
  * runs after an edit: the review cannot call something a regression that the panel would
  * not once it is applied.
  */
-export function proposeEdit(
-  current: FormSchema,
-  proposed: FormSchema,
-  examples?: ProposalExamples,
-): EditProposal {
+export function proposeEdit(current: FormSchema, proposed: FormSchema, examples?: ProposalExamples): EditProposal {
   const changes = diffSchemas(current, proposed)
   return {
     basedOn: schemaHash(current),
@@ -103,27 +99,17 @@ export function proposeEdit(
     costsAnswers: changes.some((change) => change.severity !== 'compatible'),
     // An empty list is no examples: run, it would compare nothing with nothing and answer
     // the empty verdict, "nothing stops holding", for a check that never ran.
-    examples:
-      examples === undefined || examples.scenarios.length === 0
-        ? undefined
-        : againstExamples(current, proposed, examples),
+    examples: examples === undefined || examples.scenarios.length === 0 ? undefined : againstExamples(current, proposed, examples),
   }
 }
 
 /** The examples run against the document as it is, then as it would be. */
-function againstExamples(
-  current: FormSchema,
-  proposed: FormSchema,
-  { scenarios, initialValue, mode }: ProposalExamples,
-): ScenarioRunChange {
+function againstExamples(current: FormSchema, proposed: FormSchema, { scenarios, initialValue, mode }: ProposalExamples): ScenarioRunChange {
   const options = {
     ...(initialValue === undefined ? {} : { initialValue }),
     ...(mode === undefined ? {} : { mode }),
   }
-  return comparedToLastRun(
-    runScenarios(current, scenarios, options),
-    runScenarios(proposed, scenarios, options),
-  )
+  return comparedToLastRun(runScenarios(current, scenarios, options), runScenarios(proposed, scenarios, options))
 }
 
 /**
@@ -215,10 +201,7 @@ export function proposalStatus(
   if (state.busy) return text('prompt.status.writing')
   if (state.refusal !== undefined) return text('prompt.status.refused', { reason: state.refusal })
   if (state.proposal !== undefined) {
-    return [
-      ready(state.proposal, state.result?.attempts ?? 1, text),
-      ...examplesSaid(state.proposal.examples, text),
-    ].join(' ')
+    return [ready(state.proposal, state.result?.attempts ?? 1, text), ...examplesSaid(state.proposal.examples, text)].join(' ')
   }
   const result = state.result
   if (result === undefined || result.ok) return ''
@@ -230,9 +213,7 @@ export function proposalStatus(
     case 'unreachable':
       // Without a reason, a sentence that has no place for one: the other would end
       // on its colon, or show its placeholder.
-      return result.reason === undefined
-        ? text('prompt.status.unreachableNoReason')
-        : text('prompt.status.unreachable', { reason: result.reason })
+      return result.reason === undefined ? text('prompt.status.unreachableNoReason') : text('prompt.status.unreachable', { reason: result.reason })
     case 'busy':
       // Not unreachable: nothing was asked. Worded here rather than from the host's
       // error, so it is in the author's language (0162).

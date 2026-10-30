@@ -31,8 +31,7 @@ const show = (result: { value: string; start: number; end: number }): string =>
     ? `${result.value.slice(0, result.start)}|${result.value.slice(result.start)}`
     : `${result.value.slice(0, result.start)}[${result.value.slice(result.start, result.end)}]${result.value.slice(result.end)}`
 
-const run = (command: RichCommand, marked: string, href?: string): string =>
-  show(applyRichCommand(command, at(marked), href === undefined ? {} : { href }))
+const run = (command: RichCommand, marked: string, href?: string): string => show(applyRichCommand(command, at(marked), href === undefined ? {} : { href }))
 
 describe('bold and italic', () => {
   test('wrap the selection and keep it selected', () => {
@@ -74,9 +73,7 @@ describe('bold and italic', () => {
 
 describe('links', () => {
   test('wrap the selection and select the href, which is what is missing', () => {
-    expect(run('link', 'see [the docs] now', 'https://formancy.ai')).toBe(
-      'see [the docs]([https://formancy.ai]) now',
-    )
+    expect(run('link', 'see [the docs] now', 'https://formancy.ai')).toBe('see [the docs]([https://formancy.ai]) now')
   })
 
   test('with nothing selected, the caret goes where the label belongs', () => {

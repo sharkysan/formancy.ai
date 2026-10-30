@@ -156,9 +156,7 @@ export class FormancyColumnsEditor {
     return [...this.columns()]
   })
 
-  protected readonly unnamed = computed(() =>
-    this.children().filter((child) => !this.draft().some((column) => column.field === child.key)),
-  )
+  protected readonly unnamed = computed(() => this.children().filter((child) => !this.draft().some((column) => column.field === child.key)))
 
   constructor() {
     takeHostOutOfLayout()

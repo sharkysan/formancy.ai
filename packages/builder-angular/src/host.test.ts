@@ -61,12 +61,7 @@ describe('the element each component is drawn in', () => {
   // Without these the list below could be empty, or miss what is only imported, and pass.
   test('is found for every component, the ones only imported by another as well', () => {
     expect(hosted.map(([selector]) => selector)).toEqual(
-      expect.arrayContaining([
-        'formancy-builder',
-        'formancy-translation-review',
-        'formancy-logic-comparison',
-        'formancy-layout-add',
-      ]),
+      expect.arrayContaining(['formancy-builder', 'formancy-translation-review', 'formancy-logic-comparison', 'formancy-layout-add']),
     )
   })
 
@@ -76,20 +71,17 @@ describe('the element each component is drawn in', () => {
     expect(hosted.map(([selector]) => selector)).not.toContain('div[formancyRuleVerdict]')
   })
 
-  test.each(hosted)(
-    '<%s> takes no part in layout, so a theme places what it draws as it places the React builder’s',
-    (_selector, component) => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] })
-      // Created and not rendered: the constructor is where the declaration is made, and no
-      // input is read before the first change detection.
-      const fixture = TestBed.createComponent(component)
-      try {
-        expect(getComputedStyle(fixture.nativeElement as HTMLElement).display).toBe('contents')
-      } finally {
-        fixture.destroy()
-      }
-    },
-  )
+  test.each(hosted)('<%s> takes no part in layout, so a theme places what it draws as it places the React builder’s', (_selector, component) => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] })
+    // Created and not rendered: the constructor is where the declaration is made, and no
+    // input is read before the first change detection.
+    const fixture = TestBed.createComponent(component)
+    try {
+      expect(getComputedStyle(fixture.nativeElement as HTMLElement).display).toBe('contents')
+    } finally {
+      fixture.destroy()
+    }
+  })
 
   // A component style is a `<style>` element, which `style-src 'self'` blocks with no nonce,
   // and the box would come back under exactly the deployment the product says needs no CSP

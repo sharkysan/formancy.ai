@@ -1,6 +1,5 @@
 import type { FieldComponentProps } from './internals.js'
 
-
 /**
  * Text the reader sees that collects nothing.
  *

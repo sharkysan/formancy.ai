@@ -57,10 +57,7 @@ export type KeepExamplesOutcome =
   | { readonly ok: false; readonly kind: 'invalid_examples'; readonly problems: readonly string[] }
 
 /** The examples kept for the form at `path`; none, for a form nobody wrote any for. */
-export async function readExamples(
-  deps: ServerDeps,
-  input: { path: string; actor: Actor },
-): Promise<ExamplesOutcome> {
+export async function readExamples(deps: ServerDeps, input: { path: string; actor: Actor }): Promise<ExamplesOutcome> {
   if (!can(input.actor, 'form.publish')) return { ok: false, kind: 'forbidden' }
   const form = await deps.storage.getFormByPath(input.path)
   if (form === undefined) return { ok: false, kind: 'unknown_form' }
@@ -161,8 +158,7 @@ function asExamples(scenarios: readonly Scenario[], sample: Readonly<Record<stri
 }
 
 type ReadBody =
-  | { readonly scenarios: readonly Scenario[]; readonly sample: Readonly<Record<string, unknown>> | null }
-  | { readonly problems: readonly string[] }
+  { readonly scenarios: readonly Scenario[]; readonly sample: Readonly<Record<string, unknown>> | null } | { readonly problems: readonly string[] }
 
 /** `{ scenarios, sample? }` from a request body, or a sentence for everything that is not. */
 function readExamplesBody(body: unknown): ReadBody {
@@ -212,9 +208,7 @@ function readList(items: readonly unknown[], sample: unknown): ReadList {
     }
     const earlier = first.get(read.scenario.name)
     if (earlier !== undefined) {
-      problems.push(
-        `${which(position, read.scenario.name)} has the name of example ${String(earlier)}; a name is how an example's result is found.`,
-      )
+      problems.push(`${which(position, read.scenario.name)} has the name of example ${String(earlier)}; a name is how an example's result is found.`)
       return
     }
     first.set(read.scenario.name, position)

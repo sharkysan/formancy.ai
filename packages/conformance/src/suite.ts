@@ -64,10 +64,7 @@ export interface DescribeConformanceOptions {
  * driver's own error, stack intact, so the two are never confused: one means
  * the renderer behaves differently, the other means it broke.
  */
-export function describeConformance(
-  driver: RendererDriver | DriverFactory,
-  options: DescribeConformanceOptions = {},
-): void {
+export function describeConformance(driver: RendererDriver | DriverFactory, options: DescribeConformanceOptions = {}): void {
   const fixtures = options.fixtures ?? builtinFixtures
   const api = resolveTestApi(options.test)
   const skip = options.skip ?? {}
@@ -79,9 +76,7 @@ export function describeConformance(
   const names = new Set(fixtures.map((fixture) => fixture.name))
   for (const name of Object.keys(skip)) {
     if (!names.has(name)) {
-      throw new Error(
-        `describeConformance was told to skip "${name}", which is not in the suite. Was the fixture renamed?`,
-      )
+      throw new Error(`describeConformance was told to skip "${name}", which is not in the suite. Was the fixture renamed?`)
     }
   }
 
@@ -149,7 +144,5 @@ function resolveTestApi(injected: ConformanceTestApi | undefined): ConformanceTe
     }
   }
 
-  throw new Error(
-    'describeConformance found no test framework. Pass one: describeConformance(driver, { test: { describe, test } }).',
-  )
+  throw new Error('describeConformance found no test framework. Pass one: describeConformance(driver, { test: { describe, test } }).')
 }

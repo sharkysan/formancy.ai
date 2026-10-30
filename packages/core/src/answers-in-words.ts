@@ -36,12 +36,7 @@ export interface SaidAnswer {
  * `text` gives the words around the answers in the form's language, and `locale` the language
  * the document's own questions and options are read in — its default when not given.
  */
-export function answersInWords(
-  schema: FormSchema,
-  data: unknown,
-  text: FormText,
-  locale: string = schema.i18n?.defaultLocale ?? '',
-): SaidAnswer[] {
+export function answersInWords(schema: FormSchema, data: unknown, text: FormText, locale: string = schema.i18n?.defaultLocale ?? ''): SaidAnswer[] {
   return readAnswers(schema, data, text, locale, () => false).map(({ line }) => line)
 }
 
@@ -57,13 +52,7 @@ export interface ReadAnswer {
  * answer whether the person is being asked it — a review's question, never a stored
  * submission's — and such a field has a line saying so, in its place.
  */
-export function readAnswers(
-  schema: FormSchema,
-  data: unknown,
-  text: FormText,
-  locale: string,
-  asked: (field: string) => boolean,
-): ReadAnswer[] {
+export function readAnswers(schema: FormSchema, data: unknown, text: FormText, locale: string, asked: (field: string) => boolean): ReadAnswer[] {
   const language = text.locale === '' ? 'en-GB' : text.locale
   const out: ReadAnswer[] = []
   const unanswered = (path: string, field: string, label: string): void => {
@@ -120,13 +109,7 @@ export function readAnswers(
  * list, "Food: High and Room: Low" — or nothing when it has none. What a field a computed rule
  * writes is drawn as, where its own control has no read-only state (0216).
  */
-export function answerInWords(
-  schema: FormSchema,
-  def: FieldDef,
-  value: unknown,
-  text: FormText,
-  locale: string = schema.i18n?.defaultLocale ?? '',
-): string {
+export function answerInWords(schema: FormSchema, def: FieldDef, value: unknown, text: FormText, locale: string = schema.i18n?.defaultLocale ?? ''): string {
   const language = text.locale === '' ? 'en-GB' : text.locale
   const optionLabel = optionLabeller(schema, locale)
   if (ANSWER_KINDS[def.type].shape === 'matrix' && isRecord(value)) {
@@ -168,9 +151,19 @@ function sayAnswer(
     case 'choice':
       return optionLabel(def.options, value)
     case 'choices':
-      return Array.isArray(value) ? list(value.map((item) => optionLabel(def.options, item)), language) : String(value)
+      return Array.isArray(value)
+        ? list(
+            value.map((item) => optionLabel(def.options, item)),
+            language,
+          )
+        : String(value)
     case 'files':
-      return Array.isArray(value) ? list(value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : String(file))), language) : String(value)
+      return Array.isArray(value)
+        ? list(
+            value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : String(file))),
+            language,
+          )
+        : String(value)
     case 'signature':
       if (isRecord(value) && typeof value['typed'] === 'string') return value['typed']
       return text('answer.drawnSignature')

@@ -52,8 +52,4 @@ export function readRecord(repoRoot: string, raw?: unknown, agreement?: string):
  * The authors this record does not cover, each named once. Throws when given no
  * authors at all, rather than reporting that nobody is missing.
  */
-export function unsigned(input: {
-  authors: string[]
-  record: Record
-  hash: string
-}): Array<{ email: string; reason: 'unsigned' | 'stale' }>
+export function unsigned(input: { authors: string[]; record: Record; hash: string }): Array<{ email: string; reason: 'unsigned' | 'stale' }>

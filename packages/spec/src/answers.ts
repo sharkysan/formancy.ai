@@ -71,19 +71,7 @@ export interface AnswerKind {
  * - `rows` — an array of objects, each carrying `_id` and its fields' answers.
  */
 export type AnswerShape =
-  | 'text'
-  | 'temporal'
-  | 'number'
-  | 'boolean'
-  | 'choice'
-  | 'choices'
-  | 'matrix'
-  | 'files'
-  | 'signature'
-  | 'nothing'
-  | 'group'
-  | 'page'
-  | 'rows'
+  'text' | 'temporal' | 'number' | 'boolean' | 'choice' | 'choices' | 'matrix' | 'files' | 'signature' | 'nothing' | 'group' | 'page' | 'rows'
 
 /**
  * One attached file, as a submission stores it — never the bytes.

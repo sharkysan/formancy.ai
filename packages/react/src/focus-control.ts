@@ -8,8 +8,6 @@ export function focusControl(control: HTMLElement | null): void {
   // that cannot take focus does nothing at all (0132). Or a group's, drawn with a sentence
   // where its controls would be, which takes the focus instead (0221). The same in both renderers.
   if (document.activeElement !== control) {
-    control
-      .querySelector<HTMLElement>('input, select, textarea, button, [data-formancy-part$="-unavailable"]')
-      ?.focus()
+    control.querySelector<HTMLElement>('input, select, textarea, button, [data-formancy-part$="-unavailable"]')?.focus()
   }
 }

@@ -1,16 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  effect,
-  input,
-  output,
-  signal,
-  untracked,
-  viewChild,
-  viewChildren,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, untracked, viewChild, viewChildren } from '@angular/core'
 import {
   addPageAndSay,
   blockTargets,
@@ -34,14 +22,7 @@ import {
   upgradeAndSay,
 } from '@formancy/builder-core'
 import type { BuilderBlock } from '@formancy/builder-core'
-import type {
-  BuilderSession,
-  FieldDef,
-  Location,
-  MoveTarget,
-  PaletteEntry,
-  TreeNode,
-} from './types.js'
+import type { BuilderSession, FieldDef, Location, MoveTarget, PaletteEntry, TreeNode } from './types.js'
 import { dropLocation } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { FormancyPaletteBlocks, FormancySaveBlock } from './blocks.js'
@@ -240,9 +221,7 @@ export class FormancyBuilder {
    */
   protected readonly text = computed(() => this.session().text)
   /** The same legend the React builder shows, from the same place. */
-  protected readonly keyHelp = computed(() =>
-    treeKeyHelp(this.session(), { blocks: this.blocks() !== undefined }),
-  )
+  protected readonly keyHelp = computed(() => treeKeyHelp(this.session(), { blocks: this.blocks() !== undefined }))
 
   /** The position the arrow keys move. */
   protected readonly focusedIndex = signal(0)
@@ -273,26 +252,16 @@ export class FormancyBuilder {
   private listed = ''
 
   protected readonly count = computed(() => this.view().nodes.length)
-  protected readonly index = computed(() =>
-    this.count() === 0 ? 0 : Math.min(this.focusedIndex(), this.count() - 1),
-  )
+  protected readonly index = computed(() => (this.count() === 0 ? 0 : Math.min(this.focusedIndex(), this.count() - 1)))
   protected readonly focused = computed((): TreeNode | undefined => this.view().nodes[this.index()])
   protected readonly selectedKey = computed((): string | null => {
     const node = this.focused()
     return node === undefined ? null : node.keyPath.join('.')
   })
-  protected readonly palette = computed((): PaletteEntry[] =>
-    paletteEntries(this.view().document.specVersion, this.text()),
-  )
-  protected readonly locked = computed((): PaletteEntry[] =>
-    typesNeedingUpgrade(this.view().document.specVersion, this.text()),
-  )
-  protected readonly lockedNames = computed(() =>
-    this.text().list(this.locked().map((entry) => entry.title)),
-  )
-  protected readonly nextVersion = computed(
-    () => nextSpecVersion(this.view().document.specVersion) ?? '',
-  )
+  protected readonly palette = computed((): PaletteEntry[] => paletteEntries(this.view().document.specVersion, this.text()))
+  protected readonly locked = computed((): PaletteEntry[] => typesNeedingUpgrade(this.view().document.specVersion, this.text()))
+  protected readonly lockedNames = computed(() => this.text().list(this.locked().map((entry) => entry.title)))
+  protected readonly nextVersion = computed(() => nextSpecVersion(this.view().document.specVersion) ?? '')
   /** Where the new field or block may go — a block asked with its words and rules too. */
   protected readonly insertTargets = computed((): MoveTarget[] => {
     const adding = this.adding()
@@ -333,8 +302,7 @@ export class FormancyBuilder {
         if (listing !== this.listed) {
           this.listed = listing
           const wanted = this.focusedKey
-          const at =
-            wanted === null ? -1 : nodes.findIndex((node) => node.keyPath.join('.') === wanted)
+          const at = wanted === null ? -1 : nodes.findIndex((node) => node.keyPath.join('.') === wanted)
           // Gone — deleted — and the clamped index is then the right answer.
           if (at !== -1 && at !== this.focusedIndex()) this.focusedIndex.set(at)
         }
@@ -369,7 +337,6 @@ export class FormancyBuilder {
       })
     })
   }
-
 
   protected isDragging(node: TreeNode): boolean {
     const from = this.dragging()
@@ -579,9 +546,7 @@ export class FormancyBuilder {
   }
 
   private newField(type: string): FieldDef {
-    const existing = new Set(
-      this.view().nodes.map((node) => node.keyPath[node.keyPath.length - 1] ?? ''),
-    )
+    const existing = new Set(this.view().nodes.map((node) => node.keyPath[node.keyPath.length - 1] ?? ''))
     return newFieldOfType(type, existing, this.session().text)
   }
 

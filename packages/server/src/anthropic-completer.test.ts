@@ -23,11 +23,7 @@ interface Sent {
 type Block = { readonly type: 'text'; readonly text: string } | { readonly type: 'thinking'; readonly thinking: string }
 
 /** The events Anthropic streams for one message holding `blocks`, ending for `stopReason`. */
-function streamed(
-  blocks: readonly Block[],
-  stopReason: string,
-  stopDetails: Record<string, unknown> | null = null,
-): Response {
+function streamed(blocks: readonly Block[], stopReason: string, stopDetails: Record<string, unknown> | null = null): Response {
   const events: Record<string, unknown>[] = [
     {
       type: 'message_start',

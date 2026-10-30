@@ -55,8 +55,7 @@ const mount = (initial?: Record<string, unknown>): ReturnType<typeof createFormE
   return engine
 }
 
-const answers = (engine: ReturnType<typeof createFormEngine>): unknown =>
-  (engine.value() as Record<string, unknown>).topics
+const answers = (engine: ReturnType<typeof createFormEngine>): unknown => (engine.value() as Record<string, unknown>).topics
 
 describe('choosing several answers by typing', () => {
   test('narrows the list, and choosing one stores its value', async () => {
@@ -107,10 +106,11 @@ describe('the chips', () => {
     const engine = mount({ topics: ['a11y', 'i18n'] })
 
     const chosen = screen.getByRole('list', { name: /chosen/i })
-    expect(within(chosen).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      expect.stringContaining('Accessibility'),
-      expect.stringContaining('Translation'),
-    ])
+    expect(
+      within(chosen)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([expect.stringContaining('Accessibility'), expect.stringContaining('Translation')])
 
     // A remove button per chip, named after the answer it removes: "Remove" three
     // times over tells a screen reader user which nothing.
@@ -126,9 +126,7 @@ describe('the chips', () => {
     // removable only by pointer is WCAG 2.1.1, and it is the failure this
     // pattern ships with more often than any other.
     await user.tab()
-    while (
-      document.activeElement?.getAttribute('aria-label')?.toLowerCase().includes('remove') !== true
-    ) {
+    while (document.activeElement?.getAttribute('aria-label')?.toLowerCase().includes('remove') !== true) {
       await user.tab()
       if (document.activeElement === document.body) break
     }
@@ -211,9 +209,7 @@ describe('what it says it is', () => {
   test('every part a theme has to dress carries its name', () => {
     mount({ topics: ['a11y'] })
 
-    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     expect(parts).toContain('tagpicker')
     expect(parts).toContain('tagpicker-chips')
     expect(parts).toContain('tagpicker-chip')

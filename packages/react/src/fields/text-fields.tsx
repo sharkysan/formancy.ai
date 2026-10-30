@@ -7,7 +7,6 @@ import { useScanner } from '../scanning.js'
 import { FieldShell, usePlaceholder } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
-
 /**
  * The controls that take typed text, and the widgets over them.
  *
@@ -216,9 +215,7 @@ export function NumberField({ path, label }: FieldComponentProps) {
         autoComplete={field.def.autocomplete}
         readOnly={field.readOnly}
         value={typeof field.value === 'number' ? field.value : ''}
-        onChange={(event) =>
-          field.setValue(event.target.value === '' ? null : event.target.valueAsNumber)
-        }
+        onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.valueAsNumber)}
         onBlur={() => field.touch()}
       />
     </FieldShell>

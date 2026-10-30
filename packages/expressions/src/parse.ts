@@ -24,9 +24,7 @@ export interface ParseOptions {
   readonly variables?: VariableDeclarations | undefined
 }
 
-export type ParseOutcome =
-  | { readonly ok: true; readonly ast: ExpressionAst }
-  | { readonly ok: false; readonly error: ExpressionError }
+export type ParseOutcome = { readonly ok: true; readonly ast: ExpressionAst } | { readonly ok: false; readonly error: ExpressionError }
 
 /**
  * Parse expression source into an AST handle.

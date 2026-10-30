@@ -102,10 +102,7 @@ if (!Number.isInteger(clamdPort) || clamdPort <= 0 || clamdPort > 65_535) {
 if (!Number.isFinite(clamdMaxBytes) || clamdMaxBytes <= 0) {
   throw new Error("FORMANCY_CLAMD_MAX_BYTES must be a positive number of bytes: clamd's StreamMaxLength.")
 }
-const scanner =
-  clamdHost === undefined || clamdHost === ''
-    ? undefined
-    : createClamdScanner({ host: clamdHost, port: clamdPort, maxBytes: clamdMaxBytes })
+const scanner = clamdHost === undefined || clamdHost === '' ? undefined : createClamdScanner({ host: clamdHost, port: clamdPort, maxBytes: clamdMaxBytes })
 
 /**
  * Turns the proof-of-work challenge on for anonymous submissions.
@@ -143,10 +140,7 @@ const trustProxy = trustProxyFrom(process.env['FORMANCY_TRUST_PROXY'])
  * have no model while the operator believed it had one. The key is never logged.
  */
 const modelChoice = modelSettings(process.env)
-const model =
-  modelChoice.kind === 'none'
-    ? undefined
-    : { provider: modelChoice.provider, model: modelChoice.model, completer: createCompleter(modelChoice) }
+const model = modelChoice.kind === 'none' ? undefined : { provider: modelChoice.provider, model: modelChoice.model, completer: createCompleter(modelChoice) }
 
 await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
@@ -158,9 +152,7 @@ const rateLimits = createPostgresRateLimitStore(databaseUrl, log === undefined ?
 const app = await createApp(storage, {
   authSecret,
   rateLimitStore: rateLimits.store,
-  ...(adminEmail !== undefined && adminPassword !== undefined
-    ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } }
-    : {}),
+  ...(adminEmail !== undefined && adminPassword !== undefined ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } } : {}),
   ...(fileStore === undefined ? {} : { fileStore }),
   ...(challengeSecret === undefined ? {} : { challengeSecret }),
   ...(scanner === undefined ? {} : { scanner }),
@@ -177,15 +169,12 @@ const outbox = startOutboxWorker(storage, {
   ...(process.env['FORMANCY_WEBHOOK_ALLOW_HTTP'] === 'true' ? { allowHttp: true } : {}),
   // Gives up the SSRF guard. For a sidecar receiver on a trusted network, and
   // for nothing else.
-  ...(process.env['FORMANCY_WEBHOOK_ALLOW_PRIVATE'] === 'true'
-    ? { allowPrivateAddresses: true }
-    : {}),
+  ...(process.env['FORMANCY_WEBHOOK_ALLOW_PRIVATE'] === 'true' ? { allowPrivateAddresses: true } : {}),
 })
 // Somebody who attaches a file and closes the tab leaves bytes behind. A disk
 // that fills up for a reason nobody is watching is the most tedious outage
 // there is.
-const collector =
-  fileStore === undefined ? undefined : startFileCollector(storage, fileStore, { log: app.log })
+const collector = fileStore === undefined ? undefined : startFileCollector(storage, fileStore, { log: app.log })
 
 // Independent of the collector: a deployment can have public forms and no
 // uploads, and that deployment still accumulates spent challenges.

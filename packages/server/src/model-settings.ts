@@ -72,8 +72,7 @@ export function modelSettings(env: Environment): ModelSettings {
   }
   if (model === undefined) {
     throw new Error(
-      'FORMANCY_MODEL is required when FORMANCY_MODEL_PROVIDER is set: name the model as the ' +
-        "provider's documentation does. There is no default.",
+      'FORMANCY_MODEL is required when FORMANCY_MODEL_PROVIDER is set: name the model as the ' + "provider's documentation does. There is no default.",
     )
   }
   const headers = SDK_HEADERS_VARIABLE[provider]

@@ -1,15 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import rawSchema from '@formancy/spec/schema.json' with { type: 'json' }
 import { FIELD_TYPES, WIDGETS_BY_FIELD_TYPE } from '@formancy/spec'
-import {
-  editableLayoutPropertiesFor,
-  editablePropertiesFor,
-  layoutKinds,
-} from './properties.js'
+import { editableLayoutPropertiesFor, editablePropertiesFor, layoutKinds } from './properties.js'
 import { withFlag } from './editors.js'
 
-const names = (type: string): string[] =>
-  editablePropertiesFor(type).map((property) => property.name)
+const names = (type: string): string[] => editablePropertiesFor(type).map((property) => property.name)
 
 /**
  * The panel is generated from packages/spec/formancy.schema.json rather than
@@ -26,20 +21,15 @@ describe('editablePropertiesFor', () => {
 
   test('the per-type properties come from the schema conditionals, not a list here', () => {
     expect(names('number')).toEqual(expect.arrayContaining(['min', 'max']))
-    expect(names('text')).toEqual(
-      expect.arrayContaining(['minLength', 'maxLength', 'pattern', 'format']),
-    )
-    expect(names('repeater')).toEqual(
-      expect.arrayContaining(['minItems', 'maxItems', 'addLabel', 'removeLabel']),
-    )
+    expect(names('text')).toEqual(expect.arrayContaining(['minLength', 'maxLength', 'pattern', 'format']))
+    expect(names('repeater')).toEqual(expect.arrayContaining(['minItems', 'maxItems', 'addLabel', 'removeLabel']))
     expect(names('select')).toEqual(expect.arrayContaining(['options']))
   })
 
   test('choices offer a picture exactly where the document may carry one', () => {
     // Offered on a dropdown or a tag picker, a picture would validate-fail at best and,
     // had the validator not refused it, draw nothing (0126).
-    const pictures = (type: string, widget?: string) =>
-      editablePropertiesFor(type, widget).find((property) => property.name === 'options')?.pictures
+    const pictures = (type: string, widget?: string) => editablePropertiesFor(type, widget).find((property) => property.name === 'options')?.pictures
 
     expect(pictures('radio')).toBe(true)
     expect(pictures('selectboxes')).toBe(true)
@@ -50,8 +40,7 @@ describe('editablePropertiesFor', () => {
   // Only a list of ticks can hold an option with others; anywhere else the document refuses the
   // flag, so offering it would offer an edit that is refused (0199).
   test('choices offer "only on its own" exactly on a list of ticks', () => {
-    const exclusive = (type: string, widget?: string) =>
-      editablePropertiesFor(type, widget).find((property) => property.name === 'options')?.exclusive
+    const exclusive = (type: string, widget?: string) => editablePropertiesFor(type, widget).find((property) => property.name === 'options')?.exclusive
 
     expect(exclusive('selectboxes')).toBe(true)
     expect(exclusive('selectboxes', 'tagpicker')).toBe(true)
@@ -62,8 +51,7 @@ describe('editablePropertiesFor', () => {
   // Wherever the options can be shuffled, so "None" and "Other" can be kept where they are
   // written (0200).
   test('choices offer "keeps its place" exactly where the options can be shuffled', () => {
-    const keepPlace = (type: string) =>
-      editablePropertiesFor(type).find((property) => property.name === 'options')?.keepPlace
+    const keepPlace = (type: string) => editablePropertiesFor(type).find((property) => property.name === 'options')?.keepPlace
 
     expect(keepPlace('radio')).toBe(true)
     expect(keepPlace('selectboxes')).toBe(true)
@@ -190,8 +178,7 @@ const resolve = (node: Record<string, unknown> | undefined): Record<string, unkn
   return (schemaRoot.$defs[ref.replace('#/$defs/', '')] ?? {}) as Record<string, unknown>
 }
 
-const propertyNames = (node: Record<string, unknown> | undefined): string[] =>
-  Object.keys((node?.['properties'] ?? {}) as Record<string, unknown>)
+const propertyNames = (node: Record<string, unknown> | undefined): string[] => Object.keys((node?.['properties'] ?? {}) as Record<string, unknown>)
 
 /** Every property name the schema lets ANY field carry, however it is branched. */
 function everyFieldProperty(): Set<string> {
@@ -215,9 +202,7 @@ function everyFieldProperty(): Set<string> {
 /** Every property name the schema lets ANY layout node carry. */
 function everyLayoutProperty(): Set<string> {
   const union = schemaRoot.$defs['layoutNode'] ?? {}
-  const branches = ((union['oneOf'] ?? union['anyOf'] ?? []) as Array<Record<string, unknown>>).map(
-    resolve,
-  )
+  const branches = ((union['oneOf'] ?? union['anyOf'] ?? []) as Array<Record<string, unknown>>).map(resolve)
   return new Set(branches.flatMap(propertyNames))
 }
 
@@ -235,8 +220,7 @@ function propertiesFor(type: string, widget?: string): Set<string> {
   const names = new Set(propertyNames(field))
 
   /** What this probe carries, and `undefined` for anything it cannot express. */
-  const carried = (name: string): string | undefined =>
-    name === 'type' ? type : name === 'widget' ? widget : undefined
+  const carried = (name: string): string | undefined => (name === 'type' ? type : name === 'widget' ? widget : undefined)
 
   const holds = (when: Record<string, unknown> | undefined): boolean => {
     if (when === undefined) return false
@@ -244,9 +228,7 @@ function propertiesFor(type: string, widget?: string): Set<string> {
     // A branch requiring something a (type, widget) pair cannot express -- a select
     // with an `optionsSource`, say -- is a branch this probe must not claim.
     for (const name of required) if (carried(name) === undefined) return false
-    for (const [name, rule] of Object.entries(
-      (when['properties'] ?? {}) as Record<string, Record<string, unknown>>,
-    )) {
+    for (const [name, rule] of Object.entries((when['properties'] ?? {}) as Record<string, Record<string, unknown>>)) {
       const given = carried(name)
       if (given === undefined) continue
       if ('const' in rule && rule['const'] !== given) return false
@@ -296,14 +278,9 @@ describe('everything the format has is configurable, or says why not', () => {
     // offered somewhere, which is not where a person is looking for it.
     const gaps: string[] = []
     for (const type of FIELD_TYPES) {
-      const widgets: Array<string | undefined> = [
-        undefined,
-        ...((WIDGETS_BY_FIELD_TYPE as Record<string, readonly string[]>)[type] ?? []),
-      ]
+      const widgets: Array<string | undefined> = [undefined, ...((WIDGETS_BY_FIELD_TYPE as Record<string, readonly string[]>)[type] ?? [])]
       for (const widget of widgets) {
-        const offered = new Set(
-          editablePropertiesFor(type, widget).map((property) => property.name),
-        )
+        const offered = new Set(editablePropertiesFor(type, widget).map((property) => property.name))
         for (const name of propertiesFor(type, widget)) {
           if (offered.has(name) || NOT_CONFIGURABLE[name] !== undefined) continue
           gaps.push(`${type}${widget === undefined ? '' : ` as ${widget}`} cannot set ${name}`)
@@ -318,14 +295,8 @@ describe('everything the format has is configurable, or says why not', () => {
   })
 
   test('every property a layout node can carry is offered for the kinds that can carry it', () => {
-    const offered = new Set(
-      layoutKinds().flatMap((kind) =>
-        editableLayoutPropertiesFor(kind).map((property) => property.name),
-      ),
-    )
-    const missing = [...everyLayoutProperty()]
-      .filter((name) => !offered.has(name) && NOT_CONFIGURABLE[name] === undefined)
-      .sort()
+    const offered = new Set(layoutKinds().flatMap((kind) => editableLayoutPropertiesFor(kind).map((property) => property.name)))
+    const missing = [...everyLayoutProperty()].filter((name) => !offered.has(name) && NOT_CONFIGURABLE[name] === undefined).sort()
 
     expect(missing).toEqual([])
     expect(layoutKinds().length).toBeGreaterThan(3)
@@ -340,12 +311,8 @@ describe('everything the format has is configurable, or says why not', () => {
   test('a layout node offers exactly what its own branch declares', () => {
     // The specific gaps this was written after: a table sizes its grid, anything in a
     // table may span it, and a section is named. None of the three was settable.
-    expect(editableLayoutPropertiesFor('table').map((p) => p.name)).toEqual(
-      expect.arrayContaining(['columns', 'label', 'span']),
-    )
-    expect(editableLayoutPropertiesFor('section').map((p) => p.name)).toEqual(
-      expect.arrayContaining(['label', 'span']),
-    )
+    expect(editableLayoutPropertiesFor('table').map((p) => p.name)).toEqual(expect.arrayContaining(['columns', 'label', 'span']))
+    expect(editableLayoutPropertiesFor('section').map((p) => p.name)).toEqual(expect.arrayContaining(['label', 'span']))
     expect(editableLayoutPropertiesFor('field').map((p) => p.name)).toEqual(['span'])
     // And a kind that does not exist offers nothing, rather than everything.
     expect(editableLayoutPropertiesFor('nonsense')).toEqual([])
@@ -426,8 +393,7 @@ describe('a list of things the author writes out', () => {
     const arrays = new Set<string>()
     const collect = (node: unknown): void => {
       if (typeof node !== 'object' || node === null) return
-      const properties = (node as { properties?: Record<string, { type?: string; items?: unknown }> })
-        .properties
+      const properties = (node as { properties?: Record<string, { type?: string; items?: unknown }> }).properties
       for (const [name, property] of Object.entries(properties ?? {})) {
         const items = property.items as { $ref?: string; type?: string } | undefined
         if (property.type === 'array' && (items?.$ref !== undefined || items?.type === 'object')) {
@@ -435,8 +401,7 @@ describe('a list of things the author writes out', () => {
         }
       }
     }
-    const field = (rawSchema as { $defs: { field: { allOf: Array<{ then?: unknown }> } } }).$defs
-      .field
+    const field = (rawSchema as { $defs: { field: { allOf: Array<{ then?: unknown }> } } }).$defs.field
     for (const branch of field.allOf) collect(branch.then)
     expect(arrays.size, 'no list-of-object properties were found to check').toBeGreaterThan(1)
 

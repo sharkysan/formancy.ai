@@ -39,11 +39,8 @@ const schema = (): FormSchema => ({
   ],
 })
 
-const drop = (
-  dragged: readonly number[],
-  over: readonly number[],
-  edge: 'before' | 'after',
-): ReturnType<typeof layoutDropLocation> => layoutDropLocation(schema(), 'web', dragged, over, edge)
+const drop = (dragged: readonly number[], over: readonly number[], edge: 'before' | 'after'): ReturnType<typeof layoutDropLocation> =>
+  layoutDropLocation(schema(), 'web', dragged, over, edge)
 
 describe('within one container', () => {
   test('dragging down counts the position AFTER the node is lifted out', () => {

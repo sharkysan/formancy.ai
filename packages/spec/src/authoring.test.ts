@@ -61,9 +61,7 @@ describe('the facts a model is briefed with', () => {
   })
 
   test('names every rule kind and every format, from the schema rather than by hand', () => {
-    const ruleKinds = (defs['logicRule']?.properties?.['kind']?.oneOf ?? []).map(
-      (one) => one.const,
-    )
+    const ruleKinds = (defs['logicRule']?.properties?.['kind']?.oneOf ?? []).map((one) => one.const)
     expect([...authoringFacts().ruleKinds].sort()).toEqual([...ruleKinds].sort())
     expect(ruleKinds.length).toBeGreaterThan(3)
 
@@ -99,9 +97,7 @@ describe('the note about what version 1 may not carry', () => {
       // Widened to `string`: `SPEC_1_FIELD_TYPES` is narrower than `FIELD_TYPES`, so
       // `includes` refuses the argument it exists to be asked about.
       ...FIELD_TYPES.filter((type) => !(SPEC_1_FIELD_TYPES as readonly string[]).includes(type)),
-      ...layoutKindsInSchema().filter(
-        (kind) => !['field', 'section', 'row', 'column'].includes(kind),
-      ),
+      ...layoutKindsInSchema().filter((kind) => !['field', 'section', 'row', 'column'].includes(kind)),
     ]
     expect(added.filter((name) => !(note ?? '').includes(name))).toEqual([])
   })

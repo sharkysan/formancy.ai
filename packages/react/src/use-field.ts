@@ -30,10 +30,7 @@ export function useField(path: string | Path): FieldBinding {
   const wire = typeof path === 'string' ? path : formatPath(path)
   const parsed = useMemo(() => parsePath(wire), [wire])
 
-  const subscribe = useCallback(
-    (onChange: () => void) => engine.subscribeField(parsed, onChange),
-    [engine, parsed],
-  )
+  const subscribe = useCallback((onChange: () => void) => engine.subscribeField(parsed, onChange), [engine, parsed])
   const getSnapshot = useCallback(() => engine.getFieldSnapshot(parsed), [engine, parsed])
 
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)

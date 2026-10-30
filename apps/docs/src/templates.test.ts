@@ -10,7 +10,13 @@ import type { Scenario } from '@formancy/core/authoring'
 
 const root = fileURLToPath(new URL('../../../templates/', import.meta.url))
 const read = <T>(path: string): T => JSON.parse(readFileSync(join(root, path), 'utf8')) as T
-interface Entry { id: string; area: string; schema: string; sample: string; scenarios: string }
+interface Entry {
+  id: string
+  area: string
+  schema: string
+  sample: string
+  scenarios: string
+}
 const catalog = read<{ templates: Entry[] }>('catalog.json')
 const capabilities = { now: () => 1791244800000, today: () => '2026-10-06', random: () => 0.5 }
 
@@ -35,7 +41,12 @@ describe('starter template collection', () => {
     expect(catalog.templates.map((e) => e.schema).sort()).toEqual(paths.filter((p) => p.endsWith('.form.json')).sort())
     expect(new Set(catalog.templates.map((e) => e.id)).size).toBe(catalog.templates.length)
     expect([...new Set(catalog.templates.map((e) => e.area))].sort()).toEqual([
-      'customer-service', 'events', 'healthcare-administration', 'hr', 'operations', 'sales',
+      'customer-service',
+      'events',
+      'healthcare-administration',
+      'hr',
+      'operations',
+      'sales',
     ])
   })
 
@@ -85,9 +96,7 @@ describe('starter template collection', () => {
 
         // Named, so a failure says which example stopped holding and how,
         // rather than which index of an array returned false.
-        const broken = results
-          .filter((result) => !result.passed)
-          .map((result) => `${result.name}: ${result.failures.map((f) => f.detail).join(' ')}`)
+        const broken = results.filter((result) => !result.passed).map((result) => `${result.name}: ${result.failures.map((f) => f.detail).join(' ')}`)
         expect(broken).toEqual([])
         // A set that ran nothing would pass the line above.
         expect(results).toHaveLength(scenarios.length)

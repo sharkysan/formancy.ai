@@ -1,4 +1,3 @@
-
 import { flushSync } from 'react-dom'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, ReactElement } from 'react'
@@ -56,14 +55,7 @@ export interface LayoutTreeProps {
   shows?: ((path: string) => boolean) | undefined
 }
 
-export function LayoutTree({
-  schema,
-  nodes,
-  locale,
-  renderField,
-  at = [],
-  shows,
-}: LayoutTreeProps): ReactElement {
+export function LayoutTree({ schema, nodes, locale, renderField, at = [], shows }: LayoutTreeProps): ReactElement {
   return (
     <>
       {nodes.map((node, index) => {
@@ -101,9 +93,7 @@ export function LayoutTree({
             key={index}
             data-formancy-part="layout-cell"
             data-span={String(node.span)}
-            {...(node.span === 'all'
-              ? {}
-              : { style: { '--fm-span': String(node.span) } as CSSProperties })}
+            {...(node.span === 'all' ? {} : { style: { '--fm-span': String(node.span) } as CSSProperties })}
           >
             {view}
           </div>
@@ -137,26 +127,13 @@ function LayoutNodeView({
 
   const label = resolveText(schema, node.label, locale)
   const here = at.join('.')
-  const children = (
-    <LayoutTree
-      schema={schema}
-      nodes={layoutChildren(node)}
-      locale={locale}
-      renderField={renderField}
-      at={at}
-      shows={shows}
-    />
-  )
+  const children = <LayoutTree schema={schema} nodes={layoutChildren(node)} locale={locale} renderField={renderField} at={at} shows={shows} />
 
   if (node.kind === 'row') {
     // Presentation only. A row carries no meaning a screen reader needs, and
     // announcing "group" around every pair of fields is noise.
     return (
-      <div
-        data-formancy-part="layout-row"
-        data-formancy-layout-path={here}
-        data-columns={String(node.children.length)}
-      >
+      <div data-formancy-part="layout-row" data-formancy-layout-path={here} data-columns={String(node.children.length)}>
         {children}
       </div>
     )
@@ -171,17 +148,7 @@ function LayoutNodeView({
   }
 
   if (node.kind === 'tabs') {
-    return (
-      <Tabs
-        schema={schema}
-        node={node}
-        locale={locale}
-        renderField={renderField}
-        at={at}
-        here={here}
-        shows={shows}
-      />
-    )
+    return <Tabs schema={schema} node={node} locale={locale} renderField={renderField} at={at} here={here} shows={shows} />
   }
 
   if (node.kind === 'table') {
@@ -213,12 +180,7 @@ function LayoutNodeView({
   }
 
   return (
-    <div
-      data-formancy-part="layout-section"
-      data-formancy-layout-path={here}
-      role="group"
-      aria-labelledby={headingId}
-    >
+    <div data-formancy-part="layout-section" data-formancy-layout-path={here} role="group" aria-labelledby={headingId}>
       <p id={headingId} data-formancy-part="layout-section-heading">
         {label}
       </p>
@@ -269,9 +231,7 @@ function Tabs({
   const text = useFormText()
   // The tabs with anything to show, each with its position in the authored layout: a tab
   // over an empty panel is a heading over nothing. Tab state counts the shown ones.
-  const shown = node.children.flatMap((child, index) =>
-    shows === undefined || layoutNodeShows(child, shows) ? [{ child, index }] : [],
-  )
+  const shown = node.children.flatMap((child, index) => (shows === undefined || layoutNodeShows(child, shows) ? [{ child, index }] : []))
   const [chosen, setOpen] = useState(0)
   // A page change can leave fewer tabs than the one that was open.
   const open = Math.min(chosen, shown.length - 1)
@@ -281,9 +241,7 @@ function Tabs({
   /** Set only by a key press, so focus is never taken from elsewhere. */
   const moveFocus = useRef(false)
 
-  const names = shown.map(({ child }) =>
-    child.kind === 'field' ? undefined : resolveText(schema, child.label, locale),
-  )
+  const names = shown.map(({ child }) => (child.kind === 'field' ? undefined : resolveText(schema, child.label, locale)))
 
   useEffect(() => {
     if (!moveFocus.current) return
@@ -327,13 +285,7 @@ function Tabs({
 
   return (
     <div data-formancy-part="layout-tabs" data-formancy-layout-path={here}>
-      <div
-        ref={strip}
-        role="tablist"
-        {...(stripName === undefined ? {} : { 'aria-label': stripName })}
-        data-formancy-part="tablist"
-        onKeyDown={onKeyDown}
-      >
+      <div ref={strip} role="tablist" {...(stripName === undefined ? {} : { 'aria-label': stripName })} data-formancy-part="tablist" onKeyDown={onKeyDown}>
         {shown.map(({ index: position }, index) => (
           <button
             key={position}
@@ -400,15 +352,7 @@ function Tabs({
  * picture registers a component for it
  * ([0070](../../../docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)).
  */
-function CodeNode({
-  schema,
-  node,
-  locale,
-}: {
-  schema: FormSchema
-  node: Extract<LayoutNode, { kind: 'qrcode' }>
-  locale: string
-}): ReactElement {
+function CodeNode({ schema, node, locale }: { schema: FormSchema; node: Extract<LayoutNode, { kind: 'qrcode' }>; locale: string }): ReactElement {
   const label = resolveText(schema, node.label, locale)
   const labelId = useId()
   // `useField`, not `engine.getFieldSnapshot`. Reading the snapshot directly renders the
@@ -451,10 +395,7 @@ function CodeNode({
           `<output>` is a live region, so its text is announced when the answer changes
           — which is exactly right for a second view of an answer — and that is also why
           it must be named: an unnamed live region reads a string out of nowhere. */}
-      <output
-        data-formancy-part="code-value"
-        {...(label === undefined ? {} : { 'aria-labelledby': labelId })}
-      >
+      <output data-formancy-part="code-value" {...(label === undefined ? {} : { 'aria-labelledby': labelId })}>
         {text}
       </output>
     </div>
@@ -478,9 +419,7 @@ function CodeDrawing({ value }: { value: string }): ReactElement {
   for (const [row, cells] of data.entries()) {
     for (const [column, dark] of cells.entries()) {
       if (!dark) continue
-      modules.push(
-        <rect key={`${String(row)}.${String(column)}`} x={column} y={row} width={1} height={1} fill="currentColor" />,
-      )
+      modules.push(<rect key={`${String(row)}.${String(column)}`} x={column} y={row} width={1} height={1} fill="currentColor" />)
     }
   }
 

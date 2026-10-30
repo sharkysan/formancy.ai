@@ -1,13 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import {
-  classify,
-  declarationsOf,
-  describePreset,
-  exportCss,
-  readPreset,
-  rulesOfText,
-  themeTokens,
-} from './theme-tokens.js'
+import { classify, declarationsOf, describePreset, exportCss, readPreset, rulesOfText, themeTokens } from './theme-tokens.js'
 
 /**
  * Finding out what a theme can be asked to change.
@@ -57,7 +49,6 @@ afterEach(() => {
   while (attached.length > 0) attached.pop()?.remove()
 })
 
-
 describe('which declarations are a theme’s to edit', () => {
   test('the ones on the theme’s own selector, and nothing narrower', () => {
     /*
@@ -77,9 +68,7 @@ describe('which declarations are a theme’s to edit', () => {
         ['--fm-ink', '#17222e'],
         ['--fm-radius', '3px'],
       ]),
-      rule("[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='3']", [
-        ['--fm-columns', '3'],
-      ]),
+      rule("[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='3']", [['--fm-columns', '3']]),
     ])
 
     expect([...found.keys()]).toEqual(['blueprint'])
@@ -90,11 +79,7 @@ describe('which declarations are a theme’s to edit', () => {
     // A rule may carry a list. `[data-formancy-theme='a'], .something .narrow`
     // declares the property for both, so taking the first match would attribute
     // a scoped declaration to the theme.
-    const found = themeTokens([
-      rule("[data-formancy-theme='a'], [data-formancy-theme='a'] [data-formancy-part='field']", [
-        ['--fm-ink', '#000'],
-      ]),
-    ])
+    const found = themeTokens([rule("[data-formancy-theme='a'], [data-formancy-theme='a'] [data-formancy-part='field']", [['--fm-ink', '#000']])])
 
     expect(found.size, 'a rule with one narrow selector was treated as theme-level').toBe(0)
   })
@@ -102,9 +87,7 @@ describe('which declarations are a theme’s to edit', () => {
   test('and a rule listing two themes gives the token to both', () => {
     // The other direction of the same check, which is why the first one counts
     // matches rather than testing `selectors.length === 1`.
-    const found = themeTokens([
-      rule("[data-formancy-theme='a'], [data-formancy-theme='b']", [['--fm-step', '1rem']]),
-    ])
+    const found = themeTokens([rule("[data-formancy-theme='a'], [data-formancy-theme='b']", [['--fm-step', '1rem']])])
 
     expect(found.get('a')).toEqual({ '--fm-step': '1rem' })
     expect(found.get('b')).toEqual({ '--fm-step': '1rem' })
@@ -166,12 +149,7 @@ describe('what control a value asks for', () => {
      * product, and a picker that could only express part of the value would
      * destroy the rest of it on first use.
      */
-    for (const value of [
-      "'IBM Plex Sans', ui-sans-serif, system-ui",
-      '2.5px solid var(--fm-ink)',
-      '4px 4px 0 var(--fm-ink)',
-      'var(--fm-text)',
-    ]) {
+    for (const value of ["'IBM Plex Sans', ui-sans-serif, system-ui", '2.5px solid var(--fm-ink)', '4px 4px 0 var(--fm-ink)', 'var(--fm-text)']) {
       expect(classify(value), value).toBe('text')
     }
   })
@@ -255,14 +233,9 @@ describe('reading real stylesheets', () => {
      * off them gives `undefined` -- which would match nothing and drop the theme
      * that happened to sit after them.
      */
-    const sheets = sheetFor(
-      "@media (min-width: 1px) { [data-formancy-theme='x'] { --fm-ink: #111 } }" +
-        '@font-face { font-family: X; src: url(x.woff2) }',
-    )
+    const sheets = sheetFor("@media (min-width: 1px) { [data-formancy-theme='x'] { --fm-ink: #111 } }" + '@font-face { font-family: X; src: url(x.woff2) }')
 
-    expect(declarationsOf(sheets)).toEqual([
-      { selectorText: "[data-formancy-theme='x']", declarations: [['--fm-ink', '#111']] },
-    ])
+    expect(declarationsOf(sheets)).toEqual([{ selectorText: "[data-formancy-theme='x']", declarations: [['--fm-ink', '#111']] }])
   })
 })
 
@@ -284,11 +257,7 @@ describe('a preset read back', () => {
   test('and a token the theme does not declare is named, not applied', () => {
     // Applied, it would set a property nothing in the theme reads: the editor would
     // show it as changed and the form would look exactly the same.
-    const reading = readPreset(
-      rulesOfText("[data-formancy-theme='blueprint'] { --fm-ink: #000; --fm-glow: red }"),
-      'blueprint',
-      blueprint,
-    )
+    const reading = readPreset(rulesOfText("[data-formancy-theme='blueprint'] { --fm-ink: #000; --fm-glow: red }"), 'blueprint', blueprint)
 
     expect(reading.overrides).toEqual({ '--fm-ink': '#000' })
     expect(reading.undeclared).toEqual(['--fm-glow'])
@@ -307,11 +276,7 @@ describe('a preset read back', () => {
   test('and another theme’s tokens stay that theme’s', () => {
     // The four themes share almost no vocabulary on purpose; dusk's --fm-ink is not
     // blueprint's, even where the name is the same.
-    const reading = readPreset(
-      rulesOfText("[data-formancy-theme='dusk'] { --fm-ink: #000 }"),
-      'blueprint',
-      blueprint,
-    )
+    const reading = readPreset(rulesOfText("[data-formancy-theme='dusk'] { --fm-ink: #000 }"), 'blueprint', blueprint)
 
     expect(reading.overrides).toEqual({})
     expect(reading.otherThemes).toEqual(['dusk'])
@@ -319,9 +284,7 @@ describe('a preset read back', () => {
 
   test('and what was not read is said, so half a preset does not look like all of it', () => {
     const reading = readPreset(
-      rulesOfText(
-        "[data-formancy-theme='blueprint'] { --fm-ink: #000; --fm-glow: red } :root { --fm-x: 1 } [data-formancy-theme='dusk'] { --fm-edge: #111 }",
-      ),
+      rulesOfText("[data-formancy-theme='blueprint'] { --fm-ink: #000; --fm-glow: red } :root { --fm-x: 1 } [data-formancy-theme='dusk'] { --fm-edge: #111 }"),
       'blueprint',
       blueprint,
     )

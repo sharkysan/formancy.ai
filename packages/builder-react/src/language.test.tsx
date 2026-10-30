@@ -287,11 +287,7 @@ describe('the arrangement pane', () => {
     seen.push(...shown(container))
 
     expect(untranslated(seen, layoutWords(session.document()))).toEqual([])
-    expect(
-      ['has no arrangement', 'Add an arrangement', 'needs spec version'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['has no arrangement', 'Add an arrangement', 'needs spec version'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 })
 
@@ -336,23 +332,13 @@ describe('the property panels and their editors', () => {
    * the schema's to word, and read from it here rather than listed.
    */
   const panelWords = (document: FormSchema): string[] => {
-    const properties = [
-      ...editablePropertiesFor('select'),
-      ...editablePropertiesFor('repeater', 'datagrid'),
-      ...editableLayoutPropertiesFor('table'),
-    ]
+    const properties = [...editablePropertiesFor('select'), ...editablePropertiesFor('repeater', 'datagrid'), ...editableLayoutPropertiesFor('table')]
     return [
       document.title,
-      ...flatten(document).flatMap((node) => [
-        nameOf(document, node.def),
-        node.def.key,
-        node.def.type,
-      ]),
+      ...flatten(document).flatMap((node) => [nameOf(document, node.def), node.def.key, node.def.type]),
       // A property's choices are the format's tokens; its title and description are
       // the spec's words, translated and marked, and so not allowed here (0121).
-      ...properties.flatMap((property) => [
-        ...(property.choices ?? []),
-      ]),
+      ...properties.flatMap((property) => [...(property.choices ?? [])]),
       'table',
       'Switzerland',
       'ch',
@@ -371,21 +357,14 @@ describe('the property panels and their editors', () => {
       unmount()
     }
     {
-      const { container, unmount } = render(
-        <LayoutPropertyPanel session={session} address={{ layout: 'web', path: [0] }} />,
-      )
+      const { container, unmount } = render(<LayoutPropertyPanel session={session} address={{ layout: 'web', path: [0] }} />)
       seen.push(...shown(container))
       unmount()
     }
     // The two empty states and a column over a child that is gone, which a valid
     // document cannot reach through the panel — the session refuses all three.
     for (const element of [
-      <ColumnsEditor
-        columns={[{ field: 'gone' }]}
-        children={[{ key: 'sku', type: 'text' }]}
-        onChange={() => undefined}
-        text={text}
-      />,
+      <ColumnsEditor columns={[{ field: 'gone' }]} children={[{ key: 'sku', type: 'text' }]} onChange={() => undefined} text={text} />,
       <OptionsEditor options={[]} onChange={() => undefined} text={text} />,
       <ColumnsEditor columns={[]} children={[]} onChange={() => undefined} text={text} />,
     ]) {
@@ -436,11 +415,7 @@ describe('the logic panel', () => {
 
     // A draft with two comparisons: the join, the numbered labels, the remove button.
     await user.click(screen.getAllByRole('button').at(-1)!)
-    await user.click(
-      screen
-        .getAllByRole('button')
-        .find((button) => button.textContent?.includes('Add a comparison'))!,
-    )
+    await user.click(screen.getAllByRole('button').find((button) => button.textContent?.includes('Add a comparison'))!)
     seen.push(...shown(container))
     // A check, and a calculation, each with its own box and example.
     const kind = container.querySelector('select')!
@@ -449,10 +424,7 @@ describe('the logic panel', () => {
     await user.selectOptions(kind, 'computed')
     seen.push(...shown(container))
 
-    const words = [
-      ruled.title,
-      ...flatten(ruled).flatMap((node) => [nameOf(ruled, node.def), node.def.key]),
-    ]
+    const words = [ruled.title, ...flatten(ruled).flatMap((node) => [nameOf(ruled, node.def), node.def.key])]
     expect(untranslated(seen, words)).toEqual([])
     expect(
       [
@@ -496,10 +468,7 @@ describe('the translations, prompt and scenario panes', () => {
   const catalogueWords = (document: FormSchema): string[] => [
     document.title,
     ...Object.keys(document.i18n?.messages ?? {}),
-    ...Object.values(document.i18n?.messages ?? {}).flatMap((messages) => [
-      ...Object.keys(messages),
-      ...Object.values(messages),
-    ]),
+    ...Object.values(document.i18n?.messages ?? {}).flatMap((messages) => [...Object.keys(messages), ...Object.values(messages)]),
   ]
 
   test('the translations pane shows nothing in English that the catalogue did not give it', async () => {
@@ -552,19 +521,11 @@ describe('the translations, prompt and scenario panes', () => {
       model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
       i18n: undefined,
     } as unknown as FormSchema
-    const { container } = render(
-      <TranslationsPane
-        session={createBuilderSession(plain, { text: createBuilderText(pseudoLanguage()) })}
-      />,
-    )
+    const { container } = render(<TranslationsPane session={createBuilderSession(plain, { text: createBuilderText(pseudoLanguage()) })} />)
     const seen = shown(container)
 
     expect(untranslated(seen, ['Contact', 'Email'])).toEqual([])
-    expect(
-      ['Nothing in this form', 'Make this form translatable'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['Nothing in this form', 'Make this form translatable'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 
   test('a model’s translation under review, waiting, and failing, likewise', async () => {
@@ -582,8 +543,7 @@ describe('the translations, prompt and scenario panes', () => {
     } as unknown as FormSchema
     const pseudo = () => createBuilderSession(three, { text: createBuilderText(pseudoLanguage()) })
     const user = userEvent.setup()
-    const part = (container: HTMLElement, name: string): HTMLElement =>
-      container.querySelector(`[data-formancy-part="${name}"]`) as HTMLElement
+    const part = (container: HTMLElement, name: string): HTMLElement => container.querySelector(`[data-formancy-part="${name}"]`) as HTMLElement
     /** What is on screen outside the previews, which are the form in the renderer's words. */
     const outsidePreviews = (container: HTMLElement): string[] => {
       const copy = container.cloneNode(true) as HTMLElement
@@ -606,9 +566,7 @@ describe('the translations, prompt and scenario panes', () => {
       ],
     })
 
-    const waiting = render(
-      <TranslationsPane session={pseudo()} ask={() => new Promise<string>(() => undefined)} />,
-    )
+    const waiting = render(<TranslationsPane session={pseudo()} ask={() => new Promise<string>(() => undefined)} />)
     await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
     await user.click(part(waiting.container, 'translate').querySelector('button')!)
     await waitFor(() => expect(part(waiting.container, 'translate').querySelectorAll('button')).toHaveLength(2))
@@ -642,9 +600,7 @@ describe('the translations, prompt and scenario panes', () => {
     // A run the host holds for German, drawn on the default language: where it waits, worded
     // by the catalogue (0164).
     const held = createTranslationRun()
-    const elsewhere = render(
-      <TranslationsPane session={pseudo()} ask={() => new Promise<string>(() => undefined)} run={held} />,
-    )
+    const elsewhere = render(<TranslationsPane session={pseudo()} ask={() => new Promise<string>(() => undefined)} run={held} />)
     await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
     await user.click(part(elsewhere.container, 'translate').querySelector('button')!)
     await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'en')
@@ -653,9 +609,7 @@ describe('the translations, prompt and scenario panes', () => {
     elsewhere.unmount()
     held.discard()
 
-    const failing = render(
-      <TranslationsPane session={pseudo()} ask={() => Promise.resolve('not json at all')} attempts={1} />,
-    )
+    const failing = render(<TranslationsPane session={pseudo()} ask={() => Promise.resolve('not json at all')} attempts={1} />)
     await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
     await user.click(part(failing.container, 'translate').querySelector('button')!)
     await waitFor(() => expect(part(failing.container, 'translate-problems')).not.toBeNull())
@@ -665,9 +619,7 @@ describe('the translations, prompt and scenario panes', () => {
     })
     const problems = told.ok ? [] : told.problems.map((problem) => problem.detail)
 
-    expect(
-      untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems]),
-    ).toEqual([])
+    expect(untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems])).toEqual([])
     expect(
       [
         'Ask a model for the',
@@ -709,22 +661,14 @@ describe('the translations, prompt and scenario panes', () => {
     } as unknown as FormSchema
     const user = userEvent.setup()
     // The change list is the spec's diff, in the spec's words.
-    const words = [
-      ...proposeEdit(start, written).changes.flatMap((change) => [change.path, change.detail]),
-      'Name',
-      'Email',
-    ]
+    const words = [...proposeEdit(start, written).changes.flatMap((change) => [change.path, change.detail]), 'Name', 'Email']
 
     const good = createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) })
-    const first = render(
-      <PromptPane session={good} ask={() => Promise.resolve(JSON.stringify(written))} />,
-    )
+    const first = render(<PromptPane session={good} ask={() => Promise.resolve(JSON.stringify(written))} />)
     await user.type(screen.getByRole('textbox'), 'add an email')
     await user.click(screen.getByRole('button'))
     // The review, not "more than one button": while it waits the pane shows Stop too.
-    await waitFor(() =>
-      expect(document.querySelector('[data-formancy-part="prompt-review"]')).not.toBeNull(),
-    )
+    await waitFor(() => expect(document.querySelector('[data-formancy-part="prompt-review"]')).not.toBeNull())
     const seen = shown(first.container)
     first.unmount()
 
@@ -736,9 +680,7 @@ describe('the translations, prompt and scenario panes', () => {
     const second = render(<PromptPane session={bad} ask={failing} attempts={1} />)
     await user.type(screen.getByRole('textbox'), 'anything')
     await user.click(screen.getByRole('button'))
-    await waitFor(() =>
-      expect(document.querySelector('[data-formancy-part="prompt-problems"]')).not.toBeNull(),
-    )
+    await waitFor(() => expect(document.querySelector('[data-formancy-part="prompt-problems"]')).not.toBeNull())
     seen.push(...shown(second.container))
 
     // What the person typed is theirs, in whatever language they typed it.
@@ -781,9 +723,7 @@ describe('the translations, prompt and scenario panes', () => {
     seen.push(...shown(waiting.container))
     waiting.unmount()
 
-    const unreachable = render(
-      <PromptPane session={pseudo()} ask={() => Promise.reject(new Error('the host said this'))} />,
-    )
+    const unreachable = render(<PromptPane session={pseudo()} ask={() => Promise.reject(new Error('the host said this'))} />)
     await user.type(screen.getByRole('textbox'), 'anything')
     await user.click(screen.getByRole('button'))
     await waitFor(() => expect(screen.getByRole('status').textContent).toContain('the host said this'))
@@ -791,11 +731,7 @@ describe('the translations, prompt and scenario panes', () => {
 
     expect(untranslated(seen, ['anything', 'the host said this'])).toEqual([])
     expect(seen).toContain('⟦Stop⟧')
-    expect(
-      ['Writing the form', 'Stopped.', 'could not be reached'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['Writing the form', 'Stopped.', 'could not be reached'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 
   test('the prompt pane, when the model declines, likewise', async () => {
@@ -810,12 +746,7 @@ describe('the translations, prompt and scenario panes', () => {
     const session = createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) })
     const user = userEvent.setup()
 
-    const view = render(
-      <PromptPane
-        session={session}
-        ask={() => Promise.resolve(JSON.stringify({ [DECLINE_KEY]: 'the model said this' }))}
-      />,
-    )
+    const view = render(<PromptPane session={session} ask={() => Promise.resolve(JSON.stringify({ [DECLINE_KEY]: 'the model said this' }))} />)
     await user.type(screen.getByRole('textbox'), 'anything')
     await user.click(screen.getByRole('button'))
     await waitFor(() => expect(screen.getByText('the model said this')).toBeTruthy())
@@ -849,34 +780,18 @@ describe('the translations, prompt and scenario panes', () => {
       valid: true,
       visible: { canton: true },
     }
-    const words = [
-      ...proposeEdit(right, backwards).changes.flatMap((change) => [change.path, change.detail]),
-      example.name,
-      'invert it',
-    ]
+    const words = [...proposeEdit(right, backwards).changes.flatMap((change) => [change.path, change.detail]), example.name, 'invert it']
     const session = createBuilderSession(right, { text: createBuilderText(pseudoLanguage()) })
     const user = userEvent.setup()
 
-    const view = render(
-      <PromptPane
-        session={session}
-        ask={() => Promise.resolve(JSON.stringify(backwards))}
-        scenarios={[example]}
-      />,
-    )
+    const view = render(<PromptPane session={session} ask={() => Promise.resolve(JSON.stringify(backwards))} scenarios={[example]} />)
     await user.type(screen.getByRole('textbox'), 'invert it')
     await user.click(screen.getByRole('button'))
-    await waitFor(() =>
-      expect(document.querySelector('[data-formancy-part="prompt-review"]')).not.toBeNull(),
-    )
+    await waitFor(() => expect(document.querySelector('[data-formancy-part="prompt-review"]')).not.toBeNull())
     const seen = shown(view.container)
 
     expect(untranslated(seen, words)).toEqual([])
-    expect(
-      ['scenario would stop holding', 'Would stop holding if applied'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['scenario would stop holding', 'Would stop holding if applied'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 
   test('the relay pane, on a first turn and a retry, a copy made and one refused, and given prose, likewise', async () => {
@@ -894,13 +809,9 @@ describe('the translations, prompt and scenario panes', () => {
     const user = userEvent.setup()
     // The first copy is let through and the second refused, so both of what Copy can say
     // are on screen once: a walk that only ever refused never showed "Copied".
-    vi.spyOn(navigator.clipboard, 'writeText')
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValue(new Error('refused'))
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValueOnce(undefined).mockRejectedValue(new Error('refused'))
     const prose = 'Sure, here is your form'
-    const view = render(
-      <RelayPane session={session} relay={relay} chat={{ name: 'Chat', href: 'https://chat.example/' }} />,
-    )
+    const view = render(<RelayPane session={session} relay={relay} chat={{ name: 'Chat', href: 'https://chat.example/' }} />)
 
     await act(async () => {
       void authorForm(relay.ask, 'anything', { current: start })
@@ -1010,25 +921,17 @@ describe('the translations, prompt and scenario panes', () => {
       { name: 'reason is hidden', changes: {}, visible: { reason: false } },
     ] as unknown as Scenario[]
     // A failure says what was expected and what happened, in the engine's words.
-    const failures = runScenarios(form, scenarios).flatMap((result) =>
-      result.failures.map((failure) => failure.detail),
-    )
+    const failures = runScenarios(form, scenarios).flatMap((result) => result.failures.map((failure) => failure.detail))
     const session = createBuilderSession(form, { text: createBuilderText(pseudoLanguage()) })
 
-    const one = render(
-      <ScenarioPane session={session} scenarios={scenarios} onChange={() => undefined} />,
-    )
+    const one = render(<ScenarioPane session={session} scenarios={scenarios} onChange={() => undefined} />)
     const seen = shown(one.container)
     one.unmount()
     const none = render(<ScenarioPane session={session} scenarios={[]} />)
     seen.push(...shown(none.container))
 
     expect(untranslated(seen, [...failures, 'empty is valid', 'reason is hidden'])).toEqual([])
-    expect(
-      ['Scenarios', 'does not hold', 'Remove empty is valid', 'No scenarios'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['Scenarios', 'does not hold', 'Remove empty is valid', 'No scenarios'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 })
 

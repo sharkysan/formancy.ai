@@ -42,10 +42,7 @@ export interface WebhookUrlOptions {
  * Checked when the URL is saved, so an author finds out immediately rather
  * than through a delivery that silently never works.
  */
-export function webhookUrlProblem(
-  raw: string,
-  options: WebhookUrlOptions = {},
-): string | undefined {
+export function webhookUrlProblem(raw: string, options: WebhookUrlOptions = {}): string | undefined {
   let url: URL
   try {
     url = new URL(raw)
@@ -68,11 +65,7 @@ export function webhookUrlProblem(
   // Only a LITERAL address can be judged here. A hostname is checked after
   // resolution, at delivery time, by the caller — and running the fail-closed
   // address check against one would refuse every hostname in the world.
-  if (
-    options.allowPrivateAddresses !== true &&
-    isIpLiteral(url.hostname) &&
-    isPrivateAddress(url.hostname)
-  ) {
+  if (options.allowPrivateAddresses !== true && isIpLiteral(url.hostname) && isPrivateAddress(url.hostname)) {
     return `${url.hostname} is not an address this server may be pointed at.`
   }
 

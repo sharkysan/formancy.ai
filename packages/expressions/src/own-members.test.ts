@@ -18,12 +18,7 @@ import type { EvaluateOptions } from './evaluate.js'
 
 const capabilities = fixedCapabilities({ nowMs: 0, today: '2026-10-19', random: 0.5 })
 
-function run(
-  source: string,
-  variables: CompileOptions['variables'],
-  values: Record<string, unknown>,
-  extra?: Partial<EvaluateOptions>,
-) {
+function run(source: string, variables: CompileOptions['variables'], values: Record<string, unknown>, extra?: Partial<EvaluateOptions>) {
   const compiled = compile(source, { kind: 'computed', variables })
   if (!compiled.ok) throw compiled.error
   return evaluate(compiled.program, values, { capabilities, ...extra })

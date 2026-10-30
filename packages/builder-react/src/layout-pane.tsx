@@ -52,12 +52,7 @@ export interface LayoutPaneProps {
   onSelect?: (path: readonly number[] | null) => void
 }
 
-export function FormancyLayoutPane({
-  session,
-  layout,
-  label,
-  onSelect,
-}: LayoutPaneProps): ReactElement {
+export function FormancyLayoutPane({ session, layout, label, onSelect }: LayoutPaneProps): ReactElement {
   const view = useBuilder(session)
   // The words, the offer and every sentence a command produces come from
   // builder-core, shared with the Angular pane: the two had drifted into offering
@@ -81,9 +76,7 @@ export function FormancyLayoutPane({
   const [adding, setAdding] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const [dragging, setDragging] = useState<readonly number[] | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ index: number; edge: 'before' | 'after' } | null>(
-    null,
-  )
+  const [dropTarget, setDropTarget] = useState<{ index: number; edge: 'before' | 'after' } | null>(null)
 
   const itemRefs = useRef<Array<HTMLLIElement | null>>([])
   const treeRef = useRef<HTMLUListElement | null>(null)
@@ -122,9 +115,7 @@ export function FormancyLayoutPane({
 
   const announce = useCallback((message: string) => setAnnouncement(message), [])
 
-  const targetsFor = (
-    what: LayoutNode | readonly number[],
-  ): Array<{ location: LayoutLocation; label: string }> => {
+  const targetsFor = (what: LayoutNode | readonly number[]): Array<{ location: LayoutLocation; label: string }> => {
     if (name === undefined) return []
     const from = Array.isArray(what) ? (what as readonly number[]) : undefined
     return session.validLayoutTargets(name, what).map((location) => ({
@@ -351,13 +342,7 @@ export function FormancyLayoutPane({
               setDropTarget(null)
               if (from === null) return
 
-              const location = layoutDropLocation(
-                view.document,
-                name,
-                from,
-                row.path,
-                edgeOf(event),
-              )
+              const location = layoutDropLocation(view.document, name, from, row.path, edgeOf(event))
               if (location === undefined) return
 
               // Through the same live region the keyboard path uses, so a drag
@@ -387,17 +372,10 @@ export function FormancyLayoutPane({
         </div>
       )}
 
-      {adding ? (
-        <LayoutAdd session={session} layout={name} onSaid={announce} onClose={cancelDialog} />
-      ) : null}
+      {adding ? <LayoutAdd session={session} layout={name} onSaid={announce} onClose={cancelDialog} /> : null}
 
       {wrapping === null ? null : (
-        <div
-          role="dialog"
-          aria-label={text('layout.wrapTitle', { name: wrapping.name })}
-          data-formancy-part="layout-wrap"
-          onKeyDown={onDialogKey}
-        >
+        <div role="dialog" aria-label={text('layout.wrapTitle', { name: wrapping.name })} data-formancy-part="layout-wrap" onKeyDown={onDialogKey}>
           <p>{text('layout.wrapHelp', { name: wrapping.name })}</p>
           <ul>
             {wrapCandidates(rows, wrapping).map((candidate) => (
@@ -415,12 +393,7 @@ export function FormancyLayoutPane({
       )}
 
       {moving === null ? null : (
-        <div
-          role="dialog"
-          aria-label={text('tree.moveTitle', { name: moving.name })}
-          data-formancy-part="layout-move"
-          onKeyDown={onDialogKey}
-        >
+        <div role="dialog" aria-label={text('tree.moveTitle', { name: moving.name })} data-formancy-part="layout-move" onKeyDown={onDialogKey}>
           <ul>
             {targetsFor(moving.path).map((target) => (
               <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>

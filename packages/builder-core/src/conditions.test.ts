@@ -1,13 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
-import {
-  answerKindOf,
-  celLiteral,
-  compileCondition,
-  compileGroup,
-  operatorsFor,
-} from './conditions.js'
+import { answerKindOf, celLiteral, compileCondition, compileGroup, operatorsFor } from './conditions.js'
 import type { Condition } from './conditions.js'
 
 describe('celLiteral', () => {
@@ -46,23 +40,15 @@ describe('celLiteral', () => {
 
 describe('compileCondition', () => {
   test('compares a field to a value', () => {
-    expect(compileCondition({ field: 'country', operator: 'is', value: 'CH' })).toBe(
-      'country == "CH"',
-    )
-    expect(compileCondition({ field: 'country', operator: 'isNot', value: 'CH' })).toBe(
-      'country != "CH"',
-    )
+    expect(compileCondition({ field: 'country', operator: 'is', value: 'CH' })).toBe('country == "CH"')
+    expect(compileCondition({ field: 'country', operator: 'isNot', value: 'CH' })).toBe('country != "CH"')
   })
 
   test('orders numbers as numbers, once there is a number to order', () => {
     // `qty > 5.0` alone has no overload for null, so it threw on an empty field and
     // the rule failed open — showing what it was meant to hide (0127).
-    expect(compileCondition({ field: 'qty', operator: 'isMoreThan', value: 5 })).toBe(
-      'qty != null && qty > 5.0',
-    )
-    expect(compileCondition({ field: 'qty', operator: 'isAtMost', value: 5 })).toBe(
-      'qty != null && qty <= 5.0',
-    )
+    expect(compileCondition({ field: 'qty', operator: 'isMoreThan', value: 5 })).toBe('qty != null && qty > 5.0')
+    expect(compileCondition({ field: 'qty', operator: 'isAtMost', value: 5 })).toBe('qty != null && qty <= 5.0')
   })
 
   test('"is answered" is a null check, not a truthiness check', () => {
@@ -70,9 +56,7 @@ describe('compileCondition', () => {
     // string field rather than the falsey test somebody expects from
     // JavaScript.
     expect(compileCondition({ field: 'country', operator: 'isAnswered' })).toBe('country != null')
-    expect(compileCondition({ field: 'country', operator: 'isNotAnswered' })).toBe(
-      'country == null',
-    )
+    expect(compileCondition({ field: 'country', operator: 'isNotAnswered' })).toBe('country == null')
   })
 
   test('a checkbox comparison is against a boolean, not a string', () => {
@@ -82,9 +66,7 @@ describe('compileCondition', () => {
   test('a field inside a repeater row is addressed through item', () => {
     // Inside a row the engine binds `item`, so a rule about a sibling field
     // has to say so — `qty` alone would look for a top-level field.
-    expect(
-      compileCondition({ field: 'items[].qty', operator: 'isMoreThan', value: 0 }),
-    ).toBe('item.qty != null && item.qty > 0.0')
+    expect(compileCondition({ field: 'items[].qty', operator: 'isMoreThan', value: 0 })).toBe('item.qty != null && item.qty > 0.0')
   })
 
   test('a grouped field keeps its dotted path, and is asked for before it is read', () => {
@@ -102,18 +84,12 @@ describe('compileCondition', () => {
   test('a list is asked by its length and its members, never compared with null', () => {
     // The checker refuses `list != null`; an untouched list answers `size()` and
     // `in` as empty, and both renderers store a fully unticked one as [].
-    expect(compileCondition({ field: 'extras', operator: 'isAnswered', answer: 'list' })).toBe(
-      'size(extras) > 0',
-    )
-    expect(
-      compileCondition({ field: 'extras', operator: 'includes', value: 'wrap', answer: 'list' }),
-    ).toBe('"wrap" in extras')
+    expect(compileCondition({ field: 'extras', operator: 'isAnswered', answer: 'list' })).toBe('size(extras) > 0')
+    expect(compileCondition({ field: 'extras', operator: 'includes', value: 'wrap', answer: 'list' })).toBe('"wrap" in extras')
   })
 
   test('a value with a quote in it survives the round trip into CEL', () => {
-    expect(compileCondition({ field: 'name', operator: 'is', value: 'O"Brien' })).toBe(
-      'name == "O\\"Brien"',
-    )
+    expect(compileCondition({ field: 'name', operator: 'is', value: 'O"Brien' })).toBe('name == "O\\"Brien"')
   })
 })
 
@@ -287,9 +263,7 @@ describe('combining more than one comparison', () => {
       ],
     })
 
-    expect(cel).toBe(
-      '(!has(billing.city) || billing.city == null || billing.city != "Bern") && country == "CH"',
-    )
+    expect(cel).toBe('(!has(billing.city) || billing.city == null || billing.city != "Bern") && country == "CH"')
   })
 
   test('and a third level is refused, as the editor cannot build one', () => {

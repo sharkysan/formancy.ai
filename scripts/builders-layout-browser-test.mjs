@@ -36,12 +36,20 @@ const VIEWS = [
     // A choice field, so the property panel draws its options editor as well.
     view: 'Fields, a choice field selected',
     tab: 'Fields',
-    open: (pane) => pane.getByRole('treeitem', { name: /^Country/ }).first().click(),
+    open: (pane) =>
+      pane
+        .getByRole('treeitem', { name: /^Country/ })
+        .first()
+        .click(),
   },
   {
     view: 'Arrangement, a row selected',
     tab: 'Arrangement',
-    open: (pane) => pane.getByRole('treeitem', { name: /Row with First name/ }).first().click(),
+    open: (pane) =>
+      pane
+        .getByRole('treeitem', { name: /Row with First name/ })
+        .first()
+        .click(),
   },
   { view: 'Rules', tab: 'Rules', open: async () => {} },
   { view: 'Translations, the default language', tab: 'Translations', open: async () => {} },
@@ -98,14 +106,11 @@ function differences(react, angular) {
     ]
   }
   const round = (n) => String(Math.round(n))
-  const at = ({ x, y, width, height }) =>
-    `${round(x)},${round(y)} ${round(width)}×${height === null ? 'its form' : round(height)}`
+  const at = ({ x, y, width, height }) => `${round(x)},${round(y)} ${round(width)}×${height === null ? 'its form' : round(height)}`
   return react.flatMap((box, index) => {
     const other = angular[index]
     if (other.part !== box.part) return [`${box.part} in React where Angular has ${other.part}`]
-    const moved = ['x', 'y', 'width', 'height'].some(
-      (side) => box[side] !== null && Math.abs(box[side] - other[side]) > 1,
-    )
+    const moved = ['x', 'y', 'width', 'height'].some((side) => box[side] !== null && Math.abs(box[side] - other[side]) > 1)
     return moved ? [`${box.part} at ${at(box)} in React, ${at(other)} in Angular`] : []
   })
 }

@@ -20,13 +20,7 @@ import {
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
-import {
-  createBuilderSession,
-  createDraftRun,
-  createPromptRun,
-  createRelay,
-  createTranslationRun,
-} from '@formancy/builder-core'
+import { createBuilderSession, createDraftRun, createPromptRun, createRelay, createTranslationRun } from '@formancy/builder-core'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import {
   FormancyArrangeSurface,
@@ -120,7 +114,6 @@ const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
  * `null` when somebody cancels.
  */
 
-
 export function App() {
   const [demo, setDemo] = useState(() => initialDemo(window.location.search).id)
   const [source, setSource] = useState(() => JSON.stringify(initialDemo(window.location.search).schema, null, 2))
@@ -172,10 +165,7 @@ export function App() {
   const opened = DEMOS.find((option) => option.id === demo)
   const examples = opened?.examples
   const scenarios = keptExamples[demo] ?? examples?.scenarios ?? NO_SCENARIOS
-  const keepScenarios = useCallback(
-    (next: readonly Scenario[]) => setKeptExamples((current) => ({ ...current, [demo]: next })),
-    [demo],
-  )
+  const keepScenarios = useCallback((next: readonly Scenario[]) => setKeptExamples((current) => ({ ...current, [demo]: next })), [demo])
   /**
    * The model both builders' prompt panes ask: a person, carrying each turn to a chat of
    * their own and back (0160). One per page and up here, as the blocks are, because the
@@ -444,12 +434,7 @@ export function App() {
 
         <PaneBoundary layout={panes} left="editor" right="form" />
 
-        <section
-          className="pane preview"
-          id="pane-form"
-          aria-label="Form"
-          data-folded={panes.folded.has('form') ? 'true' : undefined}
-        >
+        <section className="pane preview" id="pane-form" aria-label="Form" data-folded={panes.folded.has('form') ? 'true' : undefined}>
           <h2>
             <FoldPane pane="Form" folded={panes.folded.has('form')} onToggle={() => panes.foldPane('form')} />
             Form
@@ -486,8 +471,8 @@ export function App() {
                         storage key says so. */}
                     <UploaderProvider value={playgroundUploader}>
                       <ScannerProvider value={DEMO_SCANNER}>
-                      <OptionsSourcesProvider value={DEMO_OPTIONS_SOURCES}>
-                      {/* A region with an accessible name, so a test — and a
+                        <OptionsSourcesProvider value={DEMO_OPTIONS_SOURCES}>
+                          {/* A region with an accessible name, so a test — and a
                           screen reader moving by landmark — can say which
                           renderer it means. Two forms on one page otherwise give
                           every query two answers.
@@ -496,29 +481,29 @@ export function App() {
                           the theme styles a FORM, and each renderer renders its
                           own. One sheet around the pair also capped the two at
                           the width written for one. */}
-                      <section className="react-pane" aria-labelledby="renderer-react">
-                        <h3 id="renderer-react">React</h3>
-                        <form
-                          className="sheet"
-                          aria-label="React form preview"
-                          onSubmit={(event) => event.preventDefault()}
-                          noValidate
-                          data-formancy-theme={theme}
-                          ref={setThemeHost}
-                          style={overrides as CSSProperties}
-                        >
-                          <FormancyProvider engine={built.engine} key={source}>
-                            <ErrorSummary />
-                            <FormancyForm layout="web" review />
-                          </FormancyProvider>
-                        </form>
-                      </section>
-                      {/* The same document, under the other renderer. One engine
+                          <section className="react-pane" aria-labelledby="renderer-react">
+                            <h3 id="renderer-react">React</h3>
+                            <form
+                              className="sheet"
+                              aria-label="React form preview"
+                              onSubmit={(event) => event.preventDefault()}
+                              noValidate
+                              data-formancy-theme={theme}
+                              ref={setThemeHost}
+                              style={overrides as CSSProperties}
+                            >
+                              <FormancyProvider engine={built.engine} key={source}>
+                                <ErrorSummary />
+                                <FormancyForm layout="web" review />
+                              </FormancyProvider>
+                            </form>
+                          </section>
+                          {/* The same document, under the other renderer. One engine
                           build, two framework-native bindings, side by side —
                           which is the project's central claim and was until now
                           only ever asserted. */}
-                      <AngularPane engine={built.angular} theme={theme} />
-                      </OptionsSourcesProvider>
+                          <AngularPane engine={built.angular} theme={theme} />
+                        </OptionsSourcesProvider>
                       </ScannerProvider>
                     </UploaderProvider>
                   </RichTextEditorProvider>
@@ -530,22 +515,13 @@ export function App() {
 
         <PaneBoundary layout={panes} left="form" right="engine" />
 
-        <section
-          className="pane engine"
-          id="pane-engine"
-          aria-label="Engine"
-          data-folded={panes.folded.has('engine') ? 'true' : undefined}
-        >
+        <section className="pane engine" id="pane-engine" aria-label="Engine" data-folded={panes.folded.has('engine') ? 'true' : undefined}>
           <h2>
             <FoldPane pane="Engine" folded={panes.folded.has('engine')} onToggle={() => panes.foldPane('engine')} />
             Engine
           </h2>
           <div className="body inspect">
-            {built?.engine !== undefined ? (
-              <EngineInspector engine={built.engine} />
-            ) : (
-              <p className="empty">No engine — fix the schema first.</p>
-            )}
+            {built?.engine !== undefined ? <EngineInspector engine={built.engine} /> : <p className="empty">No engine — fix the schema first.</p>}
           </div>
         </section>
       </div>

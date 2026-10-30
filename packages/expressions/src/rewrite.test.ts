@@ -29,9 +29,7 @@ describe('rewriting a data path through a condition', () => {
      * exist. Six guards in this repository have been wrong about exactly this
      * shape of boundary.
      */
-    expect(rewritten('postcode_uk == "X" && postcode == "8000"', 'postcode', 'zip')).toBe(
-      'postcode_uk == "X" && zip == "8000"',
-    )
+    expect(rewritten('postcode_uk == "X" && postcode == "8000"', 'postcode', 'zip')).toBe('postcode_uk == "X" && zip == "8000"')
   })
 
   test('leaves the field name inside a string literal alone', () => {
@@ -46,15 +44,11 @@ describe('rewriting a data path through a condition', () => {
   })
 
   test('and rewrites a chain named in full, in either notation', () => {
-    expect(rewritten('address.city == "Z"', 'address.city', 'address.town')).toBe(
-      'address.town == "Z"',
-    )
+    expect(rewritten('address.city == "Z"', 'address.city', 'address.town')).toBe('address.town == "Z"')
     // `address["city"]` and `address.city` are the same read, so the same
     // rename has to reach both spellings or a rule written one way silently
     // survives a rename that fixed the other.
-    expect(rewritten('address["city"] == "Z"', 'address.city', 'address.town')).toBe(
-      'address.town == "Z"',
-    )
+    expect(rewritten('address["city"] == "Z"', 'address.city', 'address.town')).toBe('address.town == "Z"')
   })
 
   test('rewrites every occurrence, not the first', () => {
@@ -67,7 +61,7 @@ describe('rewriting a data path through a condition', () => {
     expect(after).toBe('has(postalAddress.city) ? postalAddress.city : postalAddress.other')
   })
 
-  test('preserves the author\'s spacing, because the source is spliced not reprinted', () => {
+  test("preserves the author's spacing, because the source is spliced not reprinted", () => {
     // A reprinter would normalise this, and a diff of the published document
     // would then show changes nobody made next to the one somebody did.
     expect(rewritten('  postcode   ==   1  ', 'postcode', 'zip')).toBe('  zip   ==   1  ')

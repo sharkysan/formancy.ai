@@ -130,9 +130,7 @@ async function run() {
     browser = await chromium.launch()
   } catch (error) {
     server.close()
-    throw new Error(
-      `could not launch Chromium (${String(error)}).\nRun \`pnpm exec playwright install --with-deps chromium\`.`,
-    )
+    throw new Error(`could not launch Chromium (${String(error)}).\nRun \`pnpm exec playwright install --with-deps chromium\`.`)
   }
 
   const failures = []
@@ -163,11 +161,7 @@ async function run() {
     {
       const cssUnder = (directory) =>
         readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
-          entry.isDirectory()
-            ? cssUnder(join(directory, entry.name))
-            : entry.name.endsWith('.css')
-              ? [join(directory, entry.name)]
-              : [],
+          entry.isDirectory() ? cssUnder(join(directory, entry.name)) : entry.name.endsWith('.css') ? [join(directory, entry.name)] : [],
         )
       const sources = [
         ...cssUnder(join(root, 'packages', 'themes')).filter((file) => !file.includes('node_modules')),
@@ -218,13 +212,8 @@ async function run() {
        * a phone is not a layout preference; it is a page whose columns do not fit
        * and whose content is cut off at the edge.
        */
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      )
-      check(
-        'the page does not scroll sideways',
-        overflow > 0 ? `${String(overflow)}px of horizontal overflow` : null,
-      )
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      check('the page does not scroll sideways', overflow > 0 ? `${String(overflow)}px of horizontal overflow` : null)
 
       /*
        * One column below the breakpoint, and the handles gone with it.
@@ -240,9 +229,7 @@ async function run() {
         const style = getComputedStyle(element)
         return {
           columns: style.gridTemplateColumns.split(' ').filter((part) => part !== '').length,
-          handles: [...document.querySelectorAll('[role="separator"]')].filter(
-            (handle) => getComputedStyle(handle).display !== 'none',
-          ).length,
+          handles: [...document.querySelectorAll('[role="separator"]')].filter((handle) => getComputedStyle(handle).display !== 'none').length,
         }
       })
       check('the pane row is in the document', row === null ? 'no .panes element' : null)
@@ -252,16 +239,11 @@ async function run() {
           'one pane at a time below the breakpoint',
           row.columns === 1 ? null : `${String(row.columns)} columns, so the narrow-screen rule is being overridden`,
         )
-        check(
-          'and no drag handles, which would be stray lines between stacked panes',
-          row.handles === 0 ? null : `${String(row.handles)} handles visible`,
-        )
+        check('and no drag handles, which would be stray lines between stacked panes', row.handles === 0 ? null : `${String(row.handles)} handles visible`)
       } else if (row !== null) {
         check(
           'three panes and two handles above the breakpoint',
-          row.columns === 5 && row.handles === 2
-            ? null
-            : `${String(row.columns)} columns and ${String(row.handles)} handles, expected 5 and 2`,
+          row.columns === 5 && row.handles === 2 ? null : `${String(row.columns)} columns and ${String(row.handles)} handles, expected 5 and 2`,
         )
       }
 
@@ -300,24 +282,15 @@ async function run() {
         })
       })
 
-      check(
-        'both renderers put a signature on the page',
-        touch.length === 2 ? null : `${String(touch.length)} signature surfaces, expected one per renderer`,
-      )
+      check('both renderers put a signature on the page', touch.length === 2 ? null : `${String(touch.length)} signature surfaces, expected one per renderer`)
       touch.forEach((surface, at) => {
         const which = at === 0 ? 'React' : 'Angular'
-        check(
-          `the ${which} signature surface refuses to be panned`,
-          surface.themed === 'none' ? null : `touch-action is ${surface.themed}`,
-        )
+        check(`the ${which} signature surface refuses to be panned`, surface.themed === 'none' ? null : `touch-action is ${surface.themed}`)
         check(
           `and refuses it with no theme applied, which is where ${which} was broken`,
           surface.unthemed === 'none' ? null : `touch-action is ${surface.unthemed} without a theme`,
         )
-        check(
-          `and cancels a touch on itself (${which})`,
-          surface.cancelled ? null : 'a touchmove on the surface was left to scroll',
-        )
+        check(`and cancels a touch on itself (${which})`, surface.cancelled ? null : 'a touchmove on the surface was left to scroll')
       })
 
       const elsewhere = await page.evaluate(() => {
@@ -328,10 +301,7 @@ async function run() {
         typed.dispatchEvent(event)
         return event.defaultPrevented
       })
-      check(
-        'while leaving the rest of the form scrollable',
-        elsewhere ? 'a touchmove on the text input beside it was cancelled too' : null,
-      )
+      check('while leaving the rest of the form scrollable', elsewhere ? 'a touchmove on the text input beside it was cancelled too' : null)
 
       /*
        * And it actually records a stroke.
@@ -343,9 +313,7 @@ async function run() {
         const surface = document.querySelector('[data-formancy-part="signature-surface"]')
         const box = surface.getBoundingClientRect()
         const options = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'touch', isPrimary: true }
-        surface.dispatchEvent(
-          new PointerEvent('pointerdown', { ...options, clientX: box.left + 10, clientY: box.top + box.height / 2 }),
-        )
+        surface.dispatchEvent(new PointerEvent('pointerdown', { ...options, clientX: box.left + 10, clientY: box.top + box.height / 2 }))
         for (let step = 1; step <= 8; step += 1) {
           surface.dispatchEvent(
             new PointerEvent('pointermove', {
@@ -363,9 +331,7 @@ async function run() {
       })
       check(
         'and records one stroke of the points it was given',
-        drawn.strokes === 1 && drawn.points === 9
-          ? null
-          : `${String(drawn.strokes)} strokes and ${String(drawn.points)} points, expected 1 and 9`,
+        drawn.strokes === 1 && drawn.points === 9 ? null : `${String(drawn.strokes)} strokes and ${String(drawn.points)} points, expected 1 and 9`,
       )
 
       /*
@@ -397,17 +363,13 @@ async function run() {
           const read = () => getComputedStyle(box).backgroundColor
           const before = read()
 
-          const mode = [...document.querySelectorAll('button.mode')].find(
-            (button) => button.textContent?.trim() === 'Theme',
-          )
+          const mode = [...document.querySelectorAll('button.mode')].find((button) => button.textContent?.trim() === 'Theme')
           if (mode === undefined) return { error: 'no Theme mode' }
           mode.click()
           await wait()
 
           const controls = [...document.querySelectorAll('.theme-token')]
-          const signal = controls
-            .find((token) => token.querySelector('.theme-token-name')?.textContent === 'signal')
-            ?.querySelector('input[type="text"]')
+          const signal = controls.find((token) => token.querySelector('.theme-token-name')?.textContent === 'signal')?.querySelector('input[type="text"]')
           if (signal === null || signal === undefined) return { error: 'no signal control', controls: controls.length }
 
           // Through the value setter, so React's onChange sees it.
@@ -417,9 +379,7 @@ async function run() {
           await wait()
           const overridden = read()
 
-          const reset = [...document.querySelectorAll('.theme-actions button')].find((button) =>
-            button.textContent?.trim().startsWith('Reset'),
-          )
+          const reset = [...document.querySelectorAll('.theme-actions button')].find((button) => button.textContent?.trim().startsWith('Reset'))
           reset?.click()
           await wait()
 
@@ -448,9 +408,7 @@ async function run() {
 
           const seen = { start: shown() }
           for (const name of ['Schema', 'Theme', 'Build']) {
-            const button = [...document.querySelectorAll('button.mode')].find(
-              (candidate) => candidate.textContent?.trim() === name,
-            )
+            const button = [...document.querySelectorAll('button.mode')].find((candidate) => candidate.textContent?.trim() === name)
             if (button === undefined) return { error: `no ${name} mode` }
             button.click()
             await wait()
@@ -473,21 +431,15 @@ async function run() {
 
         check(
           'the theme editor finds the tokens the applied theme declares',
-          theming.error === undefined && theming.controls > 8
-            ? null
-            : `${theming.error ?? `${String(theming.controls)} controls`}`,
+          theming.error === undefined && theming.controls > 8 ? null : `${theming.error ?? `${String(theming.controls)} controls`}`,
         )
         check(
           'and an override reaches the rendered form',
-          theming.before !== theming.overridden
-            ? null
-            : `the checkbox stayed ${String(theming.before)} after the signal colour changed`,
+          theming.before !== theming.overridden ? null : `the checkbox stayed ${String(theming.before)} after the signal colour changed`,
         )
         check(
           'and resetting gives the theme back',
-          theming.afterReset === theming.before
-            ? null
-            : `${String(theming.afterReset)} after reset, was ${String(theming.before)}`,
+          theming.afterReset === theming.before ? null : `${String(theming.afterReset)} after reset, was ${String(theming.before)}`,
         )
       }
 
@@ -602,9 +554,7 @@ async function run() {
       check(
         'the rendered form responds to the reading order, and none of its layout stays pinned',
         flipped.error ??
-          (flipped.stuck.length === 0
-            ? null
-            : `${String(flipped.stuck.length)} of ${String(flipped.measured)} did not flip — ${flipped.stuck.join('; ')}`),
+          (flipped.stuck.length === 0 ? null : `${String(flipped.stuck.length)} of ${String(flipped.measured)} did not flip — ${flipped.stuck.join('; ')}`),
       )
 
       check(
@@ -616,9 +566,7 @@ async function run() {
 
       check(
         'and the page does not scroll sideways once it is mirrored',
-        flipped.error !== undefined || flipped.slack <= 0
-          ? null
-          : `${String(flipped.slack)}px of horizontal overflow in right-to-left`,
+        flipped.error !== undefined || flipped.slack <= 0 ? null : `${String(flipped.slack)}px of horizontal overflow in right-to-left`,
       )
 
       await page.close()
@@ -645,9 +593,7 @@ async function run() {
       const builder = await page.evaluate(async () => {
         const wait = () => new Promise((done) => setTimeout(done, 150))
         const root = document.querySelector('[data-formancy-part="builder"]')
-        const selected = document.querySelector(
-          '[data-formancy-part="builder-node"][aria-selected="true"]',
-        )
+        const selected = document.querySelector('[data-formancy-part="builder-node"][aria-selected="true"]')
         if (root === null || selected === null) {
           return { error: 'no builder tree with a selected node on the page' }
         }
@@ -668,7 +614,11 @@ async function run() {
         // Chromium writes a shadow as "rgb(…) 2px 0px 0px 0px inset": the first
         // length once the colour is gone is the horizontal offset, and its sign the side.
         const offset = () =>
-          parseFloat(getComputedStyle(selected).boxShadow.replace(/rgba?\([^)]*\)/g, '').trim())
+          parseFloat(
+            getComputedStyle(selected)
+              .boxShadow.replace(/rgba?\([^)]*\)/g, '')
+              .trim(),
+          )
         const before = offset()
 
         document.documentElement.setAttribute('dir', 'rtl')
@@ -690,24 +640,18 @@ async function run() {
       check(
         'the builder responds to the reading order, and none of its layout stays pinned',
         builder.error ??
-          (builder.stuck.length === 0
-            ? null
-            : `${String(builder.stuck.length)} of ${String(builder.measured)} did not flip — ${builder.stuck.join('; ')}`),
+          (builder.stuck.length === 0 ? null : `${String(builder.stuck.length)} of ${String(builder.measured)} did not flip — ${builder.stuck.join('; ')}`),
       )
 
       check(
         'and there was something in it to measure',
-        builder.error !== undefined || builder.measured >= 3
-          ? null
-          : `only ${String(builder.measured)} asymmetries found in the builder`,
+        builder.error !== undefined || builder.measured >= 3 ? null : `only ${String(builder.measured)} asymmetries found in the builder`,
       )
 
       check(
         'and the bar on the selected node moves to the side a line starts on',
         builder.error ??
-          (builder.before > 0 && builder.after < 0
-            ? null
-            : `its offset was ${String(builder.before)}px and is ${String(builder.after)}px right to left`),
+          (builder.before > 0 && builder.after < 0 ? null : `its offset was ${String(builder.before)}px and is ${String(builder.after)}px right to left`),
       )
 
       await page.close()
@@ -732,11 +676,7 @@ async function run() {
         // Lazy, so each is brought into view first: a lazy image off screen is never
         // fetched, and `decode()` on it waits for good — which is how the first version
         // of this case hung the whole gate. Bounded either way.
-        const settled = (image) =>
-          Promise.race([
-            image.decode().catch(() => undefined),
-            new Promise((done) => setTimeout(done, 5000)),
-          ])
+        const settled = (image) => Promise.race([image.decode().catch(() => undefined), new Promise((done) => setTimeout(done, 5000))])
         for (const image of images) {
           image.scrollIntoView({ block: 'center' })
           await settled(image)
@@ -815,22 +755,16 @@ async function run() {
         for (const part of ['ground', 'ink', 'text', 'display', 'bar']) {
           check(
             `${path} is drawn in the landing page's ${part}`,
-            home[part] !== null && home[part] === other[part]
-              ? null
-              : `the landing page has ${String(home[part])} and ${path} ${String(other[part])}`,
+            home[part] !== null && home[part] === other[part] ? null : `the landing page has ${String(home[part])} and ${path} ${String(other[part])}`,
           )
         }
         check(
           `and carries the same navigation, so adding a page cannot miss one`,
-          home.links.length > 3 && home.links.join(' | ') === other.links.join(' | ')
-            ? null
-            : `${home.links.join(' | ')} against ${other.links.join(' | ')}`,
+          home.links.length > 3 && home.links.join(' | ') === other.links.join(' | ') ? null : `${home.links.join(' | ')} against ${other.links.join(' | ')}`,
         )
         check(
           'and the same mark, which is the favicon rather than a letter in a box',
-          home.mark === 1 && other.mark === 1
-            ? null
-            : `${String(home.mark)} marks on the landing page and ${String(other.mark)} on ${path}`,
+          home.mark === 1 && other.mark === 1 ? null : `${String(home.mark)} marks on the landing page and ${String(other.mark)} on ${path}`,
         )
       }
 
@@ -866,9 +800,7 @@ async function run() {
          * and every surface reads as the same transparent black — green while
          * asserting nothing, which is how a guard here has failed twice.
          */
-        const light = [...document.querySelectorAll('.studio-swatches button')].find((button) =>
-          (button.textContent ?? '').toLowerCase().includes('paper'),
-        )
+        const light = [...document.querySelectorAll('.studio-swatches button')].find((button) => (button.textContent ?? '').toLowerCase().includes('paper'))
         if (light === undefined) return { error: 'no appearance switcher' }
         light.click()
         await wait()
@@ -886,9 +818,7 @@ async function run() {
       )
       check(
         'and the switcher beside it really does change that tone',
-        tone.error !== undefined || tone.switched !== tone.opens
-          ? null
-          : 'a light appearance changed nothing, so the case above is reading a constant',
+        tone.error !== undefined || tone.switched !== tone.opens ? null : 'a light appearance changed nothing, so the case above is reading a constant',
       )
 
       /*
@@ -972,14 +902,8 @@ async function run() {
           return { slid, past: [...new Set(past)].slice(0, 6) }
         })
 
-        check(
-          `${path} cannot be scrolled sideways`,
-          reach.slid === 0 ? null : `it slid ${String(reach.slid)}px`,
-        )
-        check(
-          `and every control on ${path} is inside the viewport`,
-          reach.past.length === 0 ? null : `off the edge: ${reach.past.join(', ')}`,
-        )
+        check(`${path} cannot be scrolled sideways`, reach.slid === 0 ? null : `it slid ${String(reach.slid)}px`)
+        check(`and every control on ${path} is inside the viewport`, reach.past.length === 0 ? null : `off the edge: ${reach.past.join(', ')}`)
       }
 
       await page.close()

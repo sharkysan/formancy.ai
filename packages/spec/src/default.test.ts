@@ -69,8 +69,6 @@ describe('a default', () => {
   })
 
   test('in a version 4 document is refused, naming the property', () => {
-    expect(errorsOf(formWith({ default: 'Zürich' }, '4'))).toMatchObject([
-      { path: '/model/fields/0/default', code: 'version.property' },
-    ])
+    expect(errorsOf(formWith({ default: 'Zürich' }, '4'))).toMatchObject([{ path: '/model/fields/0/default', code: 'version.property' }])
   })
 })

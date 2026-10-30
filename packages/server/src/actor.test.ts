@@ -50,8 +50,6 @@ describe('a request to the management plane', () => {
   test('with a bad bearer token is not rescued by an API key beside it', async () => {
     // One credential is read, the bearer first; a request cannot try a second one after
     // the first fails.
-    expect(
-      await status({ authorization: 'Bearer not-a-token', [API_KEY_HEADER]: `fmc_${'z'.repeat(40)}` }),
-    ).toBe(401)
+    expect(await status({ authorization: 'Bearer not-a-token', [API_KEY_HEADER]: `fmc_${'z'.repeat(40)}` })).toBe(401)
   })
 })

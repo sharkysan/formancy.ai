@@ -14,15 +14,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core'
-import {
-  createDraftRun,
-  draftExpectations,
-  draftProblems,
-  draftQuotes,
-  draftStatus,
-  draftVerdict,
-  draftsOn,
-} from '@formancy/builder-core'
+import { createDraftRun, draftExpectations, draftProblems, draftQuotes, draftStatus, draftVerdict, draftsOn } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import type { AskModel, BuilderSession, DraftRun, DraftRunState, Scenario, ScenarioResult } from './types.js'
@@ -229,9 +221,7 @@ export class FormancyScenarioDrafts {
   })
 
   /** Each waiting draft with the engine's verdict on the form as it is now — rerun on an edit. */
-  protected readonly judged = computed<
-    ReadonlyArray<{ readonly draft: Scenario; readonly verdict: ScenarioResult; readonly shown: string }>
-  >(() => {
+  protected readonly judged = computed<ReadonlyArray<{ readonly draft: Scenario; readonly verdict: ScenarioResult; readonly shown: string }>>(() => {
     // Read for the dependency: the view changes identity when the document does.
     this.view()
     const document = this.session().document()
@@ -244,9 +234,7 @@ export class FormancyScenarioDrafts {
   })
 
   /** The one sentence the live region carries — builder-core's, as the React part's is. */
-  protected readonly status = computed(() =>
-    draftStatus({ busy: this.busy(), result: this.result(), note: this.note() }, this.text()),
-  )
+  protected readonly status = computed(() => draftStatus({ busy: this.busy(), result: this.result(), note: this.note() }, this.text()))
   protected readonly problems = computed(() => draftProblems(this.result(), this.text()))
   /** The model's words quoted beneath the status — builder-core's choice, as the React part's is. */
   protected readonly quoted = computed(() => draftQuotes(this.result()))

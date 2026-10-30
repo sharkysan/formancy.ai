@@ -48,7 +48,19 @@ describe('an answer in words', () => {
     expect(answerInWords(schema, field({ type: 'selectboxes', options }), ['lo', 'hi'], text)).toBe('Low and High')
     expect(answerInWords(schema, field({ type: 'number', widget: 'rating' }), 4, text)).toBe('4')
     expect(
-      answerInWords(schema, field({ type: 'matrix', options, rows: [{ value: 'a', label: 'Food' }, { value: 'b', label: 'Room' }] }), { a: 'hi', b: 'lo' }, text),
+      answerInWords(
+        schema,
+        field({
+          type: 'matrix',
+          options,
+          rows: [
+            { value: 'a', label: 'Food' },
+            { value: 'b', label: 'Room' },
+          ],
+        }),
+        { a: 'hi', b: 'lo' },
+        text,
+      ),
     ).toBe('Food: High and Room: Low')
   })
 

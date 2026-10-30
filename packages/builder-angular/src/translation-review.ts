@@ -1,26 +1,8 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  EnvironmentInjector,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-  untracked,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, EnvironmentInjector, computed, effect, inject, input, signal, untracked } from '@angular/core'
 import type { Injector } from '@angular/core'
 import { NgComponentOutlet } from '@angular/common'
 import { FormancyForm } from '@formancy/angular'
-import {
-  createTranslationRun,
-  missingMessages,
-  translationHeading,
-  translationOn,
-  translationStatus,
-  translationToReview,
-} from '@formancy/builder-core'
+import { createTranslationRun, missingMessages, translationHeading, translationOn, translationStatus, translationToReview } from '@formancy/builder-core'
 import type { BuilderMessageId } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -226,9 +208,7 @@ export class FormancyTranslationReview {
   /** What the run is doing and came to, as builder-core holds it. */
   private readonly state = signal<TranslationRunState>(this.own.state())
   /** The run as this language shows it: itself, or where it waits. */
-  protected readonly view = computed(() =>
-    translationOn(this.state(), this.locale(), this.builderView().document),
-  )
+  protected readonly view = computed(() => translationOn(this.state(), this.locale(), this.builderView().document))
   protected readonly busy = computed(() => this.view().busy)
 
   private static sequence = 0
@@ -250,22 +230,15 @@ export class FormancyTranslationReview {
     destroyed.onDestroy(() => this.own.stop())
   }
 
-  protected readonly defaultLocale = computed(
-    () => this.builderView().document.i18n?.defaultLocale ?? 'en',
-  )
-  protected readonly missing = computed(
-    () => missingMessages(this.builderView().document, this.locale()).length,
-  )
+  protected readonly defaultLocale = computed(() => this.builderView().document.i18n?.defaultLocale ?? 'en')
+  protected readonly missing = computed(() => missingMessages(this.builderView().document, this.locale()).length)
   /**
    * Drawn, on a language other than the default, while there is something to ask for, or a
    * run, an answer or a proposal to show.
    */
   protected readonly shown = computed(() => {
     const { busy, result, proposal } = this.view()
-    return (
-      this.locale() !== this.defaultLocale() &&
-      (this.missing() > 0 || busy || result !== undefined || proposal !== undefined)
-    )
+    return this.locale() !== this.defaultLocale() && (this.missing() > 0 || busy || result !== undefined || proposal !== undefined)
   })
   /** The proposal under review: none when it writes nothing, and Ask is offered again. */
   protected readonly reviewed = computed(() => translationToReview(this.view().proposal))
@@ -282,19 +255,12 @@ export class FormancyTranslationReview {
   /** The model's reason, when it declined: shown in place of the problems. */
   protected readonly declined = computed(() => {
     const outcome = this.view().result
-    return outcome === undefined || outcome.ok || outcome.ended !== 'declined'
-      ? undefined
-      : outcome.reason
+    return outcome === undefined || outcome.ok || outcome.ended !== 'declined' ? undefined : outcome.reason
   })
   /** A run that ended with answers that did not work. */
   protected readonly failure = computed(() => {
     const outcome = this.view().result
-    return outcome === undefined ||
-      outcome.ok ||
-      outcome.ended === 'declined' ||
-      outcome.problems.length === 0
-      ? undefined
-      : outcome
+    return outcome === undefined || outcome.ok || outcome.ended === 'declined' || outcome.problems.length === 0 ? undefined : outcome
   })
 
   /** An engine for the form as the proposal would leave it, under ids of its own. */

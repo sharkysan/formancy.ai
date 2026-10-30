@@ -99,12 +99,7 @@ export type Drafted =
  * wrote five good examples and one with a typo has written five good examples. A decline
  * ends the run, as it does `authorForm`'s.
  */
-export async function draftScenarios(
-  ask: AskModel,
-  document: FormSchema,
-  intent: string,
-  options: DraftingOptions = {},
-): Promise<Drafted> {
+export async function draftScenarios(ask: AskModel, document: FormSchema, intent: string, options: DraftingOptions = {}): Promise<Drafted> {
   const existing = options.existing ?? []
   const prompt = {
     kind: 'scenarios' as const,
@@ -152,9 +147,7 @@ function readDrafts(answer: Checkable, taken: ReadonlySet<string>): Verdict<Read
       drafts.push(read)
     }
   })
-  return drafts.length === 0
-    ? { ok: false, problem: { kind: 'none-usable', unusable } }
-    : { ok: true, value: { drafts, unusable } }
+  return drafts.length === 0 ? { ok: false, problem: { kind: 'none-usable', unusable } } : { ok: true, value: { drafts, unusable } }
 }
 
 /**
@@ -165,12 +158,7 @@ function readDrafts(answer: Checkable, taken: ReadonlySet<string>): Verdict<Read
  * drafting's alone is the names: one taken by an example the form has, or repeated within
  * the answer, is ambiguous, because a scenario's name is how its result is found.
  */
-function readDraft(
-  item: unknown,
-  position: number,
-  taken: ReadonlySet<string>,
-  named: ReadonlySet<string>,
-): Scenario | UnusableDraft {
+function readDraft(item: unknown, position: number, taken: ReadonlySet<string>, named: ReadonlySet<string>): Scenario | UnusableDraft {
   const read = readScenario(item)
   if (!read.ok) return { position, ...read.problem }
   const { name } = read.scenario
@@ -183,18 +171,12 @@ function readDraft(
  * What the engine makes of a draft against `document`: `runScenarios`, with the options the
  * scenario pane runs its list with, so the verdict is the one the panel gives after Keep.
  */
-export function draftVerdict(
-  document: FormSchema,
-  draft: Scenario,
-  options: ScenarioOptions = {},
-): ScenarioResult {
+export function draftVerdict(document: FormSchema, draft: Scenario, options: ScenarioOptions = {}): ScenarioResult {
   return runScenarios(document, [draft], options)[0]!
 }
 
 /** What came of keeping a draft. */
-export type KeptDraft =
-  | { readonly ok: true; readonly scenarios: readonly Scenario[] }
-  | { readonly ok: false; readonly refused: 'name-taken' | 'unknown-path' }
+export type KeptDraft = { readonly ok: true; readonly scenarios: readonly Scenario[] } | { readonly ok: false; readonly refused: 'name-taken' | 'unknown-path' }
 
 /**
  * The list with `draft` added, or why it may not be.
@@ -205,12 +187,7 @@ export type KeptDraft =
  * A draft that fails for any other reason is kept — that failure is the question the
  * person is answering.
  */
-export function keepDraft(
-  document: FormSchema,
-  scenarios: readonly Scenario[],
-  draft: Scenario,
-  options: ScenarioOptions = {},
-): KeptDraft {
+export function keepDraft(document: FormSchema, scenarios: readonly Scenario[], draft: Scenario, options: ScenarioOptions = {}): KeptDraft {
   if (scenarios.some((scenario) => scenario.name === draft.name)) {
     return { ok: false, refused: 'name-taken' }
   }
@@ -226,11 +203,7 @@ export function keepDraft(
  * One spelling for both builders, so a draft reads the same in either.
  */
 export function draftExpectations(draft: Scenario): string {
-  return JSON.stringify(
-    Object.fromEntries(Object.entries(draft).filter(([key]) => key !== 'name' && key !== 'because')),
-    null,
-    2,
-  )
+  return JSON.stringify(Object.fromEntries(Object.entries(draft).filter(([key]) => key !== 'name' && key !== 'because')), null, 2)
 }
 
 /** What the last Keep or Discard came to, for the status to say. */
@@ -254,9 +227,7 @@ export interface DraftState {
 export function draftStatus({ busy, result, note }: DraftState, text: BuilderText): string {
   if (busy) return text('drafts.status.writing')
   if (note?.kind === 'refused') {
-    return note.why === 'name-taken'
-      ? text('drafts.status.taken', { name: note.name })
-      : text('drafts.status.unknownPath', { name: note.name })
+    return note.why === 'name-taken' ? text('drafts.status.taken', { name: note.name }) : text('drafts.status.unknownPath', { name: note.name })
   }
   if (note !== undefined) {
     return text(note.kind === 'kept' ? 'drafts.status.kept' : 'drafts.status.discarded', { name: note.name })
@@ -264,9 +235,7 @@ export function draftStatus({ busy, result, note }: DraftState, text: BuilderTex
   if (result === undefined) return ''
   if (result.ok) {
     const ready = text('drafts.status.ready', { count: result.drafts.length })
-    return result.unusable.length === 0
-      ? ready
-      : `${ready} ${text('drafts.status.unusable', { count: result.unusable.length })}`
+    return result.unusable.length === 0 ? ready : `${ready} ${text('drafts.status.unusable', { count: result.unusable.length })}`
   }
   switch (result.ended) {
     case 'stopped':
@@ -274,9 +243,7 @@ export function draftStatus({ busy, result, note }: DraftState, text: BuilderTex
     case 'declined':
       return text('drafts.status.declined')
     case 'unreachable':
-      return result.reason === undefined
-        ? text('drafts.status.unreachableNoReason')
-        : text('drafts.status.unreachable', { reason: result.reason })
+      return result.reason === undefined ? text('drafts.status.unreachableNoReason') : text('drafts.status.unreachable', { reason: result.reason })
     case 'busy':
       return text('drafts.status.busy')
     case 'gave-up':
@@ -302,9 +269,7 @@ export function draftProblems(result: Drafted | undefined, text: BuilderText): s
     case 'no-list':
       return [text('drafts.problem.noList')]
     case 'none-usable':
-      return last.unusable.length === 0
-        ? [text('drafts.problem.empty')]
-        : last.unusable.map((item) => unusableSentence(item, text))
+      return last.unusable.length === 0 ? [text('drafts.problem.empty')] : last.unusable.map((item) => unusableSentence(item, text))
   }
 }
 

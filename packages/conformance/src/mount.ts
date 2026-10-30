@@ -21,10 +21,7 @@ export function mountOptionsFor({ initialValues, locale, layout }: Fixture): Mou
 
 /** Why a fixture's locale or layout would make it assert nothing; empty when neither does. */
 export function validateMount(fixture: Readonly<Record<string, unknown>>): FixtureProblem[] {
-  return [
-    ...validateLocale(fixture['locale'], fixture['schema']),
-    ...validateLayout(fixture['layout'], fixture['schema']),
-  ]
+  return [...validateLocale(fixture['locale'], fixture['schema']), ...validateLayout(fixture['layout'], fixture['schema'])]
 }
 
 /**
@@ -62,8 +59,7 @@ function validateLayout(value: unknown, schema: unknown): FixtureProblem[] {
     return [{ path: 'layout', message: 'expected a non-empty string' }]
   }
   const layouts = asRecord(schema)?.['layouts']
-  const named =
-    Array.isArray(layouts) && layouts.some((layout) => asRecord(layout)?.['name'] === value)
+  const named = Array.isArray(layouts) && layouts.some((layout) => asRecord(layout)?.['name'] === value)
   if (named) return []
   return [
     {

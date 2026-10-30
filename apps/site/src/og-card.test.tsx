@@ -116,9 +116,6 @@ describe('the link preview card', () => {
     const className = root?.getAttribute('class') ?? ''
     // Either the element carries the size or the stylesheet does; what must not
     // happen is neither, which is how a card silently becomes the viewport.
-    expect(
-      /1200/.test(style) || /og-card/.test(className),
-      'nothing on the card declares its size',
-    ).toBe(true)
+    expect(/1200/.test(style) || /og-card/.test(className), 'nothing on the card declares its size').toBe(true)
   })
 })

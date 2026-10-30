@@ -52,8 +52,7 @@ function mount(names: readonly string[]) {
   return engine
 }
 
-const namesIn = (engine: ReturnType<typeof mount>): unknown[] =>
-  (engine.value() as { items: Array<Record<string, unknown>> }).items.map((row) => row['name'])
+const namesIn = (engine: ReturnType<typeof mount>): unknown[] => (engine.value() as { items: Array<Record<string, unknown>> }).items.map((row) => row['name'])
 
 describe('the move buttons', () => {
   test('say where the row goes, with its position in the name', () => {

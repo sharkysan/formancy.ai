@@ -1,14 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  effect,
-  input,
-  signal,
-  untracked,
-  viewChild,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, signal, untracked, viewChild } from '@angular/core'
 import { arrangeDrop, arrangeDropAndSay, flattenLayout, gapNeighbour } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import type { ArrangeDrop, BuilderSession, DrawnNode } from './types.js'
@@ -211,9 +201,7 @@ export class FormancyArrangeSurface {
    * `items[0].name` — which no arrangement places, and stopping there left a pointer on a
    * row aiming at nothing rather than at the repeater around it.
    */
-  private nodeUnder(
-    element: Element | null,
-  ): { element: HTMLElement; path: readonly number[] } | undefined {
+  private nodeUnder(element: Element | null): { element: HTMLElement; path: readonly number[] } | undefined {
     let at = element?.closest<HTMLElement>(SELECTOR) ?? null
     while (at !== null) {
       const path = this.pathOfElement(at)
@@ -239,9 +227,7 @@ export class FormancyArrangeSurface {
   }
 
   protected clearIndicators(): void {
-    for (const element of this.surface().nativeElement.querySelectorAll<HTMLElement>(
-      '[data-drop]',
-    )) {
+    for (const element of this.surface().nativeElement.querySelectorAll<HTMLElement>('[data-drop]')) {
       delete element.dataset['drop']
     }
   }
@@ -307,12 +293,7 @@ export class FormancyArrangeSurface {
     // Distinct from before/after, so somebody aiming for a row does not see the
     // same line they get for a move. And a move names its axis: inside a row or
     // a table the drop lands beside the field, so the line goes down its side.
-    target.element.dataset['drop'] =
-      target.kind === 'wrap'
-        ? `wrap-${target.side}`
-        : target.axis === 'inline'
-          ? `inline-${target.edge}`
-          : target.edge
+    target.element.dataset['drop'] = target.kind === 'wrap' ? `wrap-${target.side}` : target.axis === 'inline' ? `inline-${target.edge}` : target.edge
   }
 
   protected onDrop(event: DragEvent): void {

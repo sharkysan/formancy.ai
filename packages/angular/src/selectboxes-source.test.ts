@@ -52,11 +52,7 @@ async function mount({
   }
   const engine = createFormEngine({ schema, ...(initialValue === undefined ? {} : { initialValue }) })
   const view = await render(FormancyForm, {
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine),
-      ...(sources === undefined ? [] : [provideFormancyOptionsSources(sources)]),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(sources === undefined ? [] : [provideFormancyOptionsSources(sources)])],
   })
   await view.fixture.whenStable()
   return { engine, settle: () => view.fixture.whenStable() }
@@ -86,9 +82,7 @@ const answering = (rows = CANTONS, named = CANTONS): { sources: OptionsSources; 
         debounceMs: 0,
         resolve: (request) => {
           asked.push(request)
-          return Promise.resolve(
-            request.kind === 'labels' ? named.filter((row) => request.values.includes(row.value)) : rows,
-          )
+          return Promise.resolve(request.kind === 'labels' ? named.filter((row) => request.values.includes(row.value)) : rows)
         },
       },
     },
@@ -173,8 +167,7 @@ test('a list of ticks asking again keeps the focus on its button, and gives it t
     sources: {
       cantons: {
         debounceMs: 0,
-        resolve: () =>
-          failing ? Promise.reject(new Error('down')) : new Promise((resolve) => (answer = resolve)),
+        resolve: () => (failing ? Promise.reject(new Error('down')) : new Promise((resolve) => (answer = resolve))),
       },
     },
   })
@@ -202,9 +195,7 @@ describe('a tag picker whose options come from a source', () => {
 
     fireEvent.input(screen.getByRole('combobox', { name: 'Cantons' }), { target: { value: 'z' } })
     await until(settle, () => expect(asked.some((request) => request.kind === 'search' && request.query === 'z')).toBe(true))
-    await until(settle, () =>
-      expect(screen.getAllByRole('option').map((option) => option.textContent?.trim())).toEqual(['Zürich', 'Bern', 'Vaud']),
-    )
+    await until(settle, () => expect(screen.getAllByRole('option').map((option) => option.textContent?.trim())).toEqual(['Zürich', 'Bern', 'Vaud']))
   })
 
   test('adds a chip named by its row, and stores the value', async () => {
@@ -240,9 +231,7 @@ describe('a tag picker whose options come from a source', () => {
     })
     const box = screen.getByRole('combobox', { name: 'Cantons' })
     fireEvent.input(box, { target: { value: 'z' } })
-    await until(settle, () =>
-      expect(screen.getByRole('status').textContent?.trim()).toBe('The options could not be loaded. Type to try again.'),
-    )
+    await until(settle, () => expect(screen.getByRole('status').textContent?.trim()).toBe('The options could not be loaded. Type to try again.'))
     failing = false
     fireEvent.input(box, { target: { value: 'zu' } })
     await until(settle, () => expect(screen.getAllByRole('option')).toHaveLength(3))

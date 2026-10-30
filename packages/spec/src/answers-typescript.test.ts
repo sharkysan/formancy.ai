@@ -20,7 +20,15 @@ const contact: FormSchema = {
   model: {
     fields: [
       { key: 'name', type: 'text', label: 'Your name', required: true },
-      { key: 'country', type: 'select', label: 'Country', options: [{ value: 'CH', label: 'Switzerland' }, { value: 'DE', label: 'Germany' }] },
+      {
+        key: 'country',
+        type: 'select',
+        label: 'Country',
+        options: [
+          { value: 'CH', label: 'Switzerland' },
+          { value: 'DE', label: 'Germany' },
+        ],
+      },
       { key: 'note', type: 'static', label: 'We answer within a day.' },
     ],
   },
@@ -73,7 +81,17 @@ describe('each shape', () => {
     // A choice with no options of its own is any string: the list lives elsewhere.
     [{ key: 'a', type: 'select', optionsSource: 'cantons' }, 'a?: string | null'],
     [{ key: 'a', type: 'selectboxes', options: [{ value: 'x', label: 'X' }] }, 'a?: Array<"x">'],
-    [{ key: 'a', type: 'ranking', options: [{ value: 'x', label: 'X' }, { value: 'y', label: 'Y' }] }, 'a?: Array<"x" | "y">'],
+    [
+      {
+        key: 'a',
+        type: 'ranking',
+        options: [
+          { value: 'x', label: 'X' },
+          { value: 'y', label: 'Y' },
+        ],
+      },
+      'a?: Array<"x" | "y">',
+    ],
   ] as const)('%o', (field, expected) => {
     expect(typeOf(field as never)).toBe(expected)
   })
@@ -89,8 +107,14 @@ describe('each shape', () => {
       typeOf({
         key: 'a',
         type: 'matrix',
-        rows: [{ value: 'taste', label: 'Taste' }, { value: 'price-level', label: 'Price' }],
-        options: [{ value: 'good', label: 'Good' }, { value: 'bad', label: 'Bad' }],
+        rows: [
+          { value: 'taste', label: 'Taste' },
+          { value: 'price-level', label: 'Price' },
+        ],
+        options: [
+          { value: 'good', label: 'Good' },
+          { value: 'bad', label: 'Bad' },
+        ],
       }),
     ).toBe('a?: { taste?: "good" | "bad"; "price-level"?: "good" | "bad" }')
   })
@@ -102,7 +126,12 @@ describe('each shape', () => {
       specVersion: '4',
       id: 'f',
       title: 'F',
-      model: { fields: [{ key: 'proof', type: 'file' }, { key: 'sign', type: 'signature', box: [10, 10] }] },
+      model: {
+        fields: [
+          { key: 'proof', type: 'file' },
+          { key: 'sign', type: 'signature', box: [10, 10] },
+        ],
+      },
     })
     expect(printed).toContain("import type { SignatureAnswer, StoredFile } from '@formancy/spec'")
     expect(printed).toContain('  proof?: StoredFile[]')

@@ -84,10 +84,7 @@ export function unwrapAndSay(session: BuilderSession, keyPath: readonly string[]
   const host =
     !wasPage || first === undefined
       ? undefined
-      : after.model.fields.find(
-          (field) =>
-            field.type === 'page' && (field.fields ?? []).some((child) => child.key === first.key),
-        )
+      : after.model.fields.find((field) => field.type === 'page' && (field.fields ?? []).some((child) => child.key === first.key))
   const what =
     inside.length === 0
       ? text('said.unwrappedEmpty', { name })
@@ -108,32 +105,22 @@ export function removeAndSay(session: BuilderSession, keyPath: readonly string[]
   const { text } = session
   const name = nameAt(session, keyPath)
   const outcome = session.removeField(keyPath)
-  return outcome.ok
-    ? text('said.removed', { name })
-    : text('said.cannotRemove', { name, reason: outcome.message })
+  return outcome.ok ? text('said.removed', { name }) : text('said.cannotRemove', { name, reason: outcome.message })
 }
 
 /** Insert a field at a destination the person chose from the list. */
 export function insertAndSay(session: BuilderSession, def: FieldDef, target: MoveTarget): string {
   const { text } = session
   const outcome = session.insertField(target.location, def)
-  return outcome.ok
-    ? text('said.added', { what: titleOf(def.type, text), where: target.label })
-    : text('said.cannotAdd', { reason: outcome.message })
+  return outcome.ok ? text('said.added', { what: titleOf(def.type, text), where: target.label }) : text('said.cannotAdd', { reason: outcome.message })
 }
 
 /** Move a field to a destination the person chose from the list. */
-export function moveAndSay(
-  session: BuilderSession,
-  keyPath: readonly string[],
-  target: MoveTarget,
-): string {
+export function moveAndSay(session: BuilderSession, keyPath: readonly string[], target: MoveTarget): string {
   const { text } = session
   const name = nameAt(session, keyPath)
   const outcome = session.moveField(keyPath, target.location)
-  return outcome.ok
-    ? text('said.moved', { name, where: target.label })
-    : text('said.cannotMove', { reason: outcome.message })
+  return outcome.ok ? text('said.moved', { name, where: target.label }) : text('said.cannotMove', { reason: outcome.message })
 }
 
 /**
@@ -143,17 +130,11 @@ export function moveAndSay(
  * the drop handler's own argument — so dragging Email onto Summary announced
  * "Moved Summary."
  */
-export function dropAndSay(
-  session: BuilderSession,
-  keyPath: readonly string[],
-  location: Location,
-): string {
+export function dropAndSay(session: BuilderSession, keyPath: readonly string[], location: Location): string {
   const { text } = session
   const name = nameAt(session, keyPath)
   const outcome = session.moveField(keyPath, location)
-  return outcome.ok
-    ? text('said.dropped', { name })
-    : text('said.cannotMove', { reason: outcome.message })
+  return outcome.ok ? text('said.dropped', { name }) : text('said.cannotMove', { reason: outcome.message })
 }
 
 /**
@@ -167,9 +148,7 @@ export function upgradeAndSay(session: BuilderSession): string {
   const to = nextSpecVersion(session.document().specVersion)
   if (to === undefined) return text('said.cannotUpgrade', { reason: text('said.alreadyNewest') })
   const outcome = session.upgradeSpec(to)
-  return outcome.ok
-    ? text('said.upgraded', { version: to })
-    : text('said.cannotUpgrade', { reason: outcome.message })
+  return outcome.ok ? text('said.upgraded', { version: to }) : text('said.cannotUpgrade', { reason: outcome.message })
 }
 
 /**

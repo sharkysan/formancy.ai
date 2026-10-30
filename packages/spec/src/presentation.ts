@@ -72,10 +72,7 @@ function messageIn(messages: Readonly<FormI18n['messages']>, locale: string, id:
  * Chosen by the engine's locale instead, a French reader of an English and German form
  * read English questions over French buttons.
  */
-export function resolvedLocale(
-  schema: { readonly i18n?: Readonly<FormI18n> | undefined },
-  locale: string,
-): string {
+export function resolvedLocale(schema: { readonly i18n?: Readonly<FormI18n> | undefined }, locale: string): string {
   const i18n = schema.i18n
   // Its own catalogues: `messages['constructor']` is `function Object`, a catalogue nobody wrote.
   if (i18n === undefined || Object.hasOwn(i18n.messages, locale)) return locale
@@ -101,8 +98,7 @@ export function unreferencedPaths(schema: FormSchema, layoutName: string): strin
   // be placed as well. Listing either offered a builder a placement the validator refuses.
   const within = (path: string, group: string): boolean => path.startsWith(`${group}.`)
   return modelPathsForLayout(schema.model.fields, '').filter(
-    (path) =>
-      !placed.has(path) && ![...placed].some((other) => within(path, other) || within(other, path)),
+    (path) => !placed.has(path) && ![...placed].some((other) => within(path, other) || within(other, path)),
   )
 }
 

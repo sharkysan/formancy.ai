@@ -40,8 +40,7 @@ const published = (): Manifest[] =>
     .filter((manifest) => manifest.private !== true && manifest.name !== undefined)
 
 /** The lowest version a `^`, `~` or `>=` range admits. */
-const lowestOf = (range: string): string | undefined =>
-  /^(?:\^|~|>=)\s*(\d+\.\d+\.\d+)$/.exec(range.trim())?.[1]
+const lowestOf = (range: string): string | undefined => /^(?:\^|~|>=)\s*(\d+\.\d+\.\d+)$/.exec(range.trim())?.[1]
 
 /** The range every publishable package declares for a peer — refused if they disagree. */
 function declaredPeer(name: string): string {

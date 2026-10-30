@@ -20,11 +20,7 @@ vi.mock('@monaco-editor/react', () => ({
   // Monaco loads a worker and measures a DOM jsdom has not got. A textarea
   // that reports its value is everything these tests need from it.
   default: ({ value, onChange }: { value?: string; onChange?: (next: string) => void }) => (
-    <textarea
-      aria-label="Schema"
-      value={value ?? ''}
-      onChange={(event) => onChange?.(event.target.value)}
-    />
+    <textarea aria-label="Schema" value={value ?? ''} onChange={(event) => onChange?.(event.target.value)} />
   ),
 }))
 
@@ -85,9 +81,7 @@ function serve(stub: Stub): void {
         body = init?.body
       }
       const headers: Record<string, string> = {}
-      for (const [name, value] of Object.entries(
-        (init?.headers ?? {}) as Record<string, string>,
-      )) {
+      for (const [name, value] of Object.entries((init?.headers ?? {}) as Record<string, string>)) {
         headers[name.toLowerCase()] = value
       }
       stub.calls.push({ url, method, body, headers })
@@ -130,9 +124,7 @@ function serve(stub: Stub): void {
         )
       }
       return Promise.resolve(
-        stub.formMissing === true
-          ? json({ error: 'not_found' }, 404)
-          : json({ version: 2, schemaHash: 'hash-abcdef012345', schema: SCHEMA }),
+        stub.formMissing === true ? json({ error: 'not_found' }, 404) : json({ version: 2, schemaHash: 'hash-abcdef012345', schema: SCHEMA }),
       )
     }),
   )
@@ -231,9 +223,7 @@ describe('the tabs', () => {
 
     await user.click(await screen.findByRole('button', { name: 'translations' }))
 
-    expect(
-      await screen.findByRole('button', { name: /make this form translatable/i }),
-    ).toBeTruthy()
+    expect(await screen.findByRole('button', { name: /make this form translatable/i })).toBeTruthy()
   })
 
   test('versions lists what has been published, newest and oldest alike', async () => {

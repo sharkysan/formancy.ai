@@ -35,8 +35,7 @@ const mount = (mask = PHONE): ReturnType<typeof createFormEngine> => {
   return engine
 }
 
-const phone = (): HTMLInputElement =>
-  screen.getByRole('textbox', { name: 'Phone' }) as HTMLInputElement
+const phone = (): HTMLInputElement => screen.getByRole('textbox', { name: 'Phone' }) as HTMLInputElement
 
 describe('a masked text field', () => {
   test('shows the shape while the answer holds only the digits typed', async () => {

@@ -27,7 +27,4 @@ export function released(): Released[]
  * none when it names every package at that version and its dependency graph gives each
  * one what its manifest declares, the CEL evaluator among them.
  */
-export function sbomProblems(
-  sbom: unknown,
-  options: { readonly version: string; readonly packages: readonly Released[] },
-): string[]
+export function sbomProblems(sbom: unknown, options: { readonly version: string; readonly packages: readonly Released[] }): string[]

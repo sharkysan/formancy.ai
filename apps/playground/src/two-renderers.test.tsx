@@ -27,9 +27,7 @@ import { App } from './app.js'
  * package's own, so anything structural would be comparing the wrong thing.
  */
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => (
-    <textarea readOnly aria-label="Schema" value={value ?? ''} />
-  ),
+  default: ({ value }: { value?: string }) => <textarea readOnly aria-label="Schema" value={value ?? ''} />,
   useMonaco: () => null,
 }))
 

@@ -36,12 +36,8 @@ describe('the documentation has a way out of itself', () => {
     // moved cannot leave the documentation pointing at where it was. The
     // manifest's `git+` prefix and `.git` suffix are the packaging form of the
     // same address.
-    const manifest = JSON.parse(
-      readFileSync(join(repo, 'packages', 'spec', 'package.json'), 'utf8'),
-    ) as { repository?: { url?: string } }
-    const url = (manifest.repository?.url ?? '')
-      .replace(/^git\+/, '')
-      .replace(/\.git$/, '')
+    const manifest = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'package.json'), 'utf8')) as { repository?: { url?: string } }
+    const url = (manifest.repository?.url ?? '').replace(/^git\+/, '').replace(/\.git$/, '')
 
     expect(url).toMatch(/^https:\/\/github\.com\//)
     expect(config()).toContain(url)
@@ -51,10 +47,7 @@ describe('the documentation has a way out of itself', () => {
     // The whole defect in one assertion. Starlight points its own title at the
     // docs root, so a header link is not the same thing as a way out: this fails
     // if the home link ever becomes another path under `/docs`.
-    const component = readFileSync(
-      join(repo, 'apps', 'docs', 'src', 'components', 'SiteTitle.astro'),
-      'utf8',
-    )
+    const component = readFileSync(join(repo, 'apps', 'docs', 'src', 'components', 'SiteTitle.astro'), 'utf8')
     // The TEMPLATE, which is everything after the frontmatter fence. Written
     // against the whole file this read the doc comment above it — which quotes
     // the markup being replaced, `<a href="/docs/">`, and so failed on prose

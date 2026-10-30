@@ -185,12 +185,7 @@ export function HeroStudio({ playground }: { playground: string }): ReactElement
           <div className="studio-tools">
             <span className="studio-label">Make it yours</span>
             <p>One more question?</p>
-            <button
-              type="button"
-              className="studio-add"
-              aria-pressed={company}
-              onClick={toggleCompany}
-            >
+            <button type="button" className="studio-add" aria-pressed={company} onClick={toggleCompany}>
               <span aria-hidden="true">{company ? '−' : '+'}</span>
               {company ? 'Remove company field' : 'Add company field'}
             </button>
@@ -198,12 +193,7 @@ export function HeroStudio({ playground }: { playground: string }): ReactElement
               <span className="studio-label">Appearance</span>
               <div className="studio-swatches">
                 {APPEARANCES.map((option) => (
-                  <button
-                    key={option.theme}
-                    type="button"
-                    aria-pressed={appearance === option.theme}
-                    onClick={() => setAppearance(option.theme)}
-                  >
+                  <button key={option.theme} type="button" aria-pressed={appearance === option.theme} onClick={() => setAppearance(option.theme)}>
                     <span className={`swatch ${option.theme}`} aria-hidden="true" />
                     {option.label}
                   </button>
@@ -225,22 +215,14 @@ export function HeroStudio({ playground }: { playground: string }): ReactElement
               <FormancyForm
                 layout="web"
                 submitLabel="Check this form"
-                onSubmit={(result) =>
-                  setVerdict(
-                    result.ok
-                      ? 'Looks good. Nothing was sent.'
-                      : 'Complete the required fields to continue.',
-                  )
-                }
+                onSubmit={(result) => setVerdict(result.ok ? 'Looks good. Nothing was sent.' : 'Complete the required fields to continue.')}
               />
             </FormancyProvider>
             <p className="studio-private">Try it here. Your answers stay in this tab.</p>
           </div>
         </div>
         <div className="studio-bottom">
-          <span aria-live="polite">
-            {verdict || `${String(fieldCount)} fields. The total and the workshops follow the pass.`}
-          </span>
+          <span aria-live="polite">{verdict || `${String(fieldCount)} fields. The total and the workshops follow the pass.`}</span>
           <span>Live React preview</span>
         </div>
       </div>

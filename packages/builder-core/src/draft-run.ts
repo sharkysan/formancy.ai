@@ -52,12 +52,7 @@ export interface DraftRun {
    * longer list is returned for the host; refused, it stays and the note says why.
    * `undefined` when it is not a draft this run holds for the session's form.
    */
-  keep(
-    draft: Scenario,
-    session: BuilderSession,
-    scenarios: readonly Scenario[],
-    options?: ScenarioOptions,
-  ): KeptDraft | undefined
+  keep(draft: Scenario, session: BuilderSession, scenarios: readonly Scenario[], options?: ScenarioOptions): KeptDraft | undefined
   /** Let `draft` go unkept. Nothing reaches the host. */
   discardDraft(draft: Scenario): void
   /**
@@ -161,7 +156,5 @@ export function createDraftRun(): DraftRun {
  * Draft over this form ends it.
  */
 export function draftsOn(state: DraftRunState, session: BuilderSession): DraftRunState {
-  return state.form === undefined || state.form === session.document().id
-    ? state
-    : { ...NOTHING_HELD, intent: state.intent }
+  return state.form === undefined || state.form === session.document().id ? state : { ...NOTHING_HELD, intent: state.intent }
 }

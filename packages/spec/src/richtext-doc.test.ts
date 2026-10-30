@@ -82,9 +82,7 @@ describe('serialising blocks back to the grammar', () => {
     const blocks: RichBlock[] = [
       {
         kind: 'paragraph',
-        children: [
-          { kind: 'link', href: 'javascript:alert(1)', children: [{ kind: 'text', text: 'x' }] },
-        ],
+        children: [{ kind: 'link', href: 'javascript:alert(1)', children: [{ kind: 'text', text: 'x' }] }],
       },
     ]
 
@@ -190,9 +188,7 @@ describe('back from an editor document', () => {
       ],
     })
 
-    expect(blocks).toEqual([
-      { kind: 'list', ordered: false, items: [[{ kind: 'text', text: 'first second' }]] },
-    ])
+    expect(blocks).toEqual([{ kind: 'list', ordered: false, items: [[{ kind: 'text', text: 'first second' }]] }])
   })
 
   test('a nested list is flattened into its parent, keeping the words', () => {
@@ -293,9 +289,7 @@ describe('back from an editor document', () => {
     // the same stored value, or every untouched form field grows one.
     expect(fromEditorDoc({ type: 'doc', content: [] })).toEqual([])
     expect(fromEditorDoc({ type: 'doc' })).toEqual([])
-    expect(
-      fromEditorDoc({ type: 'doc', content: [{ type: 'paragraph', content: [] }] }),
-    ).toEqual([])
+    expect(fromEditorDoc({ type: 'doc', content: [{ type: 'paragraph', content: [] }] })).toEqual([])
   })
 })
 
@@ -308,9 +302,7 @@ describe('an empty answer still needs a block', () => {
     const doc = toEditorDoc([])
 
     expect(doc.content?.length).toBe(1)
-    expect(doc.content?.[0] && 'type' in doc.content[0] ? doc.content[0].type : undefined).toBe(
-      'paragraph',
-    )
+    expect(doc.content?.[0] && 'type' in doc.content[0] ? doc.content[0].type : undefined).toBe('paragraph')
   })
 
   test('and that paragraph maps back to no blocks, not to a blank one', () => {

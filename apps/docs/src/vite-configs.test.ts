@@ -101,7 +101,11 @@ describe('every Vite and Vitest config', () => {
 
   // Each loads in well under a second here; the bound is for a load that hangs, on a busy
   // runner, not a budget.
-  test.each(configs)('%s loads with nothing for Vite to say', async (config) => {
-    expect(await saidWhileLoading(config)).toEqual([])
-  }, 30_000)
+  test.each(configs)(
+    '%s loads with nothing for Vite to say',
+    async (config) => {
+      expect(await saidWhileLoading(config)).toEqual([])
+    },
+    30_000,
+  )
 })

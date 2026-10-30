@@ -66,12 +66,8 @@ describe('a matrix', () => {
 
   test('required means every row answered: one question per row, and half is not an answer', () => {
     expect(errorsAfterSubmitting(engineFor({ required: true }), {})).toContain('required')
-    expect(errorsAfterSubmitting(engineFor({ required: true }), { taste: 'fine' })).toContain(
-      'required',
-    )
-    expect(
-      errorsAfterSubmitting(engineFor({ required: true }), { taste: 'fine', delivery: 'poor' }),
-    ).toEqual([])
+    expect(errorsAfterSubmitting(engineFor({ required: true }), { taste: 'fine' })).toContain('required')
+    expect(errorsAfterSubmitting(engineFor({ required: true }), { taste: 'fine', delivery: 'poor' })).toEqual([])
   })
 
   test('an optional one may be answered in part', () => {
@@ -80,9 +76,7 @@ describe('a matrix', () => {
 
   for (const mode of ['client', 'server'] as const) {
     test(`refuses a row it does not have (${mode})`, () => {
-      expect(
-        errorsAfterSubmitting(engineFor({}, mode), { taste: 'fine', price: 'poor' }),
-      ).toContain('row')
+      expect(errorsAfterSubmitting(engineFor({}, mode), { taste: 'fine', price: 'poor' })).toContain('row')
     })
 
     test(`refuses a column it does not offer (${mode})`, () => {
@@ -117,9 +111,7 @@ describe('a matrix', () => {
     const schema = schemaWith(
       {},
       {
-        rules: [
-          { target: 'why', kind: 'visible', cel: 'has(rating.taste) && rating.taste == "poor"' },
-        ],
+        rules: [{ target: 'why', kind: 'visible', cel: 'has(rating.taste) && rating.taste == "poor"' }],
       },
     )
     expect(expressionProblems(schema)).toEqual([])

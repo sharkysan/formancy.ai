@@ -30,14 +30,7 @@ const schema: FormSchema = {
 
 describe('flatten', () => {
   test('is the order a person reading the form would meet, not the order of the JSON', () => {
-    expect(flatten(schema).map((node) => node.keyPath.join('.'))).toEqual([
-      'customer',
-      'billing',
-      'billing.street',
-      'billing.city',
-      'items',
-      'items.name',
-    ])
+    expect(flatten(schema).map((node) => node.keyPath.join('.'))).toEqual(['customer', 'billing', 'billing.street', 'billing.city', 'items', 'items.name'])
   })
 
   test('carries depth, so a tree can be drawn and aria-level set', () => {
@@ -71,16 +64,12 @@ describe('flatten', () => {
 describe('describeTarget', () => {
   test('names the container and what the field would land between', () => {
     expect(describeTarget(schema, { parent: [], index: 0 })).toBe('Order, before Customer')
-    expect(describeTarget(schema, { parent: [], index: 1 })).toBe(
-      'Order, between Customer and Billing address',
-    )
+    expect(describeTarget(schema, { parent: [], index: 1 })).toBe('Order, between Customer and Billing address')
     expect(describeTarget(schema, { parent: [], index: 3 })).toBe('Order, after Items')
   })
 
   test('uses the container label rather than its key', () => {
-    expect(describeTarget(schema, { parent: ['billing'], index: 0 })).toBe(
-      'Billing address, before Street',
-    )
+    expect(describeTarget(schema, { parent: ['billing'], index: 0 })).toBe('Billing address, before Street')
   })
 
   test('an empty container says so, instead of naming neighbours it does not have', () => {
@@ -109,23 +98,15 @@ describe('describeTarget when a field is being moved', () => {
     // the end. Described against the document as it stands, index 2 would be
     // "after Items" only by accident and index 1 would name Customer itself,
     // the field doing the travelling.
-    expect(describeTarget(schema, { parent: [], index: 1 }, ['customer'])).toBe(
-      'Order, between Billing address and Items',
-    )
-    expect(describeTarget(schema, { parent: [], index: 2 }, ['customer'])).toBe(
-      'Order, after Items',
-    )
+    expect(describeTarget(schema, { parent: [], index: 1 }, ['customer'])).toBe('Order, between Billing address and Items')
+    expect(describeTarget(schema, { parent: [], index: 2 }, ['customer'])).toBe('Order, after Items')
     // And without the hint, the same index names the traveller — which is the
     // bug this argument exists to prevent.
-    expect(describeTarget(schema, { parent: [], index: 1 })).toBe(
-      'Order, between Customer and Billing address',
-    )
+    expect(describeTarget(schema, { parent: [], index: 1 })).toBe('Order, between Customer and Billing address')
   })
 
   test('a field moving into a different container still sees every sibling', () => {
-    expect(describeTarget(schema, { parent: ['billing'], index: 1 }, ['customer'])).toBe(
-      'Billing address, between Street and City',
-    )
+    expect(describeTarget(schema, { parent: ['billing'], index: 1 }, ['customer'])).toBe('Billing address, between Street and City')
   })
 
   test('the last field leaving its container leaves it empty', () => {
@@ -178,9 +159,7 @@ describe('a form written in message references', () => {
   })
 
   test('destinations name the fields the same way', () => {
-    expect(describeTarget(translated, { parent: [], index: 1 })).toBe(
-      'Order, between Customer and Quantity',
-    )
+    expect(describeTarget(translated, { parent: [], index: 1 })).toBe('Order, between Customer and Quantity')
   })
 
   test('resolved in the default locale, which the spec guarantees is complete', () => {

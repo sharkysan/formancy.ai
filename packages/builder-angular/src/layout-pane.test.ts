@@ -92,8 +92,7 @@ const mount = async (form: FormSchema = schema): Promise<Mounted> => {
   }
 }
 
-const items = (): string[] =>
-  screen.getAllByRole('treeitem').map((item) => item.textContent?.trim() ?? '')
+const items = (): string[] => screen.getAllByRole('treeitem').map((item) => item.textContent?.trim() ?? '')
 
 /** A dialog's choices, which are its buttons minus the way out of it. */
 const choices = (dialog: HTMLElement): HTMLElement[] =>
@@ -229,9 +228,7 @@ describe('the arrangement tree', () => {
     await press('{Delete}')
 
     await press('a')
-    await click(
-      within(screen.getByRole('dialog', { name: /add/i })).getByRole('button', { name: 'Email' }),
-    )
+    await click(within(screen.getByRole('dialog', { name: /add/i })).getByRole('button', { name: 'Email' }))
     const where = screen.getByRole('dialog', { name: /where should email go/i })
     await click(choices(where)[0]!)
 
@@ -244,9 +241,7 @@ describe('the arrangement tree', () => {
     await tab()
 
     await press('a')
-    await click(
-      within(screen.getByRole('dialog', { name: /add/i })).getByRole('button', { name: 'Code' }),
-    )
+    await click(within(screen.getByRole('dialog', { name: /add/i })).getByRole('button', { name: 'Code' }))
     await click(
       within(screen.getByRole('dialog', { name: /which answer/i })).getByRole('button', {
         name: 'Email',
@@ -314,9 +309,7 @@ describe('the arrangement tree', () => {
     for (const key of ['a', 'm', 'u', 'w', 'Delete']) {
       expect(screen.getByText(key), `no legend entry for ${key}`).toBeTruthy()
     }
-    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     for (const part of ['layout-pane', 'layout-tree', 'layout-node', 'layout-keys']) {
       expect(parts, `no ${part}`).toContain(part)
     }

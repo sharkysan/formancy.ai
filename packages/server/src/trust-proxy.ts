@@ -55,9 +55,7 @@ export function trustProxyFrom(value: string | undefined): string[] | undefined 
   const entries = trimmed.split(',').map((entry) => entry.trim())
   for (const entry of entries) {
     if (!isAddressOrRange(entry)) {
-      throw new Error(
-        `FORMANCY_TRUST_PROXY has "${entry}", which is not an IP address or a CIDR range. ${WHAT_TO_WRITE}`,
-      )
+      throw new Error(`FORMANCY_TRUST_PROXY has "${entry}", which is not an IP address or a CIDR range. ${WHAT_TO_WRITE}`)
     }
   }
   return entries

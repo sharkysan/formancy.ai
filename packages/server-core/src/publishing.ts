@@ -13,7 +13,6 @@ import type { Actor } from './auth.js'
 import { unsafePatterns } from './redos.js'
 import type { UnsafePattern } from './redos.js'
 
-
 /**
  * Publishing a form: the save gate, and who may overwrite whom.
  *
@@ -164,10 +163,7 @@ export async function publishForm(
   const existing = await deps.storage.getFormByPath(input.path)
 
   if (existing !== undefined) {
-    const current =
-      existing.currentVersionId === null
-        ? undefined
-        : await deps.storage.getVersionById(existing.currentVersionId)
+    const current = existing.currentVersionId === null ? undefined : await deps.storage.getVersionById(existing.currentVersionId)
     if (current !== undefined && current.schemaHash === hash) {
       return {
         ok: true,
@@ -205,9 +201,7 @@ export async function publishForm(
     // unique index would raise on the insert and the route answered 500 —
     // reverting by republishing yesterday's document is a reasonable thing to
     // try, and it crashed.
-    const already = (await deps.storage.listVersionsByForm(existing.id)).find(
-      (candidate) => candidate.schemaHash === hash,
-    )
+    const already = (await deps.storage.listVersionsByForm(existing.id)).find((candidate) => candidate.schemaHash === hash)
     if (already !== undefined) {
       return { ok: false, kind: 'already_published', version: already.version }
     }
@@ -279,9 +273,7 @@ function publishAudit(
     at: deps.nowIso(),
     action: 'form.published',
     subject: about.path,
-    ...(input.actor === undefined
-      ? {}
-      : { actorKind: input.actor.kind, actorId: input.actor.id }),
+    ...(input.actor === undefined ? {} : { actorKind: input.actor.kind, actorId: input.actor.id }),
     ...(input.requestId === undefined ? {} : { requestId: input.requestId }),
     detail: {
       version: about.version,

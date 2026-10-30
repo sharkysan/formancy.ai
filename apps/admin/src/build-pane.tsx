@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
-import {
-  FormancyArrangeSurface,
-  FormancyBuilder,
-  FormancyLayoutPane,
-  LogicPanel,
-  PromptPane,
-  PropertyPanel,
-  useBuilder,
-} from '@formancy/builder-react'
+import { FormancyArrangeSurface, FormancyBuilder, FormancyLayoutPane, LogicPanel, PromptPane, PropertyPanel, useBuilder } from '@formancy/builder-react'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/react'
 import type { Uploader } from '@formancy/react'
@@ -199,11 +191,7 @@ function BuilderWorkspace({
         <header>
           <span className="wb-switch">
             {(['structure', 'arrangement'] as const).map((candidate) => (
-              <button
-                key={candidate}
-                aria-pressed={editor === candidate}
-                onClick={() => setEditor(candidate)}
-              >
+              <button key={candidate} aria-pressed={editor === candidate} onClick={() => setEditor(candidate)}>
                 {candidate === 'structure' ? 'Structure' : 'Arrangement'}
               </button>
             ))}
@@ -241,29 +229,16 @@ function BuilderWorkspace({
           {model === undefined ? null : (
             <>
               <ModelNote model={model} sends="your instruction and this whole form" />
-              <PromptPane
-                session={session}
-                ask={askServerModel}
-                scenarios={kept?.examples?.scenarios}
-                initialValue={kept?.examples?.sample}
-                mode="server"
-              />
+              <PromptPane session={session} ask={askServerModel} scenarios={kept?.examples?.scenarios} initialValue={kept?.examples?.sample} mode="server" />
             </>
           )}
           {editor === 'structure' ? (
             <FormancyBuilder session={session} />
           ) : (
-            <FormancyLayoutPane
-              session={session}
-              {...(layoutName === undefined ? {} : { layout: layoutName })}
-            />
+            <FormancyLayoutPane session={session} {...(layoutName === undefined ? {} : { layout: layoutName })} />
           )}
 
-          {view.publishable.valid ? null : (
-            <p className="wb-problem">
-              {view.publishable.errors.map((error) => error.message).join(' ')}
-            </p>
-          )}
+          {view.publishable.valid ? null : <p className="wb-problem">{view.publishable.errors.map((error) => error.message).join(' ')}</p>}
           <PublishNote state={publishState} />
         </div>
       </section>
@@ -277,19 +252,12 @@ function BuilderWorkspace({
             // The preview is also a drop target while the Arrangement editor
             // is showing. The same session command the tree and the keyboard
             // use, so the two views cannot disagree about the document.
-            <FormancyArrangeSurface
-              session={session}
-              layout={layoutName ?? ''}
-              enabled={editor === 'arrangement' && layoutName !== undefined}
-            >
+            <FormancyArrangeSurface session={session} layout={layoutName ?? ''} enabled={editor === 'arrangement' && layoutName !== undefined}>
               <div className="wb-sheet" data-formancy-theme="blueprint">
                 <UploaderProvider value={uploader}>
-                <FormancyProvider engine={preview.engine}>
-                  <FormancyForm
-                    onSubmit={() => undefined}
-                    {...(layoutName === undefined ? {} : { layout: layoutName })}
-                  />
-                </FormancyProvider>
+                  <FormancyProvider engine={preview.engine}>
+                    <FormancyForm onSubmit={() => undefined} {...(layoutName === undefined ? {} : { layout: layoutName })} />
+                  </FormancyProvider>
                 </UploaderProvider>
               </div>
             </FormancyArrangeSurface>
@@ -300,13 +268,10 @@ function BuilderWorkspace({
       <section className="wb-pane">
         <header>Properties</header>
         <div className="wb-body">
-          {kept === undefined ? null : (
-            <ExamplesPart session={session} kept={kept} published={published} model={model} />
-          )}
+          {kept === undefined ? null : <ExamplesPart session={session} kept={kept} published={published} model={model} />}
           {editing === null ? (
             <p className="wb-hint">
-              Press <kbd>a</kbd> in the structure pane to add a field, or <kbd>p</kbd> to add a
-              page and make the form a wizard.
+              Press <kbd>a</kbd> in the structure pane to add a field, or <kbd>p</kbd> to add a page and make the form a wizard.
             </p>
           ) : (
             <>
@@ -319,4 +284,3 @@ function BuilderWorkspace({
     </div>
   )
 }
-

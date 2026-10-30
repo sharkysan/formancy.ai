@@ -28,6 +28,12 @@ export default [
     untyped: ['scripts/install-fixture/**', 'scripts/angular-install-fixture/**'],
     // The scripts that drive Playwright.
     browser: ['scripts/*browser-test.mjs', 'scripts/angular-install-test.mjs'],
-    react: ['packages/react/**/*.{ts,tsx}', 'packages/builder-react/**/*.{ts,tsx}', 'apps/admin/**/*.{ts,tsx}', 'apps/playground/**/*.{ts,tsx}', 'apps/site/**/*.{ts,tsx}'],
+    react: [
+      'packages/react/**/*.{ts,tsx}',
+      'packages/builder-react/**/*.{ts,tsx}',
+      'apps/admin/**/*.{ts,tsx}',
+      'apps/playground/**/*.{ts,tsx}',
+      'apps/site/**/*.{ts,tsx}',
+    ],
   }),
 ]

@@ -61,13 +61,7 @@ describe('the add palette', () => {
   test('offers every field the arrangement leaves out, which the Angular pane could only list', () => {
     const additions = layoutAdditions(createBuilderSession(arranged()), 'web')
 
-    expect(additions.map((addition) => addition.what)).toEqual([
-      'container',
-      'container',
-      'container',
-      'code',
-      'field',
-    ])
+    expect(additions.map((addition) => addition.what)).toEqual(['container', 'container', 'container', 'code', 'field'])
     expect(additions.at(-1)).toMatchObject({ what: 'field', path: 'email', label: 'Email' })
   })
 
@@ -85,9 +79,7 @@ describe('the add palette', () => {
   })
 
   test('offers a code unlocked where the spec version has one', () => {
-    const code = layoutAdditions(createBuilderSession(arranged()), 'web').find(
-      (addition) => addition.what === 'code',
-    )
+    const code = layoutAdditions(createBuilderSession(arranged()), 'web').find((addition) => addition.what === 'code')
 
     expect(code).toMatchObject({ locked: false, hint: english('layout.hint.qrcode') })
   })
@@ -104,11 +96,7 @@ describe('the add palette', () => {
 
 describe('a code', () => {
   test('can show any answer, placed or not, because it is a second view of one', () => {
-    expect(codeAnswers(createBuilderSession(arranged())).map((answer) => answer.path)).toEqual([
-      'first',
-      'last',
-      'email',
-    ])
+    expect(codeAnswers(createBuilderSession(arranged())).map((answer) => answer.path)).toEqual(['first', 'last', 'email'])
   })
 
   test('is labelled after its answer in the author’s language, because the label is its content', () => {
@@ -131,49 +119,30 @@ describe('what a command says', () => {
   test('adding names the new node the way a sentence would: "a row"', () => {
     const session = createBuilderSession(arranged())
 
-    expect(
-      insertLayoutAndSay(
-        session,
-        layoutNodeFor(session, { what: 'container', kind: 'row' }),
-        firstPlace,
-      ),
-    ).toBe(english('said.added', { what: 'a row', where: 'the web layout, as its first item' }))
+    expect(insertLayoutAndSay(session, layoutNodeFor(session, { what: 'container', kind: 'row' }), firstPlace)).toBe(
+      english('said.added', { what: 'a row', where: 'the web layout, as its first item' }),
+    )
   })
 
   test('adding in German starts with the verb, because "eine Zeile" cannot start a sentence', () => {
     const session = createBuilderSession(arranged(), { text: german })
 
-    expect(
-      insertLayoutAndSay(
-        session,
-        layoutNodeFor(session, { what: 'container', kind: 'row' }),
-        firstPlace,
-      ),
-    ).toBe(`Hinzugefügt: ${german('layout.new.row')} – the web layout, as its first item.`)
+    expect(insertLayoutAndSay(session, layoutNodeFor(session, { what: 'container', kind: 'row' }), firstPlace)).toBe(
+      `Hinzugefügt: ${german('layout.new.row')} – the web layout, as its first item.`,
+    )
   })
 
   test('a drop names the node that moved, where the React pane said only "Moved."', () => {
     const session = createBuilderSession(arranged())
-    session.insertLayoutNode(
-      { layout: 'web', parent: [], index: 1 },
-      { kind: 'field', path: 'email' },
-    )
+    session.insertLayoutNode({ layout: 'web', parent: [], index: 1 }, { kind: 'field', path: 'email' })
 
-    expect(
-      dropLayoutAndSay(
-        session,
-        { layout: 'web', path: [1] },
-        { layout: 'web', parent: [0], index: 0 },
-      ),
-    ).toBe(english('said.dropped', { name: 'Email' }))
+    expect(dropLayoutAndSay(session, { layout: 'web', path: [1] }, { layout: 'web', parent: [0], index: 0 })).toBe(english('said.dropped', { name: 'Email' }))
   })
 
   test('taking a node out says the form still collects it, so it does not read as a deletion', () => {
     const session = createBuilderSession(arranged())
 
-    expect(removeLayoutAndSay(session, { layout: 'web', path: [0, 1] })).toBe(
-      english('said.layoutRemoved', { name: 'Last name' }),
-    )
+    expect(removeLayoutAndSay(session, { layout: 'web', path: [0, 1] })).toBe(english('said.layoutRemoved', { name: 'Last name' }))
     expect(session.unplacedFields('web')).toContain('last')
   })
 
@@ -181,22 +150,15 @@ describe('what a command says', () => {
     const session = createBuilderSession(arranged())
     const name = flattenLayout(session.document(), 'web')[0]!.name
 
-    expect(unwrapLayoutAndSay(session, { layout: 'web', path: [0] })).toBe(
-      english('said.layoutUnwrapped', { name }),
-    )
+    expect(unwrapLayoutAndSay(session, { layout: 'web', path: [0] })).toBe(english('said.layoutUnwrapped', { name }))
   })
 
   test('wrapping names both, the chosen one first, and puts it first in the row', () => {
     const session = createBuilderSession(arranged())
-    session.insertLayoutNode(
-      { layout: 'web', parent: [], index: 1 },
-      { kind: 'field', path: 'email' },
-    )
+    session.insertLayoutNode({ layout: 'web', parent: [], index: 1 }, { kind: 'field', path: 'email' })
     const rowName = flattenLayout(session.document(), 'web')[0]!.name
 
-    expect(wrapAndSay(session, 'web', [1], [0])).toBe(
-      english('said.wrapped', { first: 'Email', second: rowName }),
-    )
+    expect(wrapAndSay(session, 'web', [1], [0])).toBe(english('said.wrapped', { first: 'Email', second: rowName }))
     const row = session.document().layouts?.[0]?.nodes[0]
     expect(row?.kind === 'row' && row.children[0]).toEqual({ kind: 'field', path: 'email' })
   })
@@ -233,10 +195,7 @@ describe('a drop on the rendered form', () => {
   test('wraps in the order the side aimed at says, and names both', () => {
     // Dropping Email on the START side of the row puts Email first.
     const session = createBuilderSession(arranged())
-    session.insertLayoutNode(
-      { layout: 'web', parent: [], index: 1 },
-      { kind: 'field', path: 'email' },
-    )
+    session.insertLayoutNode({ layout: 'web', parent: [], index: 1 }, { kind: 'field', path: 'email' })
     const rowName = flattenLayout(session.document(), 'web')[0]!.name
 
     const said = arrangeDropAndSay(session, 'web', [1], { kind: 'wrap', side: 'start', over: [0] })
@@ -248,10 +207,7 @@ describe('a drop on the rendered form', () => {
 
   test('moves and says where, described before the move', () => {
     const session = createBuilderSession(arranged())
-    session.insertLayoutNode(
-      { layout: 'web', parent: [], index: 1 },
-      { kind: 'field', path: 'email' },
-    )
+    session.insertLayoutNode({ layout: 'web', parent: [], index: 1 }, { kind: 'field', path: 'email' })
     const location = { layout: 'web', parent: [0], index: 0 }
     const where = describeLayoutTarget(session.document(), location, [1], english)
 
@@ -318,11 +274,7 @@ describe('a group, in the arrangement pane', () => {
 
   test('and refuses one of its fields beside it, saying why', () => {
     const session = createBuilderSession(withGroup())
-    insertLayoutAndSay(
-      session,
-      { kind: 'field', path: 'address' },
-      { location: { layout: 'web', parent: [], index: 1 }, label: 'the web layout, last' },
-    )
+    insertLayoutAndSay(session, { kind: 'field', path: 'address' }, { location: { layout: 'web', parent: [], index: 1 }, label: 'the web layout, last' })
 
     const said = insertLayoutAndSay(
       session,

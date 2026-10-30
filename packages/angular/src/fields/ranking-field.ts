@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Injector,
-  afterNextRender,
-  computed,
-  inject,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject } from '@angular/core'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase } from './field-shell.js'
 import { FormancyErrorText } from './error-text.js'
@@ -121,7 +114,6 @@ export class FormancyRankingField extends FieldComponentBase {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-
   /** The values in the order chosen, as stored. */
   private readonly order = computed<readonly string[]>(() => {
     const value = this.field.snapshot().value
@@ -135,9 +127,7 @@ export class FormancyRankingField extends FieldComponentBase {
       .filter((option) => option !== undefined),
   )
 
-  protected readonly unranked = computed(() =>
-    this.options().filter((option) => !this.order().includes(option.value)),
-  )
+  protected readonly unranked = computed(() => this.options().filter((option) => !this.order().includes(option.value)))
 
   protected buttonId(action: 'up' | 'down' | 'remove' | 'rank', value: string): string {
     return `${this.control().id}:${action}:${value}`
@@ -157,10 +147,7 @@ export class FormancyRankingField extends FieldComponentBase {
     const unranked = this.unranked()
     const position = unranked.findIndex((option) => option.value === value)
     const following = unranked[position + 1] ?? unranked[position - 1]
-    this.reorder(
-      [...this.order(), value],
-      following === undefined ? this.buttonId('up', value) : this.buttonId('rank', following.value),
-    )
+    this.reorder([...this.order(), value], following === undefined ? this.buttonId('up', value) : this.buttonId('rank', following.value))
   }
 
   protected takeOut(value: string): void {

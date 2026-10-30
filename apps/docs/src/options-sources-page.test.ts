@@ -72,7 +72,12 @@ function rows(): string[][] {
     .split('\n')
     .filter((line) => line.startsWith('|'))
     .slice(2)
-    .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()))
+    .map((line) =>
+      line
+        .split('|')
+        .slice(1, -1)
+        .map((cell) => cell.trim()),
+    )
 }
 
 describe('the page about lists from a source', () => {
@@ -81,14 +86,17 @@ describe('the page about lists from a source', () => {
     expect(rows().map((cells) => cells[0])).toEqual(Object.keys(STATES))
   })
 
-  test.each(rows().map((cells) => [cells[0]!, cells[1]!, cells[2]!] as const))(
-    '%s: says what each control says',
-    (label, typeahead, select) => {
-      const state = STATES[label]!
-      const typeaheadSays = chosen({ ...settled, ...state, control: 'typeahead' })
-      const selectSays = chosen({ ...settled, ...state, control: 'select' })
-      expect(says(typeaheadSays).some((pattern) => pattern.test(typeahead)), `${typeaheadSays}: ${typeahead}`).toBe(true)
-      expect(says(selectSays).some((pattern) => pattern.test(select)), `${selectSays}: ${select}`).toBe(true)
-    },
-  )
+  test.each(rows().map((cells) => [cells[0]!, cells[1]!, cells[2]!] as const))('%s: says what each control says', (label, typeahead, select) => {
+    const state = STATES[label]!
+    const typeaheadSays = chosen({ ...settled, ...state, control: 'typeahead' })
+    const selectSays = chosen({ ...settled, ...state, control: 'select' })
+    expect(
+      says(typeaheadSays).some((pattern) => pattern.test(typeahead)),
+      `${typeaheadSays}: ${typeahead}`,
+    ).toBe(true)
+    expect(
+      says(selectSays).some((pattern) => pattern.test(select)),
+      `${selectSays}: ${select}`,
+    ).toBe(true)
+  })
 })

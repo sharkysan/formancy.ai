@@ -1,14 +1,7 @@
 import type { FieldDef, FormSchema, LogicRule, Text } from '@formancy/spec'
 import { resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
-import type {
-  Capabilities,
-  CapabilitySource,
-  DeclaredType,
-  ExpressionKind,
-  Program,
-  VariableDeclarations,
-} from '@formancy/expressions'
+import type { Capabilities, CapabilitySource, DeclaredType, ExpressionKind, Program, VariableDeclarations } from '@formancy/expressions'
 import { buildGraph } from './graph.js'
 import type { GraphNode } from './graph.js'
 import { fieldIds } from './ids.js'
@@ -361,8 +354,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     // A `skip` leaves too, and for a different reason from a check: it HAS an
     // expression, and its target is a page's key rather than a data path, so
     // every walk here that resolves a target would resolve it to nothing.
-    (rule): rule is LogicRule & { cel: string; kind: ExpressionKind } =>
-      rule.kind !== 'check' && rule.kind !== 'skip' && rule.cel !== undefined,
+    (rule): rule is LogicRule & { cel: string; kind: ExpressionKind } => rule.kind !== 'check' && rule.kind !== 'skip' && rule.cel !== undefined,
   )
   const checkRules = allRules.filter((rule) => rule.kind === 'check')
   const skipRules = allRules.filter((rule) => rule.kind === 'skip')
@@ -391,9 +383,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   if (rules.some((rule) => rule.target.includes('[]'))) {
     for (const reserved of Object.keys(ROW_VARIABLES)) {
       if (reserved in declarations) {
-        throw new Error(
-          `A top-level field is named "${reserved}", which row-scoped rules reserve for the current row. Rename the field.`,
-        )
+        throw new Error(`A top-level field is named "${reserved}", which row-scoped rules reserve for the current row. Rename the field.`)
       }
     }
   }
@@ -445,9 +435,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         return member === ''
           ? // Reading the whole row conservatively depends on every computed
             // member of the same repeater.
-            compiledRules
-              .filter((other) => other.rule.kind === 'computed' && other.row?.repeater === entry.row!.repeater)
-              .map(ruleNodeId)
+            compiledRules.filter((other) => other.rule.kind === 'computed' && other.row?.repeater === entry.row!.repeater).map(ruleNodeId)
           : [`${entry.row.repeater.wire}[].${member}`]
       }
     }
@@ -495,18 +483,13 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     .filter((entry) => entry.rule.kind === 'computed')
     .sort((a, b) => (computedOrderIndex.get(ruleNodeId(a)) ?? 0) - (computedOrderIndex.get(ruleNodeId(b)) ?? 0))
 
-  const metaRules = compiledRules.filter(
-    (entry) =>
-      entry.rule.kind === 'visible' || entry.rule.kind === 'required' || entry.rule.kind === 'disabled',
-  )
+  const metaRules = compiledRules.filter((entry) => entry.rule.kind === 'visible' || entry.rule.kind === 'required' || entry.rule.kind === 'disabled')
   // A rule that does not run on this side is dropped at compile time rather
   // than skipped at evaluation time, so it costs nothing per keystroke.
   const mode = options.mode ?? 'client'
   // The side a rule must be marked for in order NOT to run here.
   const otherSide = mode === 'client' ? 'server' : 'client'
-  const validateRules = compiledRules.filter(
-    (entry) => entry.rule.kind === 'validate' && (entry.rule.runsOn ?? 'both') !== otherSide,
-  )
+  const validateRules = compiledRules.filter((entry) => entry.rule.kind === 'validate' && (entry.rule.runsOn ?? 'both') !== otherSide)
   const validateByTemplateWire = new Map<string, CompiledRule[]>()
   for (const entry of validateRules) {
     const key = entry.row ? entry.row.templateWire : entry.rule.target
@@ -609,12 +592,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
    *  the template declares is PRESENT, with null standing in for the answer a
    *  person has not typed yet — CEL errors on a missing map key, and a
    *  fail-closed validate rule must not misfire on an untouched field. */
-  function rowBag(
-    bag: Record<string, unknown>,
-    repeater: RepeaterNode,
-    row: unknown,
-    index: number,
-  ): Record<string, unknown> {
+  function rowBag(bag: Record<string, unknown>, repeater: RepeaterNode, row: unknown, index: number): Record<string, unknown> {
     const members: FieldNode[] = []
     walkTemplate(repeater.def.fields ?? [], [], repeater.page, members)
     let item: unknown = row !== null && typeof row === 'object' ? row : {}
@@ -724,24 +702,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         for (const entry of metaRules) {
           if (entry.row === undefined) {
             const outcome = evaluate(entry.program, bag, { capabilities })
-            applyMeta(
-              entry,
-              entry.rule.target,
-              entry.targetPath,
-              outcome.ok,
-              outcome.ok ? outcome.value : undefined,
-            )
+            applyMeta(entry, entry.rule.target, entry.targetPath, outcome.ok, outcome.ok ? outcome.value : undefined)
             continue
           }
           rows.of(entry.row.repeater).forEach((row, index) => {
             const outcome = evaluate(entry.program, rowBag(bag, entry.row!.repeater, row, index), { capabilities })
-            applyMeta(
-              entry,
-              instanceWire(entry, index),
-              instancePath(entry, index),
-              outcome.ok,
-              outcome.ok ? outcome.value : undefined,
-            )
+            applyMeta(entry, instanceWire(entry, index), instancePath(entry, index), outcome.ok, outcome.ok ? outcome.value : undefined)
           })
         }
 
@@ -1015,12 +981,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         const evaluationBag =
           repeater === undefined
             ? bag
-            : rowBag(
-                bag,
-                repeater,
-                rows.of(repeater)[node.path[repeater.path.length] as number],
-                node.path[repeater.path.length] as number,
-              )
+            : rowBag(bag, repeater, rows.of(repeater)[node.path[repeater.path.length] as number], node.path[repeater.path.length] as number)
         for (const entry of checks) {
           const outcome = evaluate(entry.program, evaluationBag, { capabilities })
           // Fail CLOSED: a validate rule that cannot evaluate cannot vouch for
@@ -1184,10 +1145,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const list: Array<{ path: string; codes: readonly string[] }> = []
       for (const node of activeNodes(true)) {
         if (!interaction.isTouched(node.path)) continue
-        const codes = [
-          ...(errorsByWire.get(node.wire) ?? NO_ERRORS),
-          ...(serverErrorsByWire.get(node.wire) ?? NO_ERRORS),
-        ]
+        const codes = [...(errorsByWire.get(node.wire) ?? NO_ERRORS), ...(serverErrorsByWire.get(node.wire) ?? NO_ERRORS)]
         if (codes.length > 0) list.push(Object.freeze({ path: node.wire, codes: Object.freeze(codes) }))
       }
       visibleErrorsCache = Object.freeze(list)

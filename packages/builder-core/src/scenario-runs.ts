@@ -94,12 +94,7 @@ export function createRunHistory(): RunHistory {
  * edit somebody just made. The repairs come next, so a panel that otherwise only
  * reports bad news says when something worked. Both builders wrote this by hand.
  */
-export function scenarioStatus(
-  total: number,
-  failing: number,
-  change: ScenarioRunChange,
-  text: BuilderText,
-): string {
+export function scenarioStatus(total: number, failing: number, change: ScenarioRunChange, text: BuilderText): string {
   if (total === 0) return text('scenarios.none')
   const parts: string[] = []
   if (change.regressions.length > 0) {
@@ -108,10 +103,6 @@ export function scenarioStatus(
   if (change.repaired.length > 0) {
     parts.push(text('scenarios.again', { list: text.list(change.repaired) }))
   }
-  parts.push(
-    failing === 0
-      ? text('scenarios.allHold', { count: total })
-      : text('scenarios.someFail', { count: failing, total }),
-  )
+  parts.push(failing === 0 ? text('scenarios.allHold', { count: total }) : text('scenarios.someFail', { count: failing, total }))
   return parts.join(' ')
 }

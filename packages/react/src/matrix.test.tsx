@@ -52,10 +52,7 @@ describe('the matrix control', () => {
 
     for (const row of ['Taste', 'Delivery']) {
       const group = within(matrix.getByRole('group', { name: row }))
-      expect(group.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual([
-        'poor',
-        'great',
-      ])
+      expect(group.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual(['poor', 'great'])
       expect(group.getByRole('radio', { name: 'Great' })).toBeTruthy()
     }
   })

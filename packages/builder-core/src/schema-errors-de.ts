@@ -14,28 +14,22 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
   // -------------------------------------------------------------- fields
   'repeater.nested':
     'Eine Wiederholung kann nicht in einer anderen Wiederholung stehen. Nimm sie aus der äußeren Wiederholung heraus oder mach sie zu einer Gruppe.',
-  'page.nested':
-    'Eine Seite kann nur auf der obersten Ebene eines Formulars stehen. Nimm sie aus „{key}“ heraus oder mach sie zu einer Gruppe.',
+  'page.nested': 'Eine Seite kann nur auf der obersten Ebene eines Formulars stehen. Nimm sie aus „{key}“ heraus oder mach sie zu einer Gruppe.',
   'grid.rowNotFlat':
     'Die Zeilen eines Rasters sind flach, und „{key}“ enthält eigene Felder. Gib jedem dieser Felder eine eigene Spalte, oder nimm das Raster von dieser Wiederholung – dann werden ihre Zeilen untereinander gestapelt.',
-  'grid.columnUnknown':
-    'Kein Feld dieses Rasters hat den Schlüssel „{field}“, die Spalte würde also nichts zeigen. Nenne eines seiner eigenen Felder.',
-  'grid.columnTwice':
-    'Zwei Spalten zeigen beide „{field}“. Eine Antwort kann nicht zwei Spalten füllen.',
+  'grid.columnUnknown': 'Kein Feld dieses Rasters hat den Schlüssel „{field}“, die Spalte würde also nichts zeigen. Nenne eines seiner eigenen Felder.',
+  'grid.columnTwice': 'Zwei Spalten zeigen beide „{field}“. Eine Antwort kann nicht zwei Spalten füllen.',
   'bounds.crossed':
     'Der früheste erlaubte Wert „{earliest}“ liegt nach dem spätesten erlaubten „{latest}“, es könnte also keine Antwort angenommen werden. Vertausche sie oder entferne einen.',
-  'key.taken':
-    'Ein anderes Feld verwendet bereits den Schlüssel „{key}“. Ein Schlüssel bezeichnet eine Antwort, zwei Felder können ihn also nicht teilen.',
-  'key.reserved':
-    '„{key}“ ist reserviert: Damit trägt eine Zeile einer Wiederholung ihre Identität, also kann kein Feld so heißen.',
+  'key.taken': 'Ein anderes Feld verwendet bereits den Schlüssel „{key}“. Ein Schlüssel bezeichnet eine Antwort, zwei Felder können ihn also nicht teilen.',
+  'key.reserved': '„{key}“ ist reserviert: Damit trägt eine Zeile einer Wiederholung ihre Identität, also kann kein Feld so heißen.',
   'key.unstorable':
     '„{key}“ kann keine Antwort bezeichnen: Jedes JavaScript-Objekt hat diesen Namen bereits, eine darunter gespeicherte Antwort ginge also verloren. Wähle einen anderen Namen.',
   'rename.self':
     'Dieses Feld gibt an, aus sich selbst umbenannt worden zu sein. Entferne „renamedFrom“ oder setze es auf den Schlüssel, den dieses Feld früher hatte.',
   'rename.keyInUse':
     'Der Schlüssel „{key}“ wird noch von einem Feld in diesem Formular verwendet, das ist also eine Kopie und keine Umbenennung. Zwei Felder können nicht dieselben Antworten beanspruchen.',
-  'rename.claimed':
-    'Ein anderes Feld gibt bereits an, aus „{key}“ umbenannt worden zu sein. Alte Antworten können nur an einen Ort wandern.',
+  'rename.claimed': 'Ein anderes Feld gibt bereits an, aus „{key}“ umbenannt worden zu sein. Alte Antworten können nur an einen Ort wandern.',
   'pattern.invalid': 'Das ist kein gültiger regulärer Ausdruck: {reason}.',
   'option.imageInDropdown':
     'Ein Dropdown kann kein Bild zeigen, dieses Bild wäre also nie zu sehen. Mach das Feld zu einer Gruppe von Optionsfeldern oder entferne das Bild.',
@@ -59,8 +53,7 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Eine Regel zum Überspringen führt an einer Seite vorbei, und dieses Formular hat keine Seiten. Gib ihm zuerst ein Feld vom Typ „page“ oder entferne die Regel.',
   'rule.skipNotAPage':
     '„{target}“ ist keine Seite. Eine Regel zum Überspringen nennt den Schlüssel einer Seite – {pages} – und keinen Datenpfad, weil eine Seite keine eigene Antwort trägt.',
-  'rule.unknownTarget':
-    'Kein Feld hat den Datenpfad „{target}“. Eine Regel kann nur für ein Feld gelten, das das Modell definiert.',
+  'rule.unknownTarget': 'Kein Feld hat den Datenpfad „{target}“. Eine Regel kann nur für ein Feld gelten, das das Modell definiert.',
   'rule.runsOn':
     'Nur eine Regel vom Typ „validate“ oder „check“ kann wählen, wo sie läuft. Eine Regel vom Typ „{kind}“, die sich im Browser anders verhielte als auf dem Server, ließe den Server nicht prüfen, was der Browser getan hat.',
   'rule.duplicate':
@@ -69,33 +62,26 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Eine andere Regel auf „{target}“ meldet bereits „{code}“, und eine der beiden hat eine Meldung. Ein Code wird auf einem Feld nur auf eine Weise gesagt – geben Sie dieser Regel einen eigenen Code.',
 
   // ------------------------------------------------------- translations
-  'i18n.noDefaultCatalogue':
-    'Es gibt keinen Katalog für „{locale}“ – die Sprache, auf die alles zurückfällt, enthält also keine Wörter.',
-  'i18n.noSection':
-    '„{id}“ verweist auf eine Übersetzung, aber dieses Formular hat keinen Abschnitt „i18n“.',
+  'i18n.noDefaultCatalogue': 'Es gibt keinen Katalog für „{locale}“ – die Sprache, auf die alles zurückfällt, enthält also keine Wörter.',
+  'i18n.noSection': '„{id}“ verweist auf eine Übersetzung, aber dieses Formular hat keinen Abschnitt „i18n“.',
   'i18n.unknownMessage': 'Keine Meldung namens „{id}“ im Katalog für „{locale}“.',
 
   // ----------------------------------------------------------- layouts
-  'layout.nameTaken':
-    'Ein anderes Layout heißt bereits „{name}“. Ein Layout wird über seinen Namen angefordert, zwei können ihn also nicht teilen.',
+  'layout.nameTaken': 'Ein anderes Layout heißt bereits „{name}“. Ein Layout wird über seinen Namen angefordert, zwei können ihn also nicht teilen.',
   'layout.spanOutsideTable':
     '„span“ sagt, wie viele Spalten einer Tabelle zu belegen sind, und dieser Knoten steht in keiner Tabelle. Setz ihn in einen Tabellenknoten oder entferne „span“.',
   'layout.spanTooWide':
     'Das belegt {span} Spalten in einer Tabelle mit {columns}. Verwende „all“ für die volle Breite, damit es stimmt, wenn sich die Spaltenzahl ändert.',
-  'layout.codeUnknownPath':
-    'Kein Feld hat den Datenpfad „{path}“, dieser Code würde also nichts codieren.',
+  'layout.codeUnknownPath': 'Kein Feld hat den Datenpfad „{path}“, dieser Code würde also nichts codieren.',
   'layout.codeNeedsLabel':
     'Dieser Code braucht eine Beschriftung, die sagt, was er ist. Das Bild lässt sich nicht vorlesen, und der Wert darunter ist eine bloße Zeichenkette – die Beschriftung ist also das Einzige, woran sich ein Screenreader halten kann.',
-  'layout.unknownPath':
-    'Kein Feld hat den Datenpfad „{path}“, dieses Layout platziert hier also nichts.',
-  'layout.placedTwice':
-    '„{path}“ ist im Layout „{layout}“ bereits platziert. Ein Feld hat in einer Anordnung einen Platz.',
+  'layout.unknownPath': 'Kein Feld hat den Datenpfad „{path}“, dieses Layout platziert hier also nichts.',
+  'layout.placedTwice': '„{path}“ ist im Layout „{layout}“ bereits platziert. Ein Feld hat in einer Anordnung einen Platz.',
   'layout.placedInGroup':
     '„{path}“ gehört zur Gruppe „{group}“, die das Layout „{layout}“ als Ganzes platziert. Ein Feld hat in einer Anordnung einen Platz: Platzieren Sie die Gruppe oder ihre Felder, nicht beides.',
   'layout.tabNotSection':
     'Ein Reiterknoten enthält Abschnitte, einen pro Reiter, und dieser enthält ein „{kind}“. Pack es in einen Abschnitt und gib dem Abschnitt eine Beschriftung – diese Beschriftung ist der Name des Reiters.',
-  'layout.tabUnnamed':
-    'Dieser Reiter hat keinen Namen, also kann niemand sagen, was dahinter liegt. Gib dem Abschnitt eine Beschriftung.',
+  'layout.tabUnnamed': 'Dieser Reiter hat keinen Namen, also kann niemand sagen, was dahinter liegt. Gib dem Abschnitt eine Beschriftung.',
   'layout.tabsEmpty': 'Ein Reiterknoten ohne Reiter zeigt gar nichts.',
   'layout.columnsWhole': 'Die Spaltenzahl einer Tabelle muss eine ganze Zahl sein.',
 
@@ -135,8 +121,7 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
   'shape.type': 'Muss vom Typ {type} sein.',
   'shape.required': 'Die verlangte Eigenschaft „{property}“ fehlt.',
   'shape.childFields': 'Nur Gruppen, Seiten und Wiederholungen können eigene Felder enthalten.',
-  'shape.unknownProperty':
-    'Unbekannte Eigenschaft „{property}“. Prüf die Schreibweise oder entferne sie.',
+  'shape.unknownProperty': 'Unbekannte Eigenschaft „{property}“. Prüf die Schreibweise oder entferne sie.',
   'shape.const': 'Muss {value} sein.',
   'shape.notOneOf': '{found} ist keiner der erlaubten Werte: {allowed}.',
   'shape.fieldKey':

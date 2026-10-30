@@ -77,9 +77,7 @@ describe('a count', () => {
 describe('a list', () => {
   test('is joined the way the language joins one', () => {
     expect(createBuilderText().list(['A', 'B', 'C'])).toBe('A, B and C')
-    expect(
-      createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE }).list(['A', 'B', 'C']),
-    ).toBe('A, B und C')
+    expect(createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE }).list(['A', 'B', 'C'])).toBe('A, B und C')
   })
 
   test('in English, not in the machine’s language, when the runtime has no data for the one asked for', () => {
@@ -100,9 +98,7 @@ describe('a list', () => {
   })
 
   test('in the language asked for when the runtime has it, region and all', () => {
-    expect(createBuilderText({ locale: 'de-CH', messages: BUILDER_MESSAGES_DE }).locale).toBe(
-      'de-CH',
-    )
+    expect(createBuilderText({ locale: 'de-CH', messages: BUILDER_MESSAGES_DE }).locale).toBe('de-CH')
   })
 })
 
@@ -118,9 +114,7 @@ describe('the catalogues', () => {
     // Shipped means complete. A shipped catalogue with a gap is a builder that
     // is half German or half French, which reads worse than one that is all
     // English.
-    const missing = SHIPPED.flatMap(([locale, catalogue]) =>
-      ids.filter((id) => catalogue[id] === undefined).map((id) => `${locale}:${id}`),
-    )
+    const missing = SHIPPED.flatMap(([locale, catalogue]) => ids.filter((id) => catalogue[id] === undefined).map((id) => `${locale}:${id}`))
 
     expect(missing).toEqual([])
   })
@@ -146,19 +140,11 @@ describe('the catalogues', () => {
     const placeholders = (message: unknown): string => {
       // A plural message is an object of forms; every form takes the same set.
       const texts = typeof message === 'string' ? [message] : Object.values(message as object)
-      return [
-        ...new Set(
-          texts.flatMap((text) => [...String(text).matchAll(/\{(\w+)\}/g)].map((m) => m[1])),
-        ),
-      ]
-        .sort()
-        .join(',')
+      return [...new Set(texts.flatMap((text) => [...String(text).matchAll(/\{(\w+)\}/g)].map((m) => m[1])))].sort().join(',')
     }
 
     const differ = SHIPPED.flatMap(([locale, catalogue]) =>
-      ids
-        .filter((id) => placeholders(BUILDER_MESSAGES[id]) !== placeholders(catalogue[id] ?? ''))
-        .map((id) => `${locale}:${id}`),
+      ids.filter((id) => placeholders(BUILDER_MESSAGES[id]) !== placeholders(catalogue[id] ?? '')).map((id) => `${locale}:${id}`),
     )
 
     expect(differ).toEqual([])
@@ -166,9 +152,7 @@ describe('the catalogues', () => {
 
   test('and no message is empty, which would be a button with no name', () => {
     const blank = (message: unknown): boolean =>
-      typeof message === 'string'
-        ? message.trim() === ''
-        : Object.values(message as object).some((form) => String(form).trim() === '')
+      typeof message === 'string' ? message.trim() === '' : Object.values(message as object).some((form) => String(form).trim() === '')
 
     const empty = [
       ...ids.filter((id) => blank(BUILDER_MESSAGES[id])),
@@ -187,9 +171,7 @@ describe('the catalogues', () => {
     // message without it has a number it cannot say.
     const withoutOther = [
       ...Object.entries(BUILDER_MESSAGES),
-      ...SHIPPED.flatMap(([locale, catalogue]) =>
-        Object.entries(catalogue).map(([id, message]) => [`${locale}:${id}`, message] as const),
-      ),
+      ...SHIPPED.flatMap(([locale, catalogue]) => Object.entries(catalogue).map(([id, message]) => [`${locale}:${id}`, message] as const)),
     ]
       .filter(([, message]) => typeof message === 'object' && !('other' in (message as object)))
       .map(([id]) => id)

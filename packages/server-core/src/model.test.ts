@@ -61,28 +61,30 @@ describe('what the model is asked', () => {
 })
 
 describe('what is refused before anything is asked', () => {
-  test.each([['a kind formancy does not make', 'poetry'], ['no kind', undefined], ['an inherited name', 'constructor']])(
-    '%s',
-    async (_, kind) => {
-      // Asked anyway, an unknown kind has no briefing to pin, and the call would be paid
-      // for under a system part of nobody's choosing.
-      const { completer, asked } = recording()
-      const outcome = await completeBuilderRequest(completer, { kind, user: 'Hello.' }, never)
-      expect(outcome).toEqual({ ok: false, failure: 'unknown_kind' })
-      expect(asked).toEqual([])
-    },
-  )
+  test.each([
+    ['a kind formancy does not make', 'poetry'],
+    ['no kind', undefined],
+    ['an inherited name', 'constructor'],
+  ])('%s', async (_, kind) => {
+    // Asked anyway, an unknown kind has no briefing to pin, and the call would be paid
+    // for under a system part of nobody's choosing.
+    const { completer, asked } = recording()
+    const outcome = await completeBuilderRequest(completer, { kind, user: 'Hello.' }, never)
+    expect(outcome).toEqual({ ok: false, failure: 'unknown_kind' })
+    expect(asked).toEqual([])
+  })
 
-  test.each([['no user part', undefined], ['a user part that is not text', { text: 'x' }], ['a blank one', ' \n ']])(
-    '%s',
-    async (_, user) => {
-      // A call paid for to ask nothing: the briefing alone, which no run sends.
-      const { completer, asked } = recording()
-      const outcome = await completeBuilderRequest(completer, { kind: 'authoring', user }, never)
-      expect(outcome).toEqual({ ok: false, failure: 'no_user' })
-      expect(asked).toEqual([])
-    },
-  )
+  test.each([
+    ['no user part', undefined],
+    ['a user part that is not text', { text: 'x' }],
+    ['a blank one', ' \n '],
+  ])('%s', async (_, user) => {
+    // A call paid for to ask nothing: the briefing alone, which no run sends.
+    const { completer, asked } = recording()
+    const outcome = await completeBuilderRequest(completer, { kind: 'authoring', user }, never)
+    expect(outcome).toEqual({ ok: false, failure: 'no_user' })
+    expect(asked).toEqual([])
+  })
 })
 
 describe('what comes back', () => {

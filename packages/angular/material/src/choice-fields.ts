@@ -27,10 +27,7 @@ interface Offered {
 }
 
 /** Options as written in the document, or undefined when the default control must draw them. */
-function plainOptions(
-  field: MaterialFieldBase['field'],
-  text: (label: unknown) => string | undefined,
-) {
+function plainOptions(field: MaterialFieldBase['field'], text: (label: unknown) => string | undefined) {
   const def = field.snapshot().def
   const options = def.options ?? []
   if (def.widget !== undefined || def.optionsSource !== undefined) return undefined
@@ -86,9 +83,7 @@ function plainOptions(
   `,
 })
 export class FormancyMaterialSelectField extends MaterialFieldBase {
-  protected readonly offered = computed(() =>
-    plainOptions(this.field, (label) => this.engine.text(label as never)),
-  )
+  protected readonly offered = computed(() => plainOptions(this.field, (label) => this.engine.text(label as never)))
 
   protected readonly selected = computed(() => {
     const value = this.field.snapshot().value
@@ -193,9 +188,7 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
   `,
 })
 export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
-  protected readonly offered = computed(() =>
-    plainOptions(this.field, (label) => this.engine.text(label as never)),
-  )
+  protected readonly offered = computed(() => plainOptions(this.field, (label) => this.engine.text(label as never)))
 }
 
 /** A group of ticks answering one question, as Material checkboxes inside a fieldset. */
@@ -242,9 +235,7 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
   `,
 })
 export class FormancyMaterialSelectBoxesField extends MaterialFieldBase {
-  protected readonly offered = computed(() =>
-    plainOptions(this.field, (label) => this.engine.text(label as never)),
-  )
+  protected readonly offered = computed(() => plainOptions(this.field, (label) => this.engine.text(label as never)))
 
   protected readonly chosen = computed<readonly unknown[]>(() => {
     const value = this.field.snapshot().value

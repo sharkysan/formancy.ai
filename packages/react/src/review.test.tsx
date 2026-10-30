@@ -60,7 +60,10 @@ describe('checking the answers', () => {
     const heading = screen.getByRole('heading', { name: 'Check your answers before you send them' })
     expect(document.activeElement).toBe(heading)
     const terms = screen.getAllByRole('term').map((term) => term.textContent)
-    const answers = screen.getAllByRole('definition').map((definition) => definition.textContent).filter((said) => !said?.startsWith('Change'))
+    const answers = screen
+      .getAllByRole('definition')
+      .map((definition) => definition.textContent)
+      .filter((said) => !said?.startsWith('Change'))
     expect(terms).toEqual(['Name', 'Country', 'Nights'])
     expect(answers).toEqual(['Ada', 'Switzerland', '3'])
     expect(sent).toEqual([])
@@ -74,7 +77,12 @@ describe('checking the answers', () => {
   test('shows the problem instead, when there is one', async () => {
     const required: FormSchema = {
       ...paged,
-      model: { fields: [paged.model.fields[0]!, { key: 'stay', type: 'page', label: 'Your stay', fields: [{ key: 'nights', type: 'number', label: 'Nights', required: true }] }] },
+      model: {
+        fields: [
+          paged.model.fields[0]!,
+          { key: 'stay', type: 'page', label: 'Your stay', fields: [{ key: 'nights', type: 'number', label: 'Nights', required: true }] },
+        ],
+      },
     }
     mount(required, { review: true }, { name: 'Ada' })
     await toLastPage()

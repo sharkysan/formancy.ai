@@ -70,20 +70,14 @@ describe('a ranking', () => {
 
   test('the fewest and most ranked bound how many are put in order', () => {
     expect(errorsAfterSubmitting(engineFor({ minItems: 3 }), ['tea'])).toContain('minItems')
-    expect(errorsAfterSubmitting(engineFor({ maxItems: 2 }), ['tea', 'coffee', 'water'])).toContain(
-      'maxItems',
-    )
-    expect(errorsAfterSubmitting(engineFor({ minItems: 3 }), ['tea', 'coffee', 'water'])).toEqual(
-      [],
-    )
+    expect(errorsAfterSubmitting(engineFor({ maxItems: 2 }), ['tea', 'coffee', 'water'])).toContain('maxItems')
+    expect(errorsAfterSubmitting(engineFor({ minItems: 3 }), ['tea', 'coffee', 'water'])).toEqual([])
   })
 
   for (const mode of ['client', 'server'] as const) {
     test(`refuses a value twice, which no order contains (${mode})`, () => {
       // A list with a repeat says one option is both second and fourth.
-      expect(errorsAfterSubmitting(engineFor({}, mode), ['tea', 'coffee', 'tea'])).toContain(
-        'duplicate',
-      )
+      expect(errorsAfterSubmitting(engineFor({}, mode), ['tea', 'coffee', 'tea'])).toContain('duplicate')
     })
 
     test(`refuses a value nobody offered (${mode})`, () => {
@@ -99,9 +93,7 @@ describe('a ranking', () => {
     const schema = schemaWith(
       {},
       {
-        rules: [
-          { target: 'why', kind: 'visible', cel: 'size(drinks) > 0 && drinks[0] == "coffee"' },
-        ],
+        rules: [{ target: 'why', kind: 'visible', cel: 'size(drinks) > 0 && drinks[0] == "coffee"' }],
       },
     )
     // Type-checks as a list: an index and `size` are list operations, and declaring the

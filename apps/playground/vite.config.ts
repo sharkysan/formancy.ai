@@ -29,13 +29,7 @@ import { MONACO_VS } from './src/monaco-path.ts'
  * `include` produced five `MISSING_EXPORT`s for files with nothing Angular in
  * them.
  */
-const ANGULAR_SOURCES = [
-  'angular-preview',
-  'angular-builder-host',
-  'angular-suggestions-list',
-  '@formancy/angular',
-  '@formancy/builder-angular',
-]
+const ANGULAR_SOURCES = ['angular-preview', 'angular-builder-host', 'angular-suggestions-list', '@formancy/angular', '@formancy/builder-angular']
 
 /**
  * The Angular tsconfig, resolved when the plugin asks rather than when this
@@ -46,8 +40,7 @@ const ANGULAR_SOURCES = [
  * `import.meta.url` is not a file URL — so resolving it eagerly threw *"The URL
  * must be of scheme file"* and took a test about one string with it.
  */
-const TSCONFIG = (): string =>
-  fileURLToPath(new URL('./tsconfig.angular.json', import.meta.url))
+const TSCONFIG = (): string => fileURLToPath(new URL('./tsconfig.angular.json', import.meta.url))
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/playground/' : '/',
@@ -74,8 +67,7 @@ export default defineConfig(({ command }) => ({
     monacoFromThisSite(MONACO_VS),
     angular({
       tsconfig: TSCONFIG,
-      transformFilter: (_code, id) =>
-        ANGULAR_SOURCES.some((part) => id.includes(part)),
+      transformFilter: (_code, id) => ANGULAR_SOURCES.some((part) => id.includes(part)),
     }),
   ],
   // Fail rather than wander: the readme writes this port down, and Vite's

@@ -127,9 +127,7 @@ describe('a submission', () => {
     expect(outcome.ok).toBe(false)
     // Scoped to the submission: the fixture's own publish is audited too, now
     // that a publish writes its row inside its transaction.
-    const created = (await d.storage.listAudit(50)).filter(
-      (entry) => entry.action === 'submission.created',
-    )
+    const created = (await d.storage.listAudit(50)).filter((entry) => entry.action === 'submission.created')
     expect(created).toHaveLength(0)
   })
 

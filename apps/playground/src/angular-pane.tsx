@@ -75,8 +75,14 @@ export function AngularPane({
       )}
       {/* Radios are grouped by their native form owner as well as their name.
           Separate owners prevent the two renderers from sharing a radio group. */}
-      <form className="sheet" aria-label="Angular form preview" noValidate
-        onSubmit={(event) => event.preventDefault()} data-formancy-theme={theme} ref={host} />
+      <form
+        className="sheet"
+        aria-label="Angular form preview"
+        noValidate
+        onSubmit={(event) => event.preventDefault()}
+        data-formancy-theme={theme}
+        ref={host}
+      />
     </section>
   )
 }

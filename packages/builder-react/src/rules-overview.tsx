@@ -26,11 +26,7 @@ export interface RulesOverviewProps {
  * draws it. Not a live region: the verdicts change with every keystroke in the
  * preview, and announcing each would be a running commentary nobody asked for.
  */
-export function RulesOverview({
-  session,
-  answers,
-  capabilities,
-}: RulesOverviewProps): ReactElement {
+export function RulesOverview({ session, answers, capabilities }: RulesOverviewProps): ReactElement {
   const view = useBuilder(session)
   const { text } = session
   const groups = rulesOverview(view.document, text)
@@ -64,13 +60,9 @@ export function RulesOverview({
                           {text('overview.written')} <code>{summary.written}</code>
                         </>
                       )}
-                      {explained?.verdict === undefined ? null : (
-                        <Verdict verdict={explained.verdict} />
-                      )}
+                      {explained?.verdict === undefined ? null : <Verdict verdict={explained.verdict} />}
                       {explained?.rows === undefined ? null : explained.rows.length === 0 ? (
-                        <p data-formancy-part="rules-overview-rows-none">
-                          {text('overview.rows.none')}
-                        </p>
+                        <p data-formancy-part="rules-overview-rows-none">{text('overview.rows.none')}</p>
                       ) : (
                         <ul data-formancy-part="rules-overview-rows">
                           {explained.rows.map((row) => (

@@ -21,8 +21,7 @@ import {
  * management call, a 401 has to clear it rather than leave a dead session in
  * storage, and a path has to be encoded before it goes into a URL.
  */
-const json = (body: unknown, status = 200): Response =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+const json = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
 let fetched: Array<{ url: string; init: RequestInit | undefined }>
 
@@ -43,8 +42,7 @@ const sending = () => ({
   onProgress: () => {},
 })
 
-const headerOf = (name: string, at = 0): string | undefined =>
-  (fetched[at]?.init?.headers as Record<string, string> | undefined)?.[name]
+const headerOf = (name: string, at = 0): string | undefined => (fetched[at]?.init?.headers as Record<string, string> | undefined)?.[name]
 
 beforeEach(() => {
   fetched = []
@@ -185,9 +183,7 @@ describe('publish', () => {
      * the two apart on screen instead
      * ([0097](../../../docs/decisions/0097-a-publish-may-warn.md)).
      */
-    answering(() =>
-      json({ version: 4, schemaHash: 'h4', warnings: ['Rule on "note" reads "address.nope".'] }),
-    )
+    answering(() => json({ version: 4, schemaHash: 'h4', warnings: ['Rule on "note" reads "address.nope".'] }))
 
     expect(await publish('contact', {})).toMatchObject({
       ok: true,
@@ -250,8 +246,7 @@ describe('uploadFile', () => {
     uploadUrl: '/f/contact/files/f1',
   }
 
-  const pdf = (): File =>
-    new File([new Uint8Array(12)], 'plan.pdf', { type: 'application/pdf' })
+  const pdf = (): File => new File([new Uint8Array(12)], 'plan.pdf', { type: 'application/pdf' })
 
   /**
    * The bytes go by XHR, because fetch cannot report an upload's progress. This stands
@@ -412,9 +407,7 @@ describe('uploadFile', () => {
       message: "This file was refused by the deployment's virus scanner (Eicar-Test-Signature).",
     })
 
-    await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow(
-      "This file was refused by the deployment's virus scanner (Eicar-Test-Signature).",
-    )
+    await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow("This file was refused by the deployment's virus scanner (Eicar-Test-Signature).")
   })
 
   test('a session that ended while the bytes were on their way ends here too', async () => {

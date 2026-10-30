@@ -4,15 +4,7 @@ import type { Scenario } from '@formancy/core/authoring'
 import { canonicalize } from '@formancy/spec'
 import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
-import {
-  ANSWER_EXAMPLES,
-  BUILT_IN_ERROR_CODES,
-  EXAMPLE_FORM,
-  EXAMPLE_INTENT,
-  EXAMPLE_SCENARIO,
-  EXAMPLE_TODAY,
-  scenarioPrompt,
-} from './scenario-prompt.js'
+import { ANSWER_EXAMPLES, BUILT_IN_ERROR_CODES, EXAMPLE_FORM, EXAMPLE_INTENT, EXAMPLE_SCENARIO, EXAMPLE_TODAY, scenarioPrompt } from './scenario-prompt.js'
 
 /**
  * What a model is told when it drafts a form's examples.
@@ -102,8 +94,7 @@ const BOUNDS = [
 ] as const satisfies readonly (keyof FieldDef)[]
 
 /** Every field, pages and groups opened. */
-const fieldsOf = (fields: readonly FieldDef[]): FieldDef[] =>
-  fields.flatMap((field) => [field, ...fieldsOf(field.fields ?? [])])
+const fieldsOf = (fields: readonly FieldDef[]): FieldDef[] => fields.flatMap((field) => [field, ...fieldsOf(field.fields ?? [])])
 
 /**
  * What a rule says and what a bound allows, as text a prompt could carry: a rule's `cel` and
@@ -127,8 +118,7 @@ function withheld(document: FormSchema): string[][] {
   return texts.map((text) => [...new Set([text, JSON.stringify(text).slice(1, -1)])])
 }
 
-const carries = (prompt: string, spellings: readonly string[]): boolean =>
-  spellings.some((spelling) => prompt.includes(spelling))
+const carries = (prompt: string, spellings: readonly string[]): boolean => spellings.some((spelling) => prompt.includes(spelling))
 
 describe('what a model drafting examples is told', () => {
   test('never carries a rule: no condition, no check, no bound', () => {
@@ -307,9 +297,7 @@ describe('what a model drafting examples is told', () => {
   test('carries where examples start, the names taken but not what they expect, and the author’s words', () => {
     // An example named like one the form has could not be kept; one told what the
     // existing examples expect would copy the rule they were written against.
-    const existing: Scenario[] = [
-      { name: 'Taken already', changes: { country: 'CH' }, valid: true, visible: { canton: true } },
-    ]
+    const existing: Scenario[] = [{ name: 'Taken already', changes: { country: 'CH' }, valid: true, visible: { canton: true } }]
 
     const { user } = scenarioPrompt(EXAMPLE_FORM, 'Cantons are Swiss.', {
       initialValue: { country: 'DE' },
@@ -357,14 +345,10 @@ describe('the example the briefing shows', () => {
         ],
       },
       logic: {
-        rules: [
-          { target: 'date', kind: 'validate', cel: `string(today()).startsWith("${EXAMPLE_TODAY}")`, code: 'notToday' },
-        ],
+        rules: [{ target: 'date', kind: 'validate', cel: `string(today()).startsWith("${EXAMPLE_TODAY}")`, code: 'notToday' }],
       },
     }
-    const changes = Object.fromEntries(
-      ['date', 'time', 'datetime', 'number', 'checkbox'].map((type) => [type, ANSWER_EXAMPLES[type as 'date']]),
-    )
+    const changes = Object.fromEntries(['date', 'time', 'datetime', 'number', 'checkbox'].map((type) => [type, ANSWER_EXAMPLES[type as 'date']]))
 
     const [result] = runScenarios(form, [{ name: 'accepted', changes, valid: true }])
 

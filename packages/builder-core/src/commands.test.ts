@@ -13,11 +13,7 @@ describe('insertField', () => {
     const outcome = s.insertField({ parent: ['intro'], index: 1 }, { key: 'phone', type: 'text' })
 
     expect(outcome.ok).toBe(true)
-    expect(s.document().model.fields[0]!.fields!.map((f) => f.key)).toEqual([
-      'email',
-      'phone',
-      'summary',
-    ])
+    expect(s.document().model.fields[0]!.fields!.map((f) => f.key)).toEqual(['email', 'phone', 'summary'])
     expect(s.revision()).toBe(1)
   })
 
@@ -105,11 +101,7 @@ describe('moveField', () => {
 
     expect(outcome.ok).toBe(true)
     expect(s.document().model.fields[0]!.fields!.map((f) => f.key)).toEqual(['summary'])
-    expect(s.document().model.fields[1]!.fields!.map((f) => f.key)).toEqual([
-      'email',
-      'address',
-      'passengers',
-    ])
+    expect(s.document().model.fields[1]!.fields!.map((f) => f.key)).toEqual(['email', 'address', 'passengers'])
   })
 
   test('moving between pages is not a data migration — diffSchemas sees no change', () => {
@@ -211,9 +203,7 @@ describe('setFieldProperty', () => {
 
   test('refuses a property the validator will not allow on that type', () => {
     const s = session()
-    const outcome = s.setFieldProperty(['intro', 'email'], 'options', [
-      { value: 'a', label: 'A' },
-    ])
+    const outcome = s.setFieldProperty(['intro', 'email'], 'options', [{ value: 'a', label: 'A' }])
 
     expect(outcome.ok).toBe(false)
   })

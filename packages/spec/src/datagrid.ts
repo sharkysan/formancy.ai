@@ -35,10 +35,7 @@ export interface DataGridColumnPlan {
   child: FieldDef | undefined
 }
 
-export function datagridColumns(
-  def: FieldDef | undefined,
-  columns: readonly DataGridColumn[],
-): readonly DataGridColumnPlan[] {
+export function datagridColumns(def: FieldDef | undefined, columns: readonly DataGridColumn[]): readonly DataGridColumnPlan[] {
   const children = def?.fields ?? []
   const named = new Set(columns.map((column) => column.field))
   return [
@@ -47,9 +44,6 @@ export function datagridColumns(
       column,
       child: children.find((candidate) => candidate.key === column.field),
     })),
-    ...children
-      .filter((child) => !named.has(child.key))
-      .map((child) => ({ key: child.key, column: undefined, child })),
+    ...children.filter((child) => !named.has(child.key)).map((child) => ({ key: child.key, column: undefined, child })),
   ]
 }
-

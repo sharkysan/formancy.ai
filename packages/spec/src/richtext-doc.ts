@@ -61,14 +61,7 @@ export interface EditorNode {
  * extensions independently: the list an editor is built with and the list this
  * file understands are the same list.
  */
-export const EDITOR_NODES = [
-  'doc',
-  'paragraph',
-  'text',
-  'bulletList',
-  'orderedList',
-  'listItem',
-] as const
+export const EDITOR_NODES = ['doc', 'paragraph', 'text', 'bulletList', 'orderedList', 'listItem'] as const
 
 export const EDITOR_MARKS = ['bold', 'italic', 'link'] as const
 
@@ -85,18 +78,15 @@ const isText = (node: EditorNode | EditorText): node is EditorText => node.type 
  * the test that matters is that parse-serialise-parse settles.
  */
 export function serialiseRichText(blocks: readonly RichBlock[]): string {
-  return blocks
-    .map((block) => {
-      if (block.kind === 'paragraph') return inlineToSource(block.children)
-      return block.items
-        .map(
-          (item, index) =>
-            `${block.ordered ? `${String(index + 1)}.` : '-'} ${inlineToSource(item)}`,
-        )
-        .join('\n')
-    })
-    // A blank line is what ends a block, so it is what separates two.
-    .join('\n\n')
+  return (
+    blocks
+      .map((block) => {
+        if (block.kind === 'paragraph') return inlineToSource(block.children)
+        return block.items.map((item, index) => `${block.ordered ? `${String(index + 1)}.` : '-'} ${inlineToSource(item)}`).join('\n')
+      })
+      // A blank line is what ends a block, so it is what separates two.
+      .join('\n\n')
+  )
 }
 
 function inlineToSource(runs: readonly RichInline[]): string {
@@ -166,11 +156,7 @@ function inlineToText(runs: readonly RichInline[], marks: readonly EditorMark[])
     }
 
     const added: EditorMark =
-      run.kind === 'strong'
-        ? { type: 'bold' }
-        : run.kind === 'emphasis'
-          ? { type: 'italic' }
-          : { type: 'link', attrs: { href: run.href } }
+      run.kind === 'strong' ? { type: 'bold' } : run.kind === 'emphasis' ? { type: 'italic' } : { type: 'link', attrs: { href: run.href } }
 
     out.push(...inlineToText(run.children, [...marks, added]))
   }
@@ -315,8 +301,7 @@ interface FlatRun {
   readonly marks: readonly EditorMark[]
 }
 
-const sameMark = (a: EditorMark, b: EditorMark): boolean =>
-  a.type === b.type && (a.attrs?.href ?? '') === (b.attrs?.href ?? '')
+const sameMark = (a: EditorMark, b: EditorMark): boolean => a.type === b.type && (a.attrs?.href ?? '') === (b.attrs?.href ?? '')
 
 /**
  * Wrap the LONGEST adjacent stretch that shares a mark, then recurse inside it.

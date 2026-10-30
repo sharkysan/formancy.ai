@@ -340,8 +340,7 @@ const FORMAT_CHECKS: Record<FieldFormat, (value: string) => boolean> = {
   // rule exists to catch. An absolute http(s) URL shape is enough for v0.
   url: (value) => /^https?:\/\/[^\s/$.?#][^\s]*$/i.test(value),
 
-  uuid: (value) =>
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
+  uuid: (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
 }
 
 /**

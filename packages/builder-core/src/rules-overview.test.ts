@@ -79,22 +79,13 @@ const visibleRule: LogicRule = {
 
 describe('every rule in the form', () => {
   test('grouped by what each is about, in the order the form asks, under its name', () => {
-    const document = form([
-      { target: 'reason', kind: 'required', cel: 'age != null && age < 18.0' },
-      visibleRule,
-    ])
+    const document = form([{ target: 'reason', kind: 'required', cel: 'age != null && age < 18.0' }, visibleRule])
 
-    expect(rulesOverview(document, english).map((group) => group.targetLabel)).toEqual([
-      'Canton',
-      'Reason',
-    ])
+    expect(rulesOverview(document, english).map((group) => group.targetLabel)).toEqual(['Canton', 'Reason'])
   })
 
   test('in words where the condition editor wrote it, and as CEL where somebody did', () => {
-    const document = form([
-      visibleRule,
-      { target: 'reason', kind: 'required', cel: 'age != null && age < 18.0' },
-    ])
+    const document = form([visibleRule, { target: 'reason', kind: 'required', cel: 'age != null && age < 18.0' }])
     const [canton, reason] = rulesOverview(document, english)
 
     expect(canton?.rules[0]).toMatchObject({
@@ -111,15 +102,11 @@ describe('every rule in the form', () => {
     // put it at the end under its raw target, as though no field had that name.
     const rule: LogicRule = { target: 'items[].note', kind: 'visible', cel: 'item.qty > 3.0' }
 
-    expect(rulesOverview(form([rule]), english)).toEqual([
-      expect.objectContaining({ target: 'items[].note', targetLabel: 'Note' }),
-    ])
+    expect(rulesOverview(form([rule]), english)).toEqual([expect.objectContaining({ target: 'items[].note', targetLabel: 'Note' })])
   })
 
   test('and in the author’s language, "and" and "or" included', () => {
-    expect(rulesOverview(form([visibleRule]), german)[0]?.rules[0]?.sentence).toBe(
-      'Country ist Switzerland oder (Age ist mindestens 18 und Terms ist Ja)',
-    )
+    expect(rulesOverview(form([visibleRule]), german)[0]?.rules[0]?.sentence).toBe('Country ist Switzerland oder (Age ist mindestens 18 und Terms ist Ja)')
   })
 })
 
@@ -132,22 +119,12 @@ describe('why a field is shown or hidden now', () => {
     }).getFieldSnapshot([path])
 
   test('says what each comparison found, so a hidden field says why', () => {
-    const verdict = explainRule(
-      visibleRule,
-      form([visibleRule]),
-      { country: 'DE', age: 12 },
-      english,
-      capabilities,
-    )
+    const verdict = explainRule(visibleRule, form([visibleRule]), { country: 'DE', age: 12 }, english, capabilities)
 
     expect(verdict).toEqual({
       outcome: 'fails',
       effect: 'Hidden now.',
-      because: [
-        'Country is Switzerland: no — it is Germany',
-        'Age is at least 18: no — it is 12',
-        'Terms is Yes: no — it is not answered',
-      ],
+      because: ['Country is Switzerland: no — it is Germany', 'Age is at least 18: no — it is 12', 'Terms is Yes: no — it is not answered'],
     })
   })
 
@@ -155,16 +132,9 @@ describe('why a field is shown or hidden now', () => {
     // The point of the explanation. Shown, hidden, shown: each verdict is checked
     // against what the engine did with the same rule and the same answers.
     const document = form([visibleRule])
-    for (const answers of [
-      { country: 'CH' },
-      { country: 'DE', age: 12 },
-      { age: 30, terms: true },
-      {},
-    ]) {
+    for (const answers of [{ country: 'CH' }, { country: 'DE', age: 12 }, { age: 30, terms: true }, {}]) {
       const verdict = explainRule(visibleRule, document, answers, english, capabilities)
-      expect(verdict?.outcome === 'fails', JSON.stringify(answers)).toBe(
-        !engineSays(document, answers, 'canton').visible,
-      )
+      expect(verdict?.outcome === 'fails', JSON.stringify(answers)).toBe(!engineSays(document, answers, 'canton').visible)
     }
   })
 
@@ -186,9 +156,7 @@ describe('why a field is shown or hidden now', () => {
     const rule: LogicRule = { target: 'reason', kind: 'required', cel: 'age != null && age < 18.0' }
     const document = form([rule])
 
-    expect(explainRule(rule, document, { age: 12 }, english, capabilities)?.effect).toBe(
-      'Required now.',
-    )
+    expect(explainRule(rule, document, { age: 12 }, english, capabilities)?.effect).toBe('Required now.')
     expect(engineSays(document, { age: 12 }, 'reason').required).toBe(true)
   })
 
@@ -234,13 +202,7 @@ describe('why a field in a repeater row is shown or hidden now, row by row', () 
   }
 
   test('says, for each row, what the rule does there and why', () => {
-    const rows = explainRows(
-      rowRule,
-      form([rowRule]),
-      { country: 'CH', items: [{ qty: 1 }, { qty: 5 }] },
-      english,
-      capabilities,
-    )
+    const rows = explainRows(rowRule, form([rowRule]), { country: 'CH', items: [{ qty: 1 }, { qty: 5 }] }, english, capabilities)
 
     expect(rows).toEqual([
       {
@@ -272,9 +234,7 @@ describe('why a field in a repeater row is shown or hidden now, row by row', () 
       const rows = explainRows(rowRule, document, answers, english, capabilities) ?? []
       expect(rows).toHaveLength(answers.items.length)
       rows.forEach((verdict, at) => {
-        expect(verdict.outcome === 'fails', `${JSON.stringify(answers)} row ${String(at)}`).toBe(
-          !engineSays(document, answers, ['items', at, 'note']).visible,
-        )
+        expect(verdict.outcome === 'fails', `${JSON.stringify(answers)} row ${String(at)}`).toBe(!engineSays(document, answers, ['items', at, 'note']).visible)
       })
     }
   })
@@ -287,14 +247,8 @@ describe('why a field in a repeater row is shown or hidden now, row by row', () 
     const untouched: LogicRule = { target: 'items[].note', kind: 'visible', cel: 'item.note == null' }
     const answers = { items: [{ qty: 1 }, { qty: 2 }] }
 
-    expect(
-      explainRows(byIndex, form([byIndex]), answers, english, capabilities)?.map((row) => row.outcome),
-    ).toEqual(['fails', 'holds'])
-    expect(
-      explainRows(untouched, form([untouched]), answers, english, capabilities)?.map(
-        (row) => row.outcome,
-      ),
-    ).toEqual(['holds', 'holds'])
+    expect(explainRows(byIndex, form([byIndex]), answers, english, capabilities)?.map((row) => row.outcome)).toEqual(['fails', 'holds'])
+    expect(explainRows(untouched, form([untouched]), answers, english, capabilities)?.map((row) => row.outcome)).toEqual(['holds', 'holds'])
     for (const at of [0, 1]) {
       expect(engineSays(form([byIndex]), answers, ['items', at, 'note']).visible).toBe(at > 0)
       expect(engineSays(form([untouched]), answers, ['items', at, 'note']).visible).toBe(true)
@@ -344,8 +298,7 @@ describe('a field keyed after a name every object has', () => {
       },
       logic: { rules },
     }) as FormSchema
-  const engineFor = (document: FormSchema, value: Record<string, unknown>) =>
-    createFormEngine({ schema: document, initialValue: value, capabilities: CLOCK })
+  const engineFor = (document: FormSchema, value: Record<string, unknown>) => createFormEngine({ schema: document, initialValue: value, capabilities: CLOCK })
 
   test('decides a rule on the form that reads it unanswered, as the engine does', () => {
     const rule: LogicRule = { target: 'canton', kind: 'visible', cel: 'constructor == "ACME"' }

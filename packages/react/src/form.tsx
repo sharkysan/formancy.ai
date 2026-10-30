@@ -14,9 +14,7 @@ import type { RowFocus } from './focus-row.js'
 import { CheckAnswersButton, Review, SubmitButton, useReview } from './review.js'
 import { useWizard } from './use-wizard.js'
 import { RichText } from './rich-text.js'
-import {
-  useRichTextEditorFactory,
-} from './rich-text-editor.js'
+import { useRichTextEditorFactory } from './rich-text-editor.js'
 import type { RichTextEditorFactory, RichTextEditorHandle } from './rich-text-editor.js'
 import { useScanner } from './scanning.js'
 import { useSourcedOptions } from './use-sourced-options.js'
@@ -56,7 +54,12 @@ export function FormancyForm(props: FormancyFormProps) {
 
 function FlatForm(props: FormancyFormProps) {
   const review = useReview()
-  if (review.reviewing) return <Review onChange={review.change}><SubmitButton {...props} /></Review>
+  if (review.reviewing)
+    return (
+      <Review onChange={review.change}>
+        <SubmitButton {...props} />
+      </Review>
+    )
   return (
     <>
       <FieldList {...props} />
@@ -168,9 +171,7 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
           }
           const group = placedGroup(engine, path)
           if (group !== undefined) {
-            return (
-              <GroupSection key={path} path={path} group={group} labels={labels} registry={registry} />
-            )
+            return <GroupSection key={path} path={path} group={group} labels={labels} registry={registry} />
           }
           return <FieldSlot key={path} path={path} fallbackLabel={labels?.[path]} registry={registry} />
         }}
@@ -182,14 +183,11 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
     void placed
   }
 
-  const inPage = (wire: string): boolean =>
-    page === undefined || engine.pageOf(parsePath(wire)) === page
+  const inPage = (wire: string): boolean => page === undefined || engine.pageOf(parsePath(wire)) === page
 
   // Row fields render inside their repeater's own section, never in the flat
   // list — a row needs its remove button and its position context.
-  const staticWires = engine
-    .fieldPaths()
-    .filter((wire) => !repeaterWires.some((repeater) => wire.startsWith(`${repeater}[`)))
+  const staticWires = engine.fieldPaths().filter((wire) => !repeaterWires.some((repeater) => wire.startsWith(`${repeater}[`)))
 
   return (
     <>
@@ -203,15 +201,7 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
   )
 }
 
-function FieldSlot({
-  path,
-  fallbackLabel,
-  registry,
-}: {
-  path: string
-  fallbackLabel?: string | undefined
-  registry?: Registry | undefined
-}) {
+function FieldSlot({ path, fallbackLabel, registry }: { path: string; fallbackLabel?: string | undefined; registry?: Registry | undefined }) {
   const field = useField(path)
 
   // A hidden field leaves the DOM entirely: display:none would still ship the
@@ -282,15 +272,7 @@ function GroupSection({
   )
 }
 
-function RepeaterSection({
-  wire,
-  labels,
-  registry,
-}: {
-  wire: string
-  labels?: Record<string, string> | undefined
-  registry?: Registry | undefined
-}) {
+function RepeaterSection({ wire, labels, registry }: { wire: string; labels?: Record<string, string> | undefined; registry?: Registry | undefined }) {
   const engine = useFormEngine()
   const text = useFormText()
   const repeater = useRepeater(wire)
@@ -337,9 +319,7 @@ function RepeaterSection({
   // Emitted only when an author sized something, so the theme's fallback is live code
   // rather than a branch nothing takes.
   const tracks = declaredColumns.some((column) => column.width !== undefined)
-    ? plan
-        .map(({ column }) => (column?.width === undefined ? '1fr' : `${String(column.width)}fr`))
-        .join(' ')
+    ? plan.map(({ column }) => (column?.width === undefined ? '1fr' : `${String(column.width)}fr`)).join(' ')
     : undefined
 
   /** The control in one cell: the leaf the column's child field collects into.
@@ -368,10 +348,7 @@ function RepeaterSection({
    *  cell's label, and pointing a control at it would only ADD the heading to the name --
    *  which is the failure 0066 separates `header` from `label` to prevent. */
   const headingOf = (entry: (typeof plan)[number]): string =>
-    engine.text(entry.column?.header) ??
-    engine.text(entry.child?.label) ??
-    fallbackFor(`${wire}[0].${entry.key}`) ??
-    entry.key
+    engine.text(entry.column?.header) ?? engine.text(entry.child?.label) ?? fallbackFor(`${wire}[0].${entry.key}`) ?? entry.key
 
   /** A row's own controls, identical in both arrangements down to the names, because
    *  0068 put the row's position in those names and a grid does not change where a person
@@ -393,10 +370,16 @@ function RepeaterSection({
       {/* Absent at the repeater's `minItems`, as the move buttons are at the ends: the
           engine would refuse the row, and a button that does nothing announces one. */}
       {repeater.canRemove ? (
-        <button type="button" data-formancy-part="row-remove" disabled={field.disabled} onClick={() => { repeater.removeRow(index); setFocusing(repeater.rowCount === 1 ? 'add' : { row: Math.min(index, repeater.rowCount - 2), parts: [] }) }}>
-          <span data-formancy-part="row-action-text">
-            {text('repeater.removeRow', { remove: removeLabel, position: index + 1, count: repeater.rowCount })}
-          </span>
+        <button
+          type="button"
+          data-formancy-part="row-remove"
+          disabled={field.disabled}
+          onClick={() => {
+            repeater.removeRow(index)
+            setFocusing(repeater.rowCount === 1 ? 'add' : { row: Math.min(index, repeater.rowCount - 2), parts: [] })
+          }}
+        >
+          <span data-formancy-part="row-action-text">{text('repeater.removeRow', { remove: removeLabel, position: index + 1, count: repeater.rowCount })}</span>
         </button>
       ) : null}
       {/* Reordering by button, which is the KEYBOARD route and therefore the
@@ -411,17 +394,29 @@ function RepeaterSection({
           nothing; a row that cannot move up simply has no such button. Absent
           too from a repeater a computed rule writes, whose rows are its (0218). */}
       {index > 0 && !field.readOnly ? (
-        <button type="button" data-formancy-part="row-up" disabled={field.disabled} onClick={() => { repeater.moveRow(index, index - 1); setFocusing({ row: index - 1, parts: ['row-up', 'row-down'] }) }}>
-          <span data-formancy-part="row-action-text">
-            {text('repeater.moveUp', { label, position: index + 1, count: repeater.rowCount })}
-          </span>
+        <button
+          type="button"
+          data-formancy-part="row-up"
+          disabled={field.disabled}
+          onClick={() => {
+            repeater.moveRow(index, index - 1)
+            setFocusing({ row: index - 1, parts: ['row-up', 'row-down'] })
+          }}
+        >
+          <span data-formancy-part="row-action-text">{text('repeater.moveUp', { label, position: index + 1, count: repeater.rowCount })}</span>
         </button>
       ) : null}
       {index < repeater.rowCount - 1 && !field.readOnly ? (
-        <button type="button" data-formancy-part="row-down" disabled={field.disabled} onClick={() => { repeater.moveRow(index, index + 1); setFocusing({ row: index + 1, parts: ['row-down', 'row-up'] }) }}>
-          <span data-formancy-part="row-action-text">
-            {text('repeater.moveDown', { label, position: index + 1, count: repeater.rowCount })}
-          </span>
+        <button
+          type="button"
+          data-formancy-part="row-down"
+          disabled={field.disabled}
+          onClick={() => {
+            repeater.moveRow(index, index + 1)
+            setFocusing({ row: index + 1, parts: ['row-down', 'row-up'] })
+          }}
+        >
+          <span data-formancy-part="row-action-text">{text('repeater.moveDown', { label, position: index + 1, count: repeater.rowCount })}</span>
         </button>
       ) : null}
     </>
@@ -438,12 +433,7 @@ function RepeaterSection({
    *  framework-specific divergence this architecture exists to prevent, so both wait for
    *  reactive path binding in Angular. */
   const slot = (instanceWire: string): ReactNode => (
-    <FieldSlot
-      key={instanceWire}
-      path={instanceWire}
-      fallbackLabel={fallbackFor(instanceWire)}
-      registry={registry}
-    />
+    <FieldSlot key={instanceWire} path={instanceWire} fallbackLabel={fallbackFor(instanceWire)} registry={registry} />
   )
 
   const rows = repeater.rowIds.map((rowId, index) =>
@@ -456,11 +446,7 @@ function RepeaterSection({
           // hides one answer must not shift that row's remaining columns out of line
           // with the heading strip and with every other row -- which is the whole
           // reason this arrangement exists.
-          <div
-            data-formancy-part="datagrid-cell"
-            key={entry.key}
-            {...(entry.column?.align === undefined ? {} : { 'data-align': entry.column.align })}
-          >
+          <div data-formancy-part="datagrid-cell" key={entry.key} {...(entry.column?.align === undefined ? {} : { 'data-align': entry.column.align })}>
             {leavesOf(index, entry.key).map(slot)}
           </div>
         ))}
@@ -526,9 +512,7 @@ function RepeaterSection({
                 <span
                   data-formancy-part="datagrid-heading"
                   key={entry.key}
-                  {...(entry.column?.align === undefined
-                    ? {}
-                    : { 'data-align': entry.column.align })}
+                  {...(entry.column?.align === undefined ? {} : { 'data-align': entry.column.align })}
                 >
                   {headingOf(entry)}
                 </span>
@@ -550,7 +534,15 @@ function RepeaterSection({
       )}
       {/* Not offered at `maxItems`, for the reason the remove button is not at `minItems`. */}
       {repeater.canAdd ? (
-        <button type="button" ref={addButton} disabled={field.disabled} onClick={() => { repeater.addRow(); setFocusing({ row: repeater.rowCount, parts: [] }) }}>
+        <button
+          type="button"
+          ref={addButton}
+          disabled={field.disabled}
+          onClick={() => {
+            repeater.addRow()
+            setFocusing({ row: repeater.rowCount, parts: [] })
+          }}
+        >
           {addLabel}
         </button>
       ) : null}
@@ -558,10 +550,4 @@ function RepeaterSection({
   )
 }
 
-export type {
-  FieldComponent,
-  FieldComponentProps,
-  FormancyFormProps,
-  Registry,
-  SubmitOutcome,
-} from './fields/internals.js'
+export type { FieldComponent, FieldComponentProps, FormancyFormProps, Registry, SubmitOutcome } from './fields/internals.js'

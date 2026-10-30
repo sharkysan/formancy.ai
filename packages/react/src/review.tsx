@@ -27,11 +27,7 @@ export function SubmitButton({ submitLabel, onSubmit, onFailedNavigate }: Forman
           const firstInvalid = engine.firstInvalid()
           if (firstInvalid !== null) onFailedNavigate(engine.pageOf(parsePath(firstInvalid)))
         }
-        onSubmit?.(
-          outcome.ok
-            ? { ok: true, errors: outcome.errors, data: engine.value() }
-            : { ok: false, errors: outcome.errors },
-        )
+        onSubmit?.(outcome.ok ? { ok: true, errors: outcome.errors, data: engine.value() } : { ok: false, errors: outcome.errors })
       }}
     >
       {/* The host's word when it gave one, and the form's language's otherwise (0171). */}

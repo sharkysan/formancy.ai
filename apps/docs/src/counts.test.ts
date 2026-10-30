@@ -30,9 +30,7 @@ const read = (...parts: string[]): string => readFileSync(join(repo, ...parts), 
 
 /** A decision record is a numbered Markdown file, the same rule the site uses. */
 function decisionRecords(): string[] {
-  return readdirSync(join(repo, 'docs', 'decisions')).filter((name) =>
-    /^\d{4}-.*\.md$/.test(name),
-  )
+  return readdirSync(join(repo, 'docs', 'decisions')).filter((name) => /^\d{4}-.*\.md$/.test(name))
 }
 
 describe('the decision-record count', () => {
@@ -56,9 +54,7 @@ describe('the decision-record count', () => {
     // single-argument `replace` removes only the first one, so the guard would
     // have misread `[[The` as a count.
     const ALLOWED = ['The', 'the']
-    const words = [...readme.matchAll(/([A-Za-z0-9-]+) decision records/g)].map(
-      (match) => match[1]!,
-    )
+    const words = [...readme.matchAll(/([A-Za-z0-9-]+) decision records/g)].map((match) => match[1]!)
 
     expect(
       words.filter((word) => !ALLOWED.includes(word)),
@@ -79,9 +75,7 @@ describe('the decision-record count', () => {
     // counts them through `readdirSync`. Two definitions of "a record", which
     // is what keeps that test from being a tautology — so it has to stay a
     // glob, not be quietly changed to read the define.
-    expect(read('apps', 'site', 'src', 'site.test.tsx')).toContain(
-      "import.meta.glob('../../../docs/decisions/[0-9][0-9][0-9][0-9]-*.md')",
-    )
+    expect(read('apps', 'site', 'src', 'site.test.tsx')).toContain("import.meta.glob('../../../docs/decisions/[0-9][0-9][0-9][0-9]-*.md')")
     expect(decisionRecords().length).toBeGreaterThan(0)
   })
 
@@ -105,9 +99,7 @@ describe('every decision record', () => {
     // The field that makes the set auditable rather than aspirational. Where
     // nothing enforces a decision the record must say so in those words, not
     // omit the line and leave the reader to assume something does.
-    const missing = records.filter(
-      (name) => !read('docs', 'decisions', name).includes('**Verified by:**'),
-    )
+    const missing = records.filter((name) => !read('docs', 'decisions', name).includes('**Verified by:**'))
 
     expect(missing).toEqual([])
   })
@@ -162,15 +154,11 @@ describe('the package version on the landing page', () => {
   test('is not a literal anywhere in the page, under any version', () => {
     // Derived from the manifests rather than looking for one known string: whatever
     // version the repository is on must not appear in the page source, whichever it is.
-    const version = (
-      JSON.parse(read('package.json')) as { version: string }
-    ).version
+    const version = (JSON.parse(read('package.json')) as { version: string }).version
     expect(version).toMatch(/^\d+\.\d+\.\d+/)
     // Every source file of the page rather than a list of them: it was two files
     // and then three, and a literal in any is the same wrong number on the same page.
-    const files = readdirSync(join(repo, 'apps', 'site', 'src')).filter(
-      (file) => file.endsWith('.tsx') && !file.endsWith('.test.tsx'),
-    )
+    const files = readdirSync(join(repo, 'apps', 'site', 'src')).filter((file) => file.endsWith('.tsx') && !file.endsWith('.test.tsx'))
     expect(files).toContain('chrome.tsx')
     for (const file of files) {
       expect(read('apps', 'site', 'src', file), file).not.toContain(version)
@@ -198,13 +186,15 @@ describe('the card a shared link shows', () => {
     expect(opened, `${parts.join('/')} has no <h1>`).toBeGreaterThan(-1)
     const closed = source.indexOf('</h1>', opened)
 
-    return source
-      .slice(opened + '<h1>'.length, closed)
-      // JSX: drop the tags, drop the expressions, keep the words.
-      .replace(/\{[^}]*\}/g, ' ')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
+    return (
+      source
+        .slice(opened + '<h1>'.length, closed)
+        // JSX: drop the tags, drop the expressions, keep the words.
+        .replace(/\{[^}]*\}/g, ' ')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    )
   }
 
   test('says what the page says', () => {

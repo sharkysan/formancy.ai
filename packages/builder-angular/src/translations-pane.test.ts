@@ -159,9 +159,7 @@ describe('seeing the language being translated', () => {
     const preview = screen.getByLabelText(/preview in de/i)
     expect(within(preview).getByLabelText('Email')).toBeTruthy()
     // The only difference is the language that was added, never the default.
-    expect(JSON.parse(before).i18n.defaultLocale).toBe(
-      mounted.session.document().i18n?.defaultLocale,
-    )
+    expect(JSON.parse(before).i18n.defaultLocale).toBe(mounted.session.document().i18n?.defaultLocale)
   })
 
   test('shows the translation once there is one, which is what the locale is for', async () => {
@@ -339,9 +337,7 @@ describe('the catalogue leaving and coming back, as it does in React', () => {
     fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [file] } })
 
     await waitFor(() => {
-      expect(
-        session.exportCatalogue('fr').messages.find((message) => message.id === id)?.target,
-      ).toBe('Bonjour')
+      expect(session.exportCatalogue('fr').messages.find((message) => message.id === id)?.target).toBe('Bonjour')
     })
   })
 
@@ -474,8 +470,7 @@ describe('asking a model for what is missing', () => {
   const choose = async (user: ReturnType<typeof userEvent.setup>, locale: string): Promise<void> => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), locale)
   }
-  const review = (): Promise<HTMLElement> =>
-    waitFor(() => screen.getByRole('region', { name: /^Review these translations into fr/ }))
+  const review = (): Promise<HTMLElement> => waitFor(() => screen.getByRole('region', { name: /^Review these translations into fr/ }))
 
   test('offers nothing without a model, as the prompt pane does', async () => {
     // As in the React pane: a button that cannot work is worse than none.
@@ -506,15 +501,15 @@ describe('asking a model for what is missing', () => {
     const region = await review()
 
     expect(asked).toHaveLength(1)
-    expect(within(region).getByRole('heading').textContent?.trim()).toBe(
-      'Review these translations into fr — some are marked to look at',
-    )
+    expect(within(region).getByRole('heading').textContent?.trim()).toBe('Review these translations into fr — some are marked to look at')
     const rows = within(within(region).getByRole('table'))
       .getAllByRole('row')
       .filter((row) => within(row).queryByRole('rowheader') !== null)
       .map((row) => [
         within(row).getByRole('rowheader').textContent?.trim(),
-        ...within(row).getAllByRole('cell').map((cell) => cell.textContent?.trim()),
+        ...within(row)
+          .getAllByRole('cell')
+          .map((cell) => cell.textContent?.trim()),
       ])
     expect(rows).toEqual([
       ['Germany', 'Not translated', 'Allemagne', ''],
@@ -526,9 +521,7 @@ describe('asking a model for what is missing', () => {
     // And around it the visitor's French, not the builder's English "Submit".
     expect(within(proposed).getByRole('button', { name: FORM_WORDS_FR['form.submit'] })).toBeTruthy()
     expect(session.revision()).toBe(0)
-    expect(screen.getByRole('status').textContent?.trim()).toBe(
-      'Ready to review: 3 translations. Nothing has been applied.',
-    )
+    expect(screen.getByRole('status').textContent?.trim()).toBe('Ready to review: 3 translations. Nothing has been applied.')
   })
 
   test('applies it as one undo step, and the language is no longer missing anything', async () => {
@@ -576,11 +569,7 @@ describe('asking a model for what is missing', () => {
 
     await user.click(within(first).getByRole('button', { name: 'Translate the rest' }))
 
-    await waitFor(() =>
-      expect(
-        within(screen.getByRole('region', { name: /^Review these translations/ })).getAllByRole('row'),
-      ).toHaveLength(4),
-    )
+    await waitFor(() => expect(within(screen.getByRole('region', { name: /^Review these translations/ })).getAllByRole('row')).toHaveLength(4))
     expect(asked[1]).toContain('"id": "canton"')
     expect(asked[1]).not.toContain('"id": "email"')
     await user.click(screen.getByRole('button', { name: 'Apply these translations' }))
@@ -623,9 +612,7 @@ describe('asking a model for what is missing', () => {
     })
     held.session = mountedPane.session
     await choose(mountedPane.user, 'fr')
-    await mountedPane.user.click(
-      await waitFor(() => screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' })),
-    )
+    await mountedPane.user.click(await waitFor(() => screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' })))
 
     await waitFor(() =>
       expect(screen.getByRole('status').textContent?.trim()).toBe(
@@ -636,9 +623,7 @@ describe('asking a model for what is missing', () => {
       `Not written, because nobody asked for them or a person has translated them since: ${held.session.text.list(['canton', 'email'])}`,
     )
     expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Ask a model for the 1 missing message' })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ask a model for the 1 missing message' })).toBeTruthy())
     expect(held.session.document().i18n?.messages['fr']?.['email']).toBe('Adresse électronique')
   })
 
@@ -653,9 +638,7 @@ describe('asking a model for what is missing', () => {
 
     await user.click(within(region).getByRole('button', { name: 'Apply these translations' }))
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent?.trim()).toBe(`Not applied. ${session.text('proposal.stale')}`),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent?.trim()).toBe(`Not applied. ${session.text('proposal.stale')}`))
     expect(session.document().i18n?.messages['fr']?.['canton']).toBe('Canton suisse')
     expect(screen.getByRole('region', { name: /^Review these translations/ })).toBeTruthy()
   })
@@ -682,9 +665,7 @@ describe('asking a model for what is missing', () => {
     await waitFor(() => expect(cancelled).toBe(true))
 
     expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Ask a model for the 5 missing messages' })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ask a model for the 5 missing messages' })).toBeTruthy())
   })
 
   test('says another request is waiting while the relay carries the prompt pane’s turn, and takes nothing from it', async () => {
@@ -699,9 +680,7 @@ describe('asking a model for what is missing', () => {
 
     await user.click(await waitFor(() => screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' })))
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent?.trim()).toBe(session.text('prompt.status.busy')),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent?.trim()).toBe(session.text('prompt.status.busy')))
     expect(relay.waiting()).toBe(editTurn)
     // Offered again, for when that turn is done — and then it asks.
     relay.answer(JSON.stringify(half))

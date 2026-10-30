@@ -41,8 +41,7 @@ function without(source: string, open: string, close: string): string {
  * sanitiser that a nested comment can defeat. This is reading source, not cleaning markup
  * for a browser, and a scan says so without a loop to placate the query.
  */
-const code = (source: string): string =>
-  without(without(source, '<!--', '-->'), '/*', '*/').replace(/^\s*\/\/.*$/gm, '')
+const code = (source: string): string => without(without(source, '<!--', '-->'), '/*', '*/').replace(/^\s*\/\/.*$/gm, '')
 
 function sources(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -74,9 +73,7 @@ function emitted(): string[] {
 /** The parts a rule in the workbench selects, by any attribute operator and either quote. */
 function dressed(): Set<string> {
   const css = code(readFileSync(join(repo, 'packages', 'themes', 'workbench.css'), 'utf8'))
-  return new Set(
-    [...css.matchAll(/data-formancy-part\s*[~|^$*]?=\s*['"]([a-z-]+)['"]/g)].map(([, part]) => part!),
-  )
+  return new Set([...css.matchAll(/data-formancy-part\s*[~|^$*]?=\s*['"]([a-z-]+)['"]/g)].map(([, part]) => part!))
 }
 
 describe('the workbench', () => {

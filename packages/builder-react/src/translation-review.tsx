@@ -1,20 +1,7 @@
 import { useEffect, useId, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
-import {
-  createTranslationRun,
-  missingMessages,
-  translationHeading,
-  translationOn,
-  translationStatus,
-  translationToReview,
-} from '@formancy/builder-core'
-import type {
-  AskModel,
-  BuilderMessageId,
-  BuilderSession,
-  TranslationFlag,
-  TranslationRun,
-} from '@formancy/builder-core'
+import { createTranslationRun, missingMessages, translationHeading, translationOn, translationStatus, translationToReview } from '@formancy/builder-core'
+import type { AskModel, BuilderMessageId, BuilderSession, TranslationFlag, TranslationRun } from '@formancy/builder-core'
 import { TranslationsPreview } from './translations-preview.js'
 import { useBuilder } from './use-builder.js'
 
@@ -66,13 +53,7 @@ const FLAGS: Readonly<Record<TranslationFlag, BuilderMessageId>> = {
   unchanged: 'translate.flag.unchanged',
 }
 
-export function TranslationReview({
-  session,
-  ask,
-  locale,
-  attempts,
-  run: given,
-}: TranslationReviewProps): ReactElement | null {
+export function TranslationReview({ session, ask, locale, attempts, run: given }: TranslationReviewProps): ReactElement | null {
   const view = useBuilder(session)
   const { text } = session
   /*
@@ -125,22 +106,14 @@ export function TranslationReview({
   const reviewed = translationToReview(proposal)
   const failed = result?.ok === false ? result : undefined
   const declined = failed?.ended === 'declined' ? failed.reason : undefined
-  const problems =
-    failed !== undefined && failed.ended !== 'declined' && failed.problems.length > 0
-      ? failed
-      : undefined
+  const problems = failed !== undefined && failed.ended !== 'declined' && failed.problems.length > 0 ? failed : undefined
 
   const options = attempts === undefined ? {} : { attempts }
 
   return (
     <div data-formancy-part="translate">
       {reviewed === undefined ? (
-        <button
-          type="button"
-          data-formancy-part="translate-ask"
-          disabled={busy}
-          onClick={() => void run.translate(ask, session, locale, options)}
-        >
+        <button type="button" data-formancy-part="translate-ask" disabled={busy} onClick={() => void run.translate(ask, session, locale, options)}>
           {busy ? text('translate.asking') : text('translate.ask', { count: missing })}
         </button>
       ) : null}
@@ -157,9 +130,7 @@ export function TranslationReview({
       {/* Outside the review: when everything the model wrote was dropped there is no review,
           and this is what says why. */}
       {proposal === undefined || proposal.dropped.length === 0 ? null : (
-        <p data-formancy-part="translate-dropped">
-          {text('translate.dropped', { list: text.list(proposal.dropped) })}
-        </p>
+        <p data-formancy-part="translate-dropped">{text('translate.dropped', { list: text.list(proposal.dropped) })}</p>
       )}
 
       {reviewed === undefined ? null : (

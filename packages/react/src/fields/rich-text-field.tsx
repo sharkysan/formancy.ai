@@ -9,7 +9,6 @@ import type { RichTextEditorFactory, RichTextEditorHandle } from '../rich-text-e
 import { FieldShell } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
-
 /**
  * The rich text control, over a stored grammar rather than HTML.
  *
@@ -173,15 +172,9 @@ export function MountedRichText({
       // passed in rather than invented here. `aria-labelledby` rather than a
       // `<label for>`: the surface is a div, and `for` does not reach one.
       attributes: {
-        ...(field.controlProps['aria-describedby'] === undefined
-          ? {}
-          : { 'aria-describedby': field.controlProps['aria-describedby'] }),
-        ...(field.controlProps['aria-invalid'] === undefined
-          ? {}
-          : { 'aria-invalid': 'true' }),
-        ...(field.controlProps['aria-required'] === undefined
-          ? {}
-          : { 'aria-required': 'true' }),
+        ...(field.controlProps['aria-describedby'] === undefined ? {} : { 'aria-describedby': field.controlProps['aria-describedby'] }),
+        ...(field.controlProps['aria-invalid'] === undefined ? {} : { 'aria-invalid': 'true' }),
+        ...(field.controlProps['aria-required'] === undefined ? {} : { 'aria-required': 'true' }),
         'aria-labelledby': field.labelProps.id,
         id: field.controlProps.id,
         // The editing surface is a CHILD of the mount point, so it is the
@@ -201,7 +194,6 @@ export function MountedRichText({
     // Mount once. Everything that changes afterwards is pushed in below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [make])
-
 
   useEffect(() => {
     const editor = handle.current
@@ -227,13 +219,7 @@ export function MountedRichText({
     editor.setValue(value)
   }, [value])
 
-  return (
-    <div
-      data-formancy-part="richtext-editor"
-      ref={host}
-      onBlur={() => field.touch()}
-    />
-  )
+  return <div data-formancy-part="richtext-editor" ref={host} onBlur={() => field.touch()} />
 }
 
 export function RichTextField({ path, label }: FieldComponentProps) {
@@ -258,11 +244,7 @@ export function RichTextField({ path, label }: FieldComponentProps) {
     const element = box.current
     if (element === null) return
 
-    const next = applyRichCommand(
-      command,
-      { value, start: element.selectionStart, end: element.selectionEnd },
-      href === undefined ? {} : { href },
-    )
+    const next = applyRichCommand(command, { value, start: element.selectionStart, end: element.selectionEnd }, href === undefined ? {} : { href })
     field.setValue(next.value)
     requestAnimationFrame(() => {
       element.focus()
@@ -281,11 +263,7 @@ export function RichTextField({ path, label }: FieldComponentProps) {
     // somebody wanted this.
     return (
       <FieldShell path={path} field={field} label={label}>
-        <RichTextToolbar
-          disabled={field.disabled}
-          label={label}
-          onCommand={(command, href) => editor?.run(command, href)}
-        />
+        <RichTextToolbar disabled={field.disabled} label={label} onCommand={(command, href) => editor?.run(command, href)} />
         <MountedRichText field={field} value={value} make={make} onReady={setEditor} />
       </FieldShell>
     )
@@ -293,11 +271,7 @@ export function RichTextField({ path, label }: FieldComponentProps) {
 
   return (
     <FieldShell path={path} field={field} label={label}>
-      <RichTextToolbar
-        disabled={field.disabled}
-        label={label}
-        onCommand={run}
-      />
+      <RichTextToolbar disabled={field.disabled} label={label} onCommand={run} />
       <textarea
         {...field.controlProps}
         ref={box}
@@ -307,12 +281,7 @@ export function RichTextField({ path, label }: FieldComponentProps) {
           // The two shortcuts every editor has. Nothing else is bound: a
           // surprise binding in a form field is worse than no binding.
           if (!(event.ctrlKey || event.metaKey)) return
-          const command =
-            event.key.toLowerCase() === 'b'
-              ? 'strong'
-              : event.key.toLowerCase() === 'i'
-                ? 'emphasis'
-                : undefined
+          const command = event.key.toLowerCase() === 'b' ? 'strong' : event.key.toLowerCase() === 'i' ? 'emphasis' : undefined
           if (command === undefined) return
           event.preventDefault()
           run(command)

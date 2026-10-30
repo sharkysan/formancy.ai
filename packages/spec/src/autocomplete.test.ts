@@ -51,14 +51,13 @@ describe('an autofill hint', () => {
   // Two lists of one thing: the type the code compiles against, and what the document schema
   // accepts. Compared, so neither can gain a token the other lacks.
   test('offers in the schema exactly the tokens the code knows', () => {
-    const offered = (schema.$defs.field.allOf as Array<{ then?: { properties?: Record<string, { enum?: string[] }> } }>)
-      .flatMap((branch) => branch.then?.properties?.['autocomplete']?.enum ?? [])
+    const offered = (schema.$defs.field.allOf as Array<{ then?: { properties?: Record<string, { enum?: string[] }> } }>).flatMap(
+      (branch) => branch.then?.properties?.['autocomplete']?.enum ?? [],
+    )
     expect([...offered].sort()).toEqual([...AUTOCOMPLETE_TOKENS].sort())
   })
 
   test('in a version 4 document is refused, naming the property', () => {
-    expect(errorsOf(formWith({ autocomplete: 'email' }, '4'))).toMatchObject([
-      { path: '/model/fields/0/autocomplete', code: 'version.property' },
-    ])
+    expect(errorsOf(formWith({ autocomplete: 'email' }, '4'))).toMatchObject([{ path: '/model/fields/0/autocomplete', code: 'version.property' }])
   })
 })

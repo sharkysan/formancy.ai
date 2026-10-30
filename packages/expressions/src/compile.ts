@@ -34,9 +34,7 @@ export interface CompiledProgram extends Program {
   readonly variables: VariableDeclarations
 }
 
-export type CompileOutcome =
-  | { readonly ok: true; readonly program: Program }
-  | { readonly ok: false; readonly error: ExpressionError }
+export type CompileOutcome = { readonly ok: true; readonly program: Program } | { readonly ok: false; readonly error: ExpressionError }
 
 /**
  * Parse, limit-check, type-check and policy-check an expression in one step.

@@ -43,12 +43,9 @@ describe('a translation of the validator', () => {
   test('and takes the same placeholders as the English', () => {
     // A translation that drops `{key}` loses the one word saying which field; one
     // that invents `{schlüssel}` shows it raw. Both read as fine until shown.
-    const placeholders = (sentence: string): string =>
-      [...new Set([...sentence.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort().join(',')
+    const placeholders = (sentence: string): string => [...new Set([...sentence.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort().join(',')
     const differ = SHIPPED.flatMap(([locale, sentences]) =>
-      codes
-        .filter((code) => placeholders(SCHEMA_ERRORS[code]) !== placeholders(sentences[code] ?? ''))
-        .map((code) => `${locale}:${code}`),
+      codes.filter((code) => placeholders(SCHEMA_ERRORS[code]) !== placeholders(sentences[code] ?? '')).map((code) => `${locale}:${code}`),
     )
 
     expect(differ).toEqual([])
@@ -61,9 +58,7 @@ describe('a translation of the validator', () => {
     const owned = (english: string): string[] => [
       // Quotes paired left to right, then placeholders dropped: excluding braces
       // inside the pattern instead pairs the close of "{version}" with the next open.
-      ...[...english.matchAll(/"([^"]*)"/g)]
-        .map((m) => m[1]!)
-        .filter((word) => !word.includes('{')),
+      ...[...english.matchAll(/"([^"]*)"/g)].map((m) => m[1]!).filter((word) => !word.includes('{')),
       ...[...english.matchAll(/\b[a-z]+[A-Z]\w*\b/g)].map((m) => m[0]),
     ]
     const lost = SHIPPED.flatMap(([locale, sentences]) =>
@@ -110,9 +105,7 @@ describe('a builder session says it in its own language', () => {
       errors: SCHEMA_ERRORS_FR,
     })
 
-    expect(() => createBuilderSession(broken, { text: french })).toThrowError(
-      /Un autre champ utilise déjà la clé « email »/,
-    )
+    expect(() => createBuilderSession(broken, { text: french })).toThrowError(/Un autre champ utilise déjà la clé « email »/)
   })
 
   test('and in the validator’s English for a sentence its language does not have', () => {
@@ -126,8 +119,6 @@ describe('a builder session says it in its own language', () => {
 
     const outcome = session.insertField({ parent: [], index: 0 }, { key: 'email', type: 'text' })
 
-    expect(outcome.ok ? '' : outcome.message).toBe(
-      'Another field already uses the key "email". A key identifies one answer, so two fields cannot share one.',
-    )
+    expect(outcome.ok ? '' : outcome.message).toBe('Another field already uses the key "email". A key identifies one answer, so two fields cannot share one.')
   })
 })

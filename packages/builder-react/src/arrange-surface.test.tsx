@@ -90,11 +90,7 @@ const transfer = (): object => ({
  * same way. Which half of an element a pointer is over is the whole decision
  * this surface makes, so it is dispatched as a `MouseEvent`, which keeps them.
  */
-const dragEvent = (
-  type: string,
-  at: { clientX: number; clientY: number },
-  dataTransfer: object,
-): Event => {
+const dragEvent = (type: string, at: { clientX: number; clientY: number }, dataTransfer: object): Event => {
   const event = new MouseEvent(type, { bubbles: true, cancelable: true, ...at })
   Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
   return event
@@ -115,9 +111,7 @@ const boxOf = (element: HTMLElement, side: 'start' | 'end'): { clientX: number; 
   // jsdom gives every element a zero rectangle, so the midpoint is 0 and the
   // half a point falls in is decided by its sign. Said here once rather than
   // left as an unexplained -1 in every test.
-  return side === 'start'
-    ? { clientX: box.left - 1, clientY: box.top - 1 }
-    : { clientX: box.left + 1, clientY: box.top + 1 }
+  return side === 'start' ? { clientX: box.left - 1, clientY: box.top - 1 } : { clientX: box.left + 1, clientY: box.top + 1 }
 }
 
 describe('enabling', () => {
@@ -199,10 +193,7 @@ describe('dropping', () => {
     const session = open()
     surfaceWith(session)
 
-    fireEvent(
-      fieldNamed('Email'),
-      dragEvent('drop', boxOf(fieldNamed('Email'), 'start'), transfer()),
-    )
+    fireEvent(fieldNamed('Email'), dragEvent('drop', boxOf(fieldNamed('Email'), 'start'), transfer()))
 
     expect(session.canUndo()).toBe(false)
   })
@@ -362,10 +353,7 @@ describe('the indicator', () => {
 
     const dataTransfer = transfer()
     fireEvent(fieldNamed('Email'), dragEvent('dragstart', NOWHERE, dataTransfer))
-    fireEvent(
-      fieldNamed('First name'),
-      dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer),
-    )
+    fireEvent(fieldNamed('First name'), dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer))
 
     // Showing one over an illegal target promises a move that will not happen,
     // which is how a field ends up snapping back with no explanation.
@@ -377,10 +365,7 @@ describe('the indicator', () => {
 
     const dataTransfer = transfer()
     fireEvent(fieldNamed('Email'), dragEvent('dragstart', NOWHERE, dataTransfer))
-    fireEvent(
-      fieldNamed('First name'),
-      dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer),
-    )
+    fireEvent(fieldNamed('First name'), dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer))
 
     // Reported as "the drag and drop is strange". Inside a row the drop lands to
     // the LEFT of the field, and the indicator was a line across its TOP: the
@@ -456,8 +441,7 @@ describe('in a table', () => {
   }
 
   const wide = (element: HTMLElement): void => {
-    element.getBoundingClientRect = () =>
-      ({ left: 0, right: 400, width: 400, top: 0, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top: 0, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
   }
 
   const tableSurface = (session: BuilderSession) =>
@@ -511,10 +495,7 @@ describe('in a table', () => {
 
     const dataTransfer = transfer()
     fireEvent(fieldNamed('Email'), dragEvent('dragstart', NOWHERE, dataTransfer))
-    fireEvent(
-      fieldNamed('First name'),
-      dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer),
-    )
+    fireEvent(fieldNamed('First name'), dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer))
     fireEvent(fieldNamed('First name'), dragEvent('dragleave', NOWHERE, transfer()))
 
     expect(fieldNamed('First name').dataset['drop']).toBeUndefined()
@@ -525,10 +506,7 @@ describe('in a table', () => {
 
     const dataTransfer = transfer()
     fireEvent(fieldNamed('Email'), dragEvent('dragstart', NOWHERE, dataTransfer))
-    fireEvent(
-      fieldNamed('First name'),
-      dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer),
-    )
+    fireEvent(fieldNamed('First name'), dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer))
     fireEvent(fieldNamed('Email'), dragEvent('dragend', NOWHERE, transfer()))
 
     expect(fieldNamed('First name').dataset['drop']).toBeUndefined()
@@ -600,12 +578,10 @@ describe('dropping in the space between two nodes', () => {
 
   /** Where each element was drawn, top to bottom, 400 wide: jsdom draws nothing. */
   const drawn = (element: HTMLElement, top: number, bottom: number): void => {
-    element.getBoundingClientRect = () =>
-      ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
+    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
   }
 
-  const section = (): HTMLElement =>
-    document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!
+  const section = (): HTMLElement => document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!
 
   /**
    * The section from 0 to 140, its heading on top and its fields 20 apart; then Email
@@ -656,11 +632,7 @@ describe('dropping in the space between two nodes', () => {
       clientY: 150,
     })
 
-    expect(nodesOf(session)?.map((node) => (node.kind === 'field' ? node.path : node.kind))).toEqual([
-      'section',
-      'phone',
-      'email',
-    ])
+    expect(nodesOf(session)?.map((node) => (node.kind === 'field' ? node.path : node.kind))).toEqual(['section', 'phone', 'email'])
   })
 
   test('the line is drawn on the nearer neighbour, on the side the gap is', () => {
@@ -698,11 +670,7 @@ describe('dropping in the space between two nodes', () => {
     // top half of the section means before it, as it always did.
     drag(fieldNamed('Phone'), section(), { clientX: 200, clientY: 10 })
 
-    expect(nodesOf(session)?.map((node) => (node.kind === 'field' ? node.path : node.kind))).toEqual([
-      'phone',
-      'section',
-      'email',
-    ])
+    expect(nodesOf(session)?.map((node) => (node.kind === 'field' ? node.path : node.kind))).toEqual(['phone', 'section', 'email'])
   })
 })
 

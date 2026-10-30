@@ -11,19 +11,8 @@ import { SPEC_VERSIONS, modelDataPaths } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
 import { COMMAND_SEPARATOR, fieldAtPath, pageKeys } from './paths.js'
 import type { ConformanceSchema, Fixture, FixtureStep, StepKind } from './types.js'
-import {
-  accessibleNameProblem,
-  messageCatalogue,
-  validateI18n,
-} from './validate-text.js'
-import {
-  CONTAINER_TYPE_SET,
-  FIELD_TYPES,
-  FIELD_TYPE_SET,
-  RULE_KINDS,
-  RULE_KIND_SET,
-  UNLABELLED_TYPES,
-} from './vocabulary.js'
+import { accessibleNameProblem, messageCatalogue, validateI18n } from './validate-text.js'
+import { CONTAINER_TYPE_SET, FIELD_TYPES, FIELD_TYPE_SET, RULE_KINDS, RULE_KIND_SET, UNLABELLED_TYPES } from './vocabulary.js'
 import { validateMount } from './mount.js'
 import { asRecord, describeValue, isJsonValue, isStringArray } from './values.js'
 
@@ -241,11 +230,7 @@ function validateSchema(value: unknown, at: string): FixtureProblem[] {
  * are held to the model the same way step paths are — in the spec's data-path
  * grammar, where a row-scoped target reads `contacts[].email`.
  */
-function validateLogic(
-  value: unknown,
-  at: string,
-  targets: ReadonlySet<string> | undefined,
-): FixtureProblem[] {
+function validateLogic(value: unknown, at: string, targets: ReadonlySet<string> | undefined): FixtureProblem[] {
   if (value === undefined) return []
   const logic = asRecord(value)
   if (logic === undefined) {
@@ -296,11 +281,7 @@ function validateLogic(
   return problems
 }
 
-function validateFields(
-  fields: readonly unknown[],
-  at: string,
-  messages: ReadonlySet<string> | undefined,
-): FixtureProblem[] {
+function validateFields(fields: readonly unknown[], at: string, messages: ReadonlySet<string> | undefined): FixtureProblem[] {
   const problems: FixtureProblem[] = []
   const seen = new Set<string>()
 
@@ -384,12 +365,7 @@ function validateFields(
   return problems
 }
 
-function validateStep(
-  value: unknown,
-  at: string,
-  schema: ConformanceSchema | undefined,
-  precededBySubmit: boolean,
-): FixtureProblem[] {
+function validateStep(value: unknown, at: string, schema: ConformanceSchema | undefined, precededBySubmit: boolean): FixtureProblem[] {
   const step = asRecord(value)
   if (step === undefined) {
     return [{ path: at, message: `expected an object, got ${describeValue(value)}` }]
@@ -534,11 +510,7 @@ function validateStep(
   }
 }
 
-function validateValueMap(
-  record: Record<string, unknown>,
-  at: string,
-  schema: ConformanceSchema | undefined,
-): FixtureProblem[] {
+function validateValueMap(record: Record<string, unknown>, at: string, schema: ConformanceSchema | undefined): FixtureProblem[] {
   return Object.entries(record).flatMap(([path, value]) => {
     const problems = fieldPathProblems(path, `${at}.${path}`, schema)
     if (!isJsonValue(value)) {
@@ -554,11 +526,7 @@ function validateValueMap(
  * Without this check a typo turns an assertion into a tautology: `expectHidden`
  * on a misspelled path passes, and the case silently tests nothing for years.
  */
-function fieldPathProblems(
-  path: string,
-  at: string,
-  schema: ConformanceSchema | undefined,
-): FixtureProblem[] {
+function fieldPathProblems(path: string, at: string, schema: ConformanceSchema | undefined): FixtureProblem[] {
   if (schema === undefined) return []
   if (fieldAtPath(schema, path) === undefined) {
     return [{ path: at, message: `no field at path ${JSON.stringify(path)}` }]
@@ -566,12 +534,7 @@ function fieldPathProblems(
   return []
 }
 
-function repeaterPathProblems(
-  path: string,
-  at: string,
-  schema: ConformanceSchema | undefined,
-  control: 'addLabel' | 'removeLabel',
-): FixtureProblem[] {
+function repeaterPathProblems(path: string, at: string, schema: ConformanceSchema | undefined, control: 'addLabel' | 'removeLabel'): FixtureProblem[] {
   if (schema === undefined) return []
   const field = fieldAtPath(schema, path)
   if (field === undefined) {
@@ -599,4 +562,3 @@ function repeaterPathProblems(
 function assertNever(value: never): never {
   throw new TypeError(`Unhandled step kind: ${String(value)}`)
 }
-

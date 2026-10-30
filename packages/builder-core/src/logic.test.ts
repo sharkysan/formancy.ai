@@ -62,9 +62,7 @@ describe('which kinds a builder offers', () => {
     // Derived from the spec's own list. A kind added to the format and not to
     // this table is a kind no builder can write — which is the wizard's shape
     // all over again, and how `check` and `skip` shipped reachable only by hand.
-    expect([...RULE_KIND_CHOICES].map((choice) => choice.id).sort()).toEqual(
-      [...RULE_KINDS].sort(),
-    )
+    expect([...RULE_KIND_CHOICES].map((choice) => choice.id).sort()).toEqual([...RULE_KINDS].sort())
   })
 
   test('offers a page only what a page can carry', () => {
@@ -135,7 +133,6 @@ describe('what the editor composes', () => {
     expect(rule.cel).toBeUndefined()
     expect(rule.editor).toBeUndefined()
   })
-
 })
 
 describe('a validate rule the editor composes (0198)', () => {
@@ -231,9 +228,7 @@ describe('when a draft is enough to add', () => {
 
   test('and a calculation needs an expression, because an empty one calculates nothing', () => {
     expect(draftIsComplete({ kind: 'computed', draft: NOTHING, check: '', expression: ' ' })).toBe(false)
-    expect(
-      draftIsComplete({ kind: 'computed', draft: NOTHING, check: '', expression: 'qty * price' }),
-    ).toBe(true)
+    expect(draftIsComplete({ kind: 'computed', draft: NOTHING, check: '', expression: 'qty * price' })).toBe(true)
   })
 
   test('a calculation is written as CEL and carries no editor metadata', () => {
@@ -450,8 +445,6 @@ describe('the words a logic panel shows', () => {
     expect(ruleKindHint('skip', german)).toBe(german('rule.skip.hint'))
     expect(operatorLabel('isAnswered', german)).toBe(german('operator.isAnswered'))
     // The English the tables still carry is the same words, not a second copy.
-    expect(ruleKindLabel('visible', english)).toBe(
-      RULE_KIND_CHOICES.find((choice) => choice.id === 'visible')?.label,
-    )
+    expect(ruleKindLabel('visible', english)).toBe(RULE_KIND_CHOICES.find((choice) => choice.id === 'visible')?.label)
   })
 })

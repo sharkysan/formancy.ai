@@ -43,8 +43,7 @@ export const WIZARD_SCHEMA = {
           {
             key: 'guide',
             type: 'static',
-            label:
-              'Three steps. Leave the visa box below unticked and press Next: step two is skipped, and its questions go with it.',
+            label: 'Three steps. Leave the visa box below unticked and press Next: step two is skipped, and its questions go with it.',
           },
           { key: 'fullName', type: 'text', label: 'Full name', required: true },
           { key: 'workEmail', type: 'text', label: 'Work email', format: 'email', required: true },
@@ -124,8 +123,7 @@ export const WIZARD_SCHEMA = {
           {
             key: 'referenceHint',
             type: 'static',
-            label:
-              'The reference is checked by this deployment rather than by an expression, which is why it takes a moment. FM-1234 is a shape it knows.',
+            label: 'The reference is checked by this deployment rather than by an expression, which is why it takes a moment. FM-1234 is a shape it knows.',
           },
           { key: 'reference', type: 'text', label: 'Cost centre reference' },
 

@@ -76,9 +76,7 @@ describe('the page is a document first', () => {
   test('a skip link, for a page this long', () => {
     render(<App />)
 
-    expect(screen.getByRole('link', { name: 'Skip to content' }).getAttribute('href')).toBe(
-      '#start',
-    )
+    expect(screen.getByRole('link', { name: 'Skip to content' }).getAttribute('href')).toBe('#start')
   })
 
   test('every section heading is a level two, so the outline does not skip', () => {
@@ -149,9 +147,7 @@ describe('the page is a document first', () => {
     ]
     const paid = screen
       .getAllByRole('link')
-      .filter((link) =>
-        /formancy\.ai-(data|report|health)|formancy\.ai\/(data|report|health)\//.test(link.getAttribute('href') ?? ''),
-      )
+      .filter((link) => /formancy\.ai-(data|report|health)|formancy\.ai\/(data|report|health)\//.test(link.getAttribute('href') ?? ''))
     expect(paid.map((link) => link.getAttribute('href')).sort()).toEqual([...offered].sort())
 
     for (const link of paid) {
@@ -162,7 +158,7 @@ describe('the page is a document first', () => {
     }
   })
 
-  test('a page that uses HL7\'s marks says whose they are', () => {
+  test("a page that uses HL7's marks says whose they are", () => {
     // Formancy Health is described by the standard it implements, so the page says
     // HL7 and FHIR — and HL7 asks every use of its marks that is not its own to say
     // they are its and that their use is no endorsement. Read from the rendered page,
@@ -208,9 +204,7 @@ describe('the demo is the product, not a picture of it', () => {
 
     // 690 + 2 × 180. The rule is `… + nights * 180.0`, and the decimal
     // point is the difference between this and a total that stays empty.
-    await waitFor(() =>
-      expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('1050'),
-    )
+    await waitFor(() => expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('1050'))
   })
 
   test('the rules beside the form are read off the same engine', async () => {
@@ -246,12 +240,11 @@ describe('the themes', () => {
     render(<App />)
 
     const group = screen.getByRole('group', { name: 'Theme' })
-    expect(within(group).getAllByRole('button').map((button) => button.textContent)).toEqual([
-      'Dusk',
-      'Blueprint',
-      'Pop',
-      'Paper',
-    ])
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Dusk', 'Blueprint', 'Pop', 'Paper'])
     expect(document.querySelector('#build .sheet')?.getAttribute('data-formancy-theme')).toBe('dusk')
   })
 
@@ -307,9 +300,7 @@ describe('the examples', () => {
     tabs[0]?.focus()
     await user.keyboard('{ArrowRight}')
 
-    expect(within(strip).getByRole('tab', { name: 'Bug report' }).getAttribute('aria-selected')).toBe(
-      'true',
-    )
+    expect(within(strip).getByRole('tab', { name: 'Bug report' }).getAttribute('aria-selected')).toBe('true')
     expect(document.activeElement?.textContent).toBe('Bug report')
   })
 
@@ -331,16 +322,12 @@ describe('the examples', () => {
 
     await user.type(screen.getByLabelText('Nights'), '2')
     await user.type(screen.getByLabelText('Guests'), '2')
-    await waitFor(() =>
-      expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('260'),
-    )
+    await waitFor(() => expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('260'))
 
     await user.click(screen.getByRole('checkbox', { name: 'Half board · dinner and breakfast' }))
 
     // 2 nights × 2 guests × (65 + 48), and the kitchen question with it.
-    await waitFor(() =>
-      expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('452'),
-    )
+    await waitFor(() => expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('452'))
     expect(screen.getByRole('group', { name: 'Anything the kitchen should know?' })).toBeTruthy()
   })
 })
@@ -417,11 +404,7 @@ describe('the ending', () => {
     // so the page has more than one and an unscoped query is a trap waiting
     // for whoever opens that tab in a test.
     const finale = document.querySelector('#finale') as HTMLElement
-    await waitFor(() =>
-      expect(within(finale).getByRole('status').textContent).toContain(
-        'validated by the same engine',
-      ),
-    )
+    await waitFor(() => expect(within(finale).getByRole('status').textContent).toContain('validated by the same engine'))
   })
 })
 

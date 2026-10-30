@@ -50,7 +50,10 @@ export function filled(fields: readonly FieldDef[], held: Readonly<Record<string
       if (answer !== undefined || Object.keys(inside).length > 0) answers.set(def.key, inside)
     } else if (def.type === 'repeater') {
       if (Array.isArray(answer)) {
-        answers.set(def.key, answer.map((row: unknown) => (isObject(row) ? filled(def.fields ?? [], row) : row)))
+        answers.set(
+          def.key,
+          answer.map((row: unknown) => (isObject(row) ? filled(def.fields ?? [], row) : row)),
+        )
       }
     } else if (answer === undefined && def.default !== undefined) {
       // A copy: a list ticked in one row must not tick the document's, or the next row

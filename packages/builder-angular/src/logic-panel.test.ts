@@ -126,9 +126,7 @@ describe('authoring a rule', () => {
 
     await click(screen.getByRole('button', { name: /add a rule/i }))
 
-    const kinds = [...kindChooser().querySelectorAll('option')].map((option) =>
-      option.getAttribute('value'),
-    )
+    const kinds = [...kindChooser().querySelectorAll('option')].map((option) => option.getAttribute('value'))
     expect(kinds).toEqual(['skip'])
   })
 
@@ -221,9 +219,7 @@ describe('authoring a rule', () => {
     await click(screen.getByRole('button', { name: /add a rule/i }))
     await select(kindChooser(), 'computed')
 
-    expect((screen.getByRole('button', { name: /^add rule$/i }) as HTMLButtonElement).disabled).toBe(
-      true,
-    )
+    expect((screen.getByRole('button', { name: /^add rule$/i }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   test('the expression is shown before the rule is added, not after', async () => {
@@ -339,9 +335,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
   test('a choice is compared with one of its own options, and a date with a date', async () => {
     const { user, settle } = await open()
 
-    expect([...(screen.getByLabelText('Value') as HTMLSelectElement).options].map((o) => o.text.trim())).toEqual(
-      ['Choose a value', 'Switzerland', 'Germany'],
-    )
+    expect([...(screen.getByLabelText('Value') as HTMLSelectElement).options].map((o) => o.text.trim())).toEqual(['Choose a value', 'Switzerland', 'Germany'])
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
     await settle()
     expect((screen.getByLabelText('Value') as HTMLInputElement).type).toBe('date')
@@ -349,8 +343,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
 
   test('and the comparisons offered are the ones the field can take', async () => {
     const { user, settle } = await open()
-    const offered = () =>
-      [...(screen.getByLabelText('Comparison') as HTMLSelectElement).options].map((o) => o.value)
+    const offered = () => [...(screen.getByLabelText('Comparison') as HTMLSelectElement).options].map((o) => o.value)
 
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
     await settle()
@@ -380,9 +373,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
     await user.click(screen.getByRole('button', { name: 'Add rule' }))
     await settle()
 
-    expect(session.document().logic?.rules[0]?.cel).toBe(
-      'country == "CH" || (age != null && age >= 18.0 && terms == true)',
-    )
+    expect(session.document().logic?.rules[0]?.cel).toBe('country == "CH" || (age != null && age >= 18.0 && terms == true)')
     expect(session.canPublish().valid).toBe(true)
   })
 })
@@ -433,9 +424,7 @@ describe('a rule on a field in a repeater row', () => {
     await user.click(screen.getByRole('button', { name: 'Add rule' }))
     await settle()
 
-    expect(session.document().logic?.rules).toMatchObject([
-      { target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty >= 3.0' },
-    ])
+    expect(session.document().logic?.rules).toMatchObject([{ target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty >= 3.0' }])
     expect(session.canPublish().valid).toBe(true)
   })
 })

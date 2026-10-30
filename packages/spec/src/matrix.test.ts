@@ -13,8 +13,7 @@ const problemsIn = (document: FormSchema): Array<{ path: string; message: string
   return report.valid ? [] : report.errors
 }
 
-const form = (specVersion: string, fields: unknown[]): FormSchema =>
-  ({ specVersion, id: 'meal', title: 'Meal', model: { fields } }) as unknown as FormSchema
+const form = (specVersion: string, fields: unknown[]): FormSchema => ({ specVersion, id: 'meal', title: 'Meal', model: { fields } }) as unknown as FormSchema
 
 const taste = { value: 'taste', label: 'Taste' }
 const delivery = { value: 'delivery', label: 'Delivery' }
@@ -57,9 +56,7 @@ describe('a matrix', () => {
   })
 
   test('refuses two rows with one value, which one answer could not tell apart', () => {
-    const problems = problemsIn(
-      form('4', [matrix({ rows: [taste, { ...taste, label: 'Flavour' }] })]),
-    )
+    const problems = problemsIn(form('4', [matrix({ rows: [taste, { ...taste, label: 'Flavour' }] })]))
 
     expect(problems).toHaveLength(1)
     expect(problems[0]?.path).toBe('/model/fields/0/rows/1/value')
@@ -103,14 +100,10 @@ describe('a picture on an option', () => {
 
   test('and on a matrix column', () => {
     const columns = [poor, { ...fine, image: picture }, great]
-    expect(problemsIn(form('4', [matrix({ options: columns })]))[0]?.path).toBe(
-      '/model/fields/0/options/1/image',
-    )
+    expect(problemsIn(form('4', [matrix({ options: columns })]))[0]?.path).toBe('/model/fields/0/options/1/image')
   })
 
   test('and a row cannot carry one at all', () => {
-    expect(
-      problemsIn(form('4', [matrix({ rows: [{ ...taste, image: picture }, delivery] })])).length,
-    ).toBeGreaterThan(0)
+    expect(problemsIn(form('4', [matrix({ rows: [{ ...taste, image: picture }, delivery] })])).length).toBeGreaterThan(0)
   })
 })

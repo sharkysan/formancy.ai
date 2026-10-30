@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import {
-  applied,
-  classify,
-  declarationsOf,
-  describePreset,
-  exportCss,
-  readPreset,
-  resolve,
-  rulesOfText,
-  themeTokens,
-} from './theme-tokens.js'
+import { applied, classify, declarationsOf, describePreset, exportCss, readPreset, resolve, rulesOfText, themeTokens } from './theme-tokens.js'
 
 /**
  * Editing the theme that is on screen, token by token.
@@ -58,10 +48,7 @@ export function ThemePane({
    * declares cannot change while the page is open — only the values can, which
    * is what `resolve` is for.
    */
-  const declared = useMemo(
-    () => themeTokens(declarationsOf(document.styleSheets)).get(theme) ?? {},
-    [theme],
-  )
+  const declared = useMemo(() => themeTokens(declarationsOf(document.styleSheets)).get(theme) ?? {}, [theme])
 
   const names = useMemo(() => Object.keys(declared).sort(), [declared])
 
@@ -111,10 +98,9 @@ export function ThemePane({
   return (
     <div className="theme-editor">
       <p className="theme-intro">
-        Every token the <strong>{theme}</strong> theme declares, read from its stylesheet. The four
-        shipped themes declare different ones on purpose, so this list follows the theme rather than
-        the other way round — including a theme of your own. What you download is the preset:
-        import it to carry on where you left off.
+        Every token the <strong>{theme}</strong> theme declares, read from its stylesheet. The four shipped themes declare different ones on purpose, so this
+        list follows the theme rather than the other way round — including a theme of your own. What you download is the preset: import it to carry on where you
+        left off.
       </p>
 
       <div className="theme-tokens">
@@ -138,12 +124,7 @@ export function ThemePane({
                     value={/^#[0-9a-f]{6}$/i.test(current) ? current : '#000000'}
                     onChange={(event) => set(token, event.target.value)}
                   />
-                  <input
-                    type="text"
-                    aria-label={label}
-                    value={current}
-                    onChange={(event) => set(token, event.target.value)}
-                  />
+                  <input type="text" aria-label={label} value={current} onChange={(event) => set(token, event.target.value)} />
                 </span>
               ) : (
                 <input

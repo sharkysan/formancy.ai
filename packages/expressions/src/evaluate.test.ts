@@ -80,15 +80,11 @@ describe('injected capabilities', () => {
   })
 
   test('now() is the instant the caller passed in, not the machine clock', () => {
-    expect(valueOf('string(now())', computed, { age: 1, name: 'a', items: [] })).toBe(
-      '2026-09-19T10:30:00Z',
-    )
+    expect(valueOf('string(now())', computed, { age: 1, name: 'a', items: [] })).toBe('2026-09-19T10:30:00Z')
   })
 
   test('today() is the caller civil date at midnight UTC', () => {
-    expect(valueOf('string(today())', computed, { age: 1, name: 'a', items: [] })).toBe(
-      '2026-09-19T00:00:00Z',
-    )
+    expect(valueOf('string(today())', computed, { age: 1, name: 'a', items: [] })).toBe('2026-09-19T00:00:00Z')
   })
 
   test('random() is one draw for the whole pass', () => {
@@ -109,11 +105,7 @@ describe('evaluation failures are expression errors, never crashes', () => {
   })
 
   test('reports a missing key inside a dynamic value', () => {
-    const result = evaluate(
-      program('items[0].price > 1', { kind: 'visible', variables: { items: 'list' } }),
-      { items: [{}] },
-      { capabilities },
-    )
+    const result = evaluate(program('items[0].price > 1', { kind: 'visible', variables: { items: 'list' } }), { items: [{}] }, { capabilities })
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -122,11 +114,7 @@ describe('evaluation failures are expression errors, never crashes', () => {
   })
 
   test('reports an integer that is too large to be exact as a number', () => {
-    const result = evaluate(
-      program('big + big', { kind: 'computed', variables: { big: 'int' } }),
-      { big: Number.MAX_SAFE_INTEGER },
-      { capabilities },
-    )
+    const result = evaluate(program('big + big', { kind: 'computed', variables: { big: 'int' } }), { big: Number.MAX_SAFE_INTEGER }, { capabilities })
 
     expect(result.ok).toBe(false)
     if (result.ok) return

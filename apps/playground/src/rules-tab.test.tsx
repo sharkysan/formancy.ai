@@ -17,9 +17,7 @@ import { App } from './app.js'
 vi.setConfig({ testTimeout: 60_000 })
 
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => (
-    <textarea readOnly aria-label="Schema" value={value ?? ''} />
-  ),
+  default: ({ value }: { value?: string }) => <textarea readOnly aria-label="Schema" value={value ?? ''} />,
   useMonaco: () => null,
 }))
 
@@ -55,9 +53,7 @@ describe('the rules tab', () => {
     const overview = screen.getByRole('region', { name: 'Every rule in this form' })
     const note = within(overview).getByText('Amount in this row is at least 1000').closest('li')!
     const rows = () =>
-      [...note.querySelectorAll('[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p')].map(
-        (line) => line.textContent,
-      )
+      [...note.querySelectorAll('[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p')].map((line) => line.textContent)
     expect(rows()).toEqual(['Row 1 Not required now.'])
 
     // The React preview's first recipient; the Angular one's comes after it.

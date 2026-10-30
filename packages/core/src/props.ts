@@ -107,8 +107,7 @@ export function buildFieldProps(input: FieldPropsInput): FieldProps {
   // draws no hint: decided as a group, its box pointed at a hint nothing carried (D4, 0211). A
   // computed group of controls is drawn as one read-only box, and says so the same way (0216).
   const answerBox = input.readOnly === true && def !== undefined && !hasReadOnlyControl(def)
-  const grouped =
-    input.grouped ?? (def !== undefined && GROUPED_FIELD_TYPES.has(def.type) && def.widget !== 'tagpicker' && !answerBox)
+  const grouped = input.grouped ?? (def !== undefined && GROUPED_FIELD_TYPES.has(def.type) && def.widget !== 'tagpicker' && !answerBox)
   const described = input.described ?? def?.description !== undefined
   const counted = input.counted ?? (def !== undefined && showsCount(def))
 

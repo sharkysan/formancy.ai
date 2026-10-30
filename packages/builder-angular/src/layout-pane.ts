@@ -1,16 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  effect,
-  input,
-  output,
-  signal,
-  untracked,
-  viewChild,
-  viewChildren,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, untracked, viewChild, viewChildren } from '@angular/core'
 import {
   addLayoutAndSay,
   describeLayoutTarget,
@@ -235,9 +223,7 @@ export class FormancyLayoutPane {
   private listed = ''
   private focusedPath: string | null = null
 
-  protected readonly name = computed(
-    () => this.layout() ?? (this.view().document.layouts ?? [])[0]?.name,
-  )
+  protected readonly name = computed(() => this.layout() ?? (this.view().document.layouts ?? [])[0]?.name)
   protected readonly treeName = computed(() =>
     this.text()('layout.treeName', {
       label: this.label() ?? this.text()('layout.label'),
@@ -249,9 +235,7 @@ export class FormancyLayoutPane {
     return name === undefined ? [] : flattenLayout(this.view().document, name, this.text())
   })
   protected readonly count = computed(() => this.rows().length)
-  protected readonly index = computed(() =>
-    this.count() === 0 ? 0 : Math.min(this.focusedIndex(), this.count() - 1),
-  )
+  protected readonly index = computed(() => (this.count() === 0 ? 0 : Math.min(this.focusedIndex(), this.count() - 1)))
   protected readonly focused = computed((): LayoutTreeNode | undefined => this.rows()[this.index()])
   protected readonly selectedPath = computed((): string | null => {
     const node = this.focused()
@@ -461,9 +445,7 @@ export class FormancyLayoutPane {
       case 'u':
       case 'U': {
         event.preventDefault()
-        this.announcement.set(
-          unwrapLayoutAndSay(this.session(), { layout: name, path: focused.path }),
-        )
+        this.announcement.set(unwrapLayoutAndSay(this.session(), { layout: name, path: focused.path }))
         return
       }
       case 'Delete':
@@ -471,9 +453,7 @@ export class FormancyLayoutPane {
         event.preventDefault()
         // Said plainly by builder-core: the field is still collected, it only has
         // no place in this arrangement. Anything else reads as a deletion.
-        this.announcement.set(
-          removeLayoutAndSay(this.session(), { layout: name, path: focused.path }),
-        )
+        this.announcement.set(removeLayoutAndSay(this.session(), { layout: name, path: focused.path }))
         return
       }
       default:
@@ -490,9 +470,7 @@ export class FormancyLayoutPane {
     const name = this.name()
     this.moving.set(null)
     if (node === null || name === undefined) return
-    this.announcement.set(
-      moveLayoutAndSay(this.session(), { layout: name, path: node.path }, target),
-    )
+    this.announcement.set(moveLayoutAndSay(this.session(), { layout: name, path: node.path }, target))
     this.keepFocus = true
   }
 

@@ -55,7 +55,9 @@ describe('a description', () => {
             type: 'page',
             label: 'One',
             description: 'About you.',
-            fields: [{ key: 'address', type: 'group', label: 'Address', description: 'Where we write to.', fields: [{ key: 'city', type: 'text', label: 'City' }] }],
+            fields: [
+              { key: 'address', type: 'group', label: 'Address', description: 'Where we write to.', fields: [{ key: 'city', type: 'text', label: 'City' }] },
+            ],
           },
         ],
       },

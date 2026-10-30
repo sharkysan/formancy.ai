@@ -9,14 +9,7 @@ import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { BUILDER_MESSAGES_FR } from './messages-fr.js'
 import { applyProposal } from './proposal.js'
 import { createBuilderSession } from './session.js'
-import {
-  missingMessages,
-  proposeTranslation,
-  translateCatalogue,
-  translationHeading,
-  translationStatus,
-  translationToReview,
-} from './translate.js'
+import { missingMessages, proposeTranslation, translateCatalogue, translationHeading, translationStatus, translationToReview } from './translate.js'
 import type { TranslationAnswer } from './translate.js'
 import { TRANSLATION_COMPLAINTS, translationComplaint, translationPrompt } from './translate-prompt.js'
 
@@ -119,10 +112,7 @@ const answerWith = (
   return JSON.stringify({
     locale,
     defaultLocale: 'en',
-    messages: [
-      ...rows.map(({ id, source }) => ({ id, source, target: targets[id] ?? '' })),
-      ...extra,
-    ],
+    messages: [...rows.map(({ id, source }) => ({ id, source, target: targets[id] ?? '' })), ...extra],
   })
 }
 
@@ -147,9 +137,7 @@ describe('the request', () => {
   test('says where each message is used, so a label stays a label', () => {
     // Prevents a row that says only "Germany": a model cannot tell an answer from a
     // heading from a country being asked about, and translates whichever it guesses.
-    const contexts = Object.fromEntries(
-      translationPrompt(order, 'fr').rows.map((row) => [row.id, row.context]),
-    )
+    const contexts = Object.fromEntries(translationPrompt(order, 'fr').rows.map((row) => [row.id, row.context]))
 
     expect(contexts).toEqual({
       'country.de': 'option of "Country"',
@@ -157,9 +145,7 @@ describe('the request', () => {
       email: 'label of a text question "Email"',
       'section.where': 'heading of a section of the form',
     })
-    expect(translationPrompt(order, 'de').rows.find((row) => row.id === 'country')?.context).toBe(
-      'label of a select question "Country"',
-    )
+    expect(translationPrompt(order, 'de').rows.find((row) => row.id === 'country')?.context).toBe('label of a select question "Country"')
   })
 
   test('gives every row a context, wherever in the form its message is used', () => {
@@ -246,9 +232,7 @@ describe('the request', () => {
     expect(new Set(rows.map((row) => row.context)).size).toBe(rows.length)
     expect(rows.find((row) => row.id === 'tab.one')?.context).toBe('name of a tab')
     expect(rows.find((row) => row.id === 'later.future')?.context).toBe('"future" of "Later"')
-    expect(rows.find((row) => row.id === 'later.given')?.context).toBe(
-      'message shown when an answer to "Later" is refused, saying what would be accepted',
-    )
+    expect(rows.find((row) => row.id === 'later.given')?.context).toBe('message shown when an answer to "Later" is refused, saying what would be accepted')
   })
 
   test('carries none of the form’s rules, only its words and where they are used', () => {
@@ -260,9 +244,7 @@ describe('the request', () => {
     // sent along.
     const request = translationPrompt(order, 'fr')
     const said = `${request.system}\n${request.user}`
-    const ruleWords = (order.logic?.rules ?? []).flatMap((rule) =>
-      [rule.cel, rule.code, rule.check].filter((value): value is string => value !== undefined),
-    )
+    const ruleWords = (order.logic?.rules ?? []).flatMap((rule) => [rule.cel, rule.code, rule.check].filter((value): value is string => value !== undefined))
     const inJson = (words: string): string => JSON.stringify(words).slice(1, -1)
     const spellings = ruleWords.flatMap((words) => [words, inJson(words)])
 
@@ -330,28 +312,18 @@ describe('asking a model', () => {
 
     expect(result.ok && result.attempts).toBe(3)
     expect(model.asked[1]!.followUp).toBe(translationComplaint(TRANSLATION_COMPLAINTS.notJson))
-    expect(model.asked[2]!.followUp).toBe(
-      translationComplaint(TRANSLATION_COMPLAINTS.notACatalogue(TRANSLATION_COMPLAINTS.badMessage(0))),
-    )
+    expect(model.asked[2]!.followUp).toBe(translationComplaint(TRANSLATION_COMPLAINTS.notACatalogue(TRANSLATION_COMPLAINTS.badMessage(0))))
   })
 
   test('says which half of the file was missing, when it was not a catalogue file at all', async () => {
     // A model told "that was not the catalogue file" and nothing more rewrites the part
     // that was right. The complaint names what the file lacked.
-    const model = scripted(
-      JSON.stringify({ messages: [] }),
-      JSON.stringify({ locale: 'fr', translations: {} }),
-      answerWith(FRENCH),
-    )
+    const model = scripted(JSON.stringify({ messages: [] }), JSON.stringify({ locale: 'fr', translations: {} }), answerWith(FRENCH))
 
     await translateCatalogue(model.ask, order, 'fr')
 
-    expect(model.asked[1]!.followUp).toBe(
-      translationComplaint(TRANSLATION_COMPLAINTS.notACatalogue(TRANSLATION_COMPLAINTS.noLocale)),
-    )
-    expect(model.asked[2]!.followUp).toBe(
-      translationComplaint(TRANSLATION_COMPLAINTS.notACatalogue(TRANSLATION_COMPLAINTS.noMessages)),
-    )
+    expect(model.asked[1]!.followUp).toBe(translationComplaint(TRANSLATION_COMPLAINTS.notACatalogue(TRANSLATION_COMPLAINTS.noLocale)))
+    expect(model.asked[2]!.followUp).toBe(translationComplaint(TRANSLATION_COMPLAINTS.notACatalogue(TRANSLATION_COMPLAINTS.noMessages)))
   })
 
   test('keeps a partial answer, and says which messages are still missing', async () => {
@@ -446,9 +418,7 @@ describe('a proposal', () => {
     const proposal = proposeTranslation(session, await answered(FRENCH))
 
     expect(proposal.locale).toBe('fr')
-    expect(proposal.rows.map(({ id, was, now }) => ({ id, was, now }))).toEqual(
-      Object.entries(FRENCH).map(([id, now]) => ({ id, was: '', now })),
-    )
+    expect(proposal.rows.map(({ id, was, now }) => ({ id, was, now }))).toEqual(Object.entries(FRENCH).map(([id, now]) => ({ id, was: '', now })))
     // One change, and it is the French: nothing about the form but how it reads in French.
     expect(proposal.changes.map((change) => change.path)).toEqual(['i18n.messages.fr'])
     expect(proposal.costsAnswers).toBe(false)
@@ -526,20 +496,14 @@ describe('a proposal', () => {
 
     const proposal = proposeTranslation(session, result.answer)
 
-    expect(proposal.rows).toEqual([
-      { id: 'email', source: 'Do not email me', was: '', now: 'Courriel', flags: ['stale'] },
-    ])
+    expect(proposal.rows).toEqual([{ id: 'email', source: 'Do not email me', was: '', now: 'Courriel', flags: ['stale'] }])
   })
 
   test('takes a target of nothing but spaces as one left empty, and writes nothing for it', async () => {
     // Prevents a French label of " ": the import writes any target but "", and a form
     // reads any target its language has before the default's, so a blank one hid the
     // English fallback, counted as translated, and left the language reported complete.
-    const result = await translateCatalogue(
-      scripted(answerWith({ ...FRENCH, canton: '\n\t', email: ' ' })).ask,
-      order,
-      'fr',
-    )
+    const result = await translateCatalogue(scripted(answerWith({ ...FRENCH, canton: '\n\t', email: ' ' })).ask, order, 'fr')
     if (!result.ok) throw new Error('the scripted answer was refused')
     expect(result.answer.stillMissing).toEqual(['canton', 'email'])
 
@@ -556,10 +520,7 @@ describe('a proposal', () => {
     // keeps a person's translation.
     const answer: TranslationAnswer = {
       ...(await answered(FRENCH)),
-      messages: [
-        ...(await answered(FRENCH)).messages,
-        { id: 'country', source: 'Country', target: 'Contrée' },
-      ],
+      messages: [...(await answered(FRENCH)).messages, { id: 'country', source: 'Country', target: 'Contrée' }],
     }
     const session = createBuilderSession(order)
 
@@ -637,11 +598,7 @@ describe('a proposal', () => {
     const session = createBuilderSession(order)
     const first = proposeTranslation(session, await answered({ email: 'Courriel' }))
     session.setMessage('fr', 'canton', 'Canton suisse')
-    const more = await translateCatalogue(
-      scripted(answerWith({ 'country.de': 'Allemagne', 'section.where': 'Livraison' })).ask,
-      first.document,
-      'fr',
-    )
+    const more = await translateCatalogue(scripted(answerWith({ 'country.de': 'Allemagne', 'section.where': 'Livraison' })).ask, first.document, 'fr')
     if (!more.ok) throw new Error('the scripted answer was refused')
 
     const outcome = applyProposal(session, proposeTranslation(session, more.answer, first))
@@ -674,12 +631,8 @@ describe('what a pane says', () => {
     const state = { busy: false, result, proposal, refusal: undefined }
     const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
 
-    expect(translationStatus(state, text)).toBe(
-      `${text('translate.status.ready', { count: 1 })} ${text('translate.status.stillMissing', { count: 3 })}`,
-    )
-    expect(translationStatus(state, german)).toBe(
-      `${german('translate.status.ready', { count: 1 })} ${german('translate.status.stillMissing', { count: 3 })}`,
-    )
+    expect(translationStatus(state, text)).toBe(`${text('translate.status.ready', { count: 1 })} ${text('translate.status.stillMissing', { count: 3 })}`)
+    expect(translationStatus(state, german)).toBe(`${german('translate.status.ready', { count: 1 })} ${german('translate.status.stillMissing', { count: 3 })}`)
   })
 
   test('says each way a run ends without an answer as that, and never as a document that failed', () => {
@@ -694,9 +647,7 @@ describe('what a pane says', () => {
     })
 
     expect(translationStatus(ended('gave-up'), text)).toBe(text('translate.status.failed', { count: 3 }))
-    expect(translationStatus(ended('unreachable', 'offline'), text)).toBe(
-      text('prompt.status.unreachable', { reason: 'offline' }),
-    )
+    expect(translationStatus(ended('unreachable', 'offline'), text)).toBe(text('prompt.status.unreachable', { reason: 'offline' }))
     expect(translationStatus(ended('unreachable'), text)).toBe(text('prompt.status.unreachableNoReason'))
     expect(translationStatus(ended('declined', 'no Romansh'), text)).toBe(text('prompt.status.declined'))
   })
@@ -757,9 +708,7 @@ describe('what a pane says', () => {
 
     expect(proposal.rows).toEqual([])
     expect(proposal.dropped).toEqual(Object.keys(FRENCH))
-    expect(translationStatus({ busy: false, result, proposal, refusal: undefined }, text)).toBe(
-      text('translate.status.noneWritten', { count: 4 }),
-    )
+    expect(translationStatus({ busy: false, result, proposal, refusal: undefined }, text)).toBe(text('translate.status.noneWritten', { count: 4 }))
   })
 
   test('and says a model that wrote nothing translated nothing, though a person translated one meanwhile', async () => {
@@ -801,11 +750,7 @@ describe('what a pane says', () => {
     const proposal = proposeTranslation(createBuilderSession(order), result.answer)
     const stopped = { ok: false as const, attempts: 1, problems: [], lastAnswer: '', ended: 'stopped' as const }
 
-    expect(translationStatus({ busy: false, result: stopped, proposal, refusal: undefined }, text)).toBe(
-      text('prompt.status.stopped'),
-    )
-    expect(translationStatus({ busy: true, result: undefined, proposal, refusal: undefined }, text)).toBe(
-      text('translate.status.asking'),
-    )
+    expect(translationStatus({ busy: false, result: stopped, proposal, refusal: undefined }, text)).toBe(text('prompt.status.stopped'))
+    expect(translationStatus({ busy: true, result: undefined, proposal, refusal: undefined }, text)).toBe(text('translate.status.asking'))
   })
 })

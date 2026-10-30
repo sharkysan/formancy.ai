@@ -66,7 +66,10 @@ export function identitiesStorage(
     },
 
     async revokeApiKey(id, atIso) {
-      await db.update(apiKeys).set({ revokedAt: new Date(atIso) }).where(eq(apiKeys.id, id))
+      await db
+        .update(apiKeys)
+        .set({ revokedAt: new Date(atIso) })
+        .where(eq(apiKeys.id, id))
     },
   }
 }

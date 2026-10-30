@@ -20,18 +20,7 @@
  * own Angular, and the gap is said in the compatibility page.
  */
 import { createServer } from 'node:http'
-import {
-  cpSync,
-  createReadStream,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs'
+import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -62,9 +51,7 @@ function closure(all, start) {
 function serve(root) {
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
   const server = createServer((request, response) => {
-    const path = normalize(
-      join(root, decodeURIComponent(new URL(request.url, 'http://x').pathname)),
-    )
+    const path = normalize(join(root, decodeURIComponent(new URL(request.url, 'http://x').pathname)))
     const file = existsSync(path) && statSync(path).isFile() ? path : join(root, 'index.html')
     response.writeHead(200, { 'content-type': types[extname(file)] ?? 'application/octet-stream' })
     createReadStream(file).pipe(response)
@@ -133,9 +120,7 @@ try {
   console.log(`installing them into an Angular ${ANGULAR} project…`)
   // npm, not pnpm: pnpm under a workspace can still find the workspace.
   run('npm', ['install', '--no-audit', '--no-fund', '--loglevel', 'error'], project)
-  const installed = JSON.parse(
-    readFileSync(join(project, 'node_modules', '@angular', 'core', 'package.json'), 'utf8'),
-  ).version
+  const installed = JSON.parse(readFileSync(join(project, 'node_modules', '@angular', 'core', 'package.json'), 'utf8')).version
   console.log(`building it with Angular ${installed}…`)
   run('npx', ['vite', 'build'], project)
 
@@ -157,28 +142,19 @@ try {
     } catch {
       // Nothing rendered: say why, rather than only that the label never appeared.
       const failedToStart = await page.locator('body').getAttribute('data-failed')
-      throw new Error(
-        ['the form never rendered', failedToStart ?? '', ...errors]
-          .filter((line) => line !== '')
-          .join('\n'),
-      )
+      throw new Error(['the form never rendered', failedToStart ?? '', ...errors].filter((line) => line !== '').join('\n'))
     }
     const inMaterial = await email.evaluate((input) => input.closest('mat-form-field') !== null)
     const fileByDefault = await page
       .getByLabel('Receipt')
-      .evaluate(
-        (input) =>
-          input.getAttribute('type') === 'file' && input.closest('mat-form-field') === null,
-      )
+      .evaluate((input) => input.getAttribute('type') === 'file' && input.closest('mat-form-field') === null)
     await email.fill('ada@example.org')
     await page.getByRole('button', { name: 'Submit' }).click()
     const outcome = await page.locator('#outcome').textContent({ timeout: 10_000 })
     const problems = [
       ...(inMaterial ? [] : ['the email is not drawn by Material']),
       ...(fileByDefault ? [] : ['the file is not drawn by the default control']),
-      ...(outcome?.includes('ada@example.org')
-        ? []
-        : [`the submit did not come back: ${String(outcome)}`]),
+      ...(outcome?.includes('ada@example.org') ? [] : [`the submit did not come back: ${String(outcome)}`]),
       ...errors.map((message) => `page error: ${message}`),
     ]
     if (problems.length > 0) throw new Error(problems.join('\n'))
@@ -186,9 +162,7 @@ try {
     await browser.close()
   }
 
-  console.log(
-    `\nAngular install test passed: the packed Angular packages run under Angular ${installed}`,
-  )
+  console.log(`\nAngular install test passed: the packed Angular packages run under Angular ${installed}`)
 } catch (error) {
   failed = true
   console.error('\nAngular install test FAILED')

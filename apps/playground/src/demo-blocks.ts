@@ -126,15 +126,10 @@ export const DEMO_BLOCKS: readonly BuilderBlock[] = [
   }),
 ]
 
-function saved(
-  form: FormSchema,
-  keyPath: readonly string[],
-  meta: { id: string; name: string; description: string },
-): BuilderBlock {
+function saved(form: FormSchema, keyPath: readonly string[], meta: { id: string; name: string; description: string }): BuilderBlock {
   const outcome = blockFrom(form, keyPath, meta, createBuilderText())
   // A demo block that cannot be saved is this file's mistake, and the page would open
   // without it; failing here says which.
-  if (!outcome.ok)
-    throw new Error(`The demo block "${meta.name}" cannot be saved: ${outcome.message}`)
+  if (!outcome.ok) throw new Error(`The demo block "${meta.name}" cannot be saved: ${outcome.message}`)
   return outcome.block
 }

@@ -93,10 +93,7 @@ const answering =
     Promise.resolve(answer)
 const drafting = (...items: unknown[]): string => JSON.stringify({ scenarios: items })
 
-async function mount(
-  inputs: Record<string, unknown>,
-  changed: (next: readonly Scenario[]) => void = () => undefined,
-) {
+async function mount(inputs: Record<string, unknown>, changed: (next: readonly Scenario[]) => void = () => undefined) {
   return render(FormancyScenarioPane, {
     inputs: { removable: true, ...inputs } as Record<string, unknown>,
     on: { scenariosChange: changed },
@@ -341,14 +338,8 @@ describe('drafting', () => {
     await user.click(await screen.findByRole('button', { name: 'Stop drafting' }))
     answer(drafting(HOLDS))
 
-    await waitFor(() =>
-      expect(
-        screen.getAllByRole('status').some((status) => status.textContent === 'Stopped. Nothing was drafted.'),
-      ).toBe(true),
-    )
+    await waitFor(() => expect(screen.getAllByRole('status').some((status) => status.textContent === 'Stopped. Nothing was drafted.')).toBe(true))
     expect(screen.queryByRole('list', { name: 'Drafted examples' })).toBeNull()
-    await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Draft examples with a model' })),
-    )
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Draft examples with a model' })))
   })
 })

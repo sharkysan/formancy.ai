@@ -101,7 +101,7 @@ export async function login(email: string, password: string): Promise<'signed-in
   })
   if (response.status === 401) return 'refused'
   if (!response.ok) return 'unavailable'
-  setToken((await response.json() as { token: string }).token)
+  setToken(((await response.json()) as { token: string }).token)
   return 'signed-in'
 }
 
@@ -111,9 +111,7 @@ export async function fetchForms(): Promise<FormListEntry[]> {
   return ((await response.json()) as { forms: FormListEntry[] }).forms
 }
 
-export async function fetchForm(
-  path: string,
-): Promise<{ version: number; schemaHash: string; schema: FormSchema }> {
+export async function fetchForm(path: string): Promise<{ version: number; schemaHash: string; schema: FormSchema }> {
   const response = await authed(`${BASE}/f/${encodeURIComponent(path)}`)
   if (!response.ok) throw new Error(`GET /f/${path} failed: ${response.status}`)
   return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema }
@@ -167,11 +165,7 @@ export function publishProblem(result: Exclude<PublishResult, { ok: true }>): st
  * optional on the route precisely so that a script or an agent, which composed a
  * document rather than opening one, has nothing to declare.
  */
-export async function publish(
-  path: string,
-  schema: unknown,
-  basedOn?: string,
-): Promise<PublishResult> {
+export async function publish(path: string, schema: unknown, basedOn?: string): Promise<PublishResult> {
   const response = await authed(`${BASE}/forms`, {
     method: 'POST',
     headers: {
@@ -236,10 +230,7 @@ export const SUBMISSIONS_PER_PAGE = 50
  * A page of a form's submissions, newest first, from where `after` says the last one ended, or
  * from the start (0222). `next` asks for the page after this one, and is `null` on the last.
  */
-export async function fetchSubmissionPage(
-  path: string,
-  after?: string,
-): Promise<{ submissions: SubmissionEntry[]; next: string | null }> {
+export async function fetchSubmissionPage(path: string, after?: string): Promise<{ submissions: SubmissionEntry[]; next: string | null }> {
   const query = `limit=${String(SUBMISSIONS_PER_PAGE)}${after === undefined ? '' : `&after=${encodeURIComponent(after)}`}`
   const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions?${query}`)
   if (!response.ok) throw new Error(`submissions failed: ${response.status}`)
@@ -350,10 +341,7 @@ export async function replayDelivery(id: string): Promise<{ ok: boolean; message
   const body = (await response.json().catch(() => ({}))) as { message?: string; error?: string }
   return {
     ok: false,
-    message:
-      body.message ??
-      body.error ??
-      `The server refused the replay (${String(response.status)}).`,
+    message: body.message ?? body.error ?? `The server refused the replay (${String(response.status)}).`,
   }
 }
 
@@ -376,9 +364,7 @@ export async function fetchModel(): Promise<ServerModel | undefined> {
   const response = await authed(`${BASE}/model`)
   if (!response.ok) return undefined
   const body = (await response.json().catch(() => ({}))) as Partial<ServerModel>
-  return typeof body.provider === 'string' && typeof body.model === 'string'
-    ? { provider: body.provider, model: body.model }
-    : undefined
+  return typeof body.provider === 'string' && typeof body.model === 'string' ? { provider: body.provider, model: body.model } : undefined
 }
 
 /**
@@ -409,11 +395,7 @@ export const askServerModel: AskModel = async (prompt, turn) => {
   const body = (await response.json().catch(() => ({}))) as { text?: unknown; declined?: unknown; message?: unknown }
   if (response.ok && typeof body.declined === 'string') return declinedAnswer(body.declined)
   if (response.ok && typeof body.text === 'string') return body.text
-  throw new Error(
-    typeof body.message === 'string'
-      ? body.message
-      : `The server could not ask its model (${String(response.status)}).`,
-  )
+  throw new Error(typeof body.message === 'string' ? body.message : `The server could not ask its model (${String(response.status)}).`)
 }
 
 export function exportUrl(path: string): string {
@@ -431,11 +413,7 @@ export function exportUrl(path: string): string {
  * consumer's form does — including the part where a failure is said out loud
  * instead of leaving somebody believing they attached something.
  */
-export async function uploadFile(
-  path: string,
-  file: File,
-  { field, signal, onProgress }: UploadOptions,
-): Promise<StoredFile> {
+export async function uploadFile(path: string, file: File, { field, signal, onProgress }: UploadOptions): Promise<StoredFile> {
   const offered = await authed(`${BASE}/f/${encodeURIComponent(path)}/files`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

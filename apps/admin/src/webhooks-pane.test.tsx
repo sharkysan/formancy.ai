@@ -82,9 +82,7 @@ describe('what is failing', () => {
     serve({ calls: [] })
     render(<WebhooksPane />)
 
-    const row = (await screen.findByText('https://billing.example.ch/hook')).closest(
-      'tr',
-    ) as HTMLElement
+    const row = (await screen.findByText('https://billing.example.ch/hook')).closest('tr') as HTMLElement
     // The question somebody asks when the CRM has no leads this week.
     expect(within(row).getByText('Not delivering')).toBeTruthy()
     expect(within(row).getByText('9')).toBeTruthy()

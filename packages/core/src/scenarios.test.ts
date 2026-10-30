@@ -56,14 +56,11 @@ const leave: FormSchema = {
 
 const start = { fullName: 'Ada', leaveType: 'holiday', days: 2 }
 
-const run = (scenarios: readonly Scenario[]) =>
-  runScenarios(leave, scenarios, { initialValue: start })
+const run = (scenarios: readonly Scenario[]) => runScenarios(leave, scenarios, { initialValue: start })
 
 describe('a scenario that holds', () => {
   test('passes, and says which it was', () => {
-    const [result] = run([
-      { name: 'other needs a reason', changes: { leaveType: 'other' }, valid: false, errors: { otherReason: ['required'] } },
-    ])
+    const [result] = run([{ name: 'other needs a reason', changes: { leaveType: 'other' }, valid: false, errors: { otherReason: ['required'] } }])
 
     expect(result?.name).toBe('other needs a reason')
     expect(result?.passed).toBe(true)
@@ -102,9 +99,7 @@ describe('what a hidden field leaves behind', () => {
     const clearing: FormSchema = {
       ...leave,
       model: {
-        fields: leave.model.fields.map((field) =>
-          field.key === 'otherReason' ? { ...field, clearOnHide: true } : field,
-        ),
+        fields: leave.model.fields.map((field) => (field.key === 'otherReason' ? { ...field, clearOnHide: true } : field)),
       },
     }
 
@@ -201,9 +196,7 @@ describe('what a hidden field leaves behind', () => {
     expect(absent({ currency: 'EUR' }, 'items[0].discount')?.failures).toEqual([])
     // A group nobody answered is not in the submission at all, and neither is its field:
     // reading through a missing group is an answer, not an error.
-    const [unanswered] = runScenarios(nested, [
-      { name: 'never asked', changes: {}, valid: true, absent: ['home.street'] },
-    ])
+    const [unanswered] = runScenarios(nested, [{ name: 'never asked', changes: {}, valid: true, absent: ['home.street'] }])
     expect(unanswered?.failures).toEqual([])
   })
 })
@@ -215,9 +208,7 @@ describe('a scenario that no longer holds', () => {
      * to the document to work out which rule they broke; "otherReason was
      * expected to be invisible and is visible" names it.
      */
-    const [result] = run([
-      { name: 'other hides the reason', changes: { leaveType: 'other' }, valid: true, visible: { otherReason: false } },
-    ])
+    const [result] = run([{ name: 'other hides the reason', changes: { leaveType: 'other' }, valid: true, visible: { otherReason: false } }])
 
     expect(result?.passed).toBe(false)
     const detail = result?.failures.map((failure) => failure.detail).join(' | ') ?? ''
@@ -230,23 +221,15 @@ describe('a scenario that no longer holds', () => {
      * hidden. Reporting only the first would send somebody round the loop
      * three times for one mistake.
      */
-    expect(result?.failures.map((failure) => failure.about).sort()).toEqual([
-      'errors',
-      'valid',
-      'visible',
-    ])
+    expect(result?.failures.map((failure) => failure.about).sort()).toEqual(['errors', 'valid', 'visible'])
   })
 
   test('and an unexpected error is reported as loudly as a missing one', () => {
     // Asymmetry here is a real failure mode: a rule that fires when it should
     // not is as wrong as one that does not fire, and easier to miss because
     // the form still looks strict.
-    const [missing] = run([
-      { name: 'expects an error that does not happen', changes: { days: 5 }, valid: false, errors: { days: ['min'] } },
-    ])
-    const [extra] = run([
-      { name: 'does not expect the error that does', changes: { days: 0 }, valid: true },
-    ])
+    const [missing] = run([{ name: 'expects an error that does not happen', changes: { days: 5 }, valid: false, errors: { days: ['min'] } }])
+    const [extra] = run([{ name: 'does not expect the error that does', changes: { days: 0 }, valid: true }])
 
     expect(missing?.passed).toBe(false)
     expect(extra?.passed).toBe(false)
@@ -260,9 +243,7 @@ describe('a scenario that no longer holds', () => {
      * that does not exist, which is exactly how a renamed field leaves its
      * scenarios behind.
      */
-    const [result] = run([
-      { name: 'a typo in the path', changes: { otherReson: 'x' }, valid: true },
-    ])
+    const [result] = run([{ name: 'a typo in the path', changes: { otherReson: 'x' }, valid: true }])
 
     expect(result?.passed, 'a scenario about a field that does not exist passed').toBe(false)
     expect(result?.failures[0]?.detail).toContain('otherReson')
@@ -366,12 +347,10 @@ describe('a path that names something other than one answer', () => {
     logic: { rules: [{ target: 'count', kind: 'computed', cel: 'size(colleagues)' }] },
   }
 
-  const failuresOf = (schema: FormSchema, scenario: Omit<Scenario, 'name'>) =>
-    runScenarios(schema, [{ name: 'one', ...scenario }])[0]?.failures ?? []
+  const failuresOf = (schema: FormSchema, scenario: Omit<Scenario, 'name'>) => runScenarios(schema, [{ name: 'one', ...scenario }])[0]?.failures ?? []
 
   /** What the runner says about `path` when it is set. */
-  const saidOf = (schema: FormSchema, path: string) =>
-    failuresOf(schema, { changes: { [path]: 'x' }, valid: true })
+  const saidOf = (schema: FormSchema, path: string) => failuresOf(schema, { changes: { [path]: 'x' }, valid: true })
 
   /**
    * The sentence a path gets from a form that has nothing at all: what "this form has no
@@ -381,8 +360,7 @@ describe('a path that names something other than one answer', () => {
   const missing = (path: string) => saidOf({ ...conference, model: { fields: [] }, logic: { rules: [] } }, path)[0]?.detail
 
   /** The paths a sentence offers in place of the one it is about. */
-  const offered = (detail: string, path: string) =>
-    [...detail.matchAll(/"([^"]+)"/g)].map((match) => match[1]!).filter((quoted) => quoted !== path)
+  const offered = (detail: string, path: string) => [...detail.matchAll(/"([^"]+)"/g)].map((match) => match[1]!).filter((quoted) => quoted !== path)
 
   /** Whether the runner takes `path` as one answer a scenario can name. */
   const taken = (path: string) => saidOf(conference, path).every((failure) => failure.about !== 'path')
@@ -395,7 +373,12 @@ describe('a path that names something other than one answer', () => {
      * is filled.
      */
     const failures = failuresOf(conference, {
-      changes: { colleagues: [{ who: 'Ada', fee: 100 }, { who: 'Grace', fee: 120 }] },
+      changes: {
+        colleagues: [
+          { who: 'Ada', fee: 100 },
+          { who: 'Grace', fee: 120 },
+        ],
+      },
       valid: true,
       values: { count: 2 },
     })
@@ -409,11 +392,7 @@ describe('a path that names something other than one answer', () => {
     for (const path of instead) expect(taken(path), `it offers "${path}", which the runner refuses`).toBe(true)
 
     // The publish runs the examples in server mode, and its warning is this sentence too.
-    const [onTheServer] = runScenarios(
-      conference,
-      [{ name: 'one', changes: { colleagues: [{ who: 'Ada', fee: 100 }] }, valid: true }],
-      { mode: 'server' },
-    )
+    const [onTheServer] = runScenarios(conference, [{ name: 'one', changes: { colleagues: [{ who: 'Ada', fee: 100 }] }, valid: true }], { mode: 'server' })
     expect(onTheServer?.failures.map((failure) => failure.detail)).toEqual([detail])
   })
 
@@ -448,7 +427,10 @@ describe('a path that names something other than one answer', () => {
     const asAnAnswer = saidOf(conference, 'colleagues')[0]?.detail
     for (const expectation of [{ values: { colleagues: [] } }, { absent: ['colleagues'] }]) {
       const failures = failuresOf(conference, { changes: {}, valid: true, ...expectation })
-      expect(failures.map((failure) => failure.detail), JSON.stringify(expectation)).toEqual([asAnAnswer])
+      expect(
+        failures.map((failure) => failure.detail),
+        JSON.stringify(expectation),
+      ).toEqual([asAnAnswer])
     }
   })
 
@@ -461,9 +443,7 @@ describe('a path that names something other than one answer', () => {
      * list whole stays refused: it is filled row by row.
      */
     const fourth = Object.fromEntries(['Ada', 'Grace', 'Edsger', 'Barbara'].map((who, row) => [`colleagues[${String(row)}].who`, who]))
-    expect(
-      failuresOf(conference, { changes: fourth, valid: false, errors: { colleagues: ['maxItems'] }, visible: { colleagues: true } }),
-    ).toEqual([])
+    expect(failuresOf(conference, { changes: fourth, valid: false, errors: { colleagues: ['maxItems'] }, visible: { colleagues: true } })).toEqual([])
     expect(failuresOf(conference, { changes: fourth, valid: false }).map((failure) => failure.detail)).toEqual([
       '"colleagues": expected no error, got maxItems.',
     ])
@@ -526,7 +506,10 @@ describe('a path that names something other than one answer', () => {
      * field that is not there.
      */
     for (const path of ['collegues', 'home.zip', 'colleagues[0].feee', 'colleagues.feee', 'home[0]', 'name.first', 'home..street']) {
-      expect(saidOf(conference, path).map((failure) => failure.detail), path).toEqual([missing(path)])
+      expect(
+        saidOf(conference, path).map((failure) => failure.detail),
+        path,
+      ).toEqual([missing(path)])
     }
   })
 
@@ -589,8 +572,6 @@ describe('the mode a scenario runs in', () => {
     const scenario: Scenario = { name: 'holds in both', changes: { leaveType: 'other', otherReason: 'why' }, valid: true }
 
     expect(runScenarios(leave, [scenario], { initialValue: start })[0]?.passed).toBe(true)
-    expect(
-      runScenarios(leave, [scenario], { initialValue: start, mode: 'server' })[0]?.passed,
-    ).toBe(true)
+    expect(runScenarios(leave, [scenario], { initialValue: start, mode: 'server' })[0]?.passed).toBe(true)
   })
 })

@@ -98,7 +98,6 @@ describe('the property panel', () => {
 
     expect(values).toEqual(['', 'email', 'url', 'uuid'])
   })
-
 })
 
 /**
@@ -138,13 +137,8 @@ describe('editing a field\u2019s choices', () => {
   test('the existing choices are shown as label and stored value', () => {
     mountSelect()
 
-    expect(screen.getAllByLabelText('Choice label').map((input) => (input as HTMLInputElement).value)).toEqual([
-      'Switzerland',
-      'Germany',
-    ])
-    expect(
-      screen.getAllByLabelText('Stored value').map((input) => (input as HTMLInputElement).value),
-    ).toEqual(['ch', 'de'])
+    expect(screen.getAllByLabelText('Choice label').map((input) => (input as HTMLInputElement).value)).toEqual(['Switzerland', 'Germany'])
+    expect(screen.getAllByLabelText('Stored value').map((input) => (input as HTMLInputElement).value)).toEqual(['ch', 'de'])
   })
 
   test('rewording a label leaves the stored value alone', async () => {
@@ -199,9 +193,7 @@ describe('a choice can be retyped, not only appended to', () => {
       id: 'order',
       title: 'Order',
       model: {
-        fields: [
-          { key: 'c', type: 'select', label: 'Country', options: [{ value: 'ch', label: 'Switzerland' }] },
-        ],
+        fields: [{ key: 'c', type: 'select', label: 'Country', options: [{ value: 'ch', label: 'Switzerland' }] }],
       },
     } as FormSchema)
     render(<PropertyPanel session={session} keyPath={['c']} />)
@@ -234,8 +226,7 @@ describe('a choice’s picture', () => {
         ],
       },
     } as FormSchema)
-  const optionsOf = (session: ReturnType<typeof createBuilderSession>) =>
-    (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
+  const optionsOf = (session: ReturnType<typeof createBuilderSession>) => (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
 
   test('can be given and described on a radio group', async () => {
     const user = userEvent.setup()
@@ -245,9 +236,7 @@ describe('a choice’s picture', () => {
     await user.type(screen.getByLabelText('Picture address'), '/cat.png')
     await user.type(screen.getByLabelText('What the picture shows'), 'A tabby')
 
-    expect(optionsOf(session)).toEqual([
-      { value: 'cat', label: 'Cat', image: { src: '/cat.png', alt: 'A tabby' } },
-    ])
+    expect(optionsOf(session)).toEqual([{ value: 'cat', label: 'Cat', image: { src: '/cat.png', alt: 'A tabby' } }])
   })
 
   test('and clearing its address takes the picture away rather than keeping it', async () => {
@@ -277,8 +266,7 @@ describe('a choice chosen only on its own (0199)', () => {
       title: 'Health',
       model: { fields: [{ key: 'allergies', type, label: 'Allergies', options: [{ value: 'none', label: 'None of these' }] }] },
     } as FormSchema)
-  const optionsOf = (session: ReturnType<typeof createBuilderSession>) =>
-    (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
+  const optionsOf = (session: ReturnType<typeof createBuilderSession>) => (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
 
   test('can be set on a list of ticks, and taken off again leaves no flag', async () => {
     const user = userEvent.setup()
@@ -385,9 +373,7 @@ describe('a matrix in the property panel', () => {
     render(<PropertyPanel session={session} keyPath={['rating']} />)
 
     expect(screen.getByText('Rows')).toBeTruthy()
-    expect(
-      screen.getAllByLabelText('Row label').map((input) => (input as HTMLInputElement).value),
-    ).toEqual(['Taste'])
+    expect(screen.getAllByLabelText('Row label').map((input) => (input as HTMLInputElement).value)).toEqual(['Taste'])
 
     await user.click(screen.getByRole('button', { name: 'Add a row' }))
 

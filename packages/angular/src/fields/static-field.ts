@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { injectFieldContext } from '../registry.js'
 
-
 /**
  * Text the reader sees that collects nothing.
  *

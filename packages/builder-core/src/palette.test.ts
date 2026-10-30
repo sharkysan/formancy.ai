@@ -30,9 +30,7 @@ describe('paletteEntries', () => {
     // Derived rather than listed: the palette is generated from the schema
     // precisely so a new type appears in it without anyone remembering, and a
     // literal list here would be the one place that still had to be edited.
-    expect(paletteEntries().map((entry) => entry.type)).toEqual(
-      FIELD_TYPES.filter((type) => type !== 'page'),
-    )
+    expect(paletteEntries().map((entry) => entry.type)).toEqual(FIELD_TYPES.filter((type) => type !== 'page'))
   })
 
   test('a version 1 document is offered only what version 1 defines', () => {

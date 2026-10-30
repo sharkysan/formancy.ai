@@ -34,8 +34,7 @@ async function mount(type: 'radio' | 'selectboxes') {
   return { engine, click }
 }
 
-const named = (role: 'radio' | 'checkbox'): string[] =>
-  screen.getAllByRole(role).map((control) => (control as HTMLInputElement).id.split(':').pop() ?? '')
+const named = (role: 'radio' | 'checkbox'): string[] => screen.getAllByRole(role).map((control) => (control as HTMLInputElement).id.split(':').pop() ?? '')
 
 describe('a shuffled order', () => {
   test('draws a radio group’s options in the engine’s order, with the one that keeps its place last', async () => {

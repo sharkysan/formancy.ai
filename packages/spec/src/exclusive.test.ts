@@ -41,15 +41,11 @@ describe('an exclusive option', () => {
   // believed it did something.
   test('is refused on any other kind of choice, naming the option', () => {
     for (const type of ['radio', 'select', 'ranking'] as const) {
-      expect(errorsOf(formWith({ type })), type).toMatchObject([
-        { path: '/model/fields/0/options/1/exclusive', code: 'option.exclusiveNotAList' },
-      ])
+      expect(errorsOf(formWith({ type })), type).toMatchObject([{ path: '/model/fields/0/options/1/exclusive', code: 'option.exclusiveNotAList' }])
     }
   })
 
   test('in a version 4 document is refused, naming the property', () => {
-    expect(errorsOf(formWith({}, '4'))).toMatchObject([
-      { path: '/model/fields/0/options/1/exclusive', code: 'version.property' },
-    ])
+    expect(errorsOf(formWith({}, '4'))).toMatchObject([{ path: '/model/fields/0/options/1/exclusive', code: 'version.property' }])
   })
 })

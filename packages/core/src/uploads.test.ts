@@ -31,10 +31,7 @@ function controlled() {
     resolve: (stored: Stored) => void
     reject: (error: unknown) => void
   }> = []
-  const upload = vi.fn(
-    (file: Picked, attempt: UploadAttempt) =>
-      new Promise<Stored>((resolve, reject) => calls.push({ file, attempt, resolve, reject })),
-  )
+  const upload = vi.fn((file: Picked, attempt: UploadAttempt) => new Promise<Stored>((resolve, reject) => calls.push({ file, attempt, resolve, reject })))
   return { calls, upload }
 }
 
@@ -162,9 +159,7 @@ describe('an upload queue', () => {
     queue.cancel(queue.pending()[0]!.key)
 
     expect(stop).toHaveBeenCalledTimes(1)
-    expect(queue.pending().map(({ name, state }) => [name, state])).toEqual([
-      ['b.pdf', 'uploading'],
-    ])
+    expect(queue.pending().map(({ name, state }) => [name, state])).toEqual([['b.pdf', 'uploading']])
     calls[0]!.resolve({ id: 'a', name: 'a.pdf' })
     calls[1]!.resolve({ id: 'b', name: 'b.pdf' })
     await settle()

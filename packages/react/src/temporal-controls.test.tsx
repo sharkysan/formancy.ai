@@ -24,10 +24,7 @@ import { FormancyProvider } from './context.js'
  */
 afterEach(cleanup)
 
-const mount = (
-  type: 'date' | 'time' | 'datetime',
-  over: Record<string, unknown> = {},
-): ReturnType<typeof createFormEngine> => {
+const mount = (type: 'date' | 'time' | 'datetime', over: Record<string, unknown> = {}): ReturnType<typeof createFormEngine> => {
   const schema: FormSchema = {
     specVersion: type === 'date' ? '1' : '2',
     id: 'booking',

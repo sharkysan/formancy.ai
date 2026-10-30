@@ -13,10 +13,7 @@ interface MonacoPlugin {
   configResolved(config: { readonly root: string; readonly build: { readonly outDir: string } }): void
   configureServer(server: {
     readonly middlewares: {
-      use(
-        path: string,
-        handle: (request: IncomingMessage, response: ServerResponse, next: () => void) => void,
-      ): unknown
+      use(path: string, handle: (request: IncomingMessage, response: ServerResponse, next: () => void) => void): unknown
     }
   }): void
   writeBundle(): void
@@ -83,4 +80,3 @@ export function monacoFromThisSite(vs: string): MonacoPlugin {
     },
   }
 }
-

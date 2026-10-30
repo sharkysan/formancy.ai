@@ -18,8 +18,7 @@ import type { Phrased, Suggestion, Translated } from './suggestions.js'
 export const BACKWARDS_EDIT: Phrased = {
   feature: 'prompt',
   words: 'Add Austria to the countries, and ask only people in Switzerland for a canton',
-  shows:
-    'If the answer turns the canton rule round, the starter’s examples stop holding, and the review names them before anything is applied.',
+  shows: 'If the answer turns the canton rule round, the starter’s examples stop holding, and the review names them before anything is applied.',
 }
 
 /**
@@ -30,8 +29,7 @@ export const BACKWARDS_EDIT: Phrased = {
 export const OUT_OF_REACH: Phrased = {
   feature: 'prompt',
   words: 'Email me a copy of every order',
-  shows:
-    'A form says what it asks, not where its answers go, so this is a request a model is asked to decline, with its reason.',
+  shows: 'A form says what it asks, not where its answers go, so this is a request a model is asked to decline, with its reason.',
 }
 
 /**
@@ -45,8 +43,7 @@ export const FRENCH: Translated = {
   feature: 'translation',
   words: 'Translate the French this form is missing',
   locale: 'fr',
-  shows:
-    'The starter comes with its French half-finished, on purpose. Only what is missing is asked for, and each message is reviewed before it lands.',
+  shows: 'The starter comes with its French half-finished, on purpose. Only what is missing is asked for, and each message is reviewed before it lands.',
 }
 
 /**
@@ -57,13 +54,7 @@ export const FRENCH: Translated = {
 export const DRAFTING_INTENT: Phrased = {
   feature: 'drafting',
   words: 'Express delivery needs a “wanted by” date; standard delivery does not',
-  shows:
-    'The starter has this rule and no example of it. The model is not shown the rule; the engine runs each draft before you keep it.',
+  shows: 'The starter has this rule and no example of it. The model is not shown the rule; the engine runs each draft before you keep it.',
 }
 
-export const STARTER_SUGGESTIONS: readonly Suggestion[] = [
-  BACKWARDS_EDIT,
-  OUT_OF_REACH,
-  FRENCH,
-  DRAFTING_INTENT,
-]
+export const STARTER_SUGGESTIONS: readonly Suggestion[] = [BACKWARDS_EDIT, OUT_OF_REACH, FRENCH, DRAFTING_INTENT]

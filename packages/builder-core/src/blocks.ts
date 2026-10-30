@@ -40,9 +40,7 @@ export interface BuilderBlock {
   readonly messages?: Readonly<Record<string, Readonly<Record<string, string>>>>
 }
 
-export type BlockSaved =
-  | { readonly ok: true; readonly block: BuilderBlock; readonly leftOut: number }
-  | { readonly ok: false; readonly message: string }
+export type BlockSaved = { readonly ok: true; readonly block: BuilderBlock; readonly leftOut: number } | { readonly ok: false; readonly message: string }
 
 /**
  * The field at `keyPath`, as a block.
@@ -69,8 +67,7 @@ export function blockFrom(
     return { ok: false, message: text('refuse.blockInRow') }
   }
 
-  const about = (rule: LogicRule): boolean =>
-    !PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && underPath(rule.target, root)
+  const about = (rule: LogicRule): boolean => !PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && underPath(rule.target, root)
   const readsInside = (rule: LogicRule): boolean => {
     if (rule.cel === undefined) return true
     const parsed = parse(rule.cel)
@@ -78,11 +75,7 @@ export function blockFrom(
     // A row's rule reads its row through `item` and its position through `index`; the
     // row is inside the block whenever the rule's target is.
     const inRow = rule.target.includes('[]')
-    return referencedPaths(parsed.ast).every(
-      (path) =>
-        underPath(path, root) ||
-        (inRow && (path === 'index' || path === 'item' || path.startsWith('item.'))),
-    )
+    return referencedPaths(parsed.ast).every((path) => underPath(path, root) || (inRow && (path === 'index' || path === 'item' || path.startsWith('item.'))))
   }
   const ours = (document.logic?.rules ?? []).filter(about)
   const rules = ours.filter(readsInside)
@@ -90,10 +83,7 @@ export function blockFrom(
   const ids = new Set(referencedMessages({ model: { fields: [field] } } as unknown as FormSchema))
   const messages = Object.fromEntries(
     Object.entries(document.i18n?.messages ?? {})
-      .map(([locale, words]) => [
-        locale,
-        Object.fromEntries(Object.entries(words).filter(([id]) => ids.has(id))),
-      ])
+      .map(([locale, words]) => [locale, Object.fromEntries(Object.entries(words).filter(([id]) => ids.has(id)))])
       .filter(([, words]) => Object.keys(words as object).length > 0),
   ) as Record<string, Record<string, string>>
 
@@ -112,9 +102,7 @@ export function blockFrom(
   }
 }
 
-export type BlockPlaced =
-  | { readonly ok: true; readonly document: FormSchema }
-  | { readonly ok: false; readonly message: string }
+export type BlockPlaced = { readonly ok: true; readonly document: FormSchema } | { readonly ok: false; readonly message: string }
 
 /**
  * The document with the block inserted at `location` — keys made unique, its rules
@@ -124,12 +112,7 @@ export type BlockPlaced =
  * Pure, so a builder can show what it would do before doing it, and so a session applies
  * it as one edit that undo takes back.
  */
-export function withBlock(
-  document: FormSchema,
-  location: Location,
-  block: BuilderBlock,
-  text: BuilderText,
-): BlockPlaced {
+export function withBlock(document: FormSchema, location: Location, block: BuilderBlock, text: BuilderText): BlockPlaced {
   const draft = copy(document)
   const container = containerAt(draft, location.parent)
   if (container === undefined) {
@@ -181,11 +164,7 @@ export function withBlock(
  * because the rules can rule out a container the field alone would not — a repeater row,
  * where they would be about every row.
  */
-export function blockTargets(
-  document: FormSchema,
-  block: BuilderBlock,
-  text: BuilderText,
-): MoveTarget[] {
+export function blockTargets(document: FormSchema, block: BuilderBlock, text: BuilderText): MoveTarget[] {
   const worded = copy(document)
   const { field } = landing(worded, block)
   const lands = new Map<string, boolean>()
@@ -217,10 +196,7 @@ interface Rename {
  * `city2` — and the renames, in the order a walk meets them: ancestors before what they
  * hold, which is the order their rules have to follow them in.
  */
-function rekeyed(
-  document: FormSchema,
-  block: BuilderBlock,
-): { field: FieldDef; renames: Rename[] } {
+function rekeyed(document: FormSchema, block: BuilderBlock): { field: FieldDef; renames: Rename[] } {
   const taken = new Set<string>()
   const collect = (fields: readonly FieldDef[]): void => {
     for (const field of fields) {
@@ -265,8 +241,7 @@ function wordsInto(draft: FormSchema, block: BuilderBlock): Map<string, string> 
       const existing = ours[locale]?.[id]
       return words[id] !== undefined && existing !== undefined && existing !== words[id]
     })
-  const taken = (id: string): boolean =>
-    ids.has(id) || Object.values(ours).some((words) => words[id] !== undefined)
+  const taken = (id: string): boolean => ids.has(id) || Object.values(ours).some((words) => words[id] !== undefined)
 
   const renamed = new Map<string, string>()
   for (const id of ids) {
@@ -292,32 +267,20 @@ function retold<T>(value: T, renamed: ReadonlyMap<string, string>): T {
   const record = value as Record<string, unknown>
   const id = record['$t']
   if (typeof id === 'string') return { ...record, $t: renamed.get(id) ?? id } as T
-  return Object.fromEntries(
-    Object.entries(record).map(([key, item]) => [key, retold(item, renamed)]),
-  ) as T
+  return Object.fromEntries(Object.entries(record).map(([key, item]) => [key, retold(item, renamed)])) as T
 }
 
 /** Insert a block through a session: one edit, validated as any other, which undo takes back. */
-export function insertBlock(
-  session: BuilderSession,
-  location: Location,
-  block: BuilderBlock,
-): CommandOutcome {
+export function insertBlock(session: BuilderSession, location: Location, block: BuilderBlock): CommandOutcome {
   const placed = withBlock(session.document(), location, block, session.text)
   if (!placed.ok) return { ok: false, path: '', message: placed.message }
   return session.replaceDocument(placed.document)
 }
 
 /** Insert a block where the person chose, and say what happened — the same words in both builders. */
-export function insertBlockAndSay(
-  session: BuilderSession,
-  block: BuilderBlock,
-  target: MoveTarget,
-): string {
+export function insertBlockAndSay(session: BuilderSession, block: BuilderBlock, target: MoveTarget): string {
   const outcome = insertBlock(session, target.location, block)
-  return outcome.ok
-    ? session.text('said.blockAdded', { name: block.name, where: target.label })
-    : session.text('said.cannotAdd', { reason: outcome.message })
+  return outcome.ok ? session.text('said.blockAdded', { name: block.name, where: target.label }) : session.text('said.cannotAdd', { reason: outcome.message })
 }
 
 /**
@@ -334,10 +297,7 @@ export function saveBlockAndSay(
   if (!saved.ok) return { said: saved.message }
   return {
     block: saved.block,
-    said:
-      saved.leftOut === 0
-        ? text('said.blockSavedWhole', { name: meta.name })
-        : text('said.blockSaved', { name: meta.name, count: saved.leftOut }),
+    said: saved.leftOut === 0 ? text('said.blockSavedWhole', { name: meta.name }) : text('said.blockSaved', { name: meta.name, count: saved.leftOut }),
   }
 }
 

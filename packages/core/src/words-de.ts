@@ -85,22 +85,18 @@ export const FORM_WORDS_DE = {
 
   'tabs.unnamed': 'Registerkarte {position}',
 
-  'options.unavailable':
-    'Die Antworten dieses Felds kommen aus „{source}“, das diese Anwendung nicht bereitstellt.',
+  'options.unavailable': 'Die Antworten dieses Felds kommen aus „{source}“, das diese Anwendung nicht bereitstellt.',
   'options.failed': 'Die Optionen konnten nicht geladen werden. Tippen Sie, um es erneut zu versuchen.',
-  'options.failedListed':
-    'Die Optionen konnten nicht geladen werden. Sie werden jedes Mal erneut angefragt, wenn Sie zu diesem Feld wechseln.',
+  'options.failedListed': 'Die Optionen konnten nicht geladen werden. Sie werden jedes Mal erneut angefragt, wenn Sie zu diesem Feld wechseln.',
   'options.failedTicks': 'Die Optionen konnten nicht geladen werden.',
   'options.retry': 'Erneut versuchen',
   'options.tooShort': {
     one: 'Geben Sie mindestens {count} Zeichen ein, um zu suchen.',
     other: 'Geben Sie mindestens {count} Zeichen ein, um zu suchen.',
   },
-  'options.searchOnly':
-    'Die Antworten dieses Felds werden über eine Suche gefunden, die diese Liste nicht bietet.',
+  'options.searchOnly': 'Die Antworten dieses Felds werden über eine Suche gefunden, die diese Liste nicht bietet.',
   'options.searching': 'Suche läuft…',
-  'options.capped':
-    'Die ersten {shown} von {total} werden angezeigt – tippen Sie weiter, um einzugrenzen.',
+  'options.capped': 'Die ersten {shown} von {total} werden angezeigt – tippen Sie weiter, um einzugrenzen.',
   'options.cappedListed': {
     one: 'Die erste von {total} wird angezeigt.',
     other: 'Die ersten {count} von {total} werden angezeigt.',
@@ -129,8 +125,7 @@ export const FORM_WORDS_DE = {
   'ranking.remove': '{option} aus der Reihenfolge nehmen',
   'ranking.rank': '{option} einreihen',
 
-  'file.unavailable':
-    'Dieses Formular kann hier keine Dateien annehmen, weil kein Speicherort für Uploads eingerichtet ist.',
+  'file.unavailable': 'Dieses Formular kann hier keine Dateien annehmen, weil kein Speicherort für Uploads eingerichtet ist.',
   'file.up': '{name}, {position} von {count}, nach oben verschieben',
   'file.down': '{name}, {position} von {count}, nach unten verschieben',
   'file.remove': '{name} entfernen',
@@ -150,8 +145,7 @@ export const FORM_WORDS_DE = {
 
   'scanner.scan': 'Scannen',
   'scanner.scanning': 'Wird gescannt…',
-  'scanner.noText':
-    'Scannen hat nicht funktioniert: Der Scanner hat keinen Text geliefert. Geben Sie den Wert stattdessen ein.',
+  'scanner.noText': 'Scannen hat nicht funktioniert: Der Scanner hat keinen Text geliefert. Geben Sie den Wert stattdessen ein.',
   'scanner.failed': 'Scannen hat nicht funktioniert: {reason}. Geben Sie den Wert stattdessen ein.',
 
   'richtext.toolbar': 'Formatierung für {label}',
@@ -166,8 +160,7 @@ export const FORM_WORDS_DE = {
   'signature.clear': 'Löschen',
 
   'resume.heading': 'Dieses Formular hat sich geändert, während Sie weg waren',
-  'resume.breaking.kept':
-    'Es hat sich zu stark geändert, um Ihre Antworten zu übernehmen. Deshalb wird es so gezeigt, wie Sie es verlassen haben.',
+  'resume.breaking.kept': 'Es hat sich zu stark geändert, um Ihre Antworten zu übernehmen. Deshalb wird es so gezeigt, wie Sie es verlassen haben.',
   'resume.breaking.cannotSubmit': 'Es kann nicht abgeschickt werden.',
   'resume.breaking.restart': 'Wenn Sie neu beginnen, erhalten Sie das aktuelle Formular.',
   'resume.setAside': {

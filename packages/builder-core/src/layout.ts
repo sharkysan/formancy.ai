@@ -38,9 +38,7 @@ export const LAYOUT_CONTAINER_KINDS = ['section', 'row', 'column'] as const
 
 export type LayoutContainerKind = (typeof LAYOUT_CONTAINER_KINDS)[number]
 
-export function isLayoutContainer(
-  node: LayoutNode,
-): node is Extract<LayoutNode, { children: LayoutNode[] }> {
+export function isLayoutContainer(node: LayoutNode): node is Extract<LayoutNode, { children: LayoutNode[] }> {
   // `!LAYOUT_LEAF_KINDS.has(kind)`, not `kind !== 'field'`. The old spelling was true
   // while `field` was the only childless node, and `qrcode` is the second — so it
   // claimed a code has children and every caller of this predicate believed it.
@@ -58,11 +56,7 @@ export function nodesOfLayout(document: FormSchema, name: string): LayoutNode[] 
  * Undefined rather than empty when the path points at a field or at nothing,
  * so a caller cannot insert into a leaf and get an array nobody reads back.
  */
-export function childrenAt(
-  document: FormSchema,
-  layout: string,
-  parent: readonly number[],
-): LayoutNode[] | undefined {
+export function childrenAt(document: FormSchema, layout: string, parent: readonly number[]): LayoutNode[] | undefined {
   let nodes: LayoutNode[] | undefined = nodesOfLayout(document, layout)
   if (nodes === undefined) return undefined
   for (const step of parent) {
@@ -85,11 +79,7 @@ export function isPosition(step: unknown): step is number {
 }
 
 /** The node at `path`, or undefined. An empty path addresses no node. */
-export function nodeAt(
-  document: FormSchema,
-  layout: string,
-  path: readonly number[],
-): LayoutNode | undefined {
+export function nodeAt(document: FormSchema, layout: string, path: readonly number[]): LayoutNode | undefined {
   if (path.length === 0) return undefined
   const last = path[path.length - 1]
   if (!isPosition(last)) return undefined
@@ -138,11 +128,7 @@ export function samePath(a: readonly number[], b: readonly number[]): boolean {
  * English "and" written into the code
  * ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
  */
-export function describeNode(
-  node: LayoutNode,
-  nameOfPath: (path: string) => string,
-  text: BuilderText = createBuilderText(),
-): string {
+export function describeNode(node: LayoutNode, nameOfPath: (path: string) => string, text: BuilderText = createBuilderText()): string {
   if (node.kind === 'field') return nameOfPath(node.path)
   // A code is named by what it encodes, not by being a code: "Code for Booking
   // reference" is findable in a tree and "Code" is not — the same reasoning a row is
@@ -161,15 +147,9 @@ export function describeNode(
   return text(`layout.with.${node.kind}`, { list: text.list(inside) })
 }
 
-function shortNameOf(
-  node: LayoutNode,
-  nameOfPath: (path: string) => string,
-  text: BuilderText,
-): string {
+function shortNameOf(node: LayoutNode, nameOfPath: (path: string) => string, text: BuilderText): string {
   if (node.kind === 'field') return nameOfPath(node.path)
   if (node.kind === 'qrcode') return text('layout.codeFor.inList', { name: nameOfPath(node.path) })
   const label = typeof node.label === 'string' ? node.label : undefined
-  return label === undefined
-    ? text(`layout.inList.${node.kind}`)
-    : text(`layout.inList.named.${node.kind}`, { label })
+  return label === undefined ? text(`layout.inList.${node.kind}`) : text(`layout.inList.named.${node.kind}`, { label })
 }

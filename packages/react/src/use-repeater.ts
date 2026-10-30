@@ -28,10 +28,7 @@ export function useRepeater(path: string | Path): RepeaterBinding {
   const wire = typeof path === 'string' ? path : formatPath(path)
   const parsed = useMemo(() => parsePath(wire), [wire])
 
-  const subscribe = useCallback(
-    (onChange: () => void) => engine.subscribeField(parsed, onChange),
-    [engine, parsed],
-  )
+  const subscribe = useCallback((onChange: () => void) => engine.subscribeField(parsed, onChange), [engine, parsed])
   const getRowCount = useCallback(() => engine.rowCount(parsed), [engine, parsed])
   const rowCount = useSyncExternalStore(subscribe, getRowCount, getRowCount)
   // Asked of the engine rather than worked out here from the count and the definition, so
@@ -43,10 +40,7 @@ export function useRepeater(path: string | Path): RepeaterBinding {
 
   const addRow = useCallback(() => engine.addRow(parsed), [engine, parsed])
   const removeRow = useCallback((index: number) => engine.removeRow(parsed, index), [engine, parsed])
-  const moveRow = useCallback(
-    (from: number, to: number) => engine.moveRow(parsed, from, to),
-    [engine, parsed],
-  )
+  const moveRow = useCallback((from: number, to: number) => engine.moveRow(parsed, from, to), [engine, parsed])
 
   // Subscribed, not derived from rowCount.
   //
@@ -59,15 +53,9 @@ export function useRepeater(path: string | Path): RepeaterBinding {
   //
   // Joined into one string for the snapshot because `useSyncExternalStore` compares by
   // identity and a fresh array every read would loop for ever.
-  const getRowIdList = useCallback(
-    () => Array.from({ length: engine.rowCount(parsed) }, (_, index) => engine.rowId(parsed, index)).join(' '),
-    [engine, parsed],
-  )
+  const getRowIdList = useCallback(() => Array.from({ length: engine.rowCount(parsed) }, (_, index) => engine.rowId(parsed, index)).join(' '), [engine, parsed])
   const rowIdList = useSyncExternalStore(subscribe, getRowIdList, getRowIdList)
   const rowIds = useMemo(() => (rowIdList === '' ? [] : rowIdList.split(' ')), [rowIdList])
 
-  return useMemo(
-    () => ({ rowCount, rowIds, canAdd, canRemove, addRow, removeRow, moveRow }),
-    [rowCount, rowIds, canAdd, canRemove, addRow, removeRow, moveRow],
-  )
+  return useMemo(() => ({ rowCount, rowIds, canAdd, canRemove, addRow, removeRow, moveRow }), [rowCount, rowIds, canAdd, canRemove, addRow, removeRow, moveRow])
 }

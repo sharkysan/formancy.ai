@@ -28,10 +28,7 @@ export function countDecisionRecords(): number {
  * config that needs a build to run is a config that breaks a clean checkout.
  */
 export function countFieldTypes(): number {
-  const source = readFileSync(
-    fileURLToPath(new URL('../../packages/spec/src/types.ts', import.meta.url)),
-    'utf8',
-  )
+  const source = readFileSync(fileURLToPath(new URL('../../packages/spec/src/types.ts', import.meta.url)), 'utf8')
   const block = /export const FIELD_TYPES = \[([\s\S]*?)\] as const/.exec(source)?.[1]
   if (block === undefined) {
     // Loudly, not zero. A silent 0 on the landing page reads as a deliberate claim.
@@ -53,10 +50,7 @@ export function countFieldTypes(): number {
  * Vite config before the workspace is built.
  */
 export function packageVersion(): string {
-  const manifest = readFileSync(
-    fileURLToPath(new URL('../../package.json', import.meta.url)),
-    'utf8',
-  )
+  const manifest = readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')
   const version = (JSON.parse(manifest) as { version?: unknown }).version
   if (typeof version !== 'string') {
     // Loudly, not a placeholder. A footer claiming a version nobody released is worse

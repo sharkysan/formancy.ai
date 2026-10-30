@@ -79,10 +79,7 @@ describe('injectSubmit', () => {
   })
 
   test('a valid form submits ok', async () => {
-    const view = await renderHost(
-      SubmitHost,
-      createFormEngine({ schema, initialValue: { email: 'ada@example.com' } }),
-    )
+    const view = await renderHost(SubmitHost, createFormEngine({ schema, initialValue: { email: 'ada@example.com' } }))
 
     fireEvent.click(screen.getByRole('button', { name: 'Go' }))
     await view.fixture.whenStable()

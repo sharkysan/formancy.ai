@@ -20,12 +20,7 @@ import type { FormText, FormWordId, FormWordValues } from './words.js'
  * is said as itself: a `validate` rule's `code` with no message, or the message its expression
  * returned, and either is the author's word.
  */
-export function errorSentence(
-  text: FormText,
-  def: FieldDef | undefined,
-  code: string,
-  messages: Readonly<Record<string, string>> = {},
-): string {
+export function errorSentence(text: FormText, def: FieldDef | undefined, code: string, messages: Readonly<Record<string, string>> = {}): string {
   // The field's own rule saying it, in the form's language: the author's words over the
   // catalogue's, for a code the author chose (0198).
   if (Object.hasOwn(messages, code)) return messages[code]!
@@ -37,7 +32,9 @@ export function errorSentence(
 
 type Worded = (def: FieldDef | undefined, locale: string) => { id: FormWordId; values?: FormWordValues }
 
-const said = (id: FormWordId): Worded => () => ({ id })
+const said =
+  (id: FormWordId): Worded =>
+  () => ({ id })
 
 /** What a list field holds more or fewer of: rows, files, or choices. */
 const counted =

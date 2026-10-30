@@ -59,15 +59,11 @@ describe('decimal arithmetic is exact', () => {
   })
 
   test('aligns differing scales before adding', () => {
-    expect(decimalToString(addDecimal(decimalFromString('1.5'), decimalFromString('0.25')))).toBe(
-      '1.75',
-    )
+    expect(decimalToString(addDecimal(decimalFromString('1.5'), decimalFromString('0.25')))).toBe('1.75')
   })
 
   test('subtracts exactly', () => {
-    expect(
-      decimalToString(subtractDecimal(decimalFromString('0.3'), decimalFromString('0.1'))),
-    ).toBe('0.2')
+    expect(decimalToString(subtractDecimal(decimalFromString('0.3'), decimalFromString('0.1')))).toBe('0.2')
   })
 
   test('multiplies into the sum of the scales, losing nothing', () => {
@@ -109,49 +105,33 @@ describe('roundDecimal', () => {
 
 describe('divideDecimal', () => {
   test('needs the number of places, because division does not stay exact', () => {
-    expect(decimalToString(divideDecimal(decimalFromString('10'), decimalFromString('3'), 4))).toBe(
-      '3.3333',
-    )
-    expect(decimalToString(divideDecimal(decimalFromString('10'), decimalFromString('4'), 2))).toBe(
-      '2.50',
-    )
+    expect(decimalToString(divideDecimal(decimalFromString('10'), decimalFromString('3'), 4))).toBe('3.3333')
+    expect(decimalToString(divideDecimal(decimalFromString('10'), decimalFromString('4'), 2))).toBe('2.50')
   })
 
   test('rounds half away from zero at the requested place', () => {
-    expect(decimalToString(divideDecimal(decimalFromString('2'), decimalFromString('3'), 2))).toBe(
-      '0.67',
-    )
-    expect(decimalToString(divideDecimal(decimalFromString('-2'), decimalFromString('3'), 2))).toBe(
-      '-0.67',
-    )
+    expect(decimalToString(divideDecimal(decimalFromString('2'), decimalFromString('3'), 2))).toBe('0.67')
+    expect(decimalToString(divideDecimal(decimalFromString('-2'), decimalFromString('3'), 2))).toBe('-0.67')
   })
 
   test('refuses to divide by zero', () => {
-    expect(() => divideDecimal(decimalFromString('1'), decimalFromString('0'), 2)).toThrow(
-      RangeError,
-    )
+    expect(() => divideDecimal(decimalFromString('1'), decimalFromString('0'), 2)).toThrow(RangeError)
   })
 
   test('works at the documented maximum scale, guard digit and all', () => {
     // The internal guard digit must not count against MAX_DECIMAL_SCALE: the
     // documented ceiling is the ceiling for the CALLER's places.
-    expect(decimalToString(divideDecimal(decimalFromString('2'), decimalFromString('3'), 20))).toBe(
-      '0.66666666666666666667',
-    )
+    expect(decimalToString(divideDecimal(decimalFromString('2'), decimalFromString('3'), 20))).toBe('0.66666666666666666667')
   })
 
   test('rejects one place beyond the maximum, naming the real ceiling', () => {
-    expect(() => divideDecimal(decimalFromString('2'), decimalFromString('3'), 21)).toThrow(
-      /maximum of 20/,
-    )
+    expect(() => divideDecimal(decimalFromString('2'), decimalFromString('3'), 21)).toThrow(/maximum of 20/)
   })
 })
 
 describe('roundDecimal at the scale ceiling', () => {
   test('rounds to the documented maximum scale', () => {
-    expect(decimalToString(roundDecimal(decimalFromString('1.5'), 20))).toBe(
-      '1.50000000000000000000',
-    )
+    expect(decimalToString(roundDecimal(decimalFromString('1.5'), 20))).toBe('1.50000000000000000000')
   })
 
   test('rejects one place beyond the maximum', () => {

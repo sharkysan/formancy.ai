@@ -46,9 +46,7 @@ describe('a validator error', () => {
     const error = onlyError(twoEmails)
 
     expect(error.message).toBe(renderSchemaError(SCHEMA_ERRORS['key.taken'], { key: 'email' }))
-    expect(error.message).toBe(
-      'Another field already uses the key "email". A key identifies one answer, so two fields cannot share one.',
-    )
+    expect(error.message).toBe('Another field already uses the key "email". A key identifies one answer, so two fields cannot share one.')
   })
 
   test('from the JSON Schema too, which ajv words and this repository rewords', () => {
@@ -79,8 +77,6 @@ describe('a sentence with a value missing', () => {
   test('shows the placeholder rather than closing up around nothing', () => {
     // "the key ." reads as a sentence and hides that a value never came;
     // "the key {key}." is obviously wrong.
-    expect(renderSchemaError('Another field already uses the key "{key}".', {})).toBe(
-      'Another field already uses the key "{key}".',
-    )
+    expect(renderSchemaError('Another field already uses the key "{key}".', {})).toBe('Another field already uses the key "{key}".')
   })
 })

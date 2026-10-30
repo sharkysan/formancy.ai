@@ -1,12 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { createApp } from './app.js'
 import type { Storage } from '@formancy/server-core'
-import {
-  DEFAULT_MAX_FILE_BYTES,
-  LARGEST_MAX_FILE_BYTES,
-  checkedMaxFileBytes,
-  maxFileBytesFrom,
-} from './upload-settings.js'
+import { DEFAULT_MAX_FILE_BYTES, LARGEST_MAX_FILE_BYTES, checkedMaxFileBytes, maxFileBytesFrom } from './upload-settings.js'
 
 /**
  * The operator's ceiling on a file, read from the environment.
@@ -33,20 +28,14 @@ describe('FORMANCY_MAX_FILE_BYTES', () => {
   test('the largest size the files table holds is allowed, and one byte more is not', () => {
     // An off-by-one at the boundary would either refuse the largest storable ceiling or
     // admit the first one whose offers fail at the insert.
-    expect(maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: String(LARGEST_MAX_FILE_BYTES) })).toBe(
-      LARGEST_MAX_FILE_BYTES,
-    )
-    expect(() =>
-      maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: String(LARGEST_MAX_FILE_BYTES + 1) }),
-    ).toThrow(/FORMANCY_MAX_FILE_BYTES.*2147483647/)
+    expect(maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: String(LARGEST_MAX_FILE_BYTES) })).toBe(LARGEST_MAX_FILE_BYTES)
+    expect(() => maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: String(LARGEST_MAX_FILE_BYTES + 1) })).toThrow(/FORMANCY_MAX_FILE_BYTES.*2147483647/)
   })
 
   test('a ceiling of gigabytes past the column is refused at startup, not at the first upload', () => {
     // Five gigabytes: a plausible thing to type, and every offer above 2 GiB would have
     // been a 500 at the insert.
-    expect(() => maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: '5368709120' })).toThrow(
-      /FORMANCY_MAX_FILE_BYTES/,
-    )
+    expect(() => maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: '5368709120' })).toThrow(/FORMANCY_MAX_FILE_BYTES/)
   })
 
   test.each([
@@ -59,9 +48,7 @@ describe('FORMANCY_MAX_FILE_BYTES', () => {
   ])('a value that is %s is refused, with the variable named', (_label, value) => {
     // Each was either NaN, a size no file can have, or a fraction no byte count reaches —
     // and a misread setting is cheapest to fix while the server refuses to start.
-    expect(() => maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: value })).toThrow(
-      /FORMANCY_MAX_FILE_BYTES/,
-    )
+    expect(() => maxFileBytesFrom({ FORMANCY_MAX_FILE_BYTES: value })).toThrow(/FORMANCY_MAX_FILE_BYTES/)
   })
 })
 
@@ -80,9 +67,7 @@ describe('the same ceiling, passed to createApp by a deployment that embeds the 
   })
 
   test('and when it is not a whole number', async () => {
-    await expect(
-      createApp(storage, { authSecret: 'unit-test-secret-with-enough-length', maxFileBytes: 1.5 }),
-    ).rejects.toThrow(/maxFileBytes/)
+    await expect(createApp(storage, { authSecret: 'unit-test-secret-with-enough-length', maxFileBytes: 1.5 })).rejects.toThrow(/maxFileBytes/)
   })
 
   test('checkedMaxFileBytes names whatever it was given to check', () => {

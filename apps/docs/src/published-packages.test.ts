@@ -408,9 +408,7 @@ describe('what a package imports from itself', () => {
     // pattern was built in a template literal, where `\s` quietly became `s` and it matched
     // nothing: caught by putting a self-import back and watching the guard stay green.)
     const importsSelf = (text: string): boolean =>
-      ts
-        .preProcessFile(text, true, true)
-        .importedFiles.some(({ fileName }) => fileName === self || fileName.startsWith(`${self}/`))
+      ts.preProcessFile(text, true, true).importedFiles.some(({ fileName }) => fileName === self || fileName.startsWith(`${self}/`))
 
     const walk = (at: string): void => {
       for (const entry of readdirSync(at, { withFileTypes: true })) {
@@ -446,8 +444,7 @@ describe('what a package imports from itself', () => {
   test('and the answer is nothing, so no typecheck needs its own build output', () => {
     const offenders = workspacePackages().flatMap(({ dir, name }) =>
       selfImports(dir, name).map(
-        (file) =>
-          `${file} imports ${name}, its own package — so its typecheck needs this package's own dist, which turbo's \`^build\` does not provide`,
+        (file) => `${file} imports ${name}, its own package — so its typecheck needs this package's own dist, which turbo's \`^build\` does not provide`,
       ),
     )
 
@@ -493,8 +490,7 @@ describe('what a manifest says twice', () => {
   }
 
   /** The top-level keys as written, duplicates included. */
-  const writtenKeys = (text: string): string[] =>
-    [...text.matchAll(/^ {2}"([^"]+)":/gm)].map((match) => match[1]!)
+  const writtenKeys = (text: string): string[] => [...text.matchAll(/^ {2}"([^"]+)":/gm)].map((match) => match[1]!)
 
   test('is read correctly, which is what makes the case below able to fail', () => {
     /*

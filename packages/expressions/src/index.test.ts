@@ -4,14 +4,7 @@
  * capabilities shared by every expression in that pass.
  */
 import { describe, expect, test } from 'vitest'
-import {
-  captureCapabilities,
-  compile,
-  decimalToString,
-  evaluate,
-  parse,
-  referencedPaths,
-} from './index.js'
+import { captureCapabilities, compile, decimalToString, evaluate, parse, referencedPaths } from './index.js'
 import type { Capabilities, Decimal, VariableDeclarations } from './index.js'
 
 const variables: VariableDeclarations = {
@@ -37,11 +30,7 @@ describe('an order form, end to end', () => {
     expect(compiled.program.references).toEqual(['quantity', 'unitPrice'])
     expect(compiled.program.resultType).toBe('decimal')
 
-    const result = evaluate(
-      compiled.program,
-      { quantity: 3, unitPrice: '19.99', newsletter: false },
-      { capabilities: pass },
-    )
+    const result = evaluate(compiled.program, { quantity: 3, unitPrice: '19.99', newsletter: false }, { capabilities: pass })
     if (!result.ok) throw result.error
 
     expect(decimalToString(result.value as Decimal)).toBe('59.97')

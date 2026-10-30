@@ -170,9 +170,7 @@ const NOT_JSON: Record<string, string> = {
 /** The route's address with each parameter filled: the real form, draft and so on, or `value` for `only`. */
 function address(url: string, only?: string, value?: string): string {
   const real: Record<string, string> = { path: 'contact-us', draftId: draft.draftId, id: '00000000-0000-4000-8000-000000000000' }
-  return url.replace(/:([A-Za-z]+)/g, (_, name: string) =>
-    encodeURIComponent(name === only && value !== undefined ? value : (real[name] ?? name)),
-  )
+  return url.replace(/:([A-Za-z]+)/g, (_, name: string) => encodeURIComponent(name === only && value !== undefined ? value : (real[name] ?? name)))
 }
 
 /**
@@ -183,9 +181,7 @@ function withNul(value: unknown, at = ''): Array<{ pointer: string; body: unknow
   const token = (key: string): string => key.replaceAll('~', '~0').replaceAll('/', '~1')
   if (typeof value === 'string') return [{ pointer: at, body: `${value.slice(0, 1)}${NUL}${value.slice(1)}` }]
   if (Array.isArray(value)) {
-    return value.flatMap((item, index) =>
-      withNul(item, `${at}/${String(index)}`).map(({ pointer, body }) => ({ pointer, body: value.with(index, body) })),
-    )
+    return value.flatMap((item, index) => withNul(item, `${at}/${String(index)}`).map(({ pointer, body }) => ({ pointer, body: value.with(index, body) })))
   }
   if (typeof value === 'object' && value !== null) {
     const members = Object.entries(value)
@@ -260,9 +256,7 @@ describe('a NUL in an address', () => {
     }
 
     // Each kind of parameter was reached, so a pattern that stopped matching one is seen.
-    expect(compared).toEqual(
-      expect.arrayContaining(['GET /f/:path :path', 'PUT /f/:path/drafts/:draftId :draftId', 'POST /deliveries/:id/replay :id']),
-    )
+    expect(compared).toEqual(expect.arrayContaining(['GET /f/:path :path', 'PUT /f/:path/drafts/:draftId :draftId', 'POST /deliveries/:id/replay :id']))
     expect(different).toEqual([])
   })
 

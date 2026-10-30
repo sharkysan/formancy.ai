@@ -41,12 +41,7 @@ export type RewriteOutcome =
  * second time would be a second place to be wrong; comparing the read sets is
  * one place, and it is the property the callers actually depend on.
  */
-export function rewritePath(
-  source: string,
-  from: string,
-  to: string,
-  options?: ParseOptions,
-): RewriteOutcome {
+export function rewritePath(source: string, from: string, to: string, options?: ParseOptions): RewriteOutcome {
   const parsed = parse(source, options)
   if (!parsed.ok) return { ok: false, error: parsed.error }
 
@@ -85,9 +80,7 @@ export function rewritePath(
     }
   }
 
-  const expected = [...referencedPaths(parsed.ast)]
-    .map((path) => (path === from || isUnder(path, from) ? `${to}${path.slice(from.length)}` : path))
-    .sort()
+  const expected = [...referencedPaths(parsed.ast)].map((path) => (path === from || isUnder(path, from) ? `${to}${path.slice(from.length)}` : path)).sort()
   const actual = referencedPaths(after.ast)
   if (actual.join('\u0000') !== expected.join('\u0000')) {
     return {
@@ -96,14 +89,11 @@ export function rewritePath(
         kind: 'policy',
         code: 'rewrite_changed_references',
         message:
-          `Rewriting "${from}" to "${to}" would change what the expression reads: ` +
-          `${describe(expected)} was intended, ${describe(actual)} resulted.`,
+          `Rewriting "${from}" to "${to}" would change what the expression reads: ` + `${describe(expected)} was intended, ${describe(actual)} resulted.`,
         source,
         // The case this almost always is, named rather than left to be worked
         // out from two lists of paths.
-        hint:
-          `"${to}" may already be bound as a local by a comprehension or by bind(), ` +
-          `which would capture the reference instead of reading the field.`,
+        hint: `"${to}" may already be bound as a local by a comprehension or by bind(), ` + `which would capture the reference instead of reading the field.`,
       }),
     }
   }

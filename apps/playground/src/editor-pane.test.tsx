@@ -31,13 +31,7 @@ const schemaTextarea = vi.hoisted(() => ({ onChange: undefined as ((value?: stri
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, onChange }: { value?: string; onChange?: (value?: string) => void }) => {
     schemaTextarea.onChange = onChange
-    return (
-      <textarea
-        aria-label="Schema"
-        value={value ?? ''}
-        onChange={(event) => onChange?.(event.target.value)}
-      />
-    )
+    return <textarea aria-label="Schema" value={value ?? ''} onChange={(event) => onChange?.(event.target.value)} />
   },
   useMonaco: () => null,
 }))
@@ -58,10 +52,7 @@ describe('the Monaco theme the Schema view asks for', () => {
     const defined: string[] = []
     defineNightTheme({ editor: { defineTheme: (name: string) => defined.push(name) } } as never)
 
-    const source = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), 'editor-pane.tsx'),
-      'utf8',
-    )
+    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'editor-pane.tsx'), 'utf8')
     const asked = /theme="([^"]+)"/.exec(source)?.[1]
 
     expect(asked, 'the editor asks for no theme at all').toBeDefined()

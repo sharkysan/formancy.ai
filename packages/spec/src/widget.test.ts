@@ -71,9 +71,7 @@ describe('the widget list', () => {
     // works.
     expect(FIELD_WIDGETS.length).toBeGreaterThan(0)
     for (const widget of FIELD_WIDGETS) {
-      const accepting = Object.entries(WIDGETS_BY_FIELD_TYPE).filter(([, widgets]) =>
-        (widgets as readonly string[]).includes(widget),
-      )
+      const accepting = Object.entries(WIDGETS_BY_FIELD_TYPE).filter(([, widgets]) => (widgets as readonly string[]).includes(widget))
       expect(accepting.length, `no field type accepts "${widget}"`).toBeGreaterThan(0)
     }
   })

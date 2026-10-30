@@ -124,12 +124,7 @@ export function OptionsEditor({
               />
 
               <label htmlFor={`${id}-value-${String(index)}`}>{text('options.value')}</label>
-              <input
-                id={`${id}-value-${String(index)}`}
-                type="text"
-                value={option.value}
-                onChange={(event) => replace(index, { value: event.target.value })}
-              />
+              <input id={`${id}-value-${String(index)}`} type="text" value={option.value} onChange={(event) => replace(index, { value: event.target.value })} />
 
               {pictures ? (
                 <>

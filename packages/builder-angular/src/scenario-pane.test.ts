@@ -57,10 +57,7 @@ const inverted = (): FormSchema => {
   return next
 }
 
-async function mount(
-  session: ReturnType<typeof createBuilderSession>,
-  inputs: Record<string, unknown> = {},
-): Promise<void> {
+async function mount(session: ReturnType<typeof createBuilderSession>, inputs: Record<string, unknown> = {}): Promise<void> {
   await render(FormancyScenarioPane, {
     inputs: { session, ...inputs } as Record<string, unknown>,
     providers: [provideZonelessChangeDetection()],
@@ -81,9 +78,7 @@ describe('with scenarios', () => {
   test('says they hold, and says it out loud', async () => {
     await mount(createBuilderSession(form), { scenarios: SCENARIOS })
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('All 2 scenarios hold'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('All 2 scenarios hold'))
   })
 
   test('names what stopped holding when the document changes under it', async () => {
@@ -140,7 +135,10 @@ describe('with scenarios', () => {
     await mount(createBuilderSession(inverted()), { scenarios: SCENARIOS })
 
     await waitFor(() => expect(screen.getAllByRole('listitem').length).toBeGreaterThan(2))
-    const text = screen.getAllByRole('listitem').map((item) => item.textContent ?? '').join(' ')
+    const text = screen
+      .getAllByRole('listitem')
+      .map((item) => item.textContent ?? '')
+      .join(' ')
     expect(text).toContain('reason')
     expect(text).toMatch(/expected to be visible|expected to be hidden/)
   })
@@ -149,10 +147,7 @@ describe('with scenarios', () => {
     const user = userEvent.setup()
     const changed = vi.fn()
     await render(FormancyScenarioPane, {
-      inputs: { session: createBuilderSession(form), scenarios: SCENARIOS, removable: true } as Record<
-        string,
-        unknown
-      >,
+      inputs: { session: createBuilderSession(form), scenarios: SCENARIOS, removable: true } as Record<string, unknown>,
       on: { scenariosChange: changed },
       providers: [provideZonelessChangeDetection()],
     })

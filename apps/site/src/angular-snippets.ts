@@ -5,8 +5,7 @@
  * packages export. Prose code goes stale while the page goes on rendering it.
  */
 
-export const INSTALL =
-  'npm install @formancy/angular @formancy/builder-angular @formancy/builder-core @formancy/core'
+export const INSTALL = 'npm install @formancy/angular @formancy/builder-angular @formancy/builder-core @formancy/core'
 
 export const EDITOR = `import { Component, signal } from '@angular/core'
 import { FormancyBuilder, FormancyPropertyPanel } from '@formancy/builder-angular'

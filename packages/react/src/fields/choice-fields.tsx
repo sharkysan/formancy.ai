@@ -6,7 +6,6 @@ import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useRes
 import type { FieldComponentProps } from './internals.js'
 import { TypeaheadSelectField } from './typeahead-field.js'
 
-
 /**
  * One answer from a set: a tick, a list, or a group of radios.
  *

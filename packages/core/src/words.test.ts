@@ -121,12 +121,8 @@ describe('a form word', () => {
 
   test('joins a list the way its language does', () => {
     const names = ['a.pdf', 'b.pdf', 'c.pdf']
-    expect(createFormText({ locale: 'de' })('file.status.failedSeveral', { count: 3, names })).toContain(
-      'a.pdf, b.pdf und c.pdf',
-    )
-    expect(createFormText({ locale: '' })('file.status.failedSeveral', { count: 3, names })).toBe(
-      '3 files were not attached: a.pdf, b.pdf and c.pdf.',
-    )
+    expect(createFormText({ locale: 'de' })('file.status.failedSeveral', { count: 3, names })).toContain('a.pdf, b.pdf und c.pdf')
+    expect(createFormText({ locale: '' })('file.status.failedSeveral', { count: 3, names })).toBe('3 files were not attached: a.pdf, b.pdf and c.pdf.')
   })
 
   test('and joins it in the language of the message it is put into, not the reader’s', () => {
@@ -134,9 +130,7 @@ describe('a form word', () => {
     // names were joined in Italian inside it: "a.pdf, b.pdf e c.pdf" in an English sentence.
     const text = createFormText({ locale: 'it', words: { it: { 'form.next': 'Avanti' } } })
 
-    expect(text('file.status.failedSeveral', { count: 3, names: ['a.pdf', 'b.pdf', 'c.pdf'] })).toBe(
-      '3 files were not attached: a.pdf, b.pdf and c.pdf.',
-    )
+    expect(text('file.status.failedSeveral', { count: 3, names: ['a.pdf', 'b.pdf', 'c.pdf'] })).toBe('3 files were not attached: a.pdf, b.pdf and c.pdf.')
   })
 
   test('is read for a locale the runtime cannot parse, rather than failing the form', () => {
@@ -178,23 +172,20 @@ describe('a shipped language', () => {
     }
   })
 
-  test.each([['English', FORM_WORDS] as const, ...shipped])(
-    '%s says every value but the count in every form of a counted message',
-    (_, words) => {
-      // The case above compares a message's forms together, so a French `other` that
-      // dropped `{total}` passed while its `one` still said it — "Affichage des 50
-      // premiers." with the total gone. A form may say the count in words, "One match",
-      // "Ein Treffer", and leave out nothing else.
-      for (const id of ids as FormWordId[]) {
-        const message: Message = words[id]
-        if (typeof message === 'string') continue
-        const needed = placeholders(FORM_WORDS[id]).filter((name) => name !== 'count')
-        for (const [form, said] of Object.entries(message)) {
-          expect(placeholders(said), `${id} ${form}`).toEqual(expect.arrayContaining(needed))
-        }
+  test.each([['English', FORM_WORDS] as const, ...shipped])('%s says every value but the count in every form of a counted message', (_, words) => {
+    // The case above compares a message's forms together, so a French `other` that
+    // dropped `{total}` passed while its `one` still said it — "Affichage des 50
+    // premiers." with the total gone. A form may say the count in words, "One match",
+    // "Ein Treffer", and leave out nothing else.
+    for (const id of ids as FormWordId[]) {
+      const message: Message = words[id]
+      if (typeof message === 'string') continue
+      const needed = placeholders(FORM_WORDS[id]).filter((name) => name !== 'count')
+      for (const [form, said] of Object.entries(message)) {
+        expect(placeholders(said), `${id} ${form}`).toEqual(expect.arrayContaining(needed))
       }
-    },
-  )
+    }
+  })
 
   test.each(shipped)('%s has no empty message, and every count has `other`', (_, words) => {
     for (const [id, message] of Object.entries(words)) {

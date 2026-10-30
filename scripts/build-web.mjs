@@ -68,14 +68,7 @@ function run(command, args) {
   }
 }
 
-run('pnpm', [
-  'exec',
-  'turbo',
-  'run',
-  'build',
-  '--filter=@formancy/site',
-  ...NESTED.map((app) => `--filter=${app.pkg}`),
-])
+run('pnpm', ['exec', 'turbo', 'run', 'build', '--filter=@formancy/site', ...NESTED.map((app) => `--filter=${app.pkg}`)])
 
 if (!existsSync(join(siteDist, 'index.html'))) {
   throw new Error(`The site build produced no index.html at ${siteDist}.`)
@@ -102,9 +95,7 @@ for (const app of NESTED) {
   cpSync(built, into, { recursive: true })
 
   const html = readFileSync(join(into, 'index.html'), 'utf8')
-  const wrong = [...html.matchAll(/(?:src|href)="(\/[^"]*)"/g)]
-    .map((match) => match[1])
-    .filter((url) => !url.startsWith(app.base))
+  const wrong = [...html.matchAll(/(?:src|href)="(\/[^"]*)"/g)].map((match) => match[1]).filter((url) => !url.startsWith(app.base))
   // A page with no script of its own renders nothing, and passes the check above.
   const scripts = [...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((match) => match[1])
 
@@ -166,22 +157,14 @@ if (stray.length > 0) {
  * config, so an absent one fails the build too.
  */
 const ORIGIN = 'https://formancy.ai'
-const locs = (file) =>
-  [...readFileSync(file, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
+const locs = (file) => [...readFileSync(file, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
 
 const docsIndex = join(siteDist, 'docs', 'sitemap-index.xml')
 if (!existsSync(docsIndex)) {
-  throw new Error(
-    `The documentation built no sitemap at ${docsIndex}. Astro skips it silently when ` +
-      `\`site\` is not set in apps/docs/astro.config.mjs.`,
-  )
+  throw new Error(`The documentation built no sitemap at ${docsIndex}. Astro skips it silently when ` + `\`site\` is not set in apps/docs/astro.config.mjs.`)
 }
 
-const expectedPages = [
-  `${ORIGIN}/`,
-  ...NESTED.filter((app) => app.listed).map((app) => `${ORIGIN}${app.base}`),
-  ...PAGES.map((page) => `${ORIGIN}/${page}/`),
-]
+const expectedPages = [`${ORIGIN}/`, ...NESTED.filter((app) => app.listed).map((app) => `${ORIGIN}${app.base}`), ...PAGES.map((page) => `${ORIGIN}/${page}/`)]
 const expectedIndex = [`${ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex)]
 
 for (const [file, expected] of [
@@ -197,7 +180,4 @@ for (const [file, expected] of [
   }
 }
 
-console.log(
-  `formancy.ai built: apps/site/dist, with ${NESTED.map((app) => app.base).join(' and ')}, ` +
-    `and a sitemap that matches them`,
-)
+console.log(`formancy.ai built: apps/site/dist, with ${NESTED.map((app) => app.base).join(' and ')}, ` + `and a sitemap that matches them`)

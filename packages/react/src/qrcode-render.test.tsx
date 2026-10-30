@@ -86,9 +86,7 @@ describe('a code node with an answer', () => {
     act(() => {
       engine.setValue(['reference'], 'AB-1234')
     })
-    const fills = new Set(
-      [...svg()!.querySelectorAll('rect')].map((rect) => rect.getAttribute('fill')),
-    )
+    const fills = new Set([...svg()!.querySelectorAll('rect')].map((rect) => rect.getAttribute('fill')))
     expect([...fills]).toEqual(['currentColor'])
     expect(svg()!.innerHTML).not.toMatch(/white|#fff/i)
   })

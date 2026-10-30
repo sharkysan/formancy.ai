@@ -28,14 +28,9 @@ export interface AuthDeps {
 
 const MIN_PASSWORD_LENGTH = 10
 
-export type CreateUserOutcome =
-  | { ok: true; id: string }
-  | { ok: false; message: string }
+export type CreateUserOutcome = { ok: true; id: string } | { ok: false; message: string }
 
-export async function createLocalUser(
-  deps: AuthDeps,
-  input: { email: string; password: string; role: Role },
-): Promise<CreateUserOutcome> {
+export async function createLocalUser(deps: AuthDeps, input: { email: string; password: string; role: Role }): Promise<CreateUserOutcome> {
   if (input.password.length < MIN_PASSWORD_LENGTH) {
     return { ok: false, message: `A password needs at least ${MIN_PASSWORD_LENGTH} characters.` }
   }
@@ -61,10 +56,7 @@ export type AuthOutcome = { ok: true; actor: Actor } | { ok: false }
  * hash verification — the difference in shape or timing would be a
  * user-enumeration oracle.
  */
-export async function authenticateLocal(
-  deps: AuthDeps,
-  input: { email: string; password: string },
-): Promise<AuthOutcome> {
+export async function authenticateLocal(deps: AuthDeps, input: { email: string; password: string }): Promise<AuthOutcome> {
   const user = await deps.storage.getUserByEmail(input.email)
   const hash = user?.passwordHash ?? (await deps.hashSecret(`decoy:${deps.newId()}`))
   const verified = await deps.verifySecret(input.password, hash)
@@ -76,14 +68,9 @@ export async function authenticateLocal(
  *  ("fmc_tok_a2c…"), never enough to authenticate. */
 const KEY_PREFIX_LENGTH = 12
 
-export type CreateApiKeyOutcome =
-  | { ok: true; id: string; secret: string }
-  | { ok: false; message: string }
+export type CreateApiKeyOutcome = { ok: true; id: string; secret: string } | { ok: false; message: string }
 
-export async function createApiKey(
-  deps: AuthDeps,
-  input: { name: string; role: Role },
-): Promise<CreateApiKeyOutcome> {
+export async function createApiKey(deps: AuthDeps, input: { name: string; role: Role }): Promise<CreateApiKeyOutcome> {
   if (input.name.trim() === '') return { ok: false, message: 'An API key needs a name.' }
 
   // The secret exists in full exactly once — in this return value. Storage
@@ -120,22 +107,10 @@ export async function authenticateApiKey(deps: AuthDeps, presented: string): Pro
  * An unknown action is denied — permissions are granted by presence, never by
  * omission.
  */
-export type Action =
-  | 'form.read'
-  | 'form.publish'
-  | 'submission.read'
-  | 'submission.export'
-  | 'draft.write'
-  | 'user.create'
-  | 'apiKey.create'
+export type Action = 'form.read' | 'form.publish' | 'submission.read' | 'submission.export' | 'draft.write' | 'user.create' | 'apiKey.create'
 
 const VIEWER_ACTIONS: readonly Action[] = ['form.read', 'submission.read']
-const EDITOR_ACTIONS: readonly Action[] = [
-  ...VIEWER_ACTIONS,
-  'form.publish',
-  'submission.export',
-  'draft.write',
-]
+const EDITOR_ACTIONS: readonly Action[] = [...VIEWER_ACTIONS, 'form.publish', 'submission.export', 'draft.write']
 const ADMIN_ACTIONS: readonly Action[] = [...EDITOR_ACTIONS, 'user.create', 'apiKey.create']
 
 const PERMISSIONS: Record<Role, ReadonlySet<Action>> = {

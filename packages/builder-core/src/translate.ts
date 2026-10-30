@@ -130,12 +130,7 @@ export function missingMessages(document: FormSchema, locale: string): string[] 
  *
  * Resolves however the run ends, as `authorForm` does.
  */
-export async function translateCatalogue(
-  ask: AskModel,
-  document: FormSchema,
-  locale: string,
-  options: TranslationOptions = {},
-): Promise<TranslationResult> {
+export async function translateCatalogue(ask: AskModel, document: FormSchema, locale: string, options: TranslationOptions = {}): Promise<TranslationResult> {
   const request = translationPrompt(document, locale)
   const asked = request.rows.map(({ id, source }) => ({ id, source }))
   if (asked.length === 0) {
@@ -174,11 +169,7 @@ export async function translateCatalogue(
       defaultLocale: request.defaultLocale,
       asked,
       messages,
-      dropped: unique(
-        result.value.messages
-          .filter((message) => !wanted.has(message.id) && writes(message))
-          .map((message) => message.id),
-      ),
+      dropped: unique(result.value.messages.filter((message) => !wanted.has(message.id) && writes(message)).map((message) => message.id)),
       stillMissing: asked.map((row) => row.id).filter((id) => !answered.has(id)),
     },
   }
@@ -186,8 +177,7 @@ export async function translateCatalogue(
 
 /** Whether what an answer held is a catalogue file for the language asked, or what is wrong. */
 function checkCatalogue(answer: Checkable, locale: string): Verdict<CatalogueFile, TranslationProblem> {
-  const problem = (kind: TranslationProblem['kind'], detail: string) =>
-    ({ ok: false, problem: { kind, detail } }) as const
+  const problem = (kind: TranslationProblem['kind'], detail: string) => ({ ok: false, problem: { kind, detail } }) as const
   if (answer === undefined) return problem('not-json', TRANSLATION_COMPLAINTS.notJson)
   if (answer.kind === 'unexplained-decline') {
     return problem('unexplained-decline', TRANSLATION_COMPLAINTS.unexplainedDecline)
@@ -197,10 +187,7 @@ function checkCatalogue(answer: Checkable, locale: string): Verdict<CatalogueFil
   // entry without an id as an id it does not know, and one without a source as stale.
   if (!isCatalogueFile(file)) {
     const record = file as Record<string, unknown>
-    const why =
-      typeof record['locale'] === 'string'
-        ? TRANSLATION_COMPLAINTS.noMessages
-        : TRANSLATION_COMPLAINTS.noLocale
+    const why = typeof record['locale'] === 'string' ? TRANSLATION_COMPLAINTS.noMessages : TRANSLATION_COMPLAINTS.noLocale
     return problem('not-a-catalogue', TRANSLATION_COMPLAINTS.notACatalogue(why))
   }
   const bad = file.messages.findIndex((message: unknown) => !isMessage(message))
@@ -251,11 +238,7 @@ function isMessage(message: unknown): message is CatalogueFile['messages'][numbe
  * is written over, and whose basis it keeps: if the form has moved since that one was
  * made, Apply refuses this one too.
  */
-export function proposeTranslation(
-  session: BuilderSession,
-  answer: TranslationAnswer,
-  after?: TranslationProposal,
-): TranslationProposal {
+export function proposeTranslation(session: BuilderSession, answer: TranslationAnswer, after?: TranslationProposal): TranslationProposal {
   const current = session.document()
   const start = after?.document ?? current
   const missing = new Set(missingMessages(start, answer.locale))
@@ -285,10 +268,7 @@ export function proposeTranslation(
         source,
         was: start.i18n?.messages[answer.locale]?.[id] ?? '',
         now,
-        flags: [
-          ...(stale.has(id) ? (['stale'] as const) : []),
-          ...(now === source ? (['unchanged'] as const) : []),
-        ],
+        flags: [...(stale.has(id) ? (['stale'] as const) : []), ...(now === source ? (['unchanged'] as const) : [])],
       }
     })
 
@@ -298,11 +278,7 @@ export function proposeTranslation(
     basedOn: after?.basedOn ?? edit.basedOn,
     locale: answer.locale,
     rows: [...(after?.rows ?? []), ...rows],
-    dropped: unique([
-      ...(after?.dropped ?? []),
-      ...answer.dropped,
-      ...wrote.filter((message) => !landed.has(message.id)).map((message) => message.id),
-    ]),
+    dropped: unique([...(after?.dropped ?? []), ...answer.dropped, ...wrote.filter((message) => !landed.has(message.id)).map((message) => message.id)]),
     stillMissing: missingMessages(proposed, answer.locale),
   }
 }
@@ -313,9 +289,7 @@ export function proposeTranslation(
  * the dropped list say what came back. Decided here, so neither builder can leave a person
  * with a sentence and no button.
  */
-export function translationToReview(
-  proposal: TranslationProposal | undefined,
-): TranslationProposal | undefined {
+export function translationToReview(proposal: TranslationProposal | undefined): TranslationProposal | undefined {
   return proposal !== undefined && proposal.rows.length > 0 ? proposal : undefined
 }
 
@@ -373,16 +347,8 @@ export function translationStatus(
   const attempts = result?.ok === true ? result.attempts : 1
   // Nothing written is two different things: a model that left every message empty, and
   // one whose every translation was dropped, here because a person translated it first.
-  const nothing =
-    proposal.dropped.length === 0
-      ? text('translate.status.none')
-      : text('translate.status.noneWritten', { count: proposal.dropped.length })
-  const said =
-    count === 0
-      ? nothing
-      : attempts > 1
-        ? text('translate.status.readyAfter', { count, attempts })
-        : text('translate.status.ready', { count })
+  const nothing = proposal.dropped.length === 0 ? text('translate.status.none') : text('translate.status.noneWritten', { count: proposal.dropped.length })
+  const said = count === 0 ? nothing : attempts > 1 ? text('translate.status.readyAfter', { count, attempts }) : text('translate.status.ready', { count })
   const left = proposal.stillMissing.length
   return left === 0 ? said : `${said} ${text('translate.status.stillMissing', { count: left })}`
 }
@@ -400,9 +366,7 @@ function endedStatus(result: Extract<TranslationResult, { ok: false }>, text: Bu
     case 'stopped':
       return text('prompt.status.stopped')
     case 'unreachable':
-      return result.reason === undefined
-        ? text('prompt.status.unreachableNoReason')
-        : text('prompt.status.unreachable', { reason: result.reason })
+      return result.reason === undefined ? text('prompt.status.unreachableNoReason') : text('prompt.status.unreachable', { reason: result.reason })
     case 'busy':
       // Not unreachable: nothing was asked. The prompt pane's sentence, because the two
       // runs meet the same relay and nothing was applied in either (0162).

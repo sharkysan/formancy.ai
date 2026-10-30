@@ -71,9 +71,7 @@ const answering = (rows = CANTONS, named = CANTONS): { sources: OptionsSources; 
         debounceMs: 0,
         resolve: (request) => {
           asked.push(request)
-          return Promise.resolve(
-            request.kind === 'labels' ? named.filter((row) => request.values.includes(row.value)) : rows,
-          )
+          return Promise.resolve(request.kind === 'labels' ? named.filter((row) => request.values.includes(row.value)) : rows)
         },
       },
     },
@@ -166,8 +164,7 @@ test('a list of ticks asking again keeps the focus on its button, and gives it t
     sources: {
       cantons: {
         debounceMs: 0,
-        resolve: () =>
-          failing ? Promise.reject(new Error('down')) : new Promise((resolve) => (answer = resolve)),
+        resolve: () => (failing ? Promise.reject(new Error('down')) : new Promise((resolve) => (answer = resolve))),
       },
     },
   })

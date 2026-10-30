@@ -35,21 +35,52 @@ const fields: FieldDef[] = [
   { key: 'date', type: 'date' },
   { key: 'time', type: 'time' },
   { key: 'datetime', type: 'datetime' },
-  { key: 'select', type: 'select', options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] },
+  {
+    key: 'select',
+    type: 'select',
+    options: [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' },
+    ],
+  },
   { key: 'radio', type: 'radio', options: [{ value: 'a', label: 'A' }] },
   { key: 'sourced', type: 'select', optionsSource: 'cantons' },
-  { key: 'selectboxes', type: 'selectboxes', options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] },
-  { key: 'ranking', type: 'ranking', options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] },
+  {
+    key: 'selectboxes',
+    type: 'selectboxes',
+    options: [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' },
+    ],
+  },
+  {
+    key: 'ranking',
+    type: 'ranking',
+    options: [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' },
+    ],
+  },
   {
     key: 'matrix',
     type: 'matrix',
     rows: [{ value: 'taste', label: 'Taste' }],
-    options: [{ value: 'good', label: 'Good' }, { value: 'bad', label: 'Bad' }],
+    options: [
+      { value: 'good', label: 'Good' },
+      { value: 'bad', label: 'Bad' },
+    ],
   },
   { key: 'file', type: 'file' },
   { key: 'signature', type: 'signature', box: [100, 50] },
   { key: 'note', type: 'static', label: 'Read me' },
-  { key: 'address', type: 'group', fields: [{ key: 'street', type: 'text' }, { key: 'zip', type: 'number' }] },
+  {
+    key: 'address',
+    type: 'group',
+    fields: [
+      { key: 'street', type: 'text' },
+      { key: 'zip', type: 'number' },
+    ],
+  },
   { key: 'items', type: 'repeater', fields: [{ key: 'qty', type: 'number' }] },
 ]
 
@@ -75,7 +106,22 @@ const cases: Array<[key: string, kept: unknown[], refused: unknown[]]> = [
   ['ranking', [['b', 'a'], []], [null, ['z'], [1]]],
   ['matrix', [{ taste: 'good' }, {}], [null, { taste: 'great' }, { price: 'good' }, ['good']]],
   ['file', [[stored], []], [null, ['a.pdf'], 'a.pdf']],
-  ['signature', [{ typed: 'Ada' }, { drawn: [[[1, 2], [3, 4]]] }, null], ['Ada', { typed: 'Ada', drawn: [] }]],
+  [
+    'signature',
+    [
+      { typed: 'Ada' },
+      {
+        drawn: [
+          [
+            [1, 2],
+            [3, 4],
+          ],
+        ],
+      },
+      null,
+    ],
+    ['Ada', { typed: 'Ada', drawn: [] }],
+  ],
   ['address', [{ street: 'Main', zip: 8000 }, {}], ['Main', [{ street: 'Main' }], { zip: '8000' }]],
   // A row handed in without `_id` is given one, so it is kept — and stored with it.
   ['items', [[{ _id: 'r1', qty: 2 }], [{ qty: 2 }], []], ['rows', [{ _id: 'r1', qty: 'two' }]]],
@@ -140,8 +186,7 @@ function compiles(values: unknown[]): boolean[] {
   const getSourceFile = host.getSourceFile.bind(host)
   host.readFile = (file) => sources.get(file) ?? readFile(file)
   host.fileExists = (file) => sources.has(file) || fileExists(file)
-  host.getSourceFile = (file, language) =>
-    sources.has(file) ? ts.createSourceFile(file, sources.get(file)!, language) : getSourceFile(file, language)
+  host.getSourceFile = (file, language) => (sources.has(file) ? ts.createSourceFile(file, sources.get(file)!, language) : getSourceFile(file, language))
 
   const program = ts.createProgram([answersFile, casesFile], options, host)
   const elsewhere = ts.getPreEmitDiagnostics(program).filter((diagnostic) => diagnostic.file?.fileName !== casesFile)

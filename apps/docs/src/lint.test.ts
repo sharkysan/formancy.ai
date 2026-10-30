@@ -111,7 +111,9 @@ async function configOf(file: string): Promise<{ rules: Rules; languageOptions: 
  */
 async function trackedSources(): Promise<Array<{ file: string; typescript: boolean }>> {
   const parsers = (await prettier.getSupportInfo()).languages.find((language) => language.name === 'JavaScript')?.parsers ?? []
-  const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).split('\n').filter(Boolean)
+  const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+    .split('\n')
+    .filter(Boolean)
   const inferred = await Promise.all(tracked.map((file) => prettier.getFileInfo(join(root, file)).then(({ inferredParser }) => inferredParser)))
   return tracked.flatMap((file, i) => (parsers.includes(inferred[i] ?? '') ? [{ file, typescript: inferred[i] === 'typescript' }] : []))
 }
@@ -376,7 +378,7 @@ describe('the formatter', () => {
     }
     const generated = 'packages/spec/src/generated/document-validator.js'
     const expected = [...nested.flatMap((file) => patternsOf(file).map((pattern) => prefixed(dirname(file), pattern))), generated].sort()
-    expect(patternsOf('.prettierignore').sort(), '.prettierignore: the nested .gitignore files\' patterns, prefixed, and the validator').toEqual(expected)
+    expect(patternsOf('.prettierignore').sort(), ".prettierignore: the nested .gitignore files' patterns, prefixed, and the validator").toEqual(expected)
 
     const wrong: string[] = []
     const candidates = ignoreFiles.flatMap((file) =>

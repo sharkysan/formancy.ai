@@ -78,9 +78,7 @@ describe('the rules overview', () => {
   test('and says so when the form has no rules at all', async () => {
     await mount({ session: createBuilderSession({ ...form, logic: { rules: [] } } as FormSchema) })
 
-    expect(
-      screen.getByText('This form has no rules: every field always behaves the same way.'),
-    ).toBeTruthy()
+    expect(screen.getByText('This form has no rules: every field always behaves the same way.')).toBeTruthy()
   })
 })
 
@@ -114,9 +112,7 @@ describe('a rule in a repeater row', () => {
           cel: 'item.amount != null && item.amount >= 1000.0',
           editor: {
             join: 'all',
-            conditions: [
-              { field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' },
-            ],
+            conditions: [{ field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' }],
           },
         },
       ],
@@ -125,11 +121,9 @@ describe('a rule in a repeater row', () => {
 
   /** Each row's line, its label and effect, with Angular's template whitespace folded. */
   const rowsSaid = (): string[] =>
-    [
-      ...document.querySelectorAll(
-        '[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p',
-      ),
-    ].map((line) => (line.textContent ?? '').replace(/\s+/g, ' ').trim())
+    [...document.querySelectorAll('[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p')].map((line) =>
+      (line.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    )
 
   test('says, row by row, what it does now and why', async () => {
     await mount({

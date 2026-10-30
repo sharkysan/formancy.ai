@@ -22,8 +22,6 @@ export const BLOCK_MESSAGES = {
   'said.blockSavedWhole': 'Saved “{name}” as a block.',
   'said.blockAdded': 'Added the block “{name}” to {where}.',
   'refuse.blockIsPage': 'A page is not a block: save a field, or a group or repeater of fields.',
-  'refuse.blockInRow':
-    'A field inside a repeater row cannot be saved as a block: its rules are about every row.',
-  'refuse.blockRulesInRow':
-    'A block with rules cannot go inside a repeater row: its rules would be about every row.',
+  'refuse.blockInRow': 'A field inside a repeater row cannot be saved as a block: its rules are about every row.',
+  'refuse.blockRulesInRow': 'A block with rules cannot go inside a repeater row: its rules would be about every row.',
 } as const satisfies Record<string, Message>

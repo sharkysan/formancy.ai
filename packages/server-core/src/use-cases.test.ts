@@ -332,10 +332,7 @@ describe('listSubmissions', () => {
     const listed = await listSubmissions(deps, 'contact-us')
 
     expect(listed).not.toBeUndefined()
-    expect(listed!.map((s) => (s.data as { email: string }).email)).toEqual([
-      'second@b.ch',
-      'first@b.ch',
-    ])
+    expect(listed!.map((s) => (s.data as { email: string }).email)).toEqual(['second@b.ch', 'first@b.ch'])
     expect(listed![0]!.version).toBe(1)
   })
 
@@ -530,7 +527,7 @@ describe('a draft belongs to whoever started it', () => {
     expect(without).toBeUndefined()
   })
 
-  test("a token for one draft does not open another", async () => {
+  test('a token for one draft does not open another', async () => {
     const published = await publishForm(deps, { path: 'contact-us', schema })
     if (!published.ok) throw new Error('publish failed')
     const mine = await startDraft(deps, { path: 'contact-us' })
@@ -653,16 +650,12 @@ describe('drafts', () => {
   })
 
   test('an unknown draft or form is undefined', async () => {
-    expect(
-      await resumeDraft(deps, { path: 'ghost', draftId: 'x', token: 'anything' }),
-    ).toBeUndefined()
+    expect(await resumeDraft(deps, { path: 'ghost', draftId: 'x', token: 'anything' })).toBeUndefined()
     await publishForm(deps, { path: 'contact-us', schema })
     // An id that was never minted has no valid token either, so this is the
     // same answer a wrong token gets -- deliberately, because telling them
     // apart would confirm which ids exist.
-    expect(
-      await resumeDraft(deps, { path: 'contact-us', draftId: 'nope', token: 'anything' }),
-    ).toBeUndefined()
+    expect(await resumeDraft(deps, { path: 'contact-us', draftId: 'nope', token: 'anything' })).toBeUndefined()
   })
 })
 
@@ -758,10 +751,7 @@ describe('public submission access', () => {
 
   // Each with the token its form was handed out with, as a respondent's browser sends it
   // (0169): what is under test here is who may submit, not whether the response was sent.
-  const submit = async (
-    hash: string,
-    context?: { actor?: 'anonymous' | 'authenticated'; origin?: string },
-  ): ReturnType<typeof createSubmission> =>
+  const submit = async (hash: string, context?: { actor?: 'anonymous' | 'authenticated'; origin?: string }): ReturnType<typeof createSubmission> =>
     createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: hash,
@@ -838,13 +828,7 @@ describe('public submission access', () => {
       allowedOrigins: ['https://example.ch'],
     })
 
-    for (const origin of [
-      'https://evil-example.ch',
-      'https://example.ch.evil.test',
-      'http://example.ch',
-      'https://example.ch:8443',
-      'https://EXAMPLE.ch/',
-    ]) {
+    for (const origin of ['https://evil-example.ch', 'https://example.ch.evil.test', 'http://example.ch', 'https://example.ch:8443', 'https://EXAMPLE.ch/']) {
       expect(await submit(hash, { origin }), origin).toMatchObject({ ok: false })
     }
   })
@@ -940,9 +924,7 @@ describe('the side the server replays as', () => {
       title: 'Contact us',
       model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
       logic: {
-        rules: [
-          { target: 'email', kind: 'validate', cel: 'false', code: 'refused', runsOn },
-        ],
+        rules: [{ target: 'email', kind: 'validate', cel: 'false', code: 'refused', runsOn }],
       },
     }) as unknown as FormSchema
 
@@ -1217,19 +1199,25 @@ describe('a document naming a list this deployment cannot resolve', () => {
   }
 
   test('is refused, and names the list so an operator can compare configurations', async () => {
-    const outcome = await publishForm({ ...deps, optionsSources: {} }, {
-      path: 'needs-cantons',
-      schema: sourced,
-    })
+    const outcome = await publishForm(
+      { ...deps, optionsSources: {} },
+      {
+        path: 'needs-cantons',
+        schema: sourced,
+      },
+    )
 
     expect(outcome).toMatchObject({ ok: false, kind: 'unknown_options_source', sources: ['cantons'] })
   })
 
   test('and publishes once the deployment offers it', async () => {
-    const outcome = await publishForm({ ...deps, optionsSources: { cantons: {} } }, {
-      path: 'needs-cantons',
-      schema: sourced,
-    })
+    const outcome = await publishForm(
+      { ...deps, optionsSources: { cantons: {} } },
+      {
+        path: 'needs-cantons',
+        schema: sourced,
+      },
+    )
 
     expect(outcome.ok).toBe(true)
   })

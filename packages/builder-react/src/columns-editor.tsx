@@ -38,12 +38,7 @@ export interface ColumnsEditorProps {
 
 const ENGLISH = createBuilderText()
 
-export function ColumnsEditor({
-  columns,
-  children,
-  onChange,
-  text = ENGLISH,
-}: ColumnsEditorProps): ReactElement {
+export function ColumnsEditor({ columns, children, onChange, text = ENGLISH }: ColumnsEditorProps): ReactElement {
   const id = useId()
 
   /*
@@ -125,17 +120,11 @@ export function ColumnsEditor({
               {/* A choice and never a text box: a column names a child that exists,
                   and a typed name is a column over nothing. */}
               <label htmlFor={`${id}-field-${String(index)}`}>{text('columns.answer')}</label>
-              <select
-                id={`${id}-field-${String(index)}`}
-                value={column.field}
-                onChange={(event) => replace(index, { field: event.target.value })}
-              >
+              <select id={`${id}-field-${String(index)}`} value={column.field} onChange={(event) => replace(index, { field: event.target.value })}>
                 {/* The one it names, even if that child is gone — so the panel shows
                     what the document says rather than silently rewriting it. */}
                 {children.some((child) => child.key === column.field) ? null : (
-                  <option value={column.field}>
-                    {text('columns.noSuchField', { name: column.field })}
-                  </option>
+                  <option value={column.field}>{text('columns.noSuchField', { name: column.field })}</option>
                 )}
                 {children.map((child) => (
                   <option key={child.key} value={child.key}>

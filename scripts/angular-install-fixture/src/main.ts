@@ -8,12 +8,7 @@
  * answered, under the Angular this project installed.
  */
 import { JsonPipe } from '@angular/common'
-import {
-  ChangeDetectionStrategy,
-  Component,
-  provideZonelessChangeDetection,
-  signal,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, provideZonelessChangeDetection, signal } from '@angular/core'
 import { bootstrapApplication } from '@angular/platform-browser'
 import { FormancyForm, provideFormancy, provideFormancyUploader } from '@formancy/angular'
 import { provideFormancyMaterial } from '@formancy/angular/material'

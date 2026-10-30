@@ -27,16 +27,7 @@ import {
   formVersion,
   listVersions,
 } from '@formancy/server-core'
-import type {
-  Action,
-  Actor,
-  AuthDeps,
-  Role,
-  Scanner,
-  ServerDeps,
-  ServerOptionsSources,
-  Storage,
-} from '@formancy/server-core'
+import type { Action, Actor, AuthDeps, Role, Scanner, ServerDeps, ServerOptionsSources, Storage } from '@formancy/server-core'
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
 import { checkedMaxFileBytes, DEFAULT_MAX_FILE_BYTES } from './upload-settings.js'
 import { serverLogOptions } from './server-log.js'
@@ -260,9 +251,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     async (request, reply) => {
       const body = request.body as { email?: unknown; password?: unknown } | null
       if (body === null || typeof body.email !== 'string' || typeof body.password !== 'string') {
-        return reply
-          .code(400)
-          .send({ error: 'bad_request', message: 'Body needs { email, password }.' })
+        return reply.code(400).send({ error: 'bad_request', message: 'Body needs { email, password }.' })
       }
       const outcome = await authenticateLocal(authDeps, {
         email: body.email,
@@ -294,9 +283,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       typeof body.password !== 'string' ||
       (body.role !== 'admin' && body.role !== 'editor' && body.role !== 'viewer')
     ) {
-      return reply
-        .code(400)
-        .send({ error: 'bad_request', message: 'Body needs { email, password, role }.' })
+      return reply.code(400).send({ error: 'bad_request', message: 'Body needs { email, password, role }.' })
     }
     const outcome = await createLocalUser(authDeps, {
       email: body.email,
@@ -309,11 +296,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
 
   app.post('/api-keys', { preHandler: requires('apiKey.create') }, async (request, reply) => {
     const body = request.body as { name?: unknown; role?: unknown } | null
-    if (
-      body === null ||
-      typeof body.name !== 'string' ||
-      (body.role !== 'admin' && body.role !== 'editor' && body.role !== 'viewer')
-    ) {
+    if (body === null || typeof body.name !== 'string' || (body.role !== 'admin' && body.role !== 'editor' && body.role !== 'viewer')) {
       return reply.code(400).send({ error: 'bad_request', message: 'Body needs { name, role }.' })
     }
     const outcome = await createApiKey(authDeps, { name: body.name, role: body.role as Role })
@@ -375,36 +358,32 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     return reply.send({ version: found.version, schemaHash: found.schemaHash, schema: found.schema })
   })
 
-  app.get(
-    '/f/:path/submissions',
-    { preHandler: requires('submission.read') },
-    async (request, reply) => {
-      const { path } = request.params as { path: string }
-      const query = (request.query ?? {}) as { limit?: unknown; after?: unknown }
-      // A page when either is asked for (0222); every submission when neither is, as before, since
-      // a client that ignored `next` would otherwise take the first page for all there is.
-      if (query.limit !== undefined || query.after !== undefined) {
-        const asked = typeof query.limit === 'string' ? Number.parseInt(query.limit, 10) : 100
-        const after = query.after === undefined ? undefined : typeof query.after === 'string' ? query.after : ''
-        const page = await listSubmissionPage(deps, path, { limit: Number.isFinite(asked) ? asked : 100, after })
-        if (page === undefined) return reply.code(404).send({ error: 'unknown_form' })
-        if (page.kind === 'bad_cursor') return reply.code(400).send({ error: 'bad_cursor' })
-        await audit(request, { action: 'submission.read', subject: path, detail: { count: page.submissions.length } })
-        return reply.send({ submissions: page.submissions, next: page.next })
-      }
-      const listed = await listSubmissions(deps, path)
-      if (listed === undefined) return reply.code(404).send({ error: 'unknown_form' })
-      // The event a data protection officer asks about, and the one an audit
-      // log that covers only mutations cannot answer: who read other people's
-      // answers. The count, never the answers.
-      await audit(request, {
-        action: 'submission.read',
-        subject: path,
-        detail: { count: listed.length },
-      })
-      return reply.send({ submissions: listed })
-    },
-  )
+  app.get('/f/:path/submissions', { preHandler: requires('submission.read') }, async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const query = (request.query ?? {}) as { limit?: unknown; after?: unknown }
+    // A page when either is asked for (0222); every submission when neither is, as before, since
+    // a client that ignored `next` would otherwise take the first page for all there is.
+    if (query.limit !== undefined || query.after !== undefined) {
+      const asked = typeof query.limit === 'string' ? Number.parseInt(query.limit, 10) : 100
+      const after = query.after === undefined ? undefined : typeof query.after === 'string' ? query.after : ''
+      const page = await listSubmissionPage(deps, path, { limit: Number.isFinite(asked) ? asked : 100, after })
+      if (page === undefined) return reply.code(404).send({ error: 'unknown_form' })
+      if (page.kind === 'bad_cursor') return reply.code(400).send({ error: 'bad_cursor' })
+      await audit(request, { action: 'submission.read', subject: path, detail: { count: page.submissions.length } })
+      return reply.send({ submissions: page.submissions, next: page.next })
+    }
+    const listed = await listSubmissions(deps, path)
+    if (listed === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    // The event a data protection officer asks about, and the one an audit
+    // log that covers only mutations cannot answer: who read other people's
+    // answers. The count, never the answers.
+    await audit(request, {
+      action: 'submission.read',
+      subject: path,
+      detail: { count: listed.length },
+    })
+    return reply.send({ submissions: listed })
+  })
 
   // What a form's responses say together, counted here rather than by a client handed every answer
   // to count (0223). Audited as a read of them: the counts are drawn from people's answers.
@@ -417,27 +396,25 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     return reply.send({ versions })
   })
 
-  app.get(
-    '/f/:path/submissions/export.csv',
-    { preHandler: requires('submission.export') },
-    async (request, reply) => {
-      const { path } = request.params as { path: string }
-      const csv = await exportCsv(deps, path)
-      if (csv === undefined) return reply.code(404).send({ error: 'unknown_form' })
-      // An export leaves the building. Bytes rather than rows, because that is
-      // what was actually handed over.
-      await audit(request, {
-        action: 'submission.exported',
-        subject: path,
-        detail: { bytes: Buffer.byteLength(csv, 'utf8') },
-      })
-      return reply
+  app.get('/f/:path/submissions/export.csv', { preHandler: requires('submission.export') }, async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const csv = await exportCsv(deps, path)
+    if (csv === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    // An export leaves the building. Bytes rather than rows, because that is
+    // what was actually handed over.
+    await audit(request, {
+      action: 'submission.exported',
+      subject: path,
+      detail: { bytes: Buffer.byteLength(csv, 'utf8') },
+    })
+    return (
+      reply
         .header('content-type', 'text/csv; charset=utf-8')
         // The path is the author's, and a path can hold what a header cannot (0175).
         .header('content-disposition', attachment(`${path}-submissions.csv`))
         .send(csv)
-    },
-  )
+    )
+  })
 
   // ------------------------------------------------------------------ public
 

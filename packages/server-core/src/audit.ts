@@ -86,7 +86,5 @@ export type AuditDraft = Omit<AuditEntry, 'id' | 'at'>
  * set together is exactly the sort of thing eleven call sites get wrong once.
  */
 export function auditedBy(actor: Actor | undefined, draft: Omit<AuditDraft, 'actorKind' | 'actorId'>): AuditDraft {
-  return actor === undefined
-    ? draft
-    : { ...draft, actorKind: actor.kind, actorId: actor.id }
+  return actor === undefined ? draft : { ...draft, actorKind: actor.kind, actorId: actor.id }
 }

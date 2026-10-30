@@ -246,9 +246,7 @@ describe('the walking skeleton, end to end', () => {
   })
 
   test('the database refuses to mutate a published version — immutability is a trigger, not a convention', async () => {
-    await expect(sql`UPDATE form_versions SET schema_hash = 'tampered' WHERE version = 1`).rejects.toThrow(
-      /immutable/,
-    )
+    await expect(sql`UPDATE form_versions SET schema_hash = 'tampered' WHERE version = 1`).rejects.toThrow(/immutable/)
   })
 
   test('the database refuses to orphan a submission from its version', async () => {
@@ -550,12 +548,10 @@ describe('drafts over HTTP', () => {
  * insert. Only the insert can say which of them is stored, and only Postgres can show it does.
  */
 describe('a response is stored once', () => {
-  const count = async (): Promise<number> =>
-    Number((await sql`SELECT count(*)::int AS n FROM submissions`)[0]!['n'])
+  const count = async (): Promise<number> => Number((await sql`SELECT count(*)::int AS n FROM submissions`)[0]!['n'])
 
   /** contact-us's hash now: the draft cases above republish it. */
-  const currentHash = async (): Promise<string> =>
-    ((await app.inject({ method: 'GET', url: '/f/contact-us' })).json() as { schemaHash: string }).schemaHash
+  const currentHash = async (): Promise<string> => ((await app.inject({ method: 'GET', url: '/f/contact-us' })).json() as { schemaHash: string }).schemaHash
 
   const send = async (token: Record<string, string>, payload: object = { email: 'once@b.ch' }) =>
     app.inject({
@@ -709,9 +705,7 @@ describe('catalog reads over HTTP', () => {
   test('forms and version history are listable', async () => {
     const forms = await app.inject({ method: 'GET', url: '/forms', headers: asAdmin() })
     expect(forms.statusCode).toBe(200)
-    expect((forms.json() as { forms: Array<{ path: string }> }).forms.map((f) => f.path)).toContain(
-      'contact-us',
-    )
+    expect((forms.json() as { forms: Array<{ path: string }> }).forms.map((f) => f.path)).toContain('contact-us')
 
     const versions = await app.inject({ method: 'GET', url: '/f/contact-us/versions', headers: asAdmin() })
     expect(versions.statusCode).toBe(200)
@@ -913,8 +907,7 @@ describe('rate limiting the public plane', () => {
     })
 
     try {
-      const mint = async (): Promise<number> =>
-        (await throttled.inject({ method: 'GET', url: '/f/contact-us/challenge' })).statusCode
+      const mint = async (): Promise<number> => (await throttled.inject({ method: 'GET', url: '/f/contact-us/challenge' })).statusCode
 
       await mint()
       await mint()
@@ -1061,12 +1054,9 @@ describe('the webhook outbox', () => {
     // ON DELETE RESTRICT: the delivery is the record that something was sent
     // about this submission, and deleting the submission must not quietly
     // erase it.
-    await expect(
-      sql`DELETE FROM submissions WHERE id = ${submission[0]!['id'] as string}`,
-    ).rejects.toThrow()
+    await expect(sql`DELETE FROM submissions WHERE id = ${submission[0]!['id'] as string}`).rejects.toThrow()
   })
 })
-
 
 /**
  * The file lifecycle against real SQL.
@@ -1109,10 +1099,7 @@ describe('uploaded files', () => {
   })
 
   /** Offer, then upload. Returns what a submission would reference. */
-  async function upload(
-    name = 'report.pdf',
-    body = Buffer.from('%PDF-1.4 pretend'),
-  ): Promise<Record<string, unknown>> {
+  async function upload(name = 'report.pdf', body = Buffer.from('%PDF-1.4 pretend')): Promise<Record<string, unknown>> {
     const offered = await app.inject({
       method: 'POST',
       url: '/f/claim/files',
@@ -1481,7 +1468,6 @@ describe('a file of any type arrives as bytes', () => {
   })
 })
 
-
 /**
  * An upload the deployment scans (0131), on an app of its own so the scanner's verdict
  * is the test's to choose. Against real SQL because the claim is what matters: a file
@@ -1845,7 +1831,7 @@ describe('an upload the deployment scans', () => {
         await releasing?.close()
       })
 
-      test('a write that throws is answered with its own error, not the release\'s', async () => {
+      test("a write that throws is answered with its own error, not the release's", async () => {
         verdict = async () => ({ clean: true })
         const file = await offer(first.byteLength)
         const write = holdTheNextWrite()
@@ -1900,9 +1886,7 @@ describe('an upload the deployment scans', () => {
       const storage = createPostgresStorage(sql)
       expect((await storage.getFile(file.id))?.receivingUntil).toBeNull()
       const now = new Date()
-      expect(
-        await storage.leaseFile(file.id, now.toISOString(), new Date(now.getTime() + 1000).toISOString()),
-      ).toBe(true)
+      expect(await storage.leaseFile(file.id, now.toISOString(), new Date(now.getTime() + 1000).toISOString())).toBe(true)
     })
 
     test('two leases taken at once on real SQL: exactly one wins', async () => {
@@ -1915,10 +1899,7 @@ describe('an upload the deployment scans', () => {
 
       const outcomes = await Promise.all(
         files.map((file) =>
-          Promise.all([
-            storage.leaseFile(file.id, now.toISOString(), until(60_000)),
-            storage.leaseFile(file.id, now.toISOString(), until(60_001)),
-          ]),
+          Promise.all([storage.leaseFile(file.id, now.toISOString(), until(60_000)), storage.leaseFile(file.id, now.toISOString(), until(60_001))]),
         ),
       )
 
@@ -2127,9 +2108,7 @@ describe('the audit log', () => {
     // Append-only in the database rather than by application discipline, for
     // the same reason version rows are immutable there: the one moment it
     // matters is the moment somebody has a reason to edit it.
-    await expect(
-      sql`UPDATE audit_log SET action = 'auth.login' WHERE action = 'form.published'`,
-    ).rejects.toThrow(/append-only/)
+    await expect(sql`UPDATE audit_log SET action = 'auth.login' WHERE action = 'form.published'`).rejects.toThrow(/append-only/)
 
     await expect(sql`DELETE FROM audit_log`).rejects.toThrow(/append-only/)
   })
@@ -2139,7 +2118,6 @@ describe('the audit log', () => {
     expect(rows[0]?.['n']).toBeGreaterThan(0)
   })
 })
-
 
 /**
  * Webhook health and dead letters, over HTTP.
@@ -2273,7 +2251,6 @@ describe('dead letters', () => {
     expect({ status: missing.statusCode, body: missing.json() }).toEqual({ status: 404, body: { error: 'unknown_delivery' } })
   })
 })
-
 
 /**
  * The proof-of-work challenge, over HTTP and against real SQL.
@@ -2514,9 +2491,7 @@ describe('a sourced answer, checked against the deployment’s own list', () => 
                 key: 'people',
                 type: 'repeater',
                 label: 'People',
-                fields: [
-                  { key: 'home', type: 'select', label: 'Home canton', optionsSource: 'cantons' },
-                ],
+                fields: [{ key: 'home', type: 'select', label: 'Home canton', optionsSource: 'cantons' }],
               },
             ],
           },
@@ -2726,16 +2701,13 @@ describe('what reaches the log', () => {
     const path = plant('path')
 
     try {
-      const admin = (
-        await send({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })
-      ).json() as { token: string }
+      const admin = (await send({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })).json() as {
+        token: string
+      }
       carry(admin.token)
       const asRoot = { authorization: `Bearer ${admin.token}` }
 
-      expect(
-        (await send({ method: 'POST', url: '/auth/login', payload: { email: planted.email, password: planted.password } }))
-          .statusCode,
-      ).toBe(401)
+      expect((await send({ method: 'POST', url: '/auth/login', payload: { email: planted.email, password: planted.password } })).statusCode).toBe(401)
       expect(
         (
           await send({
@@ -2747,9 +2719,9 @@ describe('what reaches the log', () => {
         ).statusCode,
       ).toBe(201)
 
-      const key = (
-        await send({ method: 'POST', url: '/api-keys', headers: asRoot, payload: { name: plant('key-name'), role: 'admin' } })
-      ).json() as { secret: string }
+      const key = (await send({ method: 'POST', url: '/api-keys', headers: asRoot, payload: { name: plant('key-name'), role: 'admin' } })).json() as {
+        secret: string
+      }
       carry(key.secret)
       const withKey = { 'x-formancy-api-key': key.secret }
 
@@ -2775,9 +2747,7 @@ describe('what reaches the log', () => {
       })
       expect(published.statusCode).toBe(201)
       const { schemaHash } = published.json() as { schemaHash: string }
-      expect(
-        (await send({ method: 'PUT', url: `/f/${path}/access`, headers: withKey, payload: { submit: 'public' } })).statusCode,
-      ).toBe(204)
+      expect((await send({ method: 'PUT', url: `/f/${path}/access`, headers: withKey, payload: { submit: 'public' } })).statusCode).toBe(204)
       expect((await send({ method: 'GET', url: `/forms?cursor=${planted.query}`, headers: withKey })).statusCode).toBe(200)
       const read = await send({ method: 'GET', url: `/f/${path}` })
       expect(read.statusCode).toBe(200)
@@ -2803,9 +2773,7 @@ describe('what reaches the log', () => {
           })
         ).statusCode,
       ).toBe(200)
-      expect(
-        (await send({ method: 'GET', url: `/f/${path}/drafts/${draft.draftId}`, headers: draftKey })).statusCode,
-      ).toBe(200)
+      expect((await send({ method: 'GET', url: `/f/${path}/drafts/${draft.draftId}`, headers: draftKey })).statusCode).toBe(200)
 
       const bytes = Buffer.from(planted.fileBytes)
       const offered = await send({
@@ -2816,16 +2784,11 @@ describe('what reaches the log', () => {
       expect(offered.statusCode).toBe(201)
       const file = offered.json() as { id: string; storageKey: string; uploadUrl: string }
       leaves(file)
-      expect(
-        (await send({ method: 'PUT', url: file.uploadUrl, headers: { 'content-type': 'application/pdf' }, payload: bytes }))
-          .statusCode,
-      ).toBe(204)
+      expect((await send({ method: 'PUT', url: file.uploadUrl, headers: { 'content-type': 'application/pdf' }, payload: bytes })).statusCode).toBe(204)
 
       const minted = await send({ method: 'GET', url: `/f/${path}/challenge` })
       const challenge = minted.json() as { salt: string; challenge: string; maxNumber: number; signature: string }
-      const solution = Buffer.from(JSON.stringify({ ...challenge, number: await solveChallenge(challenge) })).toString(
-        'base64',
-      )
+      const solution = Buffer.from(JSON.stringify({ ...challenge, number: await solveChallenge(challenge) })).toString('base64')
       const submitted = await send({
         method: 'POST',
         url: `/f/${path}/submissions`,
@@ -2894,9 +2857,7 @@ describe('what reaches the log', () => {
       ).toBe(400)
       // An id PostgreSQL cannot read as a uuid, asked of it by the storage above: its error's
       // message quotes the id.
-      expect(
-        (await send({ method: 'GET', url: `/f/${path}/files/${plant('file-id')}`, headers: asRoot })).statusCode,
-      ).toBe(500)
+      expect((await send({ method: 'GET', url: `/f/${path}/files/${plant('file-id')}`, headers: asRoot })).statusCode).toBe(500)
       // A path no route has, which Fastify's own line names in full.
       expect((await send({ method: 'GET', url: `/nowhere/${plant('segment')}?q=${planted.query}` })).statusCode).toBe(404)
       // A URL the router cannot decode, and a parameter longer than it takes: both refused by
@@ -2910,9 +2871,7 @@ describe('what reaches the log', () => {
     const lines = written.map((line) => JSON.parse(line) as Record<string, unknown>)
     // Not vacuous: one line for every request, and the failures written as failures.
     expect(lines.filter((line) => line['event'] === 'request')).toHaveLength(sent)
-    expect(lines.map((line) => line['event'])).toEqual(
-      expect.arrayContaining(['request.refused', 'request.failed', 'model.unreachable']),
-    )
+    expect(lines.map((line) => line['event'])).toEqual(expect.arrayContaining(['request.refused', 'request.failed', 'model.unreachable']))
     for (const line of lines) for (const field of Object.keys(line)) expect(LOG_FIELDS).toContain(field)
 
     // Every audit row of the swept form names a request the log has a line for — the three a

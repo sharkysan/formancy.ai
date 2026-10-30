@@ -188,10 +188,7 @@ export interface Storage {
   getFormByPath(path: string): Promise<FormRecord | undefined>
   listForms(): Promise<FormRecord[]>
   createForm(record: FormRecord): Promise<void>
-  updateFormAccess(
-    formId: string,
-    access: Pick<FormRecord, 'accessSubmit' | 'allowedOrigins'>,
-  ): Promise<void>
+  updateFormAccess(formId: string, access: Pick<FormRecord, 'accessSubmit' | 'allowedOrigins'>): Promise<void>
   setCurrentVersion(formId: string, versionId: string): Promise<void>
   insertVersion(record: FormVersionRecord): Promise<void>
 
@@ -213,11 +210,7 @@ export interface Storage {
    * touched apart from its pointer, because its access settings are not the
    * publisher's business.
    */
-  publishVersion(input: {
-    form?: FormRecord
-    version: FormVersionRecord
-    audit?: AuditEntry
-  }): Promise<void>
+  publishVersion(input: { form?: FormRecord; version: FormVersionRecord; audit?: AuditEntry }): Promise<void>
   getVersionById(id: string): Promise<FormVersionRecord | undefined>
   /** A form's examples, or undefined when none were ever kept for it. */
   getExamples(formId: string): Promise<ExamplesRecord | undefined>
@@ -255,12 +248,7 @@ export interface Storage {
    * `spendChallenge` is and for its reason: two sends of one response both pass every check
    * made before this, and only the storage can decide which is stored.
    */
-  insertSubmission(
-    record: SubmissionRecord,
-    deliveries?: readonly DeliveryRecord[],
-    claimFileIds?: readonly string[],
-    audit?: AuditEntry,
-  ): Promise<boolean>
+  insertSubmission(record: SubmissionRecord, deliveries?: readonly DeliveryRecord[], claimFileIds?: readonly string[], audit?: AuditEntry): Promise<boolean>
 
   /**
    * Whether a submission with this id is stored.

@@ -56,8 +56,7 @@ describe('model validators', () => {
       title: 'Contact',
       model: { fields: [{ key: 'phone', type: 'text', mask: '(999) 999-9999' }] },
     }
-    const errors = (phone: unknown) =>
-      createFormEngine({ schema: masked, initialValue: { phone } }).validate().errors['phone']
+    const errors = (phone: unknown) => createFormEngine({ schema: masked, initialValue: { phone } }).validate().errors['phone']
 
     expect(errors('5551234567')).toBeUndefined()
     expect(errors('5551234')).toEqual(['mask'])
@@ -131,31 +130,16 @@ describe('model validators', () => {
  * the pathological input is now cheap.
  */
 describe('format checks are cheap on hostile input', () => {
-  const emailErrors = (value: string): string[] | undefined =>
-    errorsFor({ email: value })['email']
+  const emailErrors = (value: string): string[] | undefined => errorsFor({ email: value })['email']
 
   test('the addresses people actually have are still accepted', () => {
-    for (const address of [
-      'ada@example.ch',
-      'first.last@example.ch',
-      'a+tag@sub.example.co.uk',
-      "o'brien@example.org",
-      'x@y.zz',
-    ]) {
+    for (const address of ['ada@example.ch', 'first.last@example.ch', 'a+tag@sub.example.co.uk', "o'brien@example.org", 'x@y.zz']) {
       expect(emailErrors(address), address).toBeUndefined()
     }
   })
 
   test('the ones that are not addresses are still rejected', () => {
-    for (const notAnAddress of [
-      'plain',
-      'no@domain',
-      '@example.ch',
-      'a b@example.ch',
-      'a@b',
-      'a@.ch',
-      'a@b.',
-    ]) {
+    for (const notAnAddress of ['plain', 'no@domain', '@example.ch', 'a b@example.ch', 'a@b', 'a@.ch', 'a@b.']) {
       expect(emailErrors(notAnAddress), notAnAddress).toEqual(['email'])
     }
   })
@@ -216,8 +200,7 @@ const chooser: FormSchema = {
   },
 }
 
-const chosen = (initialValue: Record<string, unknown>): Record<string, string[]> =>
-  createFormEngine({ schema: chooser, initialValue }).validate().errors
+const chosen = (initialValue: Record<string, unknown>): Record<string, string[]> => createFormEngine({ schema: chooser, initialValue }).validate().errors
 
 describe('an answer is one of the options offered', () => {
   test('refuses a value no option offers, on every type that offers options', () => {
@@ -283,8 +266,7 @@ describe('a chooser stores a string, or it stores nothing', () => {
     },
   } as unknown as FormSchema
 
-  const errorsOf = (initialValue: Record<string, unknown>): Record<string, string[]> =>
-    createFormEngine({ schema: chooser, initialValue }).validate().errors
+  const errorsOf = (initialValue: Record<string, unknown>): Record<string, string[]> => createFormEngine({ schema: chooser, initialValue }).validate().errors
 
   test('refuses a value that is not a string, on a field whose options live elsewhere', () => {
     // The hole this closes, found by review before the beta. A field with

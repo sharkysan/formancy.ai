@@ -2,17 +2,7 @@ import { createRequire } from 'node:module'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
-import {
-  checkScenarios,
-  describeSpec,
-  diffForms,
-  getForm,
-  listForms,
-  listSubmissions,
-  proposeFormEdit,
-  publishForm,
-  validateForm,
-} from './tools.js'
+import { checkScenarios, describeSpec, diffForms, getForm, listForms, listSubmissions, proposeFormEdit, publishForm, validateForm } from './tools.js'
 import type { ServerAccess, ToolResult } from './tools.js'
 
 /**
@@ -93,9 +83,7 @@ export const TOOL_DEFINITIONS = {
  * package root from both `src/server.ts` and `dist/index.mjs`, so the same line
  * is right in a test and in the published package.
  */
-export const PACKAGE_VERSION: string = (
-  createRequire(import.meta.url)('../package.json') as { version: string }
-).version
+export const PACKAGE_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 
 /**
  * What a client is told a result looks like, before it reads one.
@@ -125,10 +113,7 @@ function respond(result: ToolResult): {
   structuredContent: Record<string, unknown>
   isError?: boolean
 } {
-  const text =
-    result.data === undefined
-      ? result.summary
-      : `${result.summary}\n\n${JSON.stringify(result.data, null, 2)}`
+  const text = result.data === undefined ? result.summary : `${result.summary}\n\n${JSON.stringify(result.data, null, 2)}`
   return {
     content: [{ type: 'text', text }],
     structuredContent: {
@@ -205,17 +190,11 @@ const FORM_PATH = z.string().min(1).describe("The form's path, as it appears in 
  */
 const SCENARIOS = z
   .array(z.unknown())
-  .describe(
-    'Examples with their answers: each is { name, changes, valid } and may also pin errors, ' +
-      'visible, values and absent.',
-  )
+  .describe('Examples with their answers: each is { name, changes, valid } and may also pin errors, ' + 'visible, values and absent.')
 const BASED_ON = z
   .string()
   .optional()
-  .describe(
-    'The schema hash this edit was based on, from propose_form_edit or get_form. Given, the ' +
-      'publish is refused if the form has changed since.',
-  )
+  .describe('The schema hash this edit was based on, from propose_form_edit or get_form. Given, the ' + 'publish is refused if the form has changed since.')
 
 export function createFormancyMcpServer(options: McpServerOptions = {}): McpServer {
   const server = new McpServer({ name: 'formancy', version: PACKAGE_VERSION })
@@ -227,9 +206,7 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
 
   server.registerTool(
     'validate_form',
-    { description: TOOL_DEFINITIONS.validate_form,
-      outputSchema: RESULT_SHAPE,
-      annotations: LOCAL_CHECK, inputSchema: { document: DOCUMENT } },
+    { description: TOOL_DEFINITIONS.validate_form, outputSchema: RESULT_SHAPE, annotations: LOCAL_CHECK, inputSchema: { document: DOCUMENT } },
     ({ document }) => respond(validateForm(document)),
   )
 
@@ -263,12 +240,7 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
       annotations: SERVER_READ,
       inputSchema: { path: FORM_PATH, document: DOCUMENT },
     },
-    async ({ path, document }) =>
-      respond(
-        access === undefined
-          ? noServer('propose_form_edit')
-          : await proposeFormEdit(access, path, document),
-      ),
+    async ({ path, document }) => respond(access === undefined ? noServer('propose_form_edit') : await proposeFormEdit(access, path, document)),
   )
 
   server.registerTool(
@@ -279,12 +251,7 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
       annotations: SERVER_WRITE,
       inputSchema: { path: FORM_PATH, document: DOCUMENT, basedOn: BASED_ON },
     },
-    async ({ path, document, basedOn }) =>
-      respond(
-        access === undefined
-          ? noServer('publish_form')
-          : await publishForm(access, path, document, basedOn),
-      ),
+    async ({ path, document, basedOn }) => respond(access === undefined ? noServer('publish_form') : await publishForm(access, path, document, basedOn)),
   )
 
   server.registerTool('list_forms', { description: TOOL_DEFINITIONS.list_forms, outputSchema: RESULT_SHAPE, annotations: SERVER_READ }, async () =>
@@ -293,22 +260,14 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
 
   server.registerTool(
     'get_form',
-    { description: TOOL_DEFINITIONS.get_form,
-      outputSchema: RESULT_SHAPE,
-      annotations: SERVER_READ, inputSchema: { path: FORM_PATH } },
-    async ({ path }) =>
-      respond(access === undefined ? noServer('get_form') : await getForm(access, path)),
+    { description: TOOL_DEFINITIONS.get_form, outputSchema: RESULT_SHAPE, annotations: SERVER_READ, inputSchema: { path: FORM_PATH } },
+    async ({ path }) => respond(access === undefined ? noServer('get_form') : await getForm(access, path)),
   )
 
   server.registerTool(
     'list_submissions',
-    { description: TOOL_DEFINITIONS.list_submissions,
-      outputSchema: RESULT_SHAPE,
-      annotations: SERVER_READ, inputSchema: { path: FORM_PATH } },
-    async ({ path }) =>
-      respond(
-        access === undefined ? noServer('list_submissions') : await listSubmissions(access, path),
-      ),
+    { description: TOOL_DEFINITIONS.list_submissions, outputSchema: RESULT_SHAPE, annotations: SERVER_READ, inputSchema: { path: FORM_PATH } },
+    async ({ path }) => respond(access === undefined ? noServer('list_submissions') : await listSubmissions(access, path)),
   )
 
   /*
@@ -373,9 +332,7 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
     'change_a_form',
     {
       title: 'Change a published form',
-      description:
-        'Edit a form that already exists, without discarding somebody else’s work and ' +
-        'without publishing a change nobody has read.',
+      description: 'Edit a form that already exists, without discarding somebody else’s work and ' + 'without publishing a change nobody has read.',
       argsSchema: {
         path: z.string().min(1).describe("The form's path, as it appears in its URL."),
         change: z.string().min(1).describe('What should be different, in a sentence.'),

@@ -26,7 +26,13 @@ const base = (): FormSchema => ({
     {
       name: 'web',
       nodes: [
-        { kind: 'row', children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'last' }] },
+        {
+          kind: 'row',
+          children: [
+            { kind: 'field', path: 'first' },
+            { kind: 'field', path: 'last' },
+          ],
+        },
         { kind: 'field', path: 'email' },
       ],
     },
@@ -35,8 +41,7 @@ const base = (): FormSchema => ({
 
 const row = (): LayoutNode => ({ kind: 'row', children: [] })
 
-const layoutOf = (document: FormSchema, name = 'web'): LayoutNode[] =>
-  document.layouts?.find((layout) => layout.name === name)?.nodes ?? []
+const layoutOf = (document: FormSchema, name = 'web'): LayoutNode[] => document.layouts?.find((layout) => layout.name === name)?.nodes ?? []
 
 describe('insertLayoutNode', () => {
   test('puts an empty row at the top level', () => {
@@ -63,10 +68,7 @@ describe('insertLayoutNode', () => {
   test('refuses a field that is already placed, in the validator’s own words', () => {
     const session = createBuilderSession(base())
 
-    const outcome = session.insertLayoutNode(
-      { layout: 'web', parent: [], index: 0 },
-      { kind: 'field', path: 'email' },
-    )
+    const outcome = session.insertLayoutNode({ layout: 'web', parent: [], index: 0 }, { kind: 'field', path: 'email' })
 
     expect(outcome.ok).toBe(false)
     // A field placed twice renders twice, bound to one answer. The message has
@@ -77,9 +79,7 @@ describe('insertLayoutNode', () => {
   test('refuses a field that does not exist', () => {
     const session = createBuilderSession(base())
 
-    expect(
-      session.insertLayoutNode({ layout: 'web', parent: [], index: 0 }, { kind: 'field', path: 'nope' }).ok,
-    ).toBe(false)
+    expect(session.insertLayoutNode({ layout: 'web', parent: [], index: 0 }, { kind: 'field', path: 'nope' }).ok).toBe(false)
   })
 
   test('refuses a layout nobody has created', () => {
@@ -102,18 +102,13 @@ describe('moveLayoutNode', () => {
   test('moves a field out of a row to the top level', () => {
     const session = createBuilderSession(base())
 
-    const outcome = session.moveLayoutNode(
-      { layout: 'web', path: [0, 1] },
-      { layout: 'web', parent: [], index: 0 },
-    )
+    const outcome = session.moveLayoutNode({ layout: 'web', path: [0, 1] }, { layout: 'web', parent: [], index: 0 })
 
     expect(outcome.ok).toBe(true)
     const nodes = layoutOf(session.document())
     expect(nodes[0]).toEqual({ kind: 'field', path: 'last' })
     const movedFrom = nodes[1]
-    expect(movedFrom?.kind === 'row' ? movedFrom.children : []).toEqual([
-      { kind: 'field', path: 'first' },
-    ])
+    expect(movedFrom?.kind === 'row' ? movedFrom.children : []).toEqual([{ kind: 'field', path: 'first' }])
   })
 
   test('an index in the destination counts positions AFTER the node is lifted out', () => {
@@ -150,10 +145,7 @@ describe('moveLayoutNode', () => {
       ],
     })
 
-    const outcome = session.moveLayoutNode(
-      { layout: 'web', path: [0] },
-      { layout: 'web', parent: [1], index: 0 },
-    )
+    const outcome = session.moveLayoutNode({ layout: 'web', path: [0] }, { layout: 'web', parent: [1], index: 0 })
 
     expect(outcome.ok).toBe(true)
     expect(layoutOf(session.document())).toEqual([
@@ -171,10 +163,7 @@ describe('moveLayoutNode', () => {
   test('refuses to move a container into its own child', () => {
     const session = createBuilderSession(base())
 
-    const outcome = session.moveLayoutNode(
-      { layout: 'web', path: [0] },
-      { layout: 'web', parent: [0], index: 0 },
-    )
+    const outcome = session.moveLayoutNode({ layout: 'web', path: [0] }, { layout: 'web', parent: [0], index: 0 })
 
     expect(outcome.ok).toBe(false)
     expect(outcome.ok === false ? outcome.message : '').toContain('inside itself')
@@ -183,9 +172,7 @@ describe('moveLayoutNode', () => {
   test('refuses an address that points at nothing', () => {
     const session = createBuilderSession(base())
 
-    expect(
-      session.moveLayoutNode({ layout: 'web', path: [7] }, { layout: 'web', parent: [], index: 0 }).ok,
-    ).toBe(false)
+    expect(session.moveLayoutNode({ layout: 'web', path: [7] }, { layout: 'web', parent: [], index: 0 }).ok).toBe(false)
   })
 
   test('refuses a move between layouts', () => {
@@ -195,10 +182,7 @@ describe('moveLayoutNode', () => {
     // A field has one place per arrangement. Moving it across would silently
     // unplace it in the layout it came from, which is a deletion wearing the
     // word "move".
-    const outcome = session.moveLayoutNode(
-      { layout: 'web', path: [1] },
-      { layout: 'print', parent: [], index: 0 },
-    )
+    const outcome = session.moveLayoutNode({ layout: 'web', path: [1] }, { layout: 'print', parent: [], index: 0 })
 
     expect(outcome.ok).toBe(false)
   })
@@ -270,7 +254,13 @@ describe('wrapLayoutNodes', () => {
         kind: 'row',
         children: [
           { kind: 'field', path: 'email' },
-          { kind: 'row', children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'last' }] },
+          {
+            kind: 'row',
+            children: [
+              { kind: 'field', path: 'first' },
+              { kind: 'field', path: 'last' },
+            ],
+          },
         ],
       },
     ])
@@ -305,7 +295,10 @@ describe('wrapLayoutNodes', () => {
         children: [
           {
             kind: 'row',
-            children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'email' }],
+            children: [
+              { kind: 'field', path: 'first' },
+              { kind: 'field', path: 'email' },
+            ],
           },
           { kind: 'field', path: 'last' },
         ],
@@ -336,7 +329,10 @@ describe('wrapLayoutNodes', () => {
       { kind: 'row', children: [{ kind: 'field', path: 'last' }] },
       {
         kind: 'row',
-        children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'email' }],
+        children: [
+          { kind: 'field', path: 'first' },
+          { kind: 'field', path: 'email' },
+        ],
       },
     ])
   })
@@ -393,9 +389,7 @@ describe('wrapLayoutNodes', () => {
   test('refuses a container that is not one', () => {
     const session = createBuilderSession(base())
 
-    expect(
-      session.wrapLayoutNodes('web', [[0], [1]], { kind: 'field', path: 'email' }).ok,
-    ).toBe(false)
+    expect(session.wrapLayoutNodes('web', [[0], [1]], { kind: 'field', path: 'email' }).ok).toBe(false)
   })
 
   test('refuses an address that is not there', () => {
@@ -491,7 +485,7 @@ describe('validLayoutTargets', () => {
 
     const targets = session.validLayoutTargets('web', [0])
 
-    expect(targets.some((target) => target.parent[0] === 0)) .toBe(false)
+    expect(targets.some((target) => target.parent[0] === 0)).toBe(false)
   })
 
   test('a node being moved is not offered the position it already has', () => {
@@ -596,9 +590,7 @@ describe('the model and the arrangement stay in step', () => {
       id: 'grouped',
       title: 'Grouped',
       model: {
-        fields: [
-          { key: 'contact', type: 'group', label: 'Contact', fields: [{ key: 'email', type: 'text', label: 'Email' }] },
-        ],
+        fields: [{ key: 'contact', type: 'group', label: 'Contact', fields: [{ key: 'email', type: 'text', label: 'Email' }] }],
       },
       layouts: [{ name: 'web', nodes: [{ kind: 'field', path: 'contact.email' }] }],
     })
@@ -622,7 +614,10 @@ describe('the model and the arrangement stay in step', () => {
       layouts: [
         {
           name: 'web',
-          nodes: [{ kind: 'field', path: 'contact.email' }, { kind: 'field', path: 'notes' }],
+          nodes: [
+            { kind: 'field', path: 'contact.email' },
+            { kind: 'field', path: 'notes' },
+          ],
         },
       ],
     })
@@ -638,9 +633,7 @@ describe('the model and the arrangement stay in step', () => {
       id: 'paged',
       title: 'Paged',
       model: {
-        fields: [
-          { key: 'p1', type: 'page', label: 'One', fields: [{ key: 'email', type: 'text', label: 'Email' }] },
-        ],
+        fields: [{ key: 'p1', type: 'page', label: 'One', fields: [{ key: 'email', type: 'text', label: 'Email' }] }],
       },
       layouts: [{ name: 'web', nodes: [{ kind: 'field', path: 'email' }] }],
     })
@@ -698,9 +691,7 @@ describe('setLayoutNodeProperty', () => {
     // have to be remembered each time the format grows one.
     const session = createBuilderSession(tabled())
 
-    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', 'all').ok).toBe(
-      true,
-    )
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', 'all').ok).toBe(true)
     const spanned = layoutOf(session.document())[0]
     expect(spanned?.kind === 'table' ? spanned.children[2]?.span : undefined).toBe('all')
 
@@ -721,9 +712,7 @@ describe('setLayoutNodeProperty', () => {
       expect(Object.prototype.hasOwnProperty.call(Array.prototype, 'polluted')).toBe(false)
       expect(session.setLayoutNodeLabel(notAPosition, 'Polluted').ok).toBe(false)
       // And a position between two, which is no node either.
-      expect(session.setLayoutNodeProperty({ layout: 'web', path: [0.5] }, 'columns', 3).ok).toBe(
-        false,
-      )
+      expect(session.setLayoutNodeProperty({ layout: 'web', path: [0.5] }, 'columns', 3).ok).toBe(false)
     } finally {
       delete (Array.prototype as unknown as Record<string, unknown>)['polluted']
     }
@@ -806,29 +795,21 @@ describe('the shape a value has to arrive in', () => {
     // Pinned here so the panel's own coercion has something to be right about.
     const session = createBuilderSession(tabled())
 
-    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 0] }, 'span', '2').ok).toBe(
-      false,
-    )
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 0] }, 'span', '2').ok).toBe(false)
     expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 0] }, 'span', 2).ok).toBe(true)
   })
 
   test('the word all is a string, and the number form of it does not exist', () => {
     const session = createBuilderSession(tabled())
 
-    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 1] }, 'span', 'all').ok).toBe(
-      true,
-    )
-    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', 'ALL').ok).toBe(
-      false,
-    )
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 1] }, 'span', 'all').ok).toBe(true)
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', 'ALL').ok).toBe(false)
   })
 
   test('a table column count has to be a number too', () => {
     const session = createBuilderSession(tabled())
 
-    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'columns', '3').ok).toBe(
-      false,
-    )
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'columns', '3').ok).toBe(false)
     expect(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'columns', 3).ok).toBe(true)
   })
 })
@@ -843,10 +824,7 @@ describe('describeNode', () => {
    * `nameOfPath` stands in for the form's own labels, so a case reads as the sentence a
    * person hears rather than as a data path.
    */
-  const named = (path: string): string =>
-    ({ firstName: 'First name', lastName: 'Last name', email: 'Email', ref: 'Booking reference' })[
-      path
-    ] ?? path
+  const named = (path: string): string => ({ firstName: 'First name', lastName: 'Last name', email: 'Email', ref: 'Booking reference' })[path] ?? path
 
   const field = (path: string): LayoutNode => ({ kind: 'field', path }) as LayoutNode
   const container = (kind: string, children: LayoutNode[], label?: string): LayoutNode =>
@@ -859,22 +837,16 @@ describe('describeNode', () => {
   test('names a code by what it encodes, not by being a code', () => {
     // "Code" is not findable in a tree with three of them; "Code for Booking reference"
     // is. The same reasoning a row is named by what it holds.
-    expect(describeNode({ kind: 'qrcode', path: 'ref' } as LayoutNode, named)).toBe(
-      'Code for Booking reference',
-    )
+    expect(describeNode({ kind: 'qrcode', path: 'ref' } as LayoutNode, named)).toBe('Code for Booking reference')
   })
 
   test('names a container by its label when it has one', () => {
-    expect(describeNode(container('section', [field('email')], 'Contact'), named)).toBe(
-      'Section “Contact”',
-    )
+    expect(describeNode(container('section', [field('email')], 'Contact'), named)).toBe('Section “Contact”')
   })
 
   test('names an unlabelled container by what it holds', () => {
     // A row has nothing to call itself. "Row" is one of six identical rows in a list.
-    expect(describeNode(container('row', [field('firstName'), field('lastName')]), named)).toBe(
-      'Row with First name and Last name',
-    )
+    expect(describeNode(container('row', [field('firstName'), field('lastName')]), named)).toBe('Row with First name and Last name')
   })
 
   test('says a container is empty rather than describing nothing', () => {
@@ -883,9 +855,7 @@ describe('describeNode', () => {
   })
 
   test('lists three children with commas and a final and', () => {
-    expect(
-      describeNode(container('row', [field('firstName'), field('lastName'), field('email')]), named),
-    ).toBe('Row with First name, Last name and Email')
+    expect(describeNode(container('row', [field('firstName'), field('lastName'), field('email')]), named)).toBe('Row with First name, Last name and Email')
   })
 
   test('goes ONE level down and no further', () => {
@@ -893,9 +863,7 @@ describe('describeNode', () => {
     // Email", where a listener cannot tell which "and" separates what. A nested container
     // is named as what it is; its own row in the tree says what is inside it.
     const inner = container('row', [field('firstName'), field('lastName')])
-    expect(describeNode(container('section', [inner, field('email')]), named)).toBe(
-      'Section with a row and Email',
-    )
+    expect(describeNode(container('section', [inner, field('email')]), named)).toBe('Section with a row and Email')
   })
 
   test('names a nested container by its label when it has one', () => {
@@ -904,9 +872,7 @@ describe('describeNode', () => {
   })
 
   test('names a nested code by what it encodes', () => {
-    expect(
-      describeNode(container('row', [{ kind: 'qrcode', path: 'ref' } as LayoutNode]), named),
-    ).toBe('Row with code for Booking reference')
+    expect(describeNode(container('row', [{ kind: 'qrcode', path: 'ref' } as LayoutNode]), named)).toBe('Row with code for Booking reference')
   })
 
   test('falls back to the path when the form has no label for it', () => {

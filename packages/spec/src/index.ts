@@ -15,28 +15,10 @@ export {
   TEMPORAL_SHAPES,
 } from './types.js'
 export { FIELD_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'
-export {
-  PAGE_TARGETED_RULE_KINDS,
-  RULE_KINDS,
-} from './rules.js'
-export {
-  SPEC_1_LAYOUT_KINDS,
-  LAYOUT_LEAF_KINDS,
-  layoutChildren,
-  layoutNodeShows,
-} from './layout.js'
-export {
-  acceptRemoteAnswer,
-  acceptRemoteOptions,
-  capRemoteAnswer,
-  capRemoteOptions,
-} from './options-source.js'
-export type {
-  RemoteCompleteness,
-  RemoteOption,
-  RemoteOptionsAnswer,
-  RemoteOptionsPage,
-} from './options-source.js'
+export { PAGE_TARGETED_RULE_KINDS, RULE_KINDS } from './rules.js'
+export { SPEC_1_LAYOUT_KINDS, LAYOUT_LEAF_KINDS, layoutChildren, layoutNodeShows } from './layout.js'
+export { acceptRemoteAnswer, acceptRemoteOptions, capRemoteAnswer, capRemoteOptions } from './options-source.js'
+export type { RemoteCompleteness, RemoteOption, RemoteOptionsAnswer, RemoteOptionsPage } from './options-source.js'
 export { datagridColumns } from './datagrid.js'
 export type { DataGridColumnPlan } from './datagrid.js'
 export { foldForMatch, narrowOptionsByLabel } from './typeahead.js'
@@ -45,13 +27,7 @@ export { isSafeHref, parseRichText, richTextToPlain } from './richtext.js'
 export type { RichBlock, RichInline } from './richtext.js'
 export { applyRichCommand } from './richtext-edit.js'
 export type { EditResult, RichCommand, TextSelection } from './richtext-edit.js'
-export {
-  EDITOR_MARKS,
-  EDITOR_NODES,
-  fromEditorDoc,
-  serialiseRichText,
-  toEditorDoc,
-} from './richtext-doc.js'
+export { EDITOR_MARKS, EDITOR_NODES, fromEditorDoc, serialiseRichText, toEditorDoc } from './richtext-doc.js'
 export type { EditorMark, EditorNode, EditorText } from './richtext-doc.js'
 export type {
   Change,
@@ -75,16 +51,8 @@ export type {
 } from './types.js'
 export type { FieldWidget } from './widgets.js'
 export type { AutocompleteToken } from './autocomplete.js'
-export type {
-  FormLogic,
-  RunsOn,
-  LogicRule,
-  RuleKind,
-} from './rules.js'
-export type {
-  FormLayout,
-  LayoutNode,
-} from './layout.js'
+export type { FormLogic, RunsOn, LogicRule, RuleKind } from './rules.js'
+export type { FormLayout, LayoutNode } from './layout.js'
 export { modelDataFields, modelDataPaths } from './paths.js'
 export { ANSWER_KINDS, fitsAnswerShape, isStoredFile } from './answers.js'
 export { answersTypeName, answersTypeScript } from './answers-typescript.js'
@@ -92,31 +60,9 @@ export type { AnswersTypeOptions } from './answers-typescript.js'
 export type { AnswerKind, AnswerShape, StoredFile } from './answers.js'
 export { ROW_ID, ROW_ID_PREFIX, UNSTORABLE_KEY } from './types.js'
 export { AUTOCOMPLETE_TOKENS } from './autocomplete.js'
-export {
-  collectFieldPaths,
-  isMessageRef,
-  modelPathsForLayout,
-  resolveText,
-  resolvedLocale,
-  unreferencedPaths,
-} from './presentation.js'
+export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, resolvedLocale, unreferencedPaths } from './presentation.js'
 export { SCHEMA_ERRORS, renderSchemaError } from './schema-errors.js'
-export {
-  IMAGE_SOURCE,
-  isImageSource,
-  optionImageRefusal,
-  showsOptionImages,
-} from './option-image.js'
-export {
-  answerFromText,
-  editMasked,
-  fitsMask,
-  fitsSlot,
-  formatMasked,
-  maskHasPositions,
-  maskIsNumeric,
-  maskPlaceholder,
-  maskPositions,
-} from './mask.js'
+export { IMAGE_SOURCE, isImageSource, optionImageRefusal, showsOptionImages } from './option-image.js'
+export { answerFromText, editMasked, fitsMask, fitsSlot, formatMasked, maskHasPositions, maskIsNumeric, maskPlaceholder, maskPositions } from './mask.js'
 export type { MaskPosition, MaskSlot } from './mask.js'
 export type { SchemaError, SchemaErrorCode, SchemaErrorValues } from './schema-errors.js'

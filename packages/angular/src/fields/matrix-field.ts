@@ -66,7 +66,6 @@ export class FormancyMatrixField extends FieldComponentBase {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-
   /** The rows, their labels resolved as the options' are. */
   protected readonly rows = computed(() =>
     (this.field.snapshot().def.rows ?? []).map((row) => ({
@@ -78,9 +77,7 @@ export class FormancyMatrixField extends FieldComponentBase {
   /** The column chosen under each row answered. */
   protected readonly answer = computed<Readonly<Record<string, unknown>>>(() => {
     const value = this.field.snapshot().value
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {}
+    return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
   })
 
   protected optionId(row: string, column: string): string {

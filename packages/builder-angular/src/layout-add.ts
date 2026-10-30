@@ -142,9 +142,7 @@ export class FormancyLayoutAdd {
     void this.view()
     return codeAnswers(this.session())
   })
-  protected readonly nextVersion = computed(
-    () => nextSpecVersion(this.view().document.specVersion) ?? '',
-  )
+  protected readonly nextVersion = computed(() => nextSpecVersion(this.view().document.specVersion) ?? '')
   protected readonly what = computed(() => {
     const node = this.node()
     return node === null ? '' : nameOfAddition(this.session(), node)
@@ -178,14 +176,7 @@ export class FormancyLayoutAdd {
       this.step.set('which-answer')
       return
     }
-    this.ask(
-      layoutNodeFor(
-        this.session(),
-        addition.what === 'field'
-          ? { what: 'field', path: addition.path }
-          : { what: 'container', kind: addition.kind },
-      ),
-    )
+    this.ask(layoutNodeFor(this.session(), addition.what === 'field' ? { what: 'field', path: addition.path } : { what: 'container', kind: addition.kind }))
   }
 
   protected chooseCode(path: string): void {

@@ -5,8 +5,12 @@ import { TemplateGallery } from './template-gallery.js'
 
 beforeAll(() => {
   // jsdom has no modal top layer; the real browser gate checks opening/closing.
-  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
-  HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open')
+  }
 })
 afterEach(cleanup)
 
@@ -90,7 +94,10 @@ test('an unexpected language value cannot break the gallery or alter editor para
   expect(select.value).toBe('de')
   const link = screen.getByRole('link', { name: 'Edit Verkaufsanfrage in playground' })
   const url = new URL(link.getAttribute('href')!, 'https://formancy.ai')
-  expect([...url.searchParams.entries()]).toEqual([['template', 'sales-lead-enquiry'], ['locale', 'de']])
+  expect([...url.searchParams.entries()]).toEqual([
+    ['template', 'sales-lead-enquiry'],
+    ['locale', 'de'],
+  ])
   await user.click(screen.getByRole('button', { name: 'Preview Verkaufsanfrage' }))
   const dialog = within(screen.getByRole('dialog', { name: 'Verkaufsanfrage' }))
   expect(dialog.getByRole('link', { name: /Edit in playground/ }).getAttribute('href')).toBe(link.getAttribute('href'))

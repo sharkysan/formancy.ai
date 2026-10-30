@@ -20,11 +20,7 @@ import type { VariableDeclarations } from './types.js'
 
 const capabilities = fixedCapabilities({ nowMs: 0, today: '2026-09-19', random: 0 })
 
-function run(
-  source: string,
-  variables: VariableDeclarations = {},
-  values: Record<string, unknown> = {},
-): EvaluationOutcome {
+function run(source: string, variables: VariableDeclarations = {}, values: Record<string, unknown> = {}): EvaluationOutcome {
   const compiled = compile(source, { kind: 'computed', variables })
   if (!compiled.ok) return { ok: false, error: compiled.error }
   return evaluate(compiled.program, values, { capabilities })
@@ -204,18 +200,12 @@ describe('timestamps', () => {
   })
 
   test('adds a duration and compares instants', () => {
-    expect(value('string(timestamp("2024-01-02T03:04:05Z") + duration("1h"))')).toBe(
-      '2024-01-02T04:04:05Z',
-    )
-    expect(value('timestamp("2024-01-02T00:00:00Z") < timestamp("2024-02-01T00:00:00Z")')).toBe(
-      true,
-    )
+    expect(value('string(timestamp("2024-01-02T03:04:05Z") + duration("1h"))')).toBe('2024-01-02T04:04:05Z')
+    expect(value('timestamp("2024-01-02T00:00:00Z") < timestamp("2024-02-01T00:00:00Z")')).toBe(true)
   })
 
   test('takes a declared timestamp from an ISO string in the value bag', () => {
-    expect(
-      value('due.getFullYear()', { due: 'timestamp' }, { due: '2030-05-06T00:00:00Z' }),
-    ).toBe(2030)
+    expect(value('due.getFullYear()', { due: 'timestamp' }, { due: '2030-05-06T00:00:00Z' })).toBe(2030)
   })
 })
 

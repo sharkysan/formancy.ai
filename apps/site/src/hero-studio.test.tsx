@@ -49,10 +49,7 @@ test('every appearance the packages ship selects an actual renderer theme', asyn
     ['Paper', 'paper'],
   ]) {
     await user.click(screen.getByRole('button', { name: name as string }))
-    expect(
-      field.closest('[data-formancy-theme]')?.getAttribute('data-formancy-theme'),
-      name as string,
-    ).toBe(theme)
+    expect(field.closest('[data-formancy-theme]')?.getAttribute('data-formancy-theme'), name as string).toBe(theme)
   }
 
   expect(screen.getByRole('link', { name: /Open full editor/ }).getAttribute('href')).toBe('/playground/')
@@ -66,22 +63,16 @@ test('the pass decides what the form asks and what it totals', async () => {
   render(<HeroStudio playground="/playground/" />)
 
   expect(screen.queryByRole('group', { name: 'Workshops' })).toBeNull()
-  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).value).toBe(
-    '490',
-  )
+  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).value).toBe('490')
 
   await user.click(screen.getByRole('radio', { name: 'Conference and workshops' }))
 
   expect(screen.getByRole('group', { name: 'Workshops' })).toBeTruthy()
-  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).value).toBe(
-    '790',
-  )
+  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).value).toBe('790')
 })
 
 test('the total is the engine’s, not something a visitor can type over', async () => {
   render(<HeroStudio playground="/playground/" />)
 
-  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).disabled).toBe(
-    true,
-  )
+  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).disabled).toBe(true)
 })

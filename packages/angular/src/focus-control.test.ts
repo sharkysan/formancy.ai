@@ -25,8 +25,7 @@ describe('focusControl', () => {
   })
 
   test('and when the id names a host that cannot take focus, the control inside it', () => {
-    document.body.innerHTML =
-      '<mat-checkbox id="f:c:terms:control"><label for="inner">Terms</label><input id="inner" type="checkbox" /></mat-checkbox>'
+    document.body.innerHTML = '<mat-checkbox id="f:c:terms:control"><label for="inner">Terms</label><input id="inner" type="checkbox" /></mat-checkbox>'
 
     focusControl(document.getElementById('f:c:terms:control'))
 

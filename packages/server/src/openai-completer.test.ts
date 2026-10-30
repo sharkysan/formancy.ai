@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { Cancellation } from '@formancy/server-core'
-import {
-  OPENAI_BASE_URL,
-  OPENAI_MAX_OUTPUT_TOKENS,
-  XAI_BASE_URL,
-  createOpenAiCompleter,
-} from './openai-completer.js'
+import { OPENAI_BASE_URL, OPENAI_MAX_OUTPUT_TOKENS, XAI_BASE_URL, createOpenAiCompleter } from './openai-completer.js'
 
 /**
  * OpenAI's models and xAI's Grok, through OpenAI's official SDK and its Responses API,
@@ -28,11 +23,7 @@ interface Sent {
 type Part = { readonly type: 'output_text'; readonly text: string } | { readonly type: 'refusal'; readonly refusal: string }
 
 /** A Responses API response, as the provider would finish it. */
-function response(
-  status: string,
-  parts: readonly Part[],
-  extra: Record<string, unknown> = {},
-): Record<string, unknown> {
+function response(status: string, parts: readonly Part[], extra: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'resp_1',
     object: 'response',
@@ -248,12 +239,7 @@ describe('how an answer is read', () => {
 
   test('a failed response is unavailable', async () => {
     // The provider's own failure, after it accepted the request.
-    const { completer } = over(() =>
-      streamed(
-        response('failed', [], { error: { code: 'server_error', message: 'The model failed.' } }),
-        'response.failed',
-      ),
-    )
+    const { completer } = over(() => streamed(response('failed', [], { error: { code: 'server_error', message: 'The model failed.' } }), 'response.failed'))
     expect(await completer.complete(PROMPT, never)).toMatchObject({ ok: false, failure: 'unavailable' })
   })
 

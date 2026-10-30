@@ -59,11 +59,7 @@ describe('referencedPaths across comprehension macros', () => {
   })
 
   test('honours shadowing in nested comprehensions', () => {
-    expect(pathsOf('outer.all(x, inner.exists(x, x > threshold))')).toEqual([
-      'inner',
-      'outer',
-      'threshold',
-    ])
+    expect(pathsOf('outer.all(x, inner.exists(x, x > threshold))')).toEqual(['inner', 'outer', 'threshold'])
   })
 
   test('does not let the iteration variable escape the macro', () => {
@@ -130,9 +126,7 @@ describe('referencedPaths scoping, over generated names', () => {
       fc.property(name, name, name, macro, (collection, iterator, external, kind) => {
         fc.pre(new Set([collection, iterator, external]).size === 3)
 
-        const paths = pathsOf(
-          `${collection}.${kind}(${iterator}, ${iterator}.f == ${external} && ${iterator} != 0)`,
-        )
+        const paths = pathsOf(`${collection}.${kind}(${iterator}, ${iterator}.f == ${external} && ${iterator} != 0)`)
 
         // Nothing rooted at the iteration variable, in any of its forms.
         expect(paths.filter((path) => rootOf(path) === iterator)).toEqual([])
@@ -145,9 +139,7 @@ describe('referencedPaths scoping, over generated names', () => {
   test('reports every identifier of a conjunction exactly once', () => {
     fc.assert(
       fc.property(fc.uniqueArray(name, { minLength: 1, maxLength: 5 }), (names) => {
-        expect(pathsOf(names.map((each) => `${each} != 0`).join(' && '))).toEqual(
-          [...names].sort(),
-        )
+        expect(pathsOf(names.map((each) => `${each} != 0`).join(' && '))).toEqual([...names].sort())
       }),
     )
   })

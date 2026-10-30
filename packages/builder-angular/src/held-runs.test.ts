@@ -150,21 +150,13 @@ describe('a translation the host holds', () => {
     await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
 
     await user.selectOptions(language(), 'de')
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent?.trim()).toBe(
-        session.text('translate.status.elsewhereAsking', { locale: 'fr' }),
-      ),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent?.trim()).toBe(session.text('translate.status.elsewhereAsking', { locale: 'fr' })))
     expect(screen.queryByRole('button', { name: /Ask a model|Stop/ })).toBeNull()
     expect(slow.cancelled).not.toHaveBeenCalled()
 
     slow.release(FRENCH)
     await user.selectOptions(language(), 'en')
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent?.trim()).toBe(
-        session.text('translate.status.elsewhereHeld', { locale: 'fr' }),
-      ),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent?.trim()).toBe(session.text('translate.status.elsewhereHeld', { locale: 'fr' })))
     expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
 
     await user.selectOptions(language(), 'fr')
@@ -283,9 +275,7 @@ describe('drafts the host holds', () => {
     await waitFor(() => expect(drafting.state().drafts).toHaveLength(1))
 
     await scenarios(createBuilderSession(FORM), slow.model, drafting, changed)
-    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /What should this form do/ }).value).toBe(
-      'Only other asks why.',
-    )
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /What should this form do/ }).value).toBe('Only other asks why.')
     const drafts = await screen.findByRole('list', { name: 'Drafted examples' })
     expect(within(drafts).getByText('Holds against the form as it is.')).toBeTruthy()
     await user.click(within(drafts).getByRole('button', { name: `Keep ${HOLDS.name}` }))
@@ -324,11 +314,7 @@ describe('drafts the host holds', () => {
     await scenarios(session, slow.model, drafting)
     await user.click(await screen.findByRole('button', { name: 'Stop drafting' }))
 
-    await waitFor(() =>
-      expect(
-        screen.getAllByRole('status').some((status) => status.textContent?.trim() === 'Stopped. Nothing was drafted.'),
-      ).toBe(true),
-    )
+    await waitFor(() => expect(screen.getAllByRole('status').some((status) => status.textContent?.trim() === 'Stopped. Nothing was drafted.')).toBe(true))
     expect(slow.cancelled).toHaveBeenCalledTimes(1)
   })
 })

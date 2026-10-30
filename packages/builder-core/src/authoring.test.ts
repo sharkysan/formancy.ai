@@ -37,8 +37,7 @@ const scripted = (...answers: string[]): AskModel => {
 }
 
 /** The prompts a scripted model was given, in the order it was given them. */
-const promptsOf = (ask: AskModel): AuthoringPrompt[] =>
-  (ask as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0] as AuthoringPrompt)
+const promptsOf = (ask: AskModel): AuthoringPrompt[] => (ask as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0] as AuthoringPrompt)
 
 /**
  * Lets whatever has settled run its callbacks. Microtasks rather than a timer: this
@@ -80,19 +79,13 @@ describe('a good answer', () => {
   test('is accepted inside a code fence, because models add one', async () => {
     // Told firmly not to, they still do it. Spending a turn on formatting
     // rather than on the form helps nobody.
-    const result = await authorForm(
-      scripted('Here you go:\n```json\n' + JSON.stringify(GOOD) + '\n```'),
-      'a contact form',
-    )
+    const result = await authorForm(scripted('Here you go:\n```json\n' + JSON.stringify(GOOD) + '\n```'), 'a contact form')
 
     expect(result.ok).toBe(true)
   })
 
   test('and with a sentence in front of it', async () => {
-    const result = await authorForm(
-      scripted('Sure! ' + JSON.stringify(GOOD)),
-      'a contact form',
-    )
+    const result = await authorForm(scripted('Sure! ' + JSON.stringify(GOOD)), 'a contact form')
 
     expect(result.ok).toBe(true)
   })
@@ -168,11 +161,7 @@ describe('an answer that does not work', () => {
     const callback = {
       ...GOOD,
       model: {
-        fields: [
-          ...GOOD.model.fields,
-          { key: 'callback', type: 'checkbox', label: 'Call me back' },
-          { key: 'phone', type: 'text', label: 'Phone' },
-        ],
+        fields: [...GOOD.model.fields, { key: 'callback', type: 'checkbox', label: 'Call me back' }, { key: 'phone', type: 'text', label: 'Phone' }],
       },
       logic: { rules: [{ target: 'phone', kind: 'visible', cel: 'callback' }] },
     }
@@ -308,8 +297,7 @@ describe('a host that cannot ask its model', () => {
     // The second turn is the one that could not be made. What was wrong with the
     // first is still what the person needs in order to reword the instruction.
     let turns = 0
-    const ask: AskModel = () =>
-      turns++ === 0 ? Promise.resolve('nonsense') : Promise.reject(new Error('401: key refused'))
+    const ask: AskModel = () => (turns++ === 0 ? Promise.resolve('nonsense') : Promise.reject(new Error('401: key refused')))
 
     const result = await authorForm(ask, 'a contact form')
 
@@ -420,9 +408,7 @@ describe('a model that declines', () => {
     // The briefing shows the shape and the reader reads it, in two packages. If they
     // ever spell it differently, a model doing exactly as it was told is asked again.
     const ask = vi.fn<AskModel>(({ system }) => {
-      const example = [...system.matchAll(/\{[^{}]*\}/g)]
-        .map(([candidate]) => candidate)
-        .find((candidate) => candidate.includes(JSON.stringify(DECLINE_KEY)))
+      const example = [...system.matchAll(/\{[^{}]*\}/g)].map(([candidate]) => candidate).find((candidate) => candidate.includes(JSON.stringify(DECLINE_KEY)))
       return Promise.resolve(example ?? 'the briefing shows no decline')
     })
 
@@ -486,11 +472,7 @@ describe('a model that declines', () => {
     // "The model declined" and then nothing gives the person nothing to act on. Asked
     // again, the model can say why — or write the form after all.
     for (const reason of ['', '   ', true]) {
-      const result = await authorForm(
-        scripted(JSON.stringify({ [DECLINE_KEY]: reason })),
-        'a contact form',
-        { attempts: 1 },
-      )
+      const result = await authorForm(scripted(JSON.stringify({ [DECLINE_KEY]: reason })), 'a contact form', { attempts: 1 })
 
       expect(result).toMatchObject({ ok: false, ended: 'gave-up' })
     }

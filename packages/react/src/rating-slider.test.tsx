@@ -267,9 +267,7 @@ describe('when a scale has been left alone', () => {
         id: 'survey',
         title: 'Survey',
         model: {
-          fields: [
-            { key: 'score', type: 'number', label: 'Score', min: 0, max: 10, step: 5, widget: 'rating' } as never,
-          ],
+          fields: [{ key: 'score', type: 'number', label: 'Score', min: 0, max: 10, step: 5, widget: 'rating' } as never],
         },
       },
       initialValue: { score: 7 },

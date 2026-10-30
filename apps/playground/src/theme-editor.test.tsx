@@ -45,9 +45,7 @@ import { App } from './app.js'
 vi.setConfig({ testTimeout: 60_000 })
 
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => (
-    <textarea readOnly aria-label="Schema" value={value ?? ''} />
-  ),
+  default: ({ value }: { value?: string }) => <textarea readOnly aria-label="Schema" value={value ?? ''} />,
   useMonaco: () => null,
 }))
 
@@ -100,9 +98,7 @@ const openEditor = async (): Promise<ReturnType<typeof userEvent.setup>> => {
  * chrome's value and the clearest possible message about which mistake it was.
  */
 const swatchFor = (token: string): HTMLInputElement => {
-  const label = [...document.querySelectorAll('.theme-token')].find(
-    (candidate) => candidate.querySelector('.theme-token-name')?.textContent === token,
-  )
+  const label = [...document.querySelectorAll('.theme-token')].find((candidate) => candidate.querySelector('.theme-token-name')?.textContent === token)
   expect(label, `no control for ${token}`).toBeDefined()
   const swatch = label?.querySelector('input[type="color"]')
   expect(swatch, `${token} has no colour picker`).not.toBeNull()
@@ -277,10 +273,9 @@ describe('the theme editor', () => {
 
     await user.click(screen.getByRole('button', { name: /^Reset/ }))
 
-    expect(
-      (screen.getByRole('textbox', { name: 'ink' }) as HTMLInputElement).value,
-      'reset returned to the edited value rather than the theme’s',
-    ).toBe(themeValue)
+    expect((screen.getByRole('textbox', { name: 'ink' }) as HTMLInputElement).value, 'reset returned to the edited value rather than the theme’s').toBe(
+      themeValue,
+    )
   })
 
   test('and whitespace is not a value, so spaces reach nothing', async () => {
@@ -487,10 +482,7 @@ describe('bringing a preset back', () => {
      */
     const user = await openEditor()
 
-    await user.upload(
-      screen.getByLabelText('Import CSS'),
-      preset('mine.css', "[data-formancy-theme='blueprint'] {\n  --fm-radius: 14px;\n}\n"),
-    )
+    await user.upload(screen.getByLabelText('Import CSS'), preset('mine.css', "[data-formancy-theme='blueprint'] {\n  --fm-radius: 14px;\n}\n"))
 
     await screen.findByText('Read 1 token for blueprint from mine.css.')
     expect(host().style.getPropertyValue('--fm-radius')).toBe('14px')
@@ -501,10 +493,7 @@ describe('bringing a preset back', () => {
     const user = await openEditor()
     fireEvent.change(screen.getByRole('textbox', { name: 'ink' }), { target: { value: '#ff0000' } })
 
-    await user.upload(
-      screen.getByLabelText('Import CSS'),
-      preset('mine.css', "[data-formancy-theme='blueprint'] { --fm-radius: 14px }"),
-    )
+    await user.upload(screen.getByLabelText('Import CSS'), preset('mine.css', "[data-formancy-theme='blueprint'] { --fm-radius: 14px }"))
 
     await screen.findByText('Read 1 token for blueprint from mine.css.')
     expect(host().style.getPropertyValue('--fm-ink'), 'an edit from before the import survived it').toBe('')
@@ -516,16 +505,11 @@ describe('bringing a preset back', () => {
     const user = await openEditor()
     fireEvent.change(screen.getByRole('textbox', { name: 'ink' }), { target: { value: '#ff0000' } })
 
-    await user.upload(
-      screen.getByLabelText('Import CSS'),
-      preset('dusk.css', "[data-formancy-theme='dusk'] { --fm-edge: #111 }"),
-    )
+    await user.upload(screen.getByLabelText('Import CSS'), preset('dusk.css', "[data-formancy-theme='dusk'] { --fm-edge: #111 }"))
 
     const report = await screen.findByText(/Nothing in dusk\.css is a token blueprint declares/)
     expect(report.getAttribute('role')).toBe('status')
-    expect(report.textContent).toContain(
-      'It also has tokens for dusk: choose that theme and import it again.',
-    )
+    expect(report.textContent).toContain('It also has tokens for dusk: choose that theme and import it again.')
     expect(host().style.getPropertyValue('--fm-ink')).toBe('#ff0000')
   })
 })

@@ -60,8 +60,7 @@ async function mount(layout?: string): Promise<void> {
   })
 }
 
-const labelOrder = (): string[] =>
-  [...document.querySelectorAll('label')].map((label) => label.textContent?.trim() ?? '')
+const labelOrder = (): string[] => [...document.querySelectorAll('label')].map((label) => label.textContent?.trim() ?? '')
 
 describe('rendering a named layout', () => {
   test('places the fields the layout asks for, in its order', async () => {
@@ -88,10 +87,7 @@ describe('WCAG', () => {
     await mount('web')
 
     const row = document.querySelector('[data-formancy-part="layout-row"]')!
-    expect([...row.querySelectorAll('label')].map((l) => l.textContent?.trim())).toEqual([
-      'First name',
-      'Last name',
-    ])
+    expect([...row.querySelectorAll('label')].map((l) => l.textContent?.trim())).toEqual(['First name', 'Last name'])
   })
 
   test('1.4.10 — reflow is the stylesheet’s job, not a measurement', async () => {
@@ -169,15 +165,11 @@ const spanning = {
 async function mountSpanning(): Promise<void> {
   await render(FormancyForm, {
     inputs: { layout: 'web' },
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(createFormEngine({ schema: spanning })),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(createFormEngine({ schema: spanning }))],
   })
 }
 
-const cellOf = (label: string): HTMLElement | null =>
-  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="layout-cell"]')
+const cellOf = (label: string): HTMLElement | null => screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="layout-cell"]')
 
 describe('a node that spans a table\u2019s columns', () => {
   test('gets a cell to span with, and the others are left exactly as they were', async () => {
@@ -261,12 +253,8 @@ describe('the recursion\u2019s own host element', () => {
      */
     await mountSpanning()
 
-    const injected = [...document.querySelectorAll('style')].map(
-      (element) => element.textContent ?? '',
-    )
-    expect(injected.filter((text) => text.includes('display') || text.includes('contents'))).toEqual(
-      [],
-    )
+    const injected = [...document.querySelectorAll('style')].map((element) => element.textContent ?? '')
+    expect(injected.filter((text) => text.includes('display') || text.includes('contents'))).toEqual([])
     // And the fact above still holds without one, which is the whole point.
     for (const host of document.querySelectorAll('formancy-layout')) {
       expect(getComputedStyle(host).display).toBe('contents')
@@ -280,8 +268,7 @@ describe('the recursion\u2019s own host element', () => {
     await mountSpanning()
 
     const table = document.querySelector('[data-formancy-part="layout-table"]')
-    const cell = screen.getByRole('textbox', { name: 'Notes' })
-      .closest('[data-formancy-part="layout-cell"]')
+    const cell = screen.getByRole('textbox', { name: 'Notes' }).closest('[data-formancy-part="layout-cell"]')
     expect(cell).not.toBeNull()
     // Every element between the cell and the table takes no part in layout.
     let walk = cell?.parentElement ?? null
@@ -347,10 +334,7 @@ const translated = {
 async function mountTranslated(locale: string): Promise<void> {
   await render(FormancyForm, {
     inputs: { layout: 'web' },
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(createFormEngine({ schema: translated, locale })),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(createFormEngine({ schema: translated, locale }))],
   })
 }
 

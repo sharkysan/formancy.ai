@@ -66,9 +66,7 @@ describe('the Angular starter', () => {
       target: { value: 'engineering' },
     })
     type('Date of travel', '2026-10-09')
-    fireEvent.click(
-      within(within(fill).getByRole('group', { name: 'Purpose' })).getByLabelText('Conference'),
-    )
+    fireEvent.click(within(within(fill).getByRole('group', { name: 'Purpose' })).getByLabelText('Conference'))
     type('What', 'Train to Zurich')
     type('Amount (CHF)', '84.5')
     fireEvent.click(within(fill).getByLabelText('These expenses are correct'))

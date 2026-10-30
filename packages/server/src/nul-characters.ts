@@ -93,7 +93,10 @@ function nulAt(body: unknown): string | undefined {
 function pointer(container: Step | undefined, key: string | number | undefined): string {
   const steps: Array<string | number> = []
   for (let at = key === undefined ? container : { up: container, key }; at !== undefined; at = at.up) steps.push(at.key)
-  return steps.reverse().map((step) => `/${typeof step === 'number' ? String(step) : token(step)}`).join('')
+  return steps
+    .reverse()
+    .map((step) => `/${typeof step === 'number' ? String(step) : token(step)}`)
+    .join('')
 }
 
 /** A member's name as one step of a JSON Pointer: `~` and `/` escaped, as RFC 6901 has them. */

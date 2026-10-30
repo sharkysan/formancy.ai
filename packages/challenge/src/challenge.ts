@@ -100,11 +100,7 @@ export type VerifyOutcome =
  * there is no reason to do that work for a submission that was never going to
  * be accepted.
  */
-export function verifySolution(
-  secret: string,
-  solution: Solution,
-  nowSeconds: number,
-): VerifyOutcome {
+export function verifySolution(secret: string, solution: Solution, nowSeconds: number): VerifyOutcome {
   if (
     typeof solution.salt !== 'string' ||
     typeof solution.challenge !== 'string' ||

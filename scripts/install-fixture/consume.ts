@@ -12,14 +12,7 @@
  * ran once. A fixture that can be opened, type-checked and linted in place is
  * also one somebody can extend without reading the runner.
  */
-import {
-  CURRENT_SPEC_VERSION,
-  DECLINE_KEY,
-  acceptRemoteAnswer,
-  capRemoteAnswer,
-  modelDataPaths,
-  resolvedLocale,
-} from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, DECLINE_KEY, acceptRemoteAnswer, capRemoteAnswer, modelDataPaths, resolvedLocale } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import schemaJson from '@formancy/spec/schema.json'
 import { parse, referencedPaths, rewritePath } from '@formancy/expressions'
@@ -51,15 +44,7 @@ import {
   translationPrompt,
   translationStatus,
 } from '@formancy/builder-core'
-import type {
-  AskModel,
-  DraftRun,
-  PromptRun,
-  ProposalExamples,
-  TranslationProposal,
-  TranslationRun,
-  TranslationView,
-} from '@formancy/builder-core'
+import type { AskModel, DraftRun, PromptRun, ProposalExamples, TranslationProposal, TranslationRun, TranslationView } from '@formancy/builder-core'
 import type { BuiltInErrorCode } from '@formancy/core'
 import { FORM_WORDS, FORM_WORDS_DE, createFormText, optionsStatus } from '@formancy/core/words'
 import type { FormWordsByLocale } from '@formancy/core/words'
@@ -187,7 +172,11 @@ const worded = {
   model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
   i18n: { defaultLocale: 'en', messages: { en: { email: 'Email' }, de: {} } },
 } as unknown as FormSchema
-if (translationPrompt(worded, 'de').rows.map((row) => row.id).join() !== 'email') {
+if (
+  translationPrompt(worded, 'de')
+    .rows.map((row) => row.id)
+    .join() !== 'email'
+) {
   throw new Error('the installed translationPrompt did not ask for the missing message')
 }
 const german = await translateCatalogue(
@@ -294,9 +283,7 @@ const translationRelay = createRelay()
 const hearing = heldTranslation.subscribe(() => undefined)
 const translatingHeld = heldTranslation.translate(translationRelay.ask, createBuilderSession(worded), 'de')
 hearing()
-const pasted = translationRelay.answer(
-  JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }),
-)
+const pasted = translationRelay.answer(JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }))
 await translatingHeld
 const underGerman = translationOn(heldTranslation.state(), 'de', worded)
 const underEnglish: TranslationView = translationOn(heldTranslation.state(), 'en', worded)
@@ -329,10 +316,7 @@ if (refusedTranslation.ok || refusedTranslation.ended !== 'busy') {
   throw new Error('the installed relay did not refuse a translation as busy')
 }
 const english = translating.text
-const saidBusy = translationStatus(
-  { busy: false, result: refusedTranslation, proposal: undefined, refusal: undefined },
-  english,
-)
+const saidBusy = translationStatus({ busy: false, result: refusedTranslation, proposal: undefined, refusal: undefined }, english)
 if (saidBusy !== english('prompt.status.busy')) throw new Error('the installed translationStatus did not say busy')
 shared.answer(JSON.stringify(schema))
 await waitingEdit

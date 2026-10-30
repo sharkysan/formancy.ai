@@ -51,8 +51,15 @@ function shell(step: string): { cwd: string; words: string[] }[] {
   }
   let cwd = /working-directory:\s*(\S+)/.exec(step)?.[1] ?? '${GITHUB_WORKSPACE}'
   const commands: { cwd: string; words: string[] }[] = []
-  for (const command of body.join('\n').replace(/\\\n\s*/g, ' ').split(/\n|&&|;/)) {
-    const words = command.trim().split(/\s+/).filter((word) => word !== '').map((word) => word.replace(/["']/g, ''))
+  for (const command of body
+    .join('\n')
+    .replace(/\\\n\s*/g, ' ')
+    .split(/\n|&&|;/)) {
+    const words = command
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word !== '')
+      .map((word) => word.replace(/["']/g, ''))
     if (words.length === 0 || words[0]!.startsWith('#')) continue
     if (words[0] === 'cd') cwd = words[1] ?? '~'
     else commands.push({ cwd, words })
@@ -90,16 +97,12 @@ describe('the release workflow', () => {
     expect(named, 'the workflow names no release body').toBeDefined()
 
     if (named === 'CHANGELOG.md') {
-      throw new Error(
-        'the release body is the whole changelog; GitHub refuses a body over 125,000 characters, and it refuses it after npm has published',
-      )
+      throw new Error('the release body is the whole changelog; GitHub refuses a body over 125,000 characters, and it refuses it after npm has published')
     }
 
     // The body is written by a step rather than committed, so what is checked is the
     // generator and the section it will produce for the version being released.
-    const version = JSON.parse(
-      readFileSync(join(repo, 'packages', 'core', 'package.json'), 'utf8'),
-    ).version as string
+    const version = JSON.parse(readFileSync(join(repo, 'packages', 'core', 'package.json'), 'utf8')).version as string
     const notes = releaseNotes(readFileSync(join(repo, 'CHANGELOG.md'), 'utf8'), version)
 
     // A guard on the guard: an extractor returning nothing would be under the limit.
@@ -273,11 +276,7 @@ describe('the published compose file', () => {
   test('keeps the secrets mandatory, as the source compose file does', () => {
     // The easiest mistake in a second copy of a compose file is relaxing what
     // the first one refused to default.
-    for (const required of [
-      'FORMANCY_AUTH_SECRET',
-      'FORMANCY_ADMIN_EMAIL',
-      'FORMANCY_ADMIN_PASSWORD',
-    ]) {
+    for (const required of ['FORMANCY_AUTH_SECRET', 'FORMANCY_ADMIN_EMAIL', 'FORMANCY_ADMIN_PASSWORD']) {
       expect(compose).toContain(`${required}: \${${required}:?`)
     }
   })

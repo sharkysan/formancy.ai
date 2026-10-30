@@ -9,14 +9,7 @@ import type { DeclaredType, VariableDeclarations } from './types.js'
  * Timestamps leave as RFC 3339 strings and money leaves as a `Decimal`, so a
  * result is JSON-shaped apart from the one type JSON cannot carry exactly.
  */
-export type ExpressionValue =
-  | null
-  | boolean
-  | number
-  | string
-  | Decimal
-  | readonly ExpressionValue[]
-  | { readonly [key: string]: ExpressionValue }
+export type ExpressionValue = null | boolean | number | string | Decimal | readonly ExpressionValue[] | { readonly [key: string]: ExpressionValue }
 
 /**
  * Convert a form value bag into the shapes CEL expects.
@@ -30,12 +23,7 @@ export type ExpressionValue =
  * their shape; an expression reaching into a repeater row writes
  * `dec(row.price)` for money.
  */
-export function bindValues(
-  declarations: VariableDeclarations,
-  values: Record<string, unknown>,
-  source: string,
-  limits: ValueLimits,
-): Record<string, unknown> {
+export function bindValues(declarations: VariableDeclarations, values: Record<string, unknown>, source: string, limits: ValueLimits): Record<string, unknown> {
   const bound: Record<string, unknown> = {}
   for (const [name, type] of Object.entries(declarations)) {
     // The bag's own, so a declared `constructor` it lacks is missing, not `function Object` (0185).
@@ -64,20 +52,10 @@ export function bindValues(
  * budget's worst case a number rather than a hope, and it must be
  * deterministic: the same bag is rejected the same way on every machine.
  */
-function assertValueWithinLimits(
-  path: string,
-  value: unknown,
-  limits: ValueLimits,
-  depth: number,
-  source: string,
-): void {
+function assertValueWithinLimits(path: string, value: unknown, limits: ValueLimits, depth: number, source: string): void {
   if (typeof value === 'string') {
     if (value.length > limits.maxStringLength) {
-      throw valueOverLimit(
-        path,
-        source,
-        `a string of ${value.length} characters, over the limit of ${limits.maxStringLength}`,
-      )
+      throw valueOverLimit(path, source, `a string of ${value.length} characters, over the limit of ${limits.maxStringLength}`)
     }
     return
   }
@@ -86,20 +64,12 @@ function assertValueWithinLimits(
   if (value instanceof Decimal || value instanceof Date) return
 
   if (depth >= limits.maxNestingDepth) {
-    throw valueOverLimit(
-      path,
-      source,
-      `nested more than ${limits.maxNestingDepth} containers deep`,
-    )
+    throw valueOverLimit(path, source, `nested more than ${limits.maxNestingDepth} containers deep`)
   }
 
   if (Array.isArray(value)) {
     if (value.length > limits.maxListElements) {
-      throw valueOverLimit(
-        path,
-        source,
-        `a list of ${value.length} elements, over the limit of ${limits.maxListElements}`,
-      )
+      throw valueOverLimit(path, source, `a list of ${value.length} elements, over the limit of ${limits.maxListElements}`)
     }
     for (let i = 0; i < value.length; i++) {
       assertValueWithinLimits(`${path}[${i}]`, value[i], limits, depth + 1, source)
@@ -109,11 +79,7 @@ function assertValueWithinLimits(
 
   const entries = value instanceof Map ? [...value.entries()] : Object.entries(value)
   if (entries.length > limits.maxMapEntries) {
-    throw valueOverLimit(
-      path,
-      source,
-      `a map of ${entries.length} entries, over the limit of ${limits.maxMapEntries}`,
-    )
+    throw valueOverLimit(path, source, `a map of ${entries.length} entries, over the limit of ${limits.maxMapEntries}`)
   }
   for (const [key, entry] of entries) {
     assertValueWithinLimits(`${path}.${String(key)}`, entry, limits, depth + 1, source)
@@ -165,11 +131,7 @@ function bindDecimal(name: string, raw: unknown, source: string): unknown {
   }
   if (typeof raw === 'number') {
     // Accepting a double here would quietly undo the reason `decimal` exists.
-    throw invalidValue(
-      name,
-      source,
-      'a number cannot be used as money, because it may already have lost precision',
-    )
+    throw invalidValue(name, source, 'a number cannot be used as money, because it may already have lost precision')
   }
   return raw
 }
@@ -189,8 +151,7 @@ function bindTimestamp(name: string, raw: unknown, source: string): unknown {
       throw invalidValue(
         name,
         source,
-        `${JSON.stringify(raw)} is not an ISO 8601 date-time with an explicit zone; ` +
-          'supply the zone, e.g. "2026-09-19T00:00:00Z" or "…+02:00"',
+        `${JSON.stringify(raw)} is not an ISO 8601 date-time with an explicit zone; ` + 'supply the zone, e.g. "2026-09-19T00:00:00Z" or "…+02:00"',
       )
     }
     const date = new Date(raw)
@@ -202,21 +163,12 @@ function bindTimestamp(name: string, raw: unknown, source: string): unknown {
   if (typeof raw === 'number') {
     // One canonical form at the boundary: an epoch number is unambiguous but
     // invites a seconds-versus-milliseconds mistake nothing would catch.
-    throw invalidValue(
-      name,
-      source,
-      'a number cannot be used as a timestamp; supply an ISO 8601 date-time with an explicit zone',
-    )
+    throw invalidValue(name, source, 'a number cannot be used as a timestamp; supply an ISO 8601 date-time with an explicit zone')
   }
   return raw
 }
 
-function invalidValue(
-  name: string,
-  source: string,
-  detail: string,
-  cause?: unknown,
-): ExpressionError {
+function invalidValue(name: string, source: string, detail: string, cause?: unknown): ExpressionError {
   return new ExpressionError({
     kind: 'runtime',
     code: 'invalid_value',

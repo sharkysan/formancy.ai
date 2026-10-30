@@ -18,9 +18,7 @@ import { STARTER_SCHEMA } from './starter.js'
  * list, starts it with a demo block, and hands it to both builders.
  */
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => (
-    <textarea aria-label="Schema" value={value ?? ''} readOnly />
-  ),
+  default: ({ value }: { value?: string }) => <textarea aria-label="Schema" value={value ?? ''} readOnly />,
   useMonaco: () => null,
 }))
 
@@ -33,22 +31,11 @@ describe('the demo block', () => {
     // The starter already has a country, a canton, a postcode and a town — which is why
     // this block was chosen. Inserted with its own keys the document would be invalid;
     // renamed without its rule, the canton would show for every country.
-    const outcome = withBlock(
-      STARTER_SCHEMA,
-      { parent: [], index: STARTER_SCHEMA.model.fields.length },
-      DEMO_BLOCKS[0]!,
-      createBuilderText(),
-    )
+    const outcome = withBlock(STARTER_SCHEMA, { parent: [], index: STARTER_SCHEMA.model.fields.length }, DEMO_BLOCKS[0]!, createBuilderText())
     if (!outcome.ok) throw new Error(outcome.message)
 
     expect(validateSchema(outcome.document)).toMatchObject({ valid: true })
-    expect(outcome.document.model.fields.at(-1)?.fields?.map((field) => field.key)).toEqual([
-      'street',
-      'postcode2',
-      'city2',
-      'country2',
-      'canton2',
-    ])
+    expect(outcome.document.model.fields.at(-1)?.fields?.map((field) => field.key)).toEqual(['street', 'postcode2', 'city2', 'country2', 'canton2'])
 
     const engine = createFormEngine({ schema: outcome.document, capabilities: CLOCK })
     expect(engine.getFieldSnapshot(['billing', 'canton2']).visible).toBe(false)
@@ -67,8 +54,7 @@ const builtWith = async (which: 'react' | 'angular'): Promise<void> => {
 }
 
 /** The builder on screen's tree — the last one, since the Angular one mounts late. */
-const tree = async (): Promise<HTMLElement> =>
-  waitFor(() => screen.getAllByRole('tree', { name: /structure/i }).at(-1)!, { timeout: 10_000 })
+const tree = async (): Promise<HTMLElement> => waitFor(() => screen.getAllByRole('tree', { name: /structure/i }).at(-1)!, { timeout: 10_000 })
 
 describe('blocks in the playground', () => {
   test('the React builder offers the demo block, and inserts it', async () => {

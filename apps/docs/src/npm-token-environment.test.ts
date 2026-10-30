@@ -58,7 +58,11 @@ describe('the npm token', () => {
   // release.yml reads it; a reader that found no job reading it would report
   // every workflow clean, including one that read it from the repository.
   test('is read by at least one job, so the rule below cannot pass by reading nothing', () => {
-    expect(jobs().filter(readsToken).map((job) => `${job.file}: ${job.name}`)).toContain('release.yml: release')
+    expect(
+      jobs()
+        .filter(readsToken)
+        .map((job) => `${job.file}: ${job.name}`),
+    ).toContain('release.yml: release')
   })
 
   // A job that reads the token without naming the environment gets it from the

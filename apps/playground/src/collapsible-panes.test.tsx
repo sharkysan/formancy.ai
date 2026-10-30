@@ -28,20 +28,16 @@ import { App } from './app.js'
  *   to write here is the wrong one.
  */
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => (
-    <textarea readOnly aria-label="Schema" value={value ?? ''} />
-  ),
+  default: ({ value }: { value?: string }) => <textarea readOnly aria-label="Schema" value={value ?? ''} />,
   useMonaco: () => null,
 }))
 
 afterEach(cleanup)
 
 /** The toggle for one pane, by role and accessible name. */
-const toggle = (pane: string): HTMLElement =>
-  screen.getByRole('button', { name: `${pane} pane` })
+const toggle = (pane: string): HTMLElement => screen.getByRole('button', { name: `${pane} pane` })
 
-const paneNamed = (pane: string): HTMLElement =>
-  screen.getByRole('region', { name: pane })
+const paneNamed = (pane: string): HTMLElement => screen.getByRole('region', { name: pane })
 
 describe('folding a pane away', () => {
   test('every pane has a toggle, and they all start open', () => {

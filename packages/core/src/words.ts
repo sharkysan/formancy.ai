@@ -165,13 +165,11 @@ export const FORM_WORDS = {
   'tabs.unnamed': 'Tab {position}',
 
   // ------------------------------------------- options, typeahead, tag picker
-  'options.unavailable':
-    'This field\'s answers come from "{source}", which this application has not provided.',
+  'options.unavailable': 'This field\'s answers come from "{source}", which this application has not provided.',
   /** A typeahead's: typing asks again. */
   'options.failed': 'The options could not be loaded. Type to try again.',
   /** A plain select's: nobody can type into one, and moving to it asks again. */
-  'options.failedListed':
-    'The options could not be loaded. They are asked for again each time you move to this field.',
+  'options.failedListed': 'The options could not be loaded. They are asked for again each time you move to this field.',
   /** A list of ticks': it may have no box to move to, so `options.retry` asks again (0215). */
   'options.failedTicks': 'The options could not be loaded.',
   /** The button under a list of ticks whose source failed, which asks it again. */
@@ -215,8 +213,7 @@ export const FORM_WORDS = {
   'ranking.rank': 'Rank {option}',
 
   // ------------------------------------------------------------------- files
-  'file.unavailable':
-    'This form cannot accept files here, because no upload destination has been configured.',
+  'file.unavailable': 'This form cannot accept files here, because no upload destination has been configured.',
   'file.up': 'Move {name}, {position} of {count}, up',
   'file.down': 'Move {name}, {position} of {count}, down',
   'file.remove': 'Remove {name}',
@@ -260,8 +257,7 @@ export const FORM_WORDS = {
 
   // ----------------------------------------------- a draft that came back changed
   'resume.heading': 'This form changed while you were away',
-  'resume.breaking.kept':
-    'It changed too much for your answers to be moved across, so this is being shown as you left it.',
+  'resume.breaking.kept': 'It changed too much for your answers to be moved across, so this is being shown as you left it.',
   /** Drawn emphasised, between the two sentences beside it. */
   'resume.breaking.cannotSubmit': 'It cannot be submitted.',
   'resume.breaking.restart': 'Starting again will give you the current form.',
@@ -353,21 +349,16 @@ export function createFormText(options: FormTextOptions): FormText {
   // reader's: an English sentence counted by Portuguese rules says "One question" about
   // none, and joined by Italian ones says "a.pdf e b.pdf".
   const rules = new Map<string, Intl.PluralRules>()
-  const pluralFor = (tag: string): Intl.PluralRules =>
-    made(rules, tag, (readable) => new Intl.PluralRules(readable))
+  const pluralFor = (tag: string): Intl.PluralRules => made(rules, tag, (readable) => new Intl.PluralRules(readable))
   const lists = new Map<string, Intl.ListFormat>()
-  const listFor = (tag: string): Intl.ListFormat =>
-    made(lists, tag, (readable) => new Intl.ListFormat(readable, { style: 'long', type: 'conjunction' }))
+  const listFor = (tag: string): Intl.ListFormat => made(lists, tag, (readable) => new Intl.ListFormat(readable, { style: 'long', type: 'conjunction' }))
 
   const text = (id: FormWordId, values: FormWordValues = {}): string => {
     const found = sources.find((source) => source.words[id] !== undefined)
     const tag = found?.tag ?? ENGLISH
     const message: Message = found?.words[id] ?? FORM_WORDS[id]
     const count = values['count']
-    const template =
-      typeof message === 'string'
-        ? message
-        : pluralForm(message, pluralFor(tag), typeof count === 'number' ? count : undefined)
+    const template = typeof message === 'string' ? message : pluralForm(message, pluralFor(tag), typeof count === 'number' ? count : undefined)
     return template.replace(/\{(\w+)\}/g, (whole, name: string) => {
       const value = values[name]
       // Visible rather than emptied: "Add ." hides that a value never arrived.
@@ -380,11 +371,7 @@ export function createFormText(options: FormTextOptions): FormText {
 }
 
 /** One `Intl` formatter per language, made for a tag `Intl` can read and English otherwise. */
-function made<Formatter>(
-  cache: Map<string, Formatter>,
-  tag: string,
-  make: (readable: string) => Formatter,
-): Formatter {
+function made<Formatter>(cache: Map<string, Formatter>, tag: string, make: (readable: string) => Formatter): Formatter {
   const known = cache.get(tag)
   if (known !== undefined) return known
   const fresh = make(readable(tag) ? tag : ENGLISH)

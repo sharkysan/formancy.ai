@@ -38,8 +38,7 @@ const trip: FormSchema = {
   },
 }
 
-const engineFor = (locale?: string) =>
-  createFormEngine({ schema: trip, capabilities: CLOCK, ...(locale === undefined ? {} : { locale }) })
+const engineFor = (locale?: string) => createFormEngine({ schema: trip, capabilities: CLOCK, ...(locale === undefined ? {} : { locale }) })
 
 describe('a rule’s message', () => {
   test('is on the snapshot of the field it is about, in the form’s language', () => {
@@ -60,9 +59,7 @@ describe('a rule’s message', () => {
     engine.submit()
     const { errors, def, messages } = engine.getFieldSnapshot(['age'])
     expect(errors).toEqual(['adult'])
-    expect(errors.map((code) => errorSentence(createFormText({ locale: 'de' }), def, code, messages))).toEqual([
-      'Reisende müssen mindestens 18 sein.',
-    ])
+    expect(errors.map((code) => errorSentence(createFormText({ locale: 'de' }), def, code, messages))).toEqual(['Reisende müssen mindestens 18 sein.'])
   })
 
   // A rule that runs only on the server reports its code to a browser that never evaluated it.

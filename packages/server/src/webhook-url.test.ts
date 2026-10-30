@@ -37,7 +37,6 @@ describe('webhookUrlProblem', () => {
   })
 })
 
-
 describe('hostnames', () => {
   test('are accepted at save time and judged after they resolve', () => {
     // A hostname cannot be classified until DNS answers, and refusing every

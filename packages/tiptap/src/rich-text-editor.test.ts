@@ -26,14 +26,7 @@ describe('the schema', () => {
     // `doc`, `paragraph`, `text` and the three list nodes. Anything else — a
     // heading, a code block, a horizontal rule — has no representation in the
     // grammar, so an editor offering it would be offering to lose an answer.
-    expect(nodes).toEqual([
-      'bulletList',
-      'doc',
-      'listItem',
-      'orderedList',
-      'paragraph',
-      'text',
-    ])
+    expect(nodes).toEqual(['bulletList', 'doc', 'listItem', 'orderedList', 'paragraph', 'text'])
   })
 
   test('admits only the marks the grammar has', () => {

@@ -5,12 +5,7 @@ import { declinedAnswer } from './answers.js'
 import { authorForm } from './authoring.js'
 import { draftScenarios } from './scenario-drafts.js'
 import { translateCatalogue } from './translate.js'
-import {
-  MODEL_REQUEST_KINDS,
-  isModelRequestKind,
-  modelBriefing,
-  modelRequestKind,
-} from './model-requests.js'
+import { MODEL_REQUEST_KINDS, isModelRequestKind, modelBriefing, modelRequestKind } from './model-requests.js'
 import type { ModelRequestKind } from './model-requests.js'
 
 /**

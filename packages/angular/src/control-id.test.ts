@@ -235,11 +235,7 @@ describe('every field drawn with no control', () => {
       } as unknown as FormSchema,
     })
     const view = await render(FormancyForm, {
-      providers: [
-        provideZonelessChangeDetection(),
-        provideFormancy(engine),
-        ...(uploads ? [provideFormancyUploader(upload)] : []),
-      ],
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(uploads ? [provideFormancyUploader(upload)] : [])],
     })
     await view.fixture.whenStable()
     const id = engine.getFieldSnapshot(['f']).ids.control

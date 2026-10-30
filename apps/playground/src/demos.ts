@@ -47,8 +47,12 @@ export interface Examples {
 }
 
 const areas: Record<string, string> = {
-  hr: 'HR', sales: 'Sales', 'customer-service': 'Customer service',
-  events: 'Events', operations: 'Operations', 'healthcare-administration': 'Healthcare administration',
+  hr: 'HR',
+  sales: 'Sales',
+  'customer-service': 'Customer service',
+  events: 'Events',
+  operations: 'Operations',
+  'healthcare-administration': 'Healthcare administration',
 }
 
 // The form documents, and beside each the examples it is checked against and the
@@ -56,13 +60,16 @@ const areas: Record<string, string> = {
 // defaults in a live form: a sample name appearing as an answer is how a template
 // ships somebody else's data (templates.test.tsx holds that).
 const forms = import.meta.glob<FormSchema>('../../../templates/**/*.form.json', {
-  eager: true, import: 'default',
+  eager: true,
+  import: 'default',
 })
 const scenarios = import.meta.glob<Scenario[]>('../../../templates/**/*.scenarios.json', {
-  eager: true, import: 'default',
+  eager: true,
+  import: 'default',
 })
 const samples = import.meta.glob<Record<string, unknown>>('../../../templates/**/*.sample.json', {
-  eager: true, import: 'default',
+  eager: true,
+  import: 'default',
 })
 
 /** A catalogue file by its path, which must exist: a typo is a build error, not a blank pane. */
@@ -87,18 +94,16 @@ export const DEMOS: readonly Demo[] = [
     examples: undefined,
     suggestions: undefined,
   },
-  ...catalog.templates.map(
-    (entry): Demo => ({
-      id: entry.id,
-      label: `${areas[entry.area]} — ${entry.title.en}`,
-      schema: shipped(forms, entry.schema),
-      examples: {
-        scenarios: shipped(scenarios, entry.scenarios),
-        sample: shipped(samples, entry.sample),
-      },
-      suggestions: undefined,
-    }),
-  ),
+  ...catalog.templates.map((entry): Demo => ({
+    id: entry.id,
+    label: `${areas[entry.area]} — ${entry.title.en}`,
+    schema: shipped(forms, entry.schema),
+    examples: {
+      scenarios: shipped(scenarios, entry.scenarios),
+      sample: shipped(samples, entry.sample),
+    },
+    suggestions: undefined,
+  })),
 ]
 
 /** A gallery link names a document, never an arbitrary URL to fetch. */

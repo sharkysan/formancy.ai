@@ -182,11 +182,7 @@ export function BuilderBody({
         </button>
         <span className="builder-tabs">
           {(['fields', 'arrangement', 'rules', 'translations'] as const).map((candidate) => (
-            <button
-              key={candidate}
-              aria-pressed={tab === candidate}
-              onClick={() => onTab(candidate)}
-            >
+            <button key={candidate} aria-pressed={tab === candidate} onClick={() => onTab(candidate)}>
               {TAB_NAMES[candidate]}
             </button>
           ))}
@@ -196,10 +192,7 @@ export function BuilderBody({
             part of one. */}
         <label className="built-with">
           Builder
-          <select
-            value={builtWith}
-            onChange={(event) => setBuiltWith(event.target.value as 'react' | 'angular')}
-          >
+          <select value={builtWith} onChange={(event) => setBuiltWith(event.target.value as 'react' | 'angular')}>
             <option value="react">React</option>
             <option value="angular">Angular</option>
           </select>
@@ -236,11 +229,7 @@ export function BuilderBody({
             /* Every rule in the form, and — from the answers typed into the form pane —
                why each field is shown, hidden or required now. Type into the form and
                watch a verdict change; that is the demonstration. */
-            <RulesOverview
-              session={session}
-              answers={explained?.answers}
-              capabilities={explained?.capabilities}
-            />
+            <RulesOverview session={session} answers={explained?.answers} capabilities={explained?.capabilities} />
           ) : tab === 'translations' ? (
             /* The starter's French is half-finished on purpose. The form pane shows the
                fallback; this shows the other half — choose French and every message
@@ -250,17 +239,8 @@ export function BuilderBody({
                (0161). The run is the page's: asked for French and left, the tab opens on
                French again, waiting or with its answer, in either builder (0164). */
             <>
-              <SuggestionsList
-                feature="translation"
-                {...suggesting}
-                onTried={() => setTranslationsOpened((opened) => opened + 1)}
-              />
-              <TranslationsPane
-                key={translationsOpened}
-                session={session}
-                ask={relay.ask}
-                run={runs.translation}
-              />
+              <SuggestionsList feature="translation" {...suggesting} onTried={() => setTranslationsOpened((opened) => opened + 1)} />
+              <TranslationsPane key={translationsOpened} session={session} ask={relay.ask} run={runs.translation} />
             </>
           ) : tab === 'arrangement' ? (
             <>
@@ -271,9 +251,7 @@ export function BuilderBody({
                   day layouts existed, and `span` from the moment the format grew it.
                   The panel is generated from the JSON Schema, so the next one arrives
                   with an editor rather than needing somebody to remember. */}
-              {arranging === null ? null : (
-                <LayoutPropertyPanel session={session} address={{ layout: 'web', path: arranging }} />
-              )}
+              {arranging === null ? null : <LayoutPropertyPanel session={session} address={{ layout: 'web', path: arranging }} />}
             </>
           ) : (
             <>
@@ -292,20 +270,9 @@ export function BuilderBody({
                   — and run against the form's examples, the list the scenario pane runs,
                   before it lands (0159). What to ask is suggested above it, on the starter. */}
               <SuggestionsList feature="prompt" {...suggesting} />
-              <PromptPane
-                session={session}
-                ask={relay.ask}
-                run={runs.prompt}
-                scenarios={scenarios}
-                initialValue={sample}
-              />
+              <PromptPane session={session} ask={relay.ask} run={runs.prompt} scenarios={scenarios} initialValue={sample} />
 
-              <FormancyBuilder
-                session={session}
-                onSelect={setSelected}
-                blocks={blocks}
-                onSaveBlock={onSaveBlock}
-              />
+              <FormancyBuilder session={session} onSelect={setSelected} blocks={blocks} onSaveBlock={onSaveBlock} />
 
               {/* What this form is supposed to do, rerun after every edit. The
                   check nothing else can make: a condition compiles whichever way
@@ -318,14 +285,7 @@ export function BuilderBody({
                   what the visitor says the form should do, and one kept goes into the
                   page's list for this form (0162). The drafting is the page's, for this
                   form: the drafts wait through the Schema view and the other builder (0164). */}
-              <ScenarioPane
-                session={session}
-                scenarios={scenarios}
-                onChange={onScenarios}
-                initialValue={sample}
-                ask={relay.ask}
-                drafting={runs.drafting}
-              />
+              <ScenarioPane session={session} scenarios={scenarios} onChange={onScenarios} initialValue={sample} ask={relay.ask} drafting={runs.drafting} />
               {/* A sentence of intent to draft from, on the starter, below the box it fills. */}
               <SuggestionsList feature="drafting" {...suggesting} />
 
@@ -359,10 +319,7 @@ const NO_PREVIEW = (): (() => void) => () => undefined
  * explained by the date the preview used.
  */
 function usePreviewState(preview: FormEngine | undefined): PreviewState | undefined {
-  const answers = useSyncExternalStore(
-    preview === undefined ? NO_PREVIEW : (listener) => preview.subscribe(listener),
-    () => preview?.value(),
-  )
+  const answers = useSyncExternalStore(preview === undefined ? NO_PREVIEW : (listener) => preview.subscribe(listener), () => preview?.value())
   return useMemo(
     () =>
       answers === undefined || answers === null || typeof answers !== 'object'

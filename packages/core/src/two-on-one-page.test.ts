@@ -64,14 +64,7 @@ describe('rendering one schema in two places at once', () => {
     for (const part of Object.keys(react)) {
       expect(react[part], part).not.toBe(angular[part])
     }
-    expect(Object.keys(react).sort()).toEqual([
-      'control',
-      'count',
-      'description',
-      'error',
-      'hint',
-      'label',
-    ])
+    expect(Object.keys(react).sort()).toEqual(['control', 'count', 'description', 'error', 'hint', 'label'])
   })
 
   test('the default is still the schema id, so nothing already written changes', () => {
@@ -116,8 +109,6 @@ describe('rendering one schema in two places at once', () => {
 
     // And the same mistake in the document is caught at the same moment, which
     // it was not before.
-    expect(() =>
-      createFormEngine({ schema: { ...schema, id: 'has:colon' }, capabilities }),
-    ).toThrow(/must not/)
+    expect(() => createFormEngine({ schema: { ...schema, id: 'has:colon' }, capabilities })).toThrow(/must not/)
   })
 })

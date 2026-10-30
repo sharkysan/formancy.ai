@@ -53,13 +53,4 @@ export {
   paletteEntries,
   typesNeedingUpgrade,
 } from '@formancy/builder-core'
-export type {
-  Condition,
-  ConditionGroup,
-  EditableProperty,
-  LayoutTreeNode,
-  Operator,
-  PaletteEntry,
-  PropertyKind,
-  TreeNode,
-} from '@formancy/builder-core'
+export type { Condition, ConditionGroup, EditableProperty, LayoutTreeNode, Operator, PaletteEntry, PropertyKind, TreeNode } from '@formancy/builder-core'

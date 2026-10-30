@@ -204,7 +204,7 @@ describe('filling in a published form', () => {
   })
 
   test('a draft that can no longer be submitted says so, and stops saving', async () => {
-        window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
+    window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
     replies['GET /api/f/contact/drafts/d1'] = {
       body: {
         outcome: 'readOnly',

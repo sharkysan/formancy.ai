@@ -54,7 +54,11 @@ function requireAddresses(value, where) {
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error(`${SIGNATORIES}: ${where} has no emails array`)
   }
-  return value.map((address, index) => requireText(address, `${where} emails[${String(index)}]`).trim().toLowerCase())
+  return value.map((address, index) =>
+    requireText(address, `${where} emails[${String(index)}]`)
+      .trim()
+      .toLowerCase(),
+  )
 }
 
 /**

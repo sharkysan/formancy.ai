@@ -80,12 +80,7 @@ export async function unsafePatterns(schema: FormSchema): Promise<UnsafePattern[
     unsafe.push({
       path,
       pattern,
-      complexity:
-        complexity === undefined
-          ? 'unknown'
-          : complexity.type === 'polynomial'
-            ? `polynomial degree ${String(complexity.degree)}`
-            : complexity.type,
+      complexity: complexity === undefined ? 'unknown' : complexity.type === 'polynomial' ? `polynomial degree ${String(complexity.degree)}` : complexity.type,
     })
   }
 

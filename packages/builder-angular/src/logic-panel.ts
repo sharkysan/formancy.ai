@@ -255,22 +255,16 @@ export class FormancyLogicPanel {
   protected readonly writes = computed(() => kindWrites(this.kind()))
   protected readonly hint = computed(() => ruleKindHint(this.kind(), this.text()))
   /** Asked of a rule that rejects an answer, where the document can hold it (0198). */
-  protected readonly asked = computed(() =>
-    this.kind() === 'validate' && ruleTakesMessage(this.view().document.specVersion) ? this.message() : undefined,
-  )
+  protected readonly asked = computed(() => (this.kind() === 'validate' && ruleTakesMessage(this.view().document.specVersion) ? this.message() : undefined))
   /** At the paths the engine reads, from the core: the tree's key path named a field
    *  inside a page by a path no field has (0127). Scoped to the rule's target, so a
    *  rule in a repeater row may compare that row (0129). */
-  protected readonly fields = computed(() =>
-    conditionFields(this.view().document, { target: this.target(), text: this.text() }),
-  )
+  protected readonly fields = computed(() => conditionFields(this.view().document, { target: this.target(), text: this.text() }))
   private readonly rows = computed(() => rowsOf(this.draft()))
   protected readonly count = computed(() => this.rows().length)
   protected readonly mine = computed(() => {
     const target = this.target()
-    return (this.view().document.logic?.rules ?? [])
-      .map((rule, index) => ({ rule, index }))
-      .filter((entry) => entry.rule.target === target)
+    return (this.view().document.logic?.rules ?? []).map((rule, index) => ({ rule, index })).filter((entry) => entry.rule.target === target)
   })
   protected readonly preview = computed(() => {
     const draft = this.draft()
@@ -312,7 +306,9 @@ export class FormancyLogicPanel {
 
   /** Groups numbered in order among themselves: "Group 1", "Group 2". */
   protected groupNumber(at: number): number {
-    return this.draft().items.slice(0, at + 1).filter(isRowGroup).length
+    return this.draft()
+      .items.slice(0, at + 1)
+      .filter(isRowGroup).length
   }
 
   /** Numbered across the whole condition, so every comparison's controls have a name

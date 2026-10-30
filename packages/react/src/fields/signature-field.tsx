@@ -4,7 +4,6 @@ import { useField } from '../use-field.js'
 import { FieldShell } from './internals.js'
 import type { FieldComponentProps, SignatureAnswerValue } from './internals.js'
 
-
 /**
  * The signature control: a mark drawn, or a name typed.
  *
@@ -35,9 +34,7 @@ import type { FieldComponentProps, SignatureAnswerValue } from './internals.js'
 export function SignatureField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const text = useFormText()
-  const answer = (typeof field.value === 'object' && field.value !== null
-    ? field.value
-    : {}) as SignatureAnswerValue
+  const answer = (typeof field.value === 'object' && field.value !== null ? field.value : {}) as SignatureAnswerValue
   const drawn = answer.drawn ?? []
   const [width, height] = field.def?.box ?? [600, 200]
 
@@ -72,10 +69,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
     const scaleY = rect === undefined || rect.height === 0 ? 1 : height / rect.height
     const x = (event.clientX - (rect?.left ?? 0)) * scaleX
     const y = (event.clientY - (rect?.top ?? 0)) * scaleY
-    return [
-      Math.max(0, Math.min(width, Math.round(x))),
-      Math.max(0, Math.min(height, Math.round(y))),
-    ]
+    return [Math.max(0, Math.min(width, Math.round(x))), Math.max(0, Math.min(height, Math.round(y)))]
   }
 
   const commit = (strokes: Array<Array<[number, number]>>): void => {
@@ -123,13 +117,13 @@ export function SignatureField({ path, label }: FieldComponentProps) {
     if (element === null) return
 
     const swallow = (event: TouchEvent): void => {
-    // `cancelable` is checked because Chrome logs "Ignored attempt to cancel a
-    // touchmove event with cancelable=false" otherwise -- which is what arrives
-    // when `touch-action` WAS honoured, so the common case would print a warning
-    // per finger move. **No test covers this branch**: jsdom emits no such
-    // warning and `defaultPrevented` reads false either way, so the mutation
-    // survives the suite. Kept on the strength of the browser behaviour, and
-    // said out loud rather than left looking verified.
+      // `cancelable` is checked because Chrome logs "Ignored attempt to cancel a
+      // touchmove event with cancelable=false" otherwise -- which is what arrives
+      // when `touch-action` WAS honoured, so the common case would print a warning
+      // per finger move. **No test covers this branch**: jsdom emits no such
+      // warning and `defaultPrevented` reads false either way, so the mutation
+      // survives the suite. Kept on the strength of the browser behaviour, and
+      // said out loud rather than left looking verified.
       if (event.cancelable) event.preventDefault()
     }
     element.addEventListener('touchstart', swallow, { passive: false })

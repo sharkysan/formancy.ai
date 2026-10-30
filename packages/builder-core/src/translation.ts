@@ -2,13 +2,7 @@ import { layoutChildren } from '@formancy/spec'
 import type { FieldDef, FormSchema, LayoutNode } from '@formancy/spec'
 import type { BuilderText } from './messages.js'
 import { locate } from './navigate.js'
-import type {
-  BuilderSession,
-  CatalogueFile,
-  CommandOutcome,
-  ImportReport,
-  Refusal,
-} from './session.js'
+import type { BuilderSession, CatalogueFile, CommandOutcome, ImportReport, Refusal } from './session.js'
 
 /**
  * Translating a form: extracting its words into a catalogue, adding and removing
@@ -52,10 +46,7 @@ export function translationCommands(core: SessionCore): TranslationCommands {
       return core.attempt((draft) => {
         const found = locate(draft, keyPath)
         if (found === undefined) {
-          return core.refuse(
-            '/model/fields',
-            core.text('refuse.noField', { path: keyPath.join('.') }),
-          )
+          return core.refuse('/model/fields', core.text('refuse.noField', { path: keyPath.join('.') }))
         }
         const field = found.siblings[found.index] as unknown as Record<string, unknown>
         const current = field[property]
@@ -63,10 +54,7 @@ export function translationCommands(core: SessionCore): TranslationCommands {
         // translation with the language it came from.
         if (typeof current === 'object' && current !== null && '$t' in current) return undefined
         if (typeof current !== 'string') {
-          return core.refuse(
-            `/model/fields/${String(found.index)}/${property}`,
-            core.text('refuse.notText', { property, path: keyPath.join('.') }),
-          )
+          return core.refuse(`/model/fields/${String(found.index)}/${property}`, core.text('refuse.notText', { property, path: keyPath.join('.') }))
         }
 
         const defaultLocale = draft.i18n?.defaultLocale ?? locale ?? 'en'
@@ -122,11 +110,7 @@ export function translationCommands(core: SessionCore): TranslationCommands {
             for (const option of def.options ?? []) {
               // By VALUE rather than by index: an option's value is its identity,
               // so the id reads as the thing it names rather than as a position.
-              lift(
-                option as unknown as Record<string, unknown>,
-                'label',
-                `${path}.option.${option.value}`,
-              )
+              lift(option as unknown as Record<string, unknown>, 'label', `${path}.option.${option.value}`)
               // A picture's words are text too, and a reader of another language needs
               // them as much as the label (spec 4; found when the case below was derived
               // from the schema rather than from a list).
@@ -138,11 +122,7 @@ export function translationCommands(core: SessionCore): TranslationCommands {
               lift(row as unknown as Record<string, unknown>, 'label', `${path}.row.${row.value}`)
             }
             for (const column of def.columns ?? []) {
-              lift(
-                column as unknown as Record<string, unknown>,
-                'header',
-                `${path}.column.${column.field}`,
-              )
+              lift(column as unknown as Record<string, unknown>, 'header', `${path}.column.${column.field}`)
             }
             fields(def.fields ?? [], at)
           }

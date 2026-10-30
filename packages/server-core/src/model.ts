@@ -88,11 +88,7 @@ export type BuilderRequestOutcome =
  * ending: an adapter that throws broke its contract, and is still a model that could not
  * be asked.
  */
-export async function completeBuilderRequest(
-  completer: Completer,
-  request: BuilderRequest,
-  cancellation: Cancellation,
-): Promise<BuilderRequestOutcome> {
+export async function completeBuilderRequest(completer: Completer, request: BuilderRequest, cancellation: Cancellation): Promise<BuilderRequestOutcome> {
   const { kind, user } = request
   if (!isModelRequestKind(kind)) return { ok: false, failure: 'unknown_kind' }
   if (typeof user !== 'string' || user.trim() === '') return { ok: false, failure: 'no_user' }

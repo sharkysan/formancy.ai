@@ -2,12 +2,7 @@ import { JsonPipe } from '@angular/common'
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core'
 import { MatButton } from '@angular/material/button'
 import type { SubmitOutcome } from '@formancy/angular'
-import {
-  FormancyBuilder,
-  FormancyLogicPanel,
-  FormancyPropertyPanel,
-  injectBuilderView,
-} from '@formancy/builder-angular'
+import { FormancyBuilder, FormancyLogicPanel, FormancyPropertyPanel, injectBuilderView } from '@formancy/builder-angular'
 import { createBuilderSession } from '@formancy/builder-core'
 import { EXPENSE_CLAIM } from './expense-claim.js'
 import { StarterPreview } from './preview.js'
@@ -25,14 +20,7 @@ import { saveForm, savedForm } from './saved-form.js'
 @Component({
   selector: 'starter-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FormancyBuilder,
-    FormancyLogicPanel,
-    FormancyPropertyPanel,
-    JsonPipe,
-    MatButton,
-    StarterPreview,
-  ],
+  imports: [FormancyBuilder, FormancyLogicPanel, FormancyPropertyPanel, JsonPipe, MatButton, StarterPreview],
   template: `
     <header>
       <h1>{{ title() }}</h1>
@@ -81,11 +69,7 @@ export class StarterApp {
   protected readonly said = signal('')
 
   protected save(): void {
-    this.said.set(
-      saveForm(this.document())
-        ? 'Saved. Reload the page and it opens on this form.'
-        : 'Not saved: this browser keeps nothing for this page.',
-    )
+    this.said.set(saveForm(this.document()) ? 'Saved. Reload the page and it opens on this form.' : 'Not saved: this browser keeps nothing for this page.')
   }
 
   /** The saved form, back in the same session — one edit, so undo in the tree returns. */

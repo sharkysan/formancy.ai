@@ -89,8 +89,8 @@ function mount(scan?: Scanner, widget: 'scanner' | undefined = 'scanner'): FormE
 }
 
 const statusOf = (label: string): string =>
-  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="field"]')!
-    .querySelector('[data-formancy-part="scanner-status"]')!.textContent ?? ''
+  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="field"]')!.querySelector('[data-formancy-part="scanner-status"]')!.textContent ??
+  ''
 
 describe('a text field with the scanner widget', () => {
   test('is a text box with the same name, whether a scanner is there or not', () => {
@@ -143,10 +143,7 @@ describe('a text field with the scanner widget', () => {
     await waitFor(() => {
       expect(engine.value()).toEqual({ serial: 'ABC123' })
     })
-    expect(screen.getByRole('textbox', { name: 'Serial number' })).toHaveProperty(
-      'value',
-      'ABC123',
-    )
+    expect(screen.getByRole('textbox', { name: 'Serial number' })).toHaveProperty('value', 'ABC123')
   })
 
   test('stores a multi-line payload the way the input would', async () => {
@@ -207,9 +204,7 @@ describe('a text field with the scanner widget', () => {
     await user.click(screen.getByRole('button', { name: 'Submit' }))
 
     await waitFor(() => {
-      const field = screen
-        .getByRole('textbox', { name: 'Serial number' })
-        .closest('[data-formancy-part="field"]')!
+      const field = screen.getByRole('textbox', { name: 'Serial number' }).closest('[data-formancy-part="field"]')!
       expect(field.querySelector('[data-formancy-code="pattern"]')?.textContent).toBe('Enter it in the form this question asks for.')
     })
     // Still there afterwards: refusing it is the engine's answer, not a reason to
@@ -235,9 +230,7 @@ describe('a text field with the scanner widget', () => {
     // Named as recoverable, because it is: the input is right there.
     expect(statusOf('Serial number')).toContain('Type the value instead')
 
-    const field = screen
-      .getByRole('textbox', { name: 'Serial number' })
-      .closest('[data-formancy-part="field"]')!
+    const field = screen.getByRole('textbox', { name: 'Serial number' }).closest('[data-formancy-part="field"]')!
     expect(field.querySelector('[data-formancy-part="error"]')).toBeNull()
 
     // And the field is still fillable, which is the whole reason the fallback is the
@@ -256,10 +249,7 @@ describe('a text field with the scanner widget', () => {
     await user.click(screen.getByRole('button', { name: 'Scan Serial number' }))
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Scan Serial number' })).toHaveProperty(
-        'disabled',
-        false,
-      )
+      expect(screen.getByRole('button', { name: 'Scan Serial number' })).toHaveProperty('disabled', false)
     })
     expect(statusOf('Serial number')).toBe('')
     expect(engine.value()).toEqual({})

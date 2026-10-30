@@ -70,8 +70,7 @@ async function serve(): Promise<{ server: FastifyInstance; storage: Storage; adm
   return { server, storage, admin, viewer: await login('viewer@test.ch', 'viewer-password-1') }
 }
 
-const as = (token: string | undefined): Record<string, string> =>
-  token === undefined ? {} : { authorization: `Bearer ${token}` }
+const as = (token: string | undefined): Record<string, string> => (token === undefined ? {} : { authorization: `Bearer ${token}` })
 
 /** A GET, or a PUT of the examples, to `url` with `token`'s session. */
 function send(server: FastifyInstance, method: 'GET' | 'PUT', url: string, token: string | undefined) {

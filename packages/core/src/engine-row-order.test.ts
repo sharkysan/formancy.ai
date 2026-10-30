@@ -49,14 +49,11 @@ const schema = {
   },
 } as FormSchema
 
-const engineWith = (names: readonly string[]) =>
-  createFormEngine({ schema, initialValue: { items: names.map((name) => ({ name })) } })
+const engineWith = (names: readonly string[]) => createFormEngine({ schema, initialValue: { items: names.map((name) => ({ name })) } })
 
-const nameAt = (engine: ReturnType<typeof engineWith>, index: number): unknown =>
-  engine.getFieldSnapshot(['items', index, 'name']).value
+const nameAt = (engine: ReturnType<typeof engineWith>, index: number): unknown => engine.getFieldSnapshot(['items', index, 'name']).value
 
-const touchedAt = (engine: ReturnType<typeof engineWith>, index: number): boolean =>
-  engine.getFieldSnapshot(['items', index, 'name']).touched
+const touchedAt = (engine: ReturnType<typeof engineWith>, index: number): boolean => engine.getFieldSnapshot(['items', index, 'name']).touched
 
 describe('removing a row', () => {
   test('does not leave a row nobody visited marked as touched', () => {
@@ -156,10 +153,7 @@ describe('moveRow', () => {
     // submission is self-describing years later, without the engine that wrote it.
     // Asserted here rather than stripped, because a move that renumbered the ids
     // would be a move that lost which row was which.
-    const names = (): unknown =>
-      (engine.value() as { items: Array<Record<string, unknown>> }).items.map(
-        (row) => row['name'],
-      )
+    const names = (): unknown => (engine.value() as { items: Array<Record<string, unknown>> }).items.map((row) => row['name'])
     expect(names()).toEqual(['a', 'b'])
     engine.moveRow(['items'], 0, 1)
     expect(names()).toEqual(['b', 'a'])

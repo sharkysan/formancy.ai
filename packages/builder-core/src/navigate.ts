@@ -21,10 +21,7 @@ export interface Located {
 }
 
 /** The child list of the container at `keyPath` — the root list for []. */
-export function containerAt(
-  document: FormSchema,
-  keyPath: readonly string[],
-): FieldDef[] | undefined {
+export function containerAt(document: FormSchema, keyPath: readonly string[]): FieldDef[] | undefined {
   if (keyPath.length === 0) return document.model.fields
   const found = locate(document, keyPath)
   if (found === undefined) return undefined
@@ -112,9 +109,7 @@ export function rulePathOf(document: FormSchema, dataPath: string): string {
 
 /** The fields at one level of the data, with pages opened up: a page scopes nothing. */
 function throughPages(fields: readonly FieldDef[]): readonly FieldDef[] {
-  return fields.flatMap((field) =>
-    field.type === 'page' ? throughPages(field.fields ?? []) : [field],
-  )
+  return fields.flatMap((field) => (field.type === 'page' ? throughPages(field.fields ?? []) : [field]))
 }
 
 /**
@@ -146,10 +141,7 @@ export interface LocatedNode {
   node: LayoutNode
 }
 
-export function locateLayout(
-  document: FormSchema,
-  address: LayoutAddress,
-): LocatedNode | undefined {
+export function locateLayout(document: FormSchema, address: LayoutAddress): LocatedNode | undefined {
   if (address.path.length === 0) return undefined
   const siblings = layoutChildrenAt(document, address.layout, address.path.slice(0, -1))
   if (siblings === undefined) return undefined

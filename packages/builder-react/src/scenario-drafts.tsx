@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
-import {
-  createDraftRun,
-  draftExpectations,
-  draftProblems,
-  draftQuotes,
-  draftStatus,
-  draftVerdict,
-  draftsOn,
-} from '@formancy/builder-core'
+import { createDraftRun, draftExpectations, draftProblems, draftQuotes, draftStatus, draftVerdict, draftsOn } from '@formancy/builder-core'
 import type { AskModel, BuilderSession, DraftRun } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core/authoring'
 
@@ -59,16 +51,7 @@ export interface ScenarioDraftsProps {
   drafting?: DraftRun | undefined
 }
 
-export function ScenarioDrafts({
-  session,
-  scenarios,
-  onChange,
-  ask,
-  initialValue,
-  mode,
-  attempts,
-  drafting,
-}: ScenarioDraftsProps): ReactElement {
+export function ScenarioDrafts({ session, scenarios, onChange, ask, initialValue, mode, attempts, drafting }: ScenarioDraftsProps): ReactElement {
   const { text } = session
   const revision = useSyncExternalStore(
     (listener) => session.subscribe(listener),

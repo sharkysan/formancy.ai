@@ -136,18 +136,10 @@ export function arrangeDrop(input: {
   //
   // Across for a node already inside a row: the two halves a person aims at
   // there are its start and its end, not its top and bottom.
-  const edge = sideBySide
-    ? fromStart < box.width / 2
-      ? 'before'
-      : 'after'
-    : pointer.y < box.top + box.height / 2
-      ? 'before'
-      : 'after'
+  const edge = sideBySide ? (fromStart < box.width / 2 ? 'before' : 'after') : pointer.y < box.top + box.height / 2 ? 'before' : 'after'
 
   const location = layoutDropLocation(document, layout, dragged, over, edge)
-  return location === undefined
-    ? undefined
-    : { kind: 'move', location, edge, axis: sideBySide ? 'inline' : 'block' }
+  return location === undefined ? undefined : { kind: 'move', location, edge, axis: sideBySide ? 'inline' : 'block' }
 }
 
 /**
@@ -178,13 +170,7 @@ export function gapNeighbour<Node extends DrawnNode>(
 ): Node | undefined {
   // A hidden tab's panel, or anything else not drawn, reports a zero box at the origin,
   // and counting it stretches the extent over whatever lies between there and the rest.
-  const drawn = nodes.filter(
-    ({ path, box }) =>
-      path.length === container.length + 1 &&
-      layoutEncloses(container, path) &&
-      box.width > 0 &&
-      box.height > 0,
-  )
+  const drawn = nodes.filter(({ path, box }) => path.length === container.length + 1 && layoutEncloses(container, path) && box.width > 0 && box.height > 0)
 
   // One surface can hold two drawings of one form — the playground draws it in React and
   // in Angular, side by side. A node found twice means the pointer is between the
@@ -217,9 +203,7 @@ type Edges = Pick<Box, 'left' | 'right' | 'top' | 'bottom'>
 
 /** Edges included: a pointer on a border is on the element. */
 function contains(box: Edges, pointer: { readonly x: number; readonly y: number }): boolean {
-  return (
-    pointer.x >= box.left && pointer.x <= box.right && pointer.y >= box.top && pointer.y <= box.bottom
-  )
+  return pointer.x >= box.left && pointer.x <= box.right && pointer.y >= box.top && pointer.y <= box.bottom
 }
 
 /** Squared, since only the order matters. */

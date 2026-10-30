@@ -30,11 +30,7 @@ export interface LayoutTreeNode {
 }
 
 /** Every node of one layout, a container immediately followed by its contents. */
-export function flattenLayout(
-  schema: FormSchema,
-  layout: string,
-  text: BuilderText = createBuilderText(),
-): LayoutTreeNode[] {
+export function flattenLayout(schema: FormSchema, layout: string, text: BuilderText = createBuilderText()): LayoutTreeNode[] {
   const roots = nodesOfLayout(schema, layout)
   if (roots === undefined) return []
 
@@ -106,14 +102,9 @@ export function describeLayoutTarget(
 ): string {
   const naming = (path: string): string => nameOfPath(schema, path)
   const container = containerNodeAt(schema, location)
-  const where =
-    container === undefined
-      ? text('target.layout', { layout: location.layout })
-      : describeLayoutNode(container, naming, text)
+  const where = container === undefined ? text('target.layout', { layout: location.layout }) : describeLayoutNode(container, naming, text)
 
-  const siblings = (layoutChildrenAt(schema, location.layout, location.parent) ?? []).filter(
-    (_node, index) => !liftedFromHere(location, moving, index),
-  )
+  const siblings = (layoutChildrenAt(schema, location.layout, location.parent) ?? []).filter((_node, index) => !liftedFromHere(location, moving, index))
 
   if (siblings.length === 0) return text('target.firstItem', { where })
 
@@ -127,11 +118,7 @@ export function describeLayoutTarget(
 }
 
 /** Whether index `at` in this container is the node being moved out of it. */
-function liftedFromHere(
-  location: LayoutLocation,
-  moving: readonly number[] | undefined,
-  at: number,
-): boolean {
+function liftedFromHere(location: LayoutLocation, moving: readonly number[] | undefined, at: number): boolean {
   if (moving === undefined) return false
   if (moving.length !== location.parent.length + 1) return false
   if (!location.parent.every((step, index) => step === moving[index])) return false

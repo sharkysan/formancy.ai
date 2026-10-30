@@ -6,7 +6,6 @@ import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 import { FormancyErrorText } from './error-text.js'
 
-
 /**
  * Many answers from a set, as checkboxes or as a tag picker.
  *
@@ -153,9 +152,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
    * set on a disabled field, so each element is its own guard (B6a). Derived rather than
    * closed in answer to the rule, as the typeahead's is (0177).
    */
-  protected readonly expanded = computed(
-    () => this.open() && !this.field.snapshot().disabled && this.matches().length > 0,
-  )
+  protected readonly expanded = computed(() => this.open() && !this.field.snapshot().disabled && this.matches().length > 0)
   protected readonly listboxId = computed(() => `${this.control().id}:listbox`)
 
   /** In the typeahead's words: typing asks again, and what is left out is said while open. */
@@ -341,7 +338,6 @@ export class FormancySelectBoxesField extends FieldComponentBase {
     const snapshot = this.field.snapshot()
     return snapshot.touched && snapshot.errors.length > 0
   })
-
 
   protected readonly chosen = computed<readonly unknown[]>(() => {
     const value = this.field.snapshot().value

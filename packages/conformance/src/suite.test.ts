@@ -125,9 +125,7 @@ describe('describeConformance', () => {
       skip: { [failing.name]: 'no wizard support yet' },
     })
 
-    expect(skips).toEqual([
-      { name: `${failing.name} [skipped: no wizard support yet]`, reason: 'no wizard support yet' },
-    ])
+    expect(skips).toEqual([{ name: `${failing.name} [skipped: no wizard support yet]`, reason: 'no wizard support yet' }])
     // The skipped case is not also registered as a runnable test.
     expect(spy.cases.map((entry) => entry.name)).toEqual([passing.name])
   })
@@ -165,9 +163,7 @@ describe('describeConformance', () => {
   test('refuses an empty suite, which would report a renderer as conformant for free', () => {
     const spy = recorder()
 
-    expect(() => describeConformance(createFakeDriver(), { test: spy.api, fixtures: [] })).toThrow(
-      /no fixtures/,
-    )
+    expect(() => describeConformance(createFakeDriver(), { test: spy.api, fixtures: [] })).toThrow(/no fixtures/)
   })
 
   /**
@@ -205,10 +201,7 @@ describe('describeConformance', () => {
     test('wires the global test.skip, so vitest and jest report a real skip', () => {
       const spy = recorder()
       const skipped: string[] = []
-      const testFn = Object.assign(
-        (name: string, body: () => Promise<void> | void) => spy.api.test(name, body),
-        { skip: (name: string) => skipped.push(name) },
-      )
+      const testFn = Object.assign((name: string, body: () => Promise<void> | void) => spy.api.test(name, body), { skip: (name: string) => skipped.push(name) })
 
       withGlobals({ describe: spy.api.describe, test: testFn }, () => {
         describeConformance(createFakeDriver(), {
@@ -232,9 +225,7 @@ describe('describeConformance', () => {
     })
 
     test('says how to inject one when there is no framework at all', () => {
-      expect(() => describeConformance(createFakeDriver(), { fixtures: [passing] })).toThrow(
-        /describeConformance\(driver, \{ test/,
-      )
+      expect(() => describeConformance(createFakeDriver(), { fixtures: [passing] })).toThrow(/describeConformance\(driver, \{ test/)
     })
   })
 

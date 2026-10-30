@@ -61,7 +61,6 @@ function typeInto(spy: Spy, mount: RichTextEditorMount, text: string): void {
   mount.onChange(text)
 }
 
-
 function spyFactory(spy: Spy): RichTextEditorFactory {
   return (mount): RichTextEditorHandle => {
     spy.mounts.push(mount)
@@ -91,11 +90,7 @@ const engineFor = (schema: FormSchema): FormEngine =>
 
 async function renderForm(engine: FormEngine, factory?: RichTextEditorFactory) {
   const view = await render(FormancyForm, {
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine),
-      ...(factory === undefined ? [] : [provideFormancyRichTextEditor(factory)]),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(factory === undefined ? [] : [provideFormancyRichTextEditor(factory)])],
   })
   await view.fixture.whenStable()
   return view
@@ -155,7 +150,6 @@ describe('with a host editor', () => {
     expect(spy.mounts[0]!.attributes['id']).toBe(snapshot.props.control.id)
     expect(spy.mounts[0]!.attributes['aria-labelledby']).toBe(snapshot.props.label.id)
   })
-
 
   test('names the editing surface so a theme can style it', async () => {
     const spy = fresh()

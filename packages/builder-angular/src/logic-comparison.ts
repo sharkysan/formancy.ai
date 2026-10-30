@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core'
-import {
-  comparisonLabel,
-  operatorLabel,
-  operatorTakesValue,
-  operatorsFor,
-} from '@formancy/builder-core'
+import { comparisonLabel, operatorLabel, operatorTakesValue, operatorsFor } from '@formancy/builder-core'
 import type { BuilderText, ConditionField, ConditionRow, Operator } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -109,9 +104,7 @@ export class FormancyLogicComparison {
   readonly changed = output<Partial<ConditionRow>>()
   readonly removed = output<void>()
 
-  protected readonly field = computed(() =>
-    this.fields().find((candidate) => candidate.path === this.row().field),
-  )
+  protected readonly field = computed(() => this.fields().find((candidate) => candidate.path === this.row().field))
   protected readonly operators = computed(() => operatorsFor(this.field()?.kind ?? 'other'))
   protected readonly takesValue = computed(() => operatorTakesValue(this.row().operator))
   protected readonly control = computed(() => {

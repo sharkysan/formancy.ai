@@ -156,9 +156,7 @@ describe('the layout property panel', () => {
     // A panel that threw would take the whole builder down when an undo removed the
     // node it was showing.
     const session = createBuilderSession(schema)
-    const { container } = render(
-      <LayoutPropertyPanel session={session} address={{ layout: 'web', path: [9] }} />,
-    )
+    const { container } = render(<LayoutPropertyPanel session={session} address={{ layout: 'web', path: [9] }} />)
 
     expect(container.firstChild).toBeNull()
   })

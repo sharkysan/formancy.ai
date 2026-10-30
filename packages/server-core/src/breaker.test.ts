@@ -1,12 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  BREAKER_COOLDOWN_MS,
-  BREAKER_THRESHOLD,
-  afterWebhookAttempt,
-  breakerState,
-  healthOf,
-  mayAttempt,
-} from './breaker.js'
+import { BREAKER_COOLDOWN_MS, BREAKER_THRESHOLD, afterWebhookAttempt, breakerState, healthOf, mayAttempt } from './breaker.js'
 import type { WebhookRecord } from './ports.js'
 
 /**

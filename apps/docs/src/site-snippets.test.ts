@@ -23,12 +23,8 @@ const packages = new Map(
     .filter((entry) => entry.isDirectory())
     .flatMap((entry) => {
       try {
-        const manifest = JSON.parse(
-          readFileSync(join(repo, 'packages', entry.name, 'package.json'), 'utf8'),
-        ) as { name?: string; private?: boolean }
-        return manifest.name === undefined
-          ? []
-          : [[manifest.name, { dir: entry.name, published: manifest.private !== true }] as const]
+        const manifest = JSON.parse(readFileSync(join(repo, 'packages', entry.name, 'package.json'), 'utf8')) as { name?: string; private?: boolean }
+        return manifest.name === undefined ? [] : [[manifest.name, { dir: entry.name, published: manifest.private !== true }] as const]
       } catch {
         return []
       }
@@ -47,11 +43,7 @@ function exportsOf(name: string): Set<string> {
   const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest)
   const names = new Set<string>()
   for (const statement of source.statements) {
-    if (
-      ts.isExportDeclaration(statement) &&
-      statement.exportClause !== undefined &&
-      ts.isNamedExports(statement.exportClause)
-    ) {
+    if (ts.isExportDeclaration(statement) && statement.exportClause !== undefined && ts.isNamedExports(statement.exportClause)) {
       for (const element of statement.exportClause.elements) names.add(element.name.text)
     }
   }
@@ -60,13 +52,12 @@ function exportsOf(name: string): Set<string> {
 
 /** `import { A, B } from '@formancy/x'` in a snippet, as `[name, package]` pairs. */
 function formancyImports(snippet: string): Array<[string, string]> {
-  return [...snippet.matchAll(/import \{([^}]*)\} from '(@formancy\/[^']+)'/g)].flatMap(
-    ([, names, from]) =>
-      (names ?? '')
-        .split(',')
-        .map((name) => name.trim())
-        .filter((name) => name !== '')
-        .map((name): [string, string] => [name, from ?? '']),
+  return [...snippet.matchAll(/import \{([^}]*)\} from '(@formancy\/[^']+)'/g)].flatMap(([, names, from]) =>
+    (names ?? '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter((name) => name !== '')
+      .map((name): [string, string] => [name, from ?? '']),
   )
 }
 

@@ -63,7 +63,10 @@ describe('a skipped page', () => {
     // Skipped: nobody has said they need a visa, so the rule is true. The page
     // is still THERE — `page()` is an absolute index — and it is marked.
     const live = (): string[] =>
-      engine.pages().filter((page) => !page.skipped).map((page) => page.key)
+      engine
+        .pages()
+        .filter((page) => !page.skipped)
+        .map((page) => page.key)
 
     expect(live()).toEqual(['p1', 'p3'])
 

@@ -12,9 +12,7 @@ export interface CheckOptions {
   readonly kind: ExpressionKind
 }
 
-export type CheckOutcome =
-  | { readonly ok: true; readonly type: ResultType }
-  | { readonly ok: false; readonly error: ExpressionError }
+export type CheckOutcome = { readonly ok: true; readonly type: ResultType } | { readonly ok: false; readonly error: ExpressionError }
 
 /**
  * Check a parsed expression against the environment it was parsed with and
@@ -74,12 +72,7 @@ export function check(ast: ExpressionAst, options: CheckOptions): CheckOutcome {
  * shared. A name that reaches evaluation is therefore one that two independent
  * gates agreed on.
  */
-function findForbiddenCall(
-  node: CelNode,
-  policy: KindPolicy,
-  kind: ExpressionKind,
-  source: string,
-): ExpressionError | undefined {
+function findForbiddenCall(node: CelNode, policy: KindPolicy, kind: ExpressionKind, source: string): ExpressionError | undefined {
   const called = calledFunctionName(node)
   if (called !== undefined && !policy.allowedFunctions.has(called)) {
     return new ExpressionError({
@@ -112,11 +105,7 @@ function celErrorNode(error: unknown): CelNode | undefined {
  * nothing. The missing overload is deliberate — see `decimal.ts` — so the
  * error has to carry the way to write what they meant.
  */
-function hintForTypeError(
-  message: string,
-  parsed: ParsedExpression,
-  offending: CelNode | undefined,
-): string | undefined {
+function hintForTypeError(message: string, parsed: ParsedExpression, offending: CelNode | undefined): string | undefined {
   if (!/no such overload:.*\bdecimal\b/.test(message)) return undefined
 
   if (/decimal \/ decimal/.test(message)) {
@@ -147,11 +136,7 @@ function hintForTypeError(
 function operandNumericLiteral(node: CelNode, source: string): string | undefined {
   for (const child of childNodes(node)) {
     const literal = child.op === '-_' ? (child.args as CelNode) : child
-    if (
-      isCelNode(literal) &&
-      literal.op === 'value' &&
-      (typeof literal.args === 'number' || typeof literal.args === 'bigint')
-    ) {
+    if (isCelNode(literal) && literal.op === 'value' && (typeof literal.args === 'number' || typeof literal.args === 'bigint')) {
       return source.slice(child.start, child.end)
     }
   }
@@ -182,16 +167,11 @@ function findDecimalEqualityMismatch(node: CelNode, source: string): ExpressionE
     const [left, right] = node.args as [CelNode, CelNode]
     const leftType = checkedTypeName(left)
     const rightType = checkedTypeName(right)
-    if (
-      leftType !== undefined &&
-      rightType !== undefined &&
-      (leftType === 'decimal') !== (rightType === 'decimal')
-    ) {
+    if (leftType !== undefined && rightType !== undefined && (leftType === 'decimal') !== (rightType === 'decimal')) {
       const other = leftType === 'decimal' ? right : left
       const otherType = leftType === 'decimal' ? rightType : leftType
       const written = source.slice(other.start, other.end)
-      const isNumericLiteral =
-        other.op === 'value' && (typeof other.args === 'number' || typeof other.args === 'bigint')
+      const isNumericLiteral = other.op === 'value' && (typeof other.args === 'number' || typeof other.args === 'bigint')
       const suggestion = isNumericLiteral ? `dec(${JSON.stringify(written)})` : `dec(${written})`
       return new ExpressionError({
         kind: 'type',

@@ -95,9 +95,7 @@ function renderProperty(name, rawNode, requiredNames) {
       const itemTitle = itemChild.title ?? resolved.title ?? itemName
       const itemDescription = itemChild.description ?? resolved.description ?? ''
       const need = itemRequired.includes(itemName) ? 'required' : 'optional'
-      lines.push(
-        `- \`${itemName}\` — ${need} · **${itemTitle}.** ${itemDescription}`.trimEnd(),
-      )
+      lines.push(`- \`${itemName}\` — ${need} · **${itemTitle}.** ${itemDescription}`.trimEnd())
     }
   }
 
@@ -114,9 +112,7 @@ function renderProperties(node, heading = '####') {
 
 /** A oneOf of constants (field types, rule kinds, formats) as a value list. */
 function renderConstants(oneOf) {
-  return oneOf
-    .map((branch) => `- \`"${branch.const}"\` — **${branch.title}.** ${branch.description ?? ''}`.trim())
-    .join('\n')
+  return oneOf.map((branch) => `- \`"${branch.const}"\` — **${branch.title}.** ${branch.description ?? ''}`.trim()).join('\n')
 }
 
 const out = []
@@ -168,9 +164,7 @@ out.push('')
 
 // Per-type conditional properties, from the field's allOf if/then blocks.
 out.push(`### Per-type properties\n`)
-out.push(
-  `Some properties only exist on some types. The schema states these as conditional blocks; they are listed here per type.\n`,
-)
+out.push(`Some properties only exist on some types. The schema states these as conditional blocks; they are listed here per type.\n`)
 for (const block of field.allOf ?? []) {
   const condition = block.if?.properties?.type
   const types = condition?.enum ?? (condition?.const !== undefined ? [condition.const] : [])
@@ -262,9 +256,7 @@ function renderRuleBranch(node) {
   const overrides = entries.filter(([, child]) => child !== true && child !== false)
   if (overrides.length > 0) {
     lines.push('')
-    lines.push(
-      renderProperties({ properties: Object.fromEntries(overrides), required }, '#####'),
-    )
+    lines.push(renderProperties({ properties: Object.fromEntries(overrides), required }, '#####'))
   }
   lines.push('')
   return lines.join('\n')
@@ -279,10 +271,7 @@ function renderRuleBranch(node) {
 const ruleBlocks = logicRule.allOf ?? []
 if (ruleBlocks.length > 0) {
   out.push(`### Per-kind properties\n`)
-  out.push(
-    `Some of a rule's properties depend on its kind. The schema states these as a ` +
-      `conditional block; they are listed here per kind.\n`,
-  )
+  out.push(`Some of a rule's properties depend on its kind. The schema states these as a ` + `conditional block; they are listed here per kind.\n`)
 }
 for (const block of ruleBlocks) {
   const condition = block.if?.properties?.kind
@@ -327,7 +316,8 @@ for (const [name, def] of Object.entries(defs)) {
       if (branch.properties === undefined) continue
       out.push(`#### ${branch.title ?? 'Variant'}
 `)
-      if (branch.description !== undefined) out.push(`${branch.description}
+      if (branch.description !== undefined)
+        out.push(`${branch.description}
 `)
       out.push(renderProperties(branch, '#####'))
     }

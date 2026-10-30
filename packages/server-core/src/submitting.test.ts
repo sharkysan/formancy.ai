@@ -235,7 +235,12 @@ describe('a default is never stored by the server (0197)', () => {
   const withDefault: FormSchema = {
     ...schema,
     specVersion: '5',
-    model: { fields: [{ key: 'email', type: 'text', required: true }, { key: 'note', type: 'text', default: 'none' }] },
+    model: {
+      fields: [
+        { key: 'email', type: 'text', required: true },
+        { key: 'note', type: 'text', default: 'none' },
+      ],
+    },
   }
 
   test('a response without the answer is stored without it', async () => {

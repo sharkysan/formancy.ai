@@ -27,7 +27,15 @@ const form: FormSchema = {
           { value: 'DE', label: 'Germany' },
         ],
       },
-      { key: 'topics', type: 'selectboxes', label: 'Topics', options: [{ value: 'a', label: 'Apples' }, { value: 'b', label: 'Bread' }] },
+      {
+        key: 'topics',
+        type: 'selectboxes',
+        label: 'Topics',
+        options: [
+          { value: 'a', label: 'Apples' },
+          { value: 'b', label: 'Bread' },
+        ],
+      },
       { key: 'qty', type: 'number', label: 'Quantity' },
       { key: 'agree', type: 'checkbox', label: 'I agree' },
       { key: 'arrive', type: 'date', label: 'Arriving' },
@@ -53,7 +61,10 @@ const data = {
   proof: [{ id: 'f', name: 'receipt.pdf', size: 3, contentType: 'application/pdf', storageKey: 'k' }],
   sign: { typed: 'Ada Lovelace' },
   address: { city: 'Basel' },
-  items: [{ _id: 'r1', sku: 'A-1' }, { _id: 'r2', sku: 'B-2' }],
+  items: [
+    { _id: 'r1', sku: 'A-1' },
+    { _id: 'r2', sku: 'B-2' },
+  ],
   email: 'ada@example.com',
 }
 

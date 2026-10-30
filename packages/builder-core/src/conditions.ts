@@ -69,18 +69,7 @@ export function isGroup(item: Condition | ConditionGroup): item is ConditionGrou
  * narrowing the typed `10` to a number compared a string field to a double — a type
  * error CEL catches at save time, for a condition the author built correctly.
  */
-export type AnswerKind =
-  | 'text'
-  | 'number'
-  | 'boolean'
-  | 'choice'
-  | 'list'
-  | 'date'
-  | 'time'
-  | 'datetime'
-  | 'files'
-  | 'map'
-  | 'other'
+export type AnswerKind = 'text' | 'number' | 'boolean' | 'choice' | 'list' | 'date' | 'time' | 'datetime' | 'files' | 'map' | 'other'
 
 export function answerKindOf(def: Pick<FieldDef, 'type'>): AnswerKind {
   switch (def.type) {
@@ -124,16 +113,7 @@ export function answerKindOf(def: Pick<FieldDef, 'type'>): AnswerKind {
  */
 const BY_KIND: Readonly<Record<AnswerKind, readonly Operator[]>> = {
   text: ['is', 'isNot', 'contains', 'doesNotContain', 'isAnswered', 'isNotAnswered'],
-  number: [
-    'is',
-    'isNot',
-    'isMoreThan',
-    'isLessThan',
-    'isAtLeast',
-    'isAtMost',
-    'isAnswered',
-    'isNotAnswered',
-  ],
+  number: ['is', 'isNot', 'isMoreThan', 'isLessThan', 'isAtLeast', 'isAtMost', 'isAnswered', 'isNotAnswered'],
   boolean: ['is', 'isNot'],
   choice: ['is', 'isNot', 'isAnswered', 'isNotAnswered'],
   list: ['includes', 'doesNotInclude', 'isAnswered', 'isNotAnswered'],
@@ -264,23 +244,13 @@ function compiled(condition: Condition): Compiled {
   // fresh row and the rule failed open
   // ([0129](../../../docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
   // A map is the same: `size()` answers for one nobody touched, which is `{}`.
-  const isList =
-    condition.answer === 'list' || condition.answer === 'files' || condition.answer === 'map'
+  const isList = condition.answer === 'list' || condition.answer === 'files' || condition.answer === 'map'
   const neverNull = isList && !inRow
-  const present = neverNull
-    ? inGroup
-      ? `has(${path})`
-      : ''
-    : inGroup
-      ? `has(${path}) && ${path} != null`
-      : `${path} != null`
+  const present = neverNull ? (inGroup ? `has(${path})` : '') : inGroup ? `has(${path}) && ${path} != null` : `${path} != null`
   const absent = inGroup ? `!has(${path}) || ${path} == null` : `${path} == null`
   // A read of a value nobody gave, only where a missing value would throw or answer
   // wrongly: `==` and `!=` against null already answer at the top level.
-  const read = (expression: string): Compiled =>
-    present === ''
-      ? { cel: expression, top: 'atom' }
-      : { cel: `${present} && ${expression}`, top: 'and' }
+  const read = (expression: string): Compiled => (present === '' ? { cel: expression, top: 'atom' } : { cel: `${present} && ${expression}`, top: 'and' })
 
   switch (condition.operator) {
     case 'isAnswered':
@@ -292,17 +262,13 @@ function compiled(condition: Condition): Compiled {
     case 'isNotAnswered':
       if (isList) {
         if (!neverNull) return { cel: `${absent} || size(${path}) == 0`, top: 'or' }
-        return inGroup
-          ? { cel: `!has(${path}) || size(${path}) == 0`, top: 'or' }
-          : { cel: `size(${path}) == 0`, top: 'atom' }
+        return inGroup ? { cel: `!has(${path}) || size(${path}) == 0`, top: 'or' } : { cel: `size(${path}) == 0`, top: 'atom' }
       }
       return { cel: absent, top: inGroup ? 'or' : 'atom' }
     case 'is':
       return inGroup ? read(`${path} == ${value}`) : { cel: `${path} == ${value}`, top: 'atom' }
     case 'isNot':
-      return inGroup
-        ? { cel: `${absent} || ${path} != ${value}`, top: 'or' }
-        : { cel: `${path} != ${value}`, top: 'atom' }
+      return inGroup ? { cel: `${absent} || ${path} != ${value}`, top: 'or' } : { cel: `${path} != ${value}`, top: 'atom' }
     case 'isMoreThan':
     case 'isAfter':
       return read(`${path} > ${value}`)
@@ -348,15 +314,11 @@ function compiledGroup(group: ConditionGroup, depth: number): Compiled {
     throw new Error('A group inside a group inside a group cannot be compiled.')
   }
 
-  const parts = group.conditions.map((item) =>
-    isGroup(item) ? nested(compiledGroup(item, depth + 1), item) : compiled(item),
-  )
+  const parts = group.conditions.map((item) => (isGroup(item) ? nested(compiledGroup(item, depth + 1), item) : compiled(item)))
   if (parts.length === 1) return parts[0]!
 
   const join = group.join === 'all' ? 'and' : 'or'
-  const cel = parts
-    .map((part) => (join === 'and' && part.top === 'or' ? `(${part.cel})` : part.cel))
-    .join(join === 'and' ? ' && ' : ' || ')
+  const cel = parts.map((part) => (join === 'and' && part.top === 'or' ? `(${part.cel})` : part.cel)).join(join === 'and' ? ' && ' : ' || ')
   return { cel, top: join }
 }
 

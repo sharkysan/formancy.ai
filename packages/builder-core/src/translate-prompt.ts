@@ -110,8 +110,7 @@ export const TRANSLATION_COMPLAINTS = {
     `That was not the catalogue file: ${why} Answer with "locale", "defaultLocale" and "messages", each message with "id", "source" and "target" as strings.`,
   noLocale: 'it has no "locale".',
   noMessages: 'it has no "messages" list.',
-  badMessage: (index: number): string =>
-    `message ${String(index + 1)} does not have "id", "source" and "target" as strings.`,
+  badMessage: (index: number): string => `message ${String(index + 1)} does not have "id", "source" and "target" as strings.`,
   wrongLocale: (got: string, asked: string): string =>
     `That catalogue is for "${got}", and this request is for "${asked}". Answer with the same file, "locale": "${asked}", every target written in that language.`,
   unexplainedDecline: `A decline needs a reason, written for the person who asked. If you cannot translate into this language, answer ${JSON.stringify({ [DECLINE_KEY]: '<why, for the person who asked>' })}; if you can, answer with the catalogue file.`,
@@ -151,12 +150,7 @@ function placesOf(document: FormSchema): Map<string, string[]> {
   const places = new Map<string, string[]>()
 
   /** `value`, reached through `property` of `parent`, inside `around`. */
-  const walk = (
-    value: unknown,
-    around: Around,
-    property: string,
-    parent: Record<string, unknown>,
-  ): void => {
+  const walk = (value: unknown, around: Around, property: string, parent: Record<string, unknown>): void => {
     if (Array.isArray(value)) {
       for (const item of value) walk(item, around, property, parent)
       return
@@ -197,11 +191,7 @@ function referenceIn(value: unknown): string | undefined {
 }
 
 /** What an object is to the walk: a field, a layout node, or a part of the one around it. */
-function holder(
-  record: Record<string, unknown>,
-  around: Around,
-  said: (text: unknown, fallback: string) => string,
-): Around {
+function holder(record: Record<string, unknown>, around: Around, said: (text: unknown, fallback: string) => string): Around {
   const { key, type, kind, label } = record
   if (typeof key === 'string' && typeof type === 'string') {
     return { field: { type, name: said(label, key) } }

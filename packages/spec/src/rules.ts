@@ -23,13 +23,7 @@ export interface FormLogic {
  * kind it has never heard of has no safe answer: ignoring the rule renders a form
  * that behaves differently from the one the author built, and guessing is worse.
  */
-export const SPEC_2_RULE_KINDS = [
-  'visible',
-  'disabled',
-  'required',
-  'computed',
-  'validate',
-] as const
+export const SPEC_2_RULE_KINDS = ['visible', 'disabled', 'required', 'computed', 'validate'] as const
 
 /**
  * Every rule kind, including `check` — a validator the deployment answers.

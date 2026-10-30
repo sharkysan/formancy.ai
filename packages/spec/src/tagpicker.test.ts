@@ -126,9 +126,7 @@ describe('the tag picker', () => {
         id: 'tags',
         title: 'Tags',
         model: {
-          fields: [
-            { key: 'topics', type: 'selectboxes', widget: 'tagpicker', optionsSource: 'topics' },
-          ],
+          fields: [{ key: 'topics', type: 'selectboxes', widget: 'tagpicker', optionsSource: 'topics' }],
         },
       } as unknown as FormSchema),
     ).toEqual([])

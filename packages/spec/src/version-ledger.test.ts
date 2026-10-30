@@ -61,9 +61,7 @@ describe('everything a document can say belongs to a version', () => {
   })
 
   test('a field’s properties, on every type the schema allows them', () => {
-    expect(keys(FIELD_PROPERTY_SINCE)).toEqual(
-      [...new Set([...declared(defs['field']), ...declared(defs['containerField'])])].sort(),
-    )
+    expect(keys(FIELD_PROPERTY_SINCE)).toEqual([...new Set([...declared(defs['field']), ...declared(defs['containerField'])])].sort())
   })
 
   test('an option’s, a matrix row’s, a rule’s and a layout node’s', () => {
@@ -77,9 +75,7 @@ describe('everything a document can say belongs to a version', () => {
     // The two that were attributed by fallback: any rule kind outside version 2's list was
     // taken to be version 3's, and any layout kind outside version 1's to be version 2's.
     const ruleKinds = constants((defs['logicRule']?.['properties'] as Node)['kind'])
-    const layoutKinds = ((defs['layoutNode']?.['oneOf'] as Node[] | undefined) ?? []).flatMap(
-      (branch) => constants((branch['properties'] as Node)['kind']),
-    )
+    const layoutKinds = ((defs['layoutNode']?.['oneOf'] as Node[] | undefined) ?? []).flatMap((branch) => constants((branch['properties'] as Node)['kind']))
     expect(keys(RULE_KIND_SINCE)).toEqual([...ruleKinds].sort())
     expect(keys(LAYOUT_KIND_SINCE)).toEqual([...layoutKinds].sort())
   })
@@ -118,28 +114,20 @@ const sample = (property: string): unknown => SAMPLE[property] ?? true
 
 /** A layout node of a kind, with what that kind must have to be walked. */
 const nodeOf = (kind: string): Node =>
-  kind === 'field' || kind === 'qrcode'
-    ? { kind, path: 'f' }
-    : kind === 'table'
-      ? { kind, columns: 1, children: [] }
-      : { kind, children: [] }
+  kind === 'field' || kind === 'qrcode' ? { kind, path: 'f' } : kind === 'table' ? { kind, columns: 1, children: [] } : { kind, children: [] }
 
 describe('and is refused by name one version earlier', () => {
-  const at = (specVersion: number): FormSchema =>
-    ({ specVersion: String(specVersion), id: 'v', title: 'V', model: { fields: [] } }) as unknown as FormSchema
+  const at = (specVersion: number): FormSchema => ({ specVersion: String(specVersion), id: 'v', title: 'V', model: { fields: [] } }) as unknown as FormSchema
 
   const fieldCases = keys(FIELD_PROPERTY_SINCE)
     .filter((property) => !['widget', 'type', 'fields'].includes(property))
-    .flatMap((property) =>
-      [...new Set(typesCarrying(property))].map((type) => ({ property, type })),
-    )
+    .flatMap((property) => [...new Set(typesCarrying(property))].map((type) => ({ property, type })))
 
   test.each(fieldCases)('$property on a $type field', ({ property, type }) => {
     const field = { key: 'f', type, [property]: sample(property) } as unknown as FieldDef
     const since = fieldPropertySince(property as keyof FieldDef, type)
     const path = '/model/fields/0'
-    const errors = (version: number) =>
-      versionErrors(at(version), [{ field, path }]).map((error) => error.path)
+    const errors = (version: number) => versionErrors(at(version), [{ field, path }]).map((error) => error.path)
 
     if (since > 1) expect(errors(since - 1).some((where) => where.startsWith(path))).toBe(true)
     expect(errors(since).filter((where) => where.startsWith(`${path}/${property}`))).toEqual([])
@@ -153,8 +141,7 @@ describe('and is refused by name one version earlier', () => {
     } as unknown as FieldDef
     const since = OPTION_PROPERTY_SINCE[property as keyof typeof OPTION_PROPERTY_SINCE]
     const path = '/model/fields/0'
-    const errors = (version: number) =>
-      versionErrors(at(version), [{ field, path }]).map((error) => error.path)
+    const errors = (version: number) => versionErrors(at(version), [{ field, path }]).map((error) => error.path)
 
     if (since > 1) expect(errors(since - 1)).toContain(`${path}/options/0/${property}`)
     expect(errors(since)).toEqual([])
@@ -164,14 +151,8 @@ describe('and is refused by name one version earlier', () => {
     // On the kind that carries it: `check` belongs to a check rule.
     const kind = property === 'check' ? 'check' : 'validate'
     const rule = { target: 'f', kind, [property]: property === 'kind' ? kind : true }
-    const since = Math.max(
-      RULE_PROPERTY_SINCE[property as keyof typeof RULE_PROPERTY_SINCE],
-      RULE_KIND_SINCE[kind],
-    )
-    const errors = (version: number) =>
-      versionErrors({ ...at(version), logic: { rules: [rule] } } as FormSchema, []).map(
-        (error) => error.path,
-      )
+    const since = Math.max(RULE_PROPERTY_SINCE[property as keyof typeof RULE_PROPERTY_SINCE], RULE_KIND_SINCE[kind])
+    const errors = (version: number) => versionErrors({ ...at(version), logic: { rules: [rule] } } as FormSchema, []).map((error) => error.path)
 
     if (since > 1) expect(errors(since - 1).some((where) => where.startsWith('/logic/rules/0'))).toBe(true)
     expect(errors(since)).toEqual([])
@@ -180,9 +161,7 @@ describe('and is refused by name one version earlier', () => {
   test.each(keys(RULE_KIND_SINCE))('a %s rule', (kind) => {
     const since = RULE_KIND_SINCE[kind as keyof typeof RULE_KIND_SINCE]
     const errors = (version: number) =>
-      versionErrors({ ...at(version), logic: { rules: [{ target: 'f', kind }] } } as FormSchema, []).map(
-        (error) => error.path,
-      )
+      versionErrors({ ...at(version), logic: { rules: [{ target: 'f', kind }] } } as FormSchema, []).map((error) => error.path)
 
     if (since > 1) expect(errors(since - 1)).toEqual(['/logic/rules/0/kind'])
     expect(errors(since)).toEqual([])
@@ -192,15 +171,9 @@ describe('and is refused by name one version earlier', () => {
     // On a node of the oldest kind that may carry it, so the property's version shows.
     const kind = property === 'columns' ? 'table' : property === 'path' ? 'field' : 'section'
     const node = { ...nodeOf(kind), [property]: property === 'kind' ? kind : sample(property) }
-    const since = Math.max(
-      LAYOUT_NODE_PROPERTY_SINCE[property as keyof typeof LAYOUT_NODE_PROPERTY_SINCE],
-      LAYOUT_KIND_SINCE[kind],
-    )
+    const since = Math.max(LAYOUT_NODE_PROPERTY_SINCE[property as keyof typeof LAYOUT_NODE_PROPERTY_SINCE], LAYOUT_KIND_SINCE[kind])
     const errors = (version: number) =>
-      versionErrors(
-        { ...at(version), layouts: [{ name: 'default', nodes: [node] }] } as unknown as FormSchema,
-        [],
-      ).map((error) => error.path)
+      versionErrors({ ...at(version), layouts: [{ name: 'default', nodes: [node] }] } as unknown as FormSchema, []).map((error) => error.path)
 
     if (since > 1) expect(errors(since - 1).some((where) => where.startsWith('/layouts/0/nodes/0'))).toBe(true)
     expect(errors(since)).toEqual([])
@@ -209,10 +182,7 @@ describe('and is refused by name one version earlier', () => {
   test.each(keys(LAYOUT_KIND_SINCE))('a %s layout node', (kind) => {
     const since = LAYOUT_KIND_SINCE[kind as keyof typeof LAYOUT_KIND_SINCE]
     const errors = (version: number) =>
-      versionErrors(
-        { ...at(version), layouts: [{ name: 'default', nodes: [nodeOf(kind)] }] } as unknown as FormSchema,
-        [],
-      ).map((error) => error.path)
+      versionErrors({ ...at(version), layouts: [{ name: 'default', nodes: [nodeOf(kind)] }] } as unknown as FormSchema, []).map((error) => error.path)
 
     if (since > 1) expect(errors(since - 1)).toEqual(['/layouts/0/nodes/0/kind'])
     expect(errors(since)).toEqual([])

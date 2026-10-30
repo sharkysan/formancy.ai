@@ -64,7 +64,10 @@ describe('checking the answers', () => {
     expect(document.activeElement).toBe(heading)
     expect(screen.getAllByRole('term').map((term) => term.textContent?.trim())).toEqual(['Name', 'Country', 'Nights'])
     expect(
-      screen.getAllByRole('definition').map((definition) => definition.textContent?.trim()).filter((said) => !said?.startsWith('Change')),
+      screen
+        .getAllByRole('definition')
+        .map((definition) => definition.textContent?.trim())
+        .filter((said) => !said?.startsWith('Change')),
     ).toEqual(['Ada', 'Switzerland', '3'])
     expect(sent).toEqual([])
 
@@ -75,7 +78,12 @@ describe('checking the answers', () => {
   test('shows the problem instead, when there is one', async () => {
     const required: FormSchema = {
       ...paged,
-      model: { fields: [paged.model.fields[0]!, { key: 'stay', type: 'page', label: 'Your stay', fields: [{ key: 'nights', type: 'number', label: 'Nights', required: true }] }] },
+      model: {
+        fields: [
+          paged.model.fields[0]!,
+          { key: 'stay', type: 'page', label: 'Your stay', fields: [{ key: 'nights', type: 'number', label: 'Nights', required: true }] },
+        ],
+      },
     }
     const { click, toLastPage } = await mount(required, true, { name: 'Ada' })
     await toLastPage()

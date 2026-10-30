@@ -124,9 +124,7 @@ function replay(rules: readonly unknown[], fees: readonly unknown[], repeater: R
 
 /** The page's own example, taken out of its two code blocks: the repeater, then the rules. */
 function pageExample(): { repeater: Record<string, unknown>; rules: LogicRule[] } {
-  const blocks = [...section('No function adds up a list').matchAll(/```jsonc\n([\s\S]*?)\n```/g)].map(
-    (match) => match[1]!,
-  )
+  const blocks = [...section('No function adds up a list').matchAll(/```jsonc\n([\s\S]*?)\n```/g)].map((match) => match[1]!)
   expect(blocks, 'the workaround is a repeater and its rules, one block each').toHaveLength(2)
   const [repeater, rules] = blocks as [string, string]
   return {
@@ -259,10 +257,7 @@ describe('what logic.md says about adding up a list', () => {
       schema: {
         ...feeForm([]),
         model: {
-          fields: [
-            ...feeForm([]).model.fields,
-            { key: 'overLimit', type: 'checkbox', label: 'Over the limit' },
-          ],
+          fields: [...feeForm([]).model.fields, { key: 'overLimit', type: 'checkbox', label: 'Over the limit' }],
         },
         logic: { rules: [{ target: 'overLimit', kind: 'computed', cel: asked! }] },
       } as unknown as FormSchema,
@@ -284,9 +279,7 @@ describe('what logic.md says about adding up a list', () => {
   test('a running total down the rows is refused as a cycle', () => {
     // The other way round the missing function, and the page says it does not work: a row
     // reading the repeater reads every row, its own included.
-    const why = refusal([
-      { target: 'fees[].amount', kind: 'computed', cel: 'index == 0 ? 0.0 : fees[index - 1].amount + 1.0' },
-    ])
+    const why = refusal([{ target: 'fees[].amount', kind: 'computed', cel: 'index == 0 ? 0.0 : fees[index - 1].amount + 1.0' }])
     expect(why).toMatch(/cycle/i)
   })
 
@@ -294,17 +287,12 @@ describe('what logic.md says about adding up a list', () => {
     // The trick the page names so nobody mistakes it for a total. It is exact for whole
     // numbers no larger than the literal, and a literal longer than the limit is refused.
     const literal = (length: number) => `"${'x'.repeat(length)}"`
-    const counted = (length: number) =>
-      `double(size(fees.map(f, ${literal(length)}.substring(0, int(f.amount))).join("")))`
+    const counted = (length: number) => `double(size(fees.map(f, ${literal(length)}.substring(0, int(f.amount))).join("")))`
     expect(replay([{ target: 'total', kind: 'computed', cel: counted(50) }], FOUR_FEES)).toEqual({
       total: 100,
       errors: {},
     })
-    expect(refusal([{ target: 'total', kind: 'computed', cel: counted(DEFAULT_LIMITS.maxStringLiteralLength) }])).toBe(
-      undefined,
-    )
-    expect(
-      refusal([{ target: 'total', kind: 'computed', cel: counted(DEFAULT_LIMITS.maxStringLiteralLength + 1) }]),
-    ).toBeDefined()
+    expect(refusal([{ target: 'total', kind: 'computed', cel: counted(DEFAULT_LIMITS.maxStringLiteralLength) }])).toBe(undefined)
+    expect(refusal([{ target: 'total', kind: 'computed', cel: counted(DEFAULT_LIMITS.maxStringLiteralLength + 1) }])).toBeDefined()
   })
 })

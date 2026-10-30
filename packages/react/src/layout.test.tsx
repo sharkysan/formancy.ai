@@ -60,8 +60,7 @@ const mount = (layout?: string): void => {
 }
 
 /** Labels in DOM order — which is reading order and tab order both. */
-const labelOrder = (): string[] =>
-  [...document.querySelectorAll('label')].map((label) => label.textContent ?? '')
+const labelOrder = (): string[] => [...document.querySelectorAll('label')].map((label) => label.textContent ?? '')
 
 describe('rendering a named layout', () => {
   test('places the fields the layout asks for, in its order', () => {
@@ -81,14 +80,7 @@ describe('rendering a named layout', () => {
   test('without a layout, model order is unchanged', () => {
     mount()
 
-    expect(labelOrder()).toEqual([
-      'First name',
-      'Last name',
-      'Street',
-      'Postcode',
-      'City',
-      'Notes',
-    ])
+    expect(labelOrder()).toEqual(['First name', 'Last name', 'Street', 'Postcode', 'City', 'Notes'])
   })
 
   test('an unknown layout name falls back to model order rather than an empty form', () => {
@@ -258,8 +250,7 @@ const spanning: FormSchema = {
   ],
 } as FormSchema
 
-const cellOf = (label: string): HTMLElement | null =>
-  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="layout-cell"]')
+const cellOf = (label: string): HTMLElement | null => screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="layout-cell"]')
 
 describe('a node that spans a table\u2019s columns', () => {
   test('gets a cell to span with, and the others are left exactly as they were', () => {
@@ -532,10 +523,6 @@ describe('a group placed whole', () => {
     expect(address.contains(screen.getByLabelText('Street'))).toBe(true)
     expect(address.contains(screen.getByLabelText('City'))).toBe(true)
     expect(address.contains(screen.getByLabelText('Name'))).toBe(false)
-    expect([...document.querySelectorAll('label')].map((label) => label.textContent)).toEqual([
-      'Street',
-      'City',
-      'Name',
-    ])
+    expect([...document.querySelectorAll('label')].map((label) => label.textContent)).toEqual(['Street', 'City', 'Name'])
   })
 })

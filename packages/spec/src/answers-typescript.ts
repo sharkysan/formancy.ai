@@ -99,12 +99,7 @@ class Printer {
       if (shape === 'group') {
         lines.push(`${key}{`, ...this.members(field.fields ?? [], depth + 1), `${indent}}`)
       } else if (shape === 'rows') {
-        lines.push(
-          `${key}Array<{`,
-          `${indent}  ${ROW_ID}: string`,
-          ...this.members(field.fields ?? [], depth + 1),
-          `${indent}}>`,
-        )
+        lines.push(`${key}Array<{`, `${indent}  ${ROW_ID}: string`, ...this.members(field.fields ?? [], depth + 1), `${indent}}>`)
       } else {
         lines.push(`${key}${this.answer(field)}${nullable ? ' | null' : ''}`)
       }

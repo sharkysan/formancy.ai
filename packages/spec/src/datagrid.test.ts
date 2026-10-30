@@ -100,9 +100,7 @@ describe('the columns', () => {
   })
 
   test('name child fields of this grid, in the order they should appear', () => {
-    expect(
-      errorsFor(documentWith([grid({ columns: [{ field: 'qty' }, { field: 'item' }] })])),
-    ).toEqual([])
+    expect(errorsFor(documentWith([grid({ columns: [{ field: 'qty' }, { field: 'item' }] })]))).toEqual([])
   })
 
   test('are refused when a column names a field the grid does not have', () => {
@@ -116,9 +114,7 @@ describe('the columns', () => {
   test('are refused when one field is given two columns', () => {
     // Two columns over one answer: whatever is typed in one appears in the other,
     // and the grid claims more columns than the row has values.
-    const errors = errorsFor(
-      documentWith([grid({ columns: [{ field: 'item' }, { field: 'item' }] })]),
-    )
+    const errors = errorsFor(documentWith([grid({ columns: [{ field: 'item' }, { field: 'item' }] })]))
     expect(errors.join('\n')).toMatch(/item/)
   })
 
@@ -136,18 +132,14 @@ describe('the columns', () => {
     // and a fixed length is one no renderer can honour on a narrow screen. A
     // unitless weight is a ratio the renderer spends however it likes.
     expect(errorsFor(documentWith([grid({ columns: [{ field: 'item', width: 2 }] })]))).toEqual([])
-    expect(
-      errorsFor(documentWith([grid({ columns: [{ field: 'item', width: '12rem' }] })])),
-    ).not.toEqual([])
+    expect(errorsFor(documentWith([grid({ columns: [{ field: 'item', width: '12rem' }] })]))).not.toEqual([])
   })
 
   test('refuse a width of zero, which is a column nobody can see', () => {
     // Not a styling quibble: a zero-width column holds a field that is collected,
     // required-checked and unreachable, which is the same harm as a field left out
     // of the only layout a form uses.
-    expect(
-      errorsFor(documentWith([grid({ columns: [{ field: 'item', width: 0 }] })])),
-    ).not.toEqual([])
+    expect(errorsFor(documentWith([grid({ columns: [{ field: 'item', width: 0 }] })]))).not.toEqual([])
   })
 
   test('are refused on a repeater that is not arranged as a grid', () => {
@@ -157,16 +149,12 @@ describe('the columns', () => {
     const errors = errorsFor(documentWith([{ ...grid(), widget: undefined }]))
     expect(errors).toEqual([])
 
-    const configured = errorsFor(
-      documentWith([{ ...grid(), widget: undefined, columns: [{ field: 'item' }] }]),
-    )
+    const configured = errorsFor(documentWith([{ ...grid(), widget: undefined, columns: [{ field: 'item' }] }]))
     expect(configured).not.toEqual([])
   })
 
   test('are refused on a field type that has no rows at all', () => {
-    const errors = errorsFor(
-      documentWith([{ key: 'plain', type: 'text', label: 'Plain', columns: [{ field: 'x' }] }]),
-    )
+    const errors = errorsFor(documentWith([{ key: 'plain', type: 'text', label: 'Plain', columns: [{ field: 'x' }] }]))
     expect(errors).not.toEqual([])
   })
 })
@@ -232,11 +220,7 @@ describe('datagridColumns', () => {
   })
 
   test('a repeater with no columns still shows every child', () => {
-    expect(datagridColumns(repeater, []).map((entry) => entry.key)).toEqual([
-      'name',
-      'qty',
-      'note',
-    ])
+    expect(datagridColumns(repeater, []).map((entry) => entry.key)).toEqual(['name', 'qty', 'note'])
   })
 })
 
@@ -343,9 +327,7 @@ describe('the column list, checked against its own grid', () => {
   })
 
   test('refuses two columns over one field, because one answer cannot fill both', () => {
-    const errors = errorsFor(
-      documentWith([grid({ columns: [{ field: 'item' }, { field: 'item' }] })]),
-    )
+    const errors = errorsFor(documentWith([grid({ columns: [{ field: 'item' }, { field: 'item' }] })]))
 
     expect(errors).toHaveLength(1)
     expect(errors[0]).toMatch(/item/)
@@ -357,4 +339,3 @@ describe('the column list, checked against its own grid', () => {
     expect(errorsFor(documentWith([grid({ columns: [{ field: 'qty' }] })]))).toEqual([])
   })
 })
-

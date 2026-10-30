@@ -63,12 +63,7 @@ export function LayoutAdd({ session, layout, onSaid, onClose }: LayoutAddProps):
 
   if (step.step === 'which-answer') {
     return (
-      <div
-        role="dialog"
-        aria-label={text('layout.codeWhich')}
-        data-formancy-part="layout-add-which"
-        onKeyDown={onDialogKey}
-      >
+      <div role="dialog" aria-label={text('layout.codeWhich')} data-formancy-part="layout-add-which" onKeyDown={onDialogKey}>
         <ul>
           {codeAnswers(session).map((answer) => (
             <li key={answer.path}>
@@ -124,27 +119,14 @@ export function LayoutAdd({ session, layout, onSaid, onClose }: LayoutAddProps):
   }
 
   return (
-    <div
-      role="dialog"
-      aria-label={text('layout.addTitle')}
-      data-formancy-part="layout-add"
-      onKeyDown={onDialogKey}
-    >
+    <div role="dialog" aria-label={text('layout.addTitle')} data-formancy-part="layout-add" onKeyDown={onDialogKey}>
       <ul>
         {/* A code needs an answer to encode, so it takes a step the others do not;
             in a version 1 document it is offered with the upgrade rather than as a
             dead end, because legality is decided by trying the edit and a code in
             version 1 had no destination at all. */}
         {layoutAdditions(session, layout).map((addition) => (
-          <li
-            key={
-              addition.what === 'field'
-                ? `field:${addition.path}`
-                : addition.what === 'container'
-                  ? addition.kind
-                  : 'code'
-            }
-          >
+          <li key={addition.what === 'field' ? `field:${addition.path}` : addition.what === 'container' ? addition.kind : 'code'}>
             {addition.what === 'code' && addition.locked ? (
               <>
                 <span data-formancy-part="palette-locked">{addition.label}</span>
@@ -169,9 +151,7 @@ export function LayoutAdd({ session, layout, onSaid, onClose }: LayoutAddProps):
                             step: 'where',
                             node: layoutNodeFor(
                               session,
-                              addition.what === 'field'
-                                ? { what: 'field', path: addition.path }
-                                : { what: 'container', kind: addition.kind },
+                              addition.what === 'field' ? { what: 'field', path: addition.path } : { what: 'container', kind: addition.kind },
                             ),
                           },
                     )

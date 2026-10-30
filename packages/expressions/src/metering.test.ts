@@ -15,12 +15,7 @@ function program(source: string, options: CompileOptions) {
   return compiled.program
 }
 
-function run(
-  source: string,
-  values: Record<string, unknown>,
-  options: CompileOptions = withS,
-  extra?: Partial<EvaluateOptions>,
-) {
+function run(source: string, values: Record<string, unknown>, options: CompileOptions = withS, extra?: Partial<EvaluateOptions>) {
   return evaluate(program(source, options), values, { capabilities, ...extra })
 }
 
@@ -97,12 +92,7 @@ describe('collections produced inside an expression are metered', () => {
   })
 
   test('string concatenation charges in proportion to what it builds', () => {
-    const outcome = run(
-      '(s + s + s + s).contains("z")',
-      { s: 'a'.repeat(6400) },
-      withS,
-      { budget: { maxSteps: 100 } },
-    )
+    const outcome = run('(s + s + s + s).contains("z")', { s: 'a'.repeat(6400) }, withS, { budget: { maxSteps: 100 } })
 
     expect(outcome.ok).toBe(false)
     if (outcome.ok) return
@@ -134,10 +124,14 @@ describe('collections produced inside an expression are metered', () => {
 
   test('ordinary form expressions stay far below the default budget', () => {
     const items = Array.from({ length: 100 }, (_, index) => ({ n: index }))
-    const outcome = run('items.all(x, x.n >= 0)', { items }, {
-      kind: 'visible',
-      variables: { items: 'list' },
-    })
+    const outcome = run(
+      'items.all(x, x.n >= 0)',
+      { items },
+      {
+        kind: 'visible',
+        variables: { items: 'list' },
+      },
+    )
 
     expect(outcome.ok).toBe(true)
     if (!outcome.ok) return

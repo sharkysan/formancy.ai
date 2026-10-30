@@ -129,11 +129,7 @@ describe.each(TABLES)('what $name claims publishing does about an unknown path',
     // A guard on the guard: a parse that found nothing would make the assertion
     // below vacuous, and three is what the prose argues with — one refusal and
     // the two cases CEL cannot see.
-    expect(rows(table).map(({ cel }) => cel)).toEqual([
-      'gone == "8000"',
-      'address.nope',
-      'item.nope',
-    ])
+    expect(rows(table).map(({ cel }) => cel)).toEqual(['gone == "8000"', 'address.nope', 'item.nope'])
   })
 
   test('and every row is what a real publish actually does', async () => {

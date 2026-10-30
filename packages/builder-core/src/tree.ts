@@ -124,14 +124,9 @@ export function describeTarget(
   const where = container === undefined ? schema.title : nameOf(schema, container)
 
   const movingKey = moving?.[moving.length - 1]
-  const fromSameContainer =
-    moving !== undefined &&
-    moving.length === location.parent.length + 1 &&
-    location.parent.every((key, at) => key === moving[at])
+  const fromSameContainer = moving !== undefined && moving.length === location.parent.length + 1 && location.parent.every((key, at) => key === moving[at])
 
-  const siblings = childrenAt(schema, location.parent).filter(
-    (field) => !(fromSameContainer && field.key === movingKey),
-  )
+  const siblings = childrenAt(schema, location.parent).filter((field) => !(fromSameContainer && field.key === movingKey))
 
   if (siblings.length === 0) return text('target.firstField', { where })
 

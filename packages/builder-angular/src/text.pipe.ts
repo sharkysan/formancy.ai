@@ -15,11 +15,7 @@ import type { BuilderMessageId, BuilderText } from '@formancy/builder-core'
  */
 @Pipe({ name: 'builderText' })
 export class BuilderTextPipe implements PipeTransform {
-  transform(
-    id: BuilderMessageId,
-    text: BuilderText,
-    values?: Readonly<Record<string, string | number>>,
-  ): string {
+  transform(id: BuilderMessageId, text: BuilderText, values?: Readonly<Record<string, string | number>>): string {
     return text(id, values)
   }
 }

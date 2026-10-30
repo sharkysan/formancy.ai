@@ -17,12 +17,7 @@ import type { OnInit } from '@angular/core'
 import { encode } from 'uqr'
 import { parsePath, placedGroup, placedPage } from '@formancy/core'
 import type { PlacedGroup } from '@formancy/core'
-import {
-  resolveText,
-  LAYOUT_LEAF_KINDS,
-  layoutChildren,
-  layoutNodeShows,
-} from '@formancy/spec'
+import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren, layoutNodeShows } from '@formancy/spec'
 import type { LayoutNode } from '@formancy/spec'
 import { injectEngine } from './provide.js'
 import { injectFormText } from './text.js'
@@ -132,18 +127,12 @@ export class FormancyTabs {
     const page = this.page()
     return this.panels()
       .map((node, index) => ({ node, index }))
-      .filter(
-        ({ node }) =>
-          page === undefined ||
-          layoutNodeShows(node, (path) => placedPage(this.engine, path) === page),
-      )
+      .filter(({ node }) => page === undefined || layoutNodeShows(node, (path) => placedPage(this.engine, path) === page))
   })
 
   protected readonly open = signal(0)
   /** The open tab, among the shown: a page change can leave fewer than the one that was open. */
-  protected readonly current = computed(() =>
-    Math.min(this.open(), this.shownPanels().length - 1),
-  )
+  protected readonly current = computed(() => Math.min(this.open(), this.shownPanels().length - 1))
   private readonly changeDetector = inject(ChangeDetectorRef)
 
   protected reveal(index: number): void {
@@ -346,14 +335,7 @@ export class FormancyCode implements OnInit {
 @Component({
   selector: 'formancy-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    NgTemplateOutlet,
-    FormancyFieldSlot,
-    FormancyGroupSection,
-    FormancyRepeaterSection,
-    FormancyTabs,
-    FormancyCode,
-  ],
+  imports: [NgTemplateOutlet, FormancyFieldSlot, FormancyGroupSection, FormancyRepeaterSection, FormancyTabs, FormancyCode],
   /**
    * Undoing an element rather than styling one.
    *
@@ -508,10 +490,7 @@ export class FormancyLayout {
 
   protected shows(node: LayoutNode): boolean {
     const page = this.page()
-    return (
-      page === undefined ||
-      layoutNodeShows(node, (path) => placedPage(this.engine, path) === page)
-    )
+    return page === undefined || layoutNodeShows(node, (path) => placedPage(this.engine, path) === page)
   }
 
   constructor() {
@@ -520,7 +499,6 @@ export class FormancyLayout {
     // strict `style-src` blocks, and this has to hold with no CSP configuration at all.
     inject(ElementRef<HTMLElement>).nativeElement.style.setProperty('display', 'contents')
   }
-
 
   /** The span as a number CSS can count with, and nothing at all for `all`.
    *
@@ -568,10 +546,7 @@ export class FormancyLayout {
     // The cache stays safe — an engine's locale is fixed for its life.
     const label = node.kind === 'field' ? undefined : node.label
     const text = resolveText(this.engine.schema(), label, this.engine.locale())
-    const heading =
-      text === undefined || text === ''
-        ? null
-        : { id: `formancy-section-${String((FormancyLayout.counter += 1))}`, text }
+    const heading = text === undefined || text === '' ? null : { id: `formancy-section-${String((FormancyLayout.counter += 1))}`, text }
 
     this.headings.set(node, heading)
     return heading

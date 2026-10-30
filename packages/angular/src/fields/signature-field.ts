@@ -3,7 +3,6 @@ import type { ElementRef, Type } from '@angular/core'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
-
 /**
  * The signature control: a mark drawn, or a name typed.
  *
@@ -100,9 +99,7 @@ export class FormancySignatureField extends FieldComponentBase {
   protected readonly viewBox = computed(() => `0 0 ${String(this.box()[0])} ${String(this.box()[1])}`)
 
   protected pathOf(points: ReadonlyArray<readonly [number, number]>): string {
-    return points
-      .map(([x, y], step) => `${step === 0 ? 'M' : 'L'}${String(x)} ${String(y)}`)
-      .join(' ')
+    return points.map(([x, y], step) => `${step === 0 ? 'M' : 'L'}${String(x)} ${String(y)}`).join(' ')
   }
 
   /*
@@ -191,10 +188,7 @@ export class FormancySignatureField extends FieldComponentBase {
     const scaleY = rect === undefined || rect.height === 0 ? 1 : height / rect.height
     const x = (event.clientX - (rect?.left ?? 0)) * scaleX
     const y = (event.clientY - (rect?.top ?? 0)) * scaleY
-    return [
-      Math.max(0, Math.min(width, Math.round(x))),
-      Math.max(0, Math.min(height, Math.round(y))),
-    ]
+    return [Math.max(0, Math.min(width, Math.round(x))), Math.max(0, Math.min(height, Math.round(y)))]
   }
 
   /** Nothing drawn is `null`, never `{ drawn: [] }`: an empty mark presented as

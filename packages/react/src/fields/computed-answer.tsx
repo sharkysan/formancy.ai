@@ -20,12 +20,7 @@ export function ComputedAnswerField({ path, label }: FieldComponentProps) {
   const text = useFormText()
   return (
     <FieldShell path={path} field={field} label={label}>
-      <input
-        type="text"
-        readOnly
-        {...field.controlProps}
-        value={answerInWords(engine.schema(), field.def, field.value, text, engine.locale())}
-      />
+      <input type="text" readOnly {...field.controlProps} value={answerInWords(engine.schema(), field.def, field.value, text, engine.locale())} />
     </FieldShell>
   )
 }

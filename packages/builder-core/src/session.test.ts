@@ -185,9 +185,7 @@ describe('validTargets offers every position, not just the end', () => {
 
     // Moving Street out of the group: it can go before Customer, after it, or
     // at the end.
-    expect(offered(session, ['billing', 'street'])).toEqual(
-      expect.arrayContaining(['#0', '#1', '#2']),
-    )
+    expect(offered(session, ['billing', 'street'])).toEqual(expect.arrayContaining(['#0', '#1', '#2']))
   })
 
   test('every offered target is actually accepted, which is the point of trying the edit', () => {
@@ -425,9 +423,7 @@ describe('authoring translations', () => {
     // ...and it still says what it said, because the literal became the default
     // locale's message. An extraction that made somebody retype their own form is
     // one nobody would use twice.
-    expect(document.i18n?.messages[document.i18n.defaultLocale]?.['email.label']).toBe(
-      'Work email',
-    )
+    expect(document.i18n?.messages[document.i18n.defaultLocale]?.['email.label']).toBe('Work email')
   })
 
   test('the first extraction decides the default locale, and says which', () => {
@@ -460,9 +456,7 @@ describe('authoring translations', () => {
 
     expect(session.setMessage('fr', 'email.label', 'Adresse professionnelle').ok).toBe(true)
 
-    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe(
-      'Adresse professionnelle',
-    )
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe('Adresse professionnelle')
   })
 
   test('and a locale with no messages yet can still be started', () => {
@@ -508,9 +502,7 @@ describe('authoring translations', () => {
     session.removeField(['email'])
 
     expect(session.orphanedMessages()).toEqual(['email.label'])
-    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe(
-      'Adresse professionnelle',
-    )
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe('Adresse professionnelle')
   })
 })
 
@@ -627,7 +619,9 @@ describe('extracting every text in a document', () => {
     const literals: string[] = []
     const walk = (value: unknown, at: string): void => {
       if (Array.isArray(value)) {
-        value.forEach((item, index) => { walk(item, `${at}[${String(index)}]`) })
+        value.forEach((item, index) => {
+          walk(item, `${at}[${String(index)}]`)
+        })
         return
       }
       if (typeof value !== 'object' || value === null) return
@@ -666,10 +660,7 @@ describe('extracting every text in a document', () => {
     session.extractAllText()
     const before = session.document().model.fields[0]?.options?.[1]?.label
 
-    session.setFieldProperty(['country'], 'options', [
-      session.document().model.fields[0]?.options?.[1],
-      session.document().model.fields[0]?.options?.[0],
-    ])
+    session.setFieldProperty(['country'], 'options', [session.document().model.fields[0]?.options?.[1], session.document().model.fields[0]?.options?.[0]])
 
     expect(session.document().model.fields[0]?.options?.[0]?.label).toEqual(before)
     expect(session.orphanedMessages()).toEqual([])
@@ -773,9 +764,7 @@ describe('handing a catalogue to somebody outside the builder', () => {
       messages: [{ id: 'email.label', source: 'Work email', target: '' }],
     })
 
-    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe(
-      'Adresse professionnelle',
-    )
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe('Adresse professionnelle')
   })
 
   test('a message the form no longer has is reported rather than written', () => {
@@ -883,11 +872,7 @@ describe('unwrapField', () => {
 
   /** Every top-level key, with a page's children listed under it. */
   const shape = (session: BuilderSession): unknown =>
-    session.document().model.fields.map((field) =>
-      field.type === 'page'
-        ? { [field.key]: (field.fields ?? []).map((child) => child.key) }
-        : field.key,
-    )
+    session.document().model.fields.map((field) => (field.type === 'page' ? { [field.key]: (field.fields ?? []).map((child) => child.key) } : field.key))
 
   test('the last page left un-pages the form, which is the case it exists for', () => {
     const session = createBuilderSession(trip(['about', ['name', 'email']]))
@@ -927,9 +912,7 @@ describe('unwrapField', () => {
     // beside page three renders on page one — collected correctly and asked in
     // the wrong place. Derived from the document rather than asserted per case,
     // so a fourth case cannot forget it.
-    const session = createBuilderSession(
-      trip(['one', ['a']], ['two', ['b']], ['three', ['c']]),
-    )
+    const session = createBuilderSession(trip(['one', ['a']], ['two', ['b']], ['three', ['c']]))
 
     for (const key of ['two', 'one', 'three']) {
       const outcome = session.unwrapField([key])
@@ -1055,8 +1038,7 @@ describe('unwrapField', () => {
 
     expect(session.document().model.fields.map((field) => field.key)).toEqual(['city', 'street'])
     const row = session.document().layouts?.[0]?.nodes[0]
-    const placed =
-      row?.kind === 'row' ? row.children.map((child) => (child as { path: string }).path) : []
+    const placed = row?.kind === 'row' ? row.children.map((child) => (child as { path: string }).path) : []
     expect(placed).toEqual(['city', 'street'])
   })
 
@@ -1221,9 +1203,7 @@ describe('unwrapField and the group that was placed as one thing', () => {
     expect(session.unwrapField(['address']).ok).toBe(true)
 
     expect(session.canPublish().valid).toBe(true)
-    const placed = (session.document().layouts?.[0]?.nodes ?? []).map(
-      (node) => (node as { path?: string }).path,
-    )
+    const placed = (session.document().layouts?.[0]?.nodes ?? []).map((node) => (node as { path?: string }).path)
     expect(placed.filter((path) => path?.startsWith('address'))).toEqual([])
   })
 })

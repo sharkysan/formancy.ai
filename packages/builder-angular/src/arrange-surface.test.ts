@@ -102,11 +102,7 @@ const transfer = (): object => ({
  * surface decides, so these are dispatched as `MouseEvent`s, which keep them.
  * The React suite does the same, for the same reason.
  */
-const dragEvent = (
-  type: string,
-  at: { clientX: number; clientY: number },
-  dataTransfer: object,
-): Event => {
+const dragEvent = (type: string, at: { clientX: number; clientY: number }, dataTransfer: object): Event => {
   const event = new MouseEvent(type, { bubbles: true, cancelable: true, ...at })
   Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
   return event
@@ -115,12 +111,7 @@ const dragEvent = (
 const NOWHERE = { clientX: 0, clientY: 0 }
 
 /** One whole drag, as the browser fires it: start, over, drop. */
-const drag = async (
-  mounted: Mounted,
-  from: HTMLElement,
-  to: HTMLElement,
-  at: { clientX: number; clientY: number },
-): Promise<void> => {
+const drag = async (mounted: Mounted, from: HTMLElement, to: HTMLElement, at: { clientX: number; clientY: number }): Promise<void> => {
   const dataTransfer = transfer()
   from.dispatchEvent(dragEvent('dragstart', NOWHERE, dataTransfer))
   await mounted.settle()
@@ -135,14 +126,11 @@ const boxOf = (element: HTMLElement, side: 'start' | 'end'): { clientX: number; 
   // jsdom gives every element a zero rectangle, so the midpoint is 0 and the
   // half a point falls in is decided by its sign. Said here once rather than
   // left as an unexplained -1 in every test.
-  return side === 'start'
-    ? { clientX: box.left - 1, clientY: box.top - 1 }
-    : { clientX: box.left + 1, clientY: box.top + 1 }
+  return side === 'start' ? { clientX: box.left - 1, clientY: box.top - 1 } : { clientX: box.left + 1, clientY: box.top + 1 }
 }
 
 /** The arrangement as paths, which is what a move actually changes. */
-const arrangement = (session: BuilderSession): unknown =>
-  session.document().layouts?.[0]?.nodes
+const arrangement = (session: BuilderSession): unknown => session.document().layouts?.[0]?.nodes
 
 describe('enabling', () => {
   test('off, nothing is draggable and the form is only a form', async () => {
@@ -169,9 +157,7 @@ describe('dropping', () => {
     await drag(mounted, fieldNamed('Email'), fieldNamed('First name'), boxOf(fieldNamed('First name'), 'start'))
 
     // Email left the top level and is now inside the row with the other two.
-    expect(arrangement(mounted.session)).toMatchObject([
-      { kind: 'row', children: [{ path: 'email' }, { path: 'first' }, { path: 'last' }] },
-    ])
+    expect(arrangement(mounted.session)).toMatchObject([{ kind: 'row', children: [{ path: 'email' }, { path: 'first' }, { path: 'last' }] }])
   })
 
   test('the move is announced, because a silent drag is a silent edit', async () => {
@@ -394,12 +380,10 @@ describe('dropping in the space between two nodes', () => {
 
   /** Where each element was drawn, top to bottom, 400 wide: jsdom draws nothing. */
   const drawn = (element: HTMLElement, top: number, bottom: number): void => {
-    element.getBoundingClientRect = () =>
-      ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
+    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
   }
 
-  const section = (): HTMLElement =>
-    document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!
+  const section = (): HTMLElement => document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!
   const form = (): HTMLElement => screen.getByRole('form', { name: 'Contact preview' })
 
   /**
@@ -422,10 +406,7 @@ describe('dropping in the space between two nodes', () => {
     return { session, settle: async () => void (await view.fixture.whenStable()) }
   }
 
-  const order = (session: BuilderSession): unknown =>
-    session
-      .document()
-      .layouts?.[0]?.nodes.map((node) => (node.kind === 'field' ? node.path : node.kind))
+  const order = (session: BuilderSession): unknown => session.document().layouts?.[0]?.nodes.map((node) => (node.kind === 'field' ? node.path : node.kind))
 
   test('between two fields in a section, the drop lands between them', async () => {
     const mounted = await mountGaps()

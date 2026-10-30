@@ -9,7 +9,6 @@ import { injectFieldContext } from '../registry.js'
 import { injectSourcedOptions, sameValues, storedValues } from '../sourced-options.js'
 import { FormancyErrorText } from './error-text.js'
 
-
 /**
  * The shell every control renders inside, and the base they all extend.
  *
@@ -61,7 +60,6 @@ export class FormancyFieldShell {
     const snapshot = this.field().snapshot()
     return snapshot.touched && snapshot.errors.length > 0
   })
-
 }
 
 /** The state every leaf control shares; components extend it so the templates
@@ -83,22 +81,23 @@ export abstract class FieldComponentBase {
    * React binding asks too — accepts its address, so the two renderers draw the same
    * pictures from a document the validator never saw (0126).
    */
-  protected readonly options = computed<
-    ReadonlyArray<{ value: string; label: string; image?: { src: string; alt: string } }>
-  >(() =>
+  protected readonly options = computed<ReadonlyArray<{ value: string; label: string; image?: { src: string; alt: string } }>>(() =>
     // In the order the engine chose for a shuffled field, and as written otherwise (0200).
-    inOptionOrder((this.field.snapshot().def.options ?? []).map((option: FieldOption) => ({
-      value: option.value,
-      label: this.engine.text(option.label) ?? option.value,
-      ...(option.image !== undefined && isImageSource(option.image.src)
-        ? {
-            image: {
-              src: option.image.src,
-              alt: this.engine.text(option.image.alt) ?? '',
-            },
-          }
-        : {}),
-    })), this.field.snapshot().optionOrder),
+    inOptionOrder(
+      (this.field.snapshot().def.options ?? []).map((option: FieldOption) => ({
+        value: option.value,
+        label: this.engine.text(option.label) ?? option.value,
+        ...(option.image !== undefined && isImageSource(option.image.src)
+          ? {
+              image: {
+                src: option.image.src,
+                alt: this.engine.text(option.image.alt) ?? '',
+              },
+            }
+          : {}),
+      })),
+      this.field.snapshot().optionOrder,
+    ),
   )
 
   /**
@@ -141,9 +140,7 @@ export abstract class FieldComponentBase {
    * next blur would look like the person cleared it, or, in a list of ticks, an untick
    * nobody could make (0215).
    */
-  protected readonly offered = computed<
-    ReadonlyArray<{ value: string; label: string; image?: { src: string; alt: string } }>
-  >(() => {
+  protected readonly offered = computed<ReadonlyArray<{ value: string; label: string; image?: { src: string; alt: string } }>>(() => {
     if (!this.remote.sourced()) return this.options()
     const rows = this.remote.rows()
     const named = this.remote.named()

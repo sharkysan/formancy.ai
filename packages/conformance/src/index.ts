@@ -19,30 +19,11 @@
 
 export { builtinFixtures } from './builtin-fixtures.js'
 
-export {
-  ACCESSIBILITY_EXCLUSIONS,
-  ACCESSIBILITY_TAGS,
-  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
-} from './accessibility.js'
+export { ACCESSIBILITY_EXCLUSIONS, ACCESSIBILITY_TAGS, ACCESSIBILITY_UNMEASURABLE_IN_JSDOM } from './accessibility.js'
 
-export type {
-  AccessibilityViolation,
-  ConformanceMessage,
-  DriverFactory,
-  MountOptions,
-  RendererDriver,
-  SubmitResult,
-} from './driver.js'
+export type { AccessibilityViolation, ConformanceMessage, DriverFactory, MountOptions, RendererDriver, SubmitResult } from './driver.js'
 
-export {
-  BACK_COMMAND,
-  COMMAND_SEPARATOR,
-  NEXT_COMMAND,
-  addItemCommand,
-  fieldAtPath,
-  pageKeys,
-  removeItemCommand,
-} from './paths.js'
+export { BACK_COMMAND, COMMAND_SEPARATOR, NEXT_COMMAND, addItemCommand, fieldAtPath, pageKeys, removeItemCommand } from './paths.js'
 
 export { FixtureError, parseFixture, stepKind, validateFixture } from './validate.js'
 export type { FixtureProblem } from './validate.js'
@@ -75,23 +56,8 @@ export type {
 export { loadFixtures } from './loader.js'
 export type { FixtureSource } from './loader.js'
 
-export {
-  AccessibilityAssertionError,
-  ConformanceAssertionError,
-  assertFixtureResult,
-  runFixture,
-  runSuite,
-} from './runner.js'
-export type {
-  AccessibilityFailure,
-  DriverCrash,
-  FixtureResult,
-  FixtureStatus,
-  StepFailure,
-  StepOutcome,
-  StepStatus,
-  SuiteResult,
-} from './runner.js'
+export { AccessibilityAssertionError, ConformanceAssertionError, assertFixtureResult, runFixture, runSuite } from './runner.js'
+export type { AccessibilityFailure, DriverCrash, FixtureResult, FixtureStatus, StepFailure, StepOutcome, StepStatus, SuiteResult } from './runner.js'
 
 export { describeConformance } from './suite.js'
 export type { ConformanceTestApi, DescribeConformanceOptions } from './suite.js'

@@ -36,10 +36,7 @@ export function foldForMatch(text: string): string {
  * A query that is empty or nothing but whitespace narrows nothing: a fumbled
  * space is not a filter, and an empty list is a control hiding its own options.
  */
-export function narrowOptionsByLabel<T extends { label: string }>(
-  options: readonly T[],
-  query: string,
-): readonly T[] {
+export function narrowOptionsByLabel<T extends { label: string }>(options: readonly T[], query: string): readonly T[] {
   const needle = foldForMatch(query.trim())
   if (needle === '') return options
   return options.filter((option) => foldForMatch(option.label).includes(needle))

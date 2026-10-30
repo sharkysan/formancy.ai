@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
-
 /**
  * The temporal controls, each holding one canonical fixed-width string.
  *
@@ -152,8 +151,7 @@ export class FormancyDateTimeField extends FieldComponentBase {
     if (Number.isNaN(instant.getTime())) return ''
     const pad = (part: number): string => String(part).padStart(2, '0')
     return (
-      `${String(instant.getFullYear())}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}` +
-      `T${pad(instant.getHours())}:${pad(instant.getMinutes())}`
+      `${String(instant.getFullYear())}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}` + `T${pad(instant.getHours())}:${pad(instant.getMinutes())}`
     )
   })
 
@@ -167,8 +165,6 @@ export class FormancyDateTimeField extends FieldComponentBase {
     // A control can hand back something unparseable mid-edit. Null rather than a
     // malformed string keeps the stored answer always either empty or canonical,
     // which is what the engine's shape check assumes.
-    this.field.setValue(
-      Number.isNaN(instant.getTime()) ? null : `${instant.toISOString().slice(0, 19)}Z`,
-    )
+    this.field.setValue(Number.isNaN(instant.getTime()) ? null : `${instant.toISOString().slice(0, 19)}Z`)
   }
 }

@@ -15,12 +15,7 @@ export { injectWizard } from './wizard.js'
 export type { WizardBinding } from './wizard.js'
 export { injectSubmit } from './submit.js'
 export { injectGoToField } from './go-to-field.js'
-export {
-  FORMANCY_FIELD_CONTEXT,
-  FORMANCY_REGISTRY,
-  injectFieldContext,
-  provideFormancyRegistry,
-} from './registry.js'
+export { FORMANCY_FIELD_CONTEXT, FORMANCY_REGISTRY, injectFieldContext, provideFormancyRegistry } from './registry.js'
 export type { FormancyFieldContext, FormancyRegistry } from './registry.js'
 export {
   DEFAULT_FIELD_COMPONENTS,
@@ -41,21 +36,9 @@ export { FormancyErrorSummary } from './error-summary.js'
 export { FormancyRichInline, FormancyRichText } from './rich-text.js'
 export { FormancyResumeNotice } from './resume-notice.js'
 export type { ResumeMigration } from './resume-notice.js'
-export {
-  FORMANCY_RICH_TEXT_EDITOR,
-  injectRichTextEditorFactory,
-  provideFormancyRichTextEditor,
-} from './rich-text-editor.js'
-export type {
-  RichTextEditorFactory,
-  RichTextEditorHandle,
-  RichTextEditorMount,
-} from './rich-text-editor.js'
-export {
-  FORMANCY_OPTIONS_SOURCES,
-  injectOptionsSources,
-  provideFormancyOptionsSources,
-} from './options-source.js'
+export { FORMANCY_RICH_TEXT_EDITOR, injectRichTextEditorFactory, provideFormancyRichTextEditor } from './rich-text-editor.js'
+export type { RichTextEditorFactory, RichTextEditorHandle, RichTextEditorMount } from './rich-text-editor.js'
+export { FORMANCY_OPTIONS_SOURCES, injectOptionsSources, provideFormancyOptionsSources } from './options-source.js'
 export type { OptionsRequest, OptionsSource, OptionsSources } from './options-source.js'
 // What a source may answer, so a host types its page against the contract the control reads
 // (0177), from the package it already imports the source's own types from.

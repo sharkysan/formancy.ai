@@ -1,11 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  CURRENT_SPEC_VERSION,
-  FIELD_TYPES,
-  SPEC_1_FIELD_TYPES,
-  SPEC_4_FIELD_TYPES,
-  SPEC_VERSIONS,
-} from './types.js'
+import { CURRENT_SPEC_VERSION, FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_4_FIELD_TYPES, SPEC_VERSIONS } from './types.js'
 import { FIELD_WIDGETS, SPEC_3_WIDGETS, SPEC_4_WIDGETS } from './widgets.js'
 import type { FormSchema } from './types.js'
 import { upgradeSpecVersion } from './upgrade.js'
@@ -51,9 +45,7 @@ describe('what each version defines', () => {
      * version's lists, and growing it means opening the next version first.
      */
     expect(new Set<string>(FIELD_TYPES)).toEqual(new Set<string>(SPEC_4_FIELD_TYPES))
-    expect(new Set<string>(FIELD_WIDGETS)).toEqual(
-      new Set<string>([...SPEC_3_WIDGETS, ...SPEC_4_WIDGETS]),
-    )
+    expect(new Set<string>(FIELD_WIDGETS)).toEqual(new Set<string>([...SPEC_3_WIDGETS, ...SPEC_4_WIDGETS]))
   })
 
   test('version 2 is a superset: every version 1 type is still a version 2 type', () => {
@@ -63,9 +55,7 @@ describe('what each version defines', () => {
           fields: SPEC_1_FIELD_TYPES.filter((type) => type !== 'page').map((type, index) => ({
             key: `f${String(index)}`,
             type,
-            ...(type === 'select' || type === 'radio'
-              ? { options: [{ value: 'a', label: 'A' }] }
-              : {}),
+            ...(type === 'select' || type === 'radio' ? { options: [{ value: 'a', label: 'A' }] } : {}),
           })),
         },
       }),
@@ -188,9 +178,7 @@ describe('the new version 2 constructs', () => {
           nodes: [
             {
               kind: 'tabs',
-              children: [
-                { kind: 'section', label: 'Your details', children: [{ kind: 'field', path: 'email' }] },
-              ],
+              children: [{ kind: 'section', label: 'Your details', children: [{ kind: 'field', path: 'email' }] }],
             },
           ],
         },
@@ -205,9 +193,7 @@ describe('the new version 2 constructs', () => {
       layouts: [
         {
           name: 'web',
-          nodes: [
-            { kind: 'tabs', children: [{ kind: 'section', children: [{ kind: 'field', path: 'email' }] }] },
-          ],
+          nodes: [{ kind: 'tabs', children: [{ kind: 'section', children: [{ kind: 'field', path: 'email' }] }] }],
         },
       ],
     })
@@ -217,9 +203,7 @@ describe('the new version 2 constructs', () => {
 
   test('a tabs node holding something other than a section says what to do about it', () => {
     const document = spec2({
-      layouts: [
-        { name: 'web', nodes: [{ kind: 'tabs', children: [{ kind: 'field', path: 'email' }] }] },
-      ],
+      layouts: [{ name: 'web', nodes: [{ kind: 'tabs', children: [{ kind: 'field', path: 'email' }] }] }],
     })
 
     expect(errorsOf(document)[0]).toContain('Wrap it in a section')

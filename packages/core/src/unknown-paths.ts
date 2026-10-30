@@ -94,9 +94,7 @@ export function unknownReferences(schema: FormSchema): UnknownReference[] {
      * evaluated per row of `items`, and that is the only repeater its `item`
      * can mean.
      */
-    const rowScope = rule.target.includes('[]')
-      ? `${rule.target.slice(0, rule.target.indexOf('[]'))}[]`
-      : undefined
+    const rowScope = rule.target.includes('[]') ? `${rule.target.slice(0, rule.target.indexOf('[]'))}[]` : undefined
 
     const missing = new Set<string>()
     for (const read of referencedPaths(parsed.ast)) {
@@ -127,9 +125,7 @@ export function unknownReferences(schema: FormSchema): UnknownReference[] {
       cel: rule.cel,
       paths,
       message:
-        `Rule on "${rule.target}" (${rule.kind}) reads ${paths
-          .map((path) => `"${path}"`)
-          .join(', ')}, which no field provides. ` +
+        `Rule on "${rule.target}" (${rule.kind}) reads ${paths.map((path) => `"${path}"`).join(', ')}, which no field provides. ` +
         `The expression evaluates to nothing, so the rule never does anything — ` +
         `and because an unknown field is allowed to be empty rather than wrong, ` +
         `nothing else will report it.`,

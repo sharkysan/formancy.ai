@@ -35,15 +35,11 @@ describe('where a picture may come from', () => {
   test('an https address, a path on the same site, or the picture itself', () => {
     expect(errorsOf(radio('https://example.org/cat.png'))).toEqual([])
     expect(errorsOf(radio('/images/cat.png'))).toEqual([])
-    expect(
-      errorsOf(radio('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E')),
-    ).toEqual([])
+    expect(errorsOf(radio('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E'))).toEqual([])
   })
 
   test('not plain http, which the secure page showing the form would block', () => {
-    expect(errorsOf(radio('http://example.org/cat.png'))).toMatchObject([
-      { path: '/model/fields/0/options/0/image/src', code: 'shape.imageSource' },
-    ])
+    expect(errorsOf(radio('http://example.org/cat.png'))).toMatchObject([{ path: '/model/fields/0/options/0/image/src', code: 'shape.imageSource' }])
   })
 
   test('and not a script, nor an address that only looks like a path', () => {
@@ -62,9 +58,7 @@ describe('where a picture can be shown', () => {
   })
 
   test('not in a dropdown, which would validate and show nothing', () => {
-    expect(errorsOf(radio('/cat.png', 'select'))).toMatchObject([
-      { path: '/model/fields/0/options/0/image', code: 'option.imageInDropdown' },
-    ])
+    expect(errorsOf(radio('/cat.png', 'select'))).toMatchObject([{ path: '/model/fields/0/options/0/image', code: 'option.imageInDropdown' }])
   })
 
   test('nor as a chip in a tag picker', () => {
@@ -76,9 +70,7 @@ describe('where a picture can be shown', () => {
   test('and only from version 4, which a version 3 reader refuses rather than ignores', () => {
     const old = { ...radio('/cat.png'), specVersion: '3' } as FormSchema
 
-    expect(errorsOf(old)).toMatchObject([
-      { path: '/model/fields/0/options/0/image', code: 'version.optionImage' },
-    ])
+    expect(errorsOf(old)).toMatchObject([{ path: '/model/fields/0/options/0/image', code: 'version.optionImage' }])
   })
 })
 
@@ -89,8 +81,6 @@ describe('a picture changed between versions', () => {
     const before = radio('/cat.png')
     const after = radio('/cat-awake.png')
 
-    expect(diffSchemas(before, after)).toMatchObject([
-      { kind: 'field.optionPictureChanged', severity: 'compatible' },
-    ])
+    expect(diffSchemas(before, after)).toMatchObject([{ kind: 'field.optionPictureChanged', severity: 'compatible' }])
   })
 })

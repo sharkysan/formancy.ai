@@ -54,8 +54,7 @@ export const LOGIC_MESSAGES = {
   'rule.computed.hint':
     'A CEL expression producing the answer, recomputed whenever what it reads changes. The field is filled in rather than asked, so what somebody typed is replaced.',
   'rule.skip.label': 'Skip this page when',
-  'rule.skip.hint':
-    'The page is walked past, in both directions, and the questions on it are neither asked nor validated.',
+  'rule.skip.hint': 'The page is walked past, in both directions, and the questions on it are neither asked nor validated.',
 
   // ----------------------------------------------------------------- operators
   'operator.is': 'is',
@@ -96,8 +95,7 @@ export const LOGIC_MESSAGES = {
   'overview.because.failsEmpty': '{comparison}: no — it is not answered',
   'overview.now.visible.holds': 'Shown now.',
   'overview.now.visible.fails': 'Hidden now.',
-  'overview.now.visible.undecided':
-    'Shown now, because the rule cannot be decided: a rule that fails shows the field it was meant to hide.',
+  'overview.now.visible.undecided': 'Shown now, because the rule cannot be decided: a rule that fails shows the field it was meant to hide.',
   'overview.now.required.holds': 'Required now.',
   'overview.now.required.fails': 'Not required now.',
   'overview.now.required.undecided': 'Not required now, because the rule cannot be decided.',
@@ -106,8 +104,7 @@ export const LOGIC_MESSAGES = {
   'overview.now.disabled.undecided': 'Enabled now, because the rule cannot be decided.',
   'overview.now.validate.holds': 'Accepted now.',
   'overview.now.validate.fails': 'Rejected now.',
-  'overview.now.validate.undecided':
-    'Rejected now, because the rule cannot be decided: a check that fails refuses the answer.',
+  'overview.now.validate.undecided': 'Rejected now, because the rule cannot be decided: a check that fails refuses the answer.',
   'overview.now.skip.holds': 'Skipped now.',
   'overview.now.skip.fails': 'Not skipped now.',
   'overview.now.skip.undecided': 'Not skipped now, because the rule cannot be decided.',

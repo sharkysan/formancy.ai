@@ -153,9 +153,7 @@ describe('startFileCollector', () => {
 
     await vi.advanceTimersByTimeAsync(1000)
     await settle()
-    expect(written.map((line) => JSON.parse(line) as unknown)).toEqual([
-      { time: expect.any(String), level: 'error', event: 'collector.failed', kind: 'Error' },
-    ])
+    expect(written.map((line) => JSON.parse(line) as unknown)).toEqual([{ time: expect.any(String), level: 'error', event: 'collector.failed', kind: 'Error' }])
     expect(written.join('')).not.toContain('planted')
 
     // Still running: the next pass happens.
@@ -178,9 +176,7 @@ describe('startFileCollector', () => {
     await settle()
 
     const said = stderr.mock.calls.map(([chunk]) => String(chunk)).filter((chunk) => chunk.includes('"event"'))
-    expect(said.map((line) => JSON.parse(line) as unknown)).toEqual([
-      { time: expect.any(String), level: 'error', event: 'collector.failed', kind: 'Error' },
-    ])
+    expect(said.map((line) => JSON.parse(line) as unknown)).toEqual([{ time: expect.any(String), level: 'error', event: 'collector.failed', kind: 'Error' }])
     expect(stderr.mock.calls.map(([chunk]) => String(chunk)).join('')).not.toContain('planted')
   })
 

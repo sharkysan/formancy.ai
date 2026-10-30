@@ -16,8 +16,7 @@ import type { BuilderText } from './messages.js'
  * the only version that cannot drift.
  */
 
-export type PropertyKind =
-  'string' | 'number' | 'boolean' | 'enum' | 'options' | 'columns' | 'strings'
+export type PropertyKind = 'string' | 'number' | 'boolean' | 'enum' | 'options' | 'columns' | 'strings'
 
 export interface EditableProperty {
   name: string
@@ -196,11 +195,7 @@ function allowsANumber(node: JsonSchemaNode): boolean {
  * not configure a datagrid's columns at all. Found by the coverage guard in
  * properties.test.ts rather than by anybody using it.
  */
-export function editablePropertiesFor(
-  type: string,
-  widget?: string,
-  text: BuilderText = createBuilderText(),
-): EditableProperty[] {
+export function editablePropertiesFor(type: string, widget?: string, text: BuilderText = createBuilderText()): EditableProperty[] {
   const field = root.$defs['field']
   if (field === undefined) return []
 
@@ -218,10 +213,7 @@ export function editablePropertiesFor(
   for (const branch of field.allOf ?? []) {
     const condition = branch.if?.properties
     // A branch conditions on the type or on the widget, and the schema uses both.
-    const applies =
-      condition?.['widget'] === undefined
-        ? matches(condition?.['type'], type)
-        : widget !== undefined && matches(condition['widget'], widget)
+    const applies = condition?.['widget'] === undefined ? matches(condition?.['type'], type) : widget !== undefined && matches(condition['widget'], widget)
     const taken = applies ? branch.then : branch.else
     take(deref(taken)?.properties)
   }
@@ -231,7 +223,12 @@ export function editablePropertiesFor(
     inLanguage(
       // A row never carries a picture; a choice may, where the field draws one.
       property.kind === 'options'
-        ? { ...property, pictures: property.list === 'options' && pictures, exclusive: property.list === 'options' && type === 'selectboxes', keepPlace: property.list === 'options' && SHUFFLED_TYPES.has(type) }
+        ? {
+            ...property,
+            pictures: property.list === 'options' && pictures,
+            exclusive: property.list === 'options' && type === 'selectboxes',
+            keepPlace: property.list === 'options' && SHUFFLED_TYPES.has(type),
+          }
         : property,
       text,
     ),
@@ -272,10 +269,7 @@ function layoutBranches(): Array<{ kinds: string[]; properties: Record<string, J
  * ([0074](../../../docs/decisions/0074-a-table-child-may-span.md)) — a property the
  * format validated, the renderers honoured, and the builder could not set.
  */
-export function editableLayoutPropertiesFor(
-  kind: string,
-  text: BuilderText = createBuilderText(),
-): EditableProperty[] {
+export function editableLayoutPropertiesFor(kind: string, text: BuilderText = createBuilderText()): EditableProperty[] {
   const collected = new Map<string, EditableProperty>()
 
   for (const branch of layoutBranches()) {

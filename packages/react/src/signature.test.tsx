@@ -45,8 +45,7 @@ const mount = (): ReturnType<typeof createFormEngine> => {
 }
 
 const surface = (): HTMLElement => screen.getByRole('img', { name: /sign here/i })
-const answer = (engine: ReturnType<typeof createFormEngine>): Record<string, unknown> =>
-  (engine.value() as Record<string, Record<string, unknown>>).mark ?? {}
+const answer = (engine: ReturnType<typeof createFormEngine>): Record<string, unknown> => (engine.value() as Record<string, Record<string, unknown>>).mark ?? {}
 
 describe('signing by drawing', () => {
   test('a stroke is one stroke however many times the pointer moves', () => {
@@ -179,9 +178,7 @@ describe('what the field says it is', () => {
   test('every part a theme has to dress carries its name', () => {
     mount()
 
-    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     expect(parts).toContain('signature')
     expect(parts).toContain('signature-surface')
     expect(parts).toContain('signature-typed')
@@ -291,10 +288,7 @@ describe('signing with a finger, which is how most people will', () => {
     mount()
     const surface = screen.getByRole('img', { name: 'Sign here' })
 
-    expect(
-      surface.style.touchAction,
-      'the surface lets the browser treat a touch drag as a pan',
-    ).toBe('none')
+    expect(surface.style.touchAction, 'the surface lets the browser treat a touch drag as a pan').toBe('none')
   })
 
   test('and prevents the pan itself, for a browser that did not honour that', () => {
@@ -381,7 +375,14 @@ describe('a signature a rule disables', () => {
     fireEvent.pointerDown(surface(), { clientX: 1, clientY: 1 })
     fireEvent.pointerMove(surface(), { clientX: 5, clientY: 5 })
     const kept = answer(engine)
-    expect(kept).toEqual({ drawn: [[[1, 1], [5, 5]]] })
+    expect(kept).toEqual({
+      drawn: [
+        [
+          [1, 1],
+          [5, 5],
+        ],
+      ],
+    })
 
     act(() => engine.setValue(['locked'], true))
     fireEvent.pointerMove(surface(), { clientX: 30, clientY: 30 })

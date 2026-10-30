@@ -35,13 +35,7 @@ const html = renderToString(
 )
 
 // The label names the control the engine minted, and the required field says so.
-const expected = [
-  'for="f:rendered:email:control"',
-  'id="f:rendered:email:control"',
-  'aria-required="true"',
-  '>Email<',
-  '>I agree<',
-]
+const expected = ['for="f:rendered:email:control"', 'id="f:rendered:email:control"', 'aria-required="true"', '>Email<', '>I agree<']
 const missing = expected.filter((fragment) => !html.includes(fragment))
 if (missing.length > 0) {
   throw new Error(`the rendered form is missing ${missing.join(', ')}:\n${html.slice(0, 2000)}`)

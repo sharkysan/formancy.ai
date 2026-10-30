@@ -120,11 +120,7 @@ const FIXED: CapabilitySource = {
   random: () => 0.5,
 }
 
-export function runScenarios(
-  schema: FormSchema,
-  scenarios: readonly Scenario[],
-  options: ScenarioOptions = {},
-): ScenarioResult[] {
+export function runScenarios(schema: FormSchema, scenarios: readonly Scenario[], options: ScenarioOptions = {}): ScenarioResult[] {
   const capabilities = options.capabilities ?? FIXED
 
   return scenarios.map((scenario) => {
@@ -159,9 +155,7 @@ export function runScenarios(
         failures: [
           {
             about: 'document',
-            detail: `The engine will not open this form, so no scenario can run: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
+            detail: `The engine will not open this form, so no scenario can run: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
       }
@@ -207,9 +201,7 @@ export function runScenarios(
       ...Object.keys(scenario.values ?? {}).map((path): [string, boolean] => [path, true]),
       ...(scenario.absent ?? []).map((path): [string, boolean] => [path, true]),
     ]
-    const refused = new Set(
-      named.filter(([path, answer]) => !known(path) || (answer && !asAnswer(path))).map(([path]) => path),
-    )
+    const refused = new Set(named.filter(([path, answer]) => !known(path) || (answer && !asAnswer(path))).map(([path]) => path))
     for (const path of refused) failures.push({ about: 'path', detail: notOneAnswer(schema, path, known) })
 
     if (failures.length > 0) return { name: scenario.name, passed: false, failures }
@@ -235,9 +227,7 @@ export function runScenarios(
       if (want.join(',') === got.join(',')) continue
       failures.push({
         about: 'errors',
-        detail: `"${path}": expected ${want.length === 0 ? 'no error' : want.join(', ')}, got ${
-          got.length === 0 ? 'none' : got.join(', ')
-        }.`,
+        detail: `"${path}": expected ${want.length === 0 ? 'no error' : want.join(', ')}, got ${got.length === 0 ? 'none' : got.join(', ')}.`,
       })
     }
 
@@ -286,9 +276,7 @@ export function runScenarios(
       if (holder === null || typeof holder !== 'object' || !Object.hasOwn(holder, key)) continue
       failures.push({
         about: 'absent',
-        detail: `"${path}" is still in the submission as ${JSON.stringify(
-          (holder as Record<string | number, unknown>)[key],
-        )}; it was expected to be gone.`,
+        detail: `"${path}" is still in the submission as ${JSON.stringify((holder as Record<string | number, unknown>)[key])}; it was expected to be gone.`,
       })
     }
 

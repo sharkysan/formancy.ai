@@ -93,13 +93,9 @@ function mount(widget?: 'datagrid'): void {
 
 /** Every control on the page, as (tag, computed accessible name) in document order. */
 const namedControls = (): Array<[string, string]> =>
-  [...document.querySelectorAll('input, select, textarea, button')].map((element) => [
-    element.tagName.toLowerCase(),
-    computeAccessibleName(element),
-  ])
+  [...document.querySelectorAll('input, select, textarea, button')].map((element) => [element.tagName.toLowerCase(), computeAccessibleName(element)])
 
-const parts = (name: string): HTMLElement[] =>
-  [...document.querySelectorAll(`[data-formancy-part="${name}"]`)] as HTMLElement[]
+const parts = (name: string): HTMLElement[] => [...document.querySelectorAll(`[data-formancy-part="${name}"]`)] as HTMLElement[]
 
 describe('a repeater with the datagrid widget', () => {
   test('calls every control exactly what it called it without the widget', () => {
@@ -145,9 +141,7 @@ describe('a repeater with the datagrid widget', () => {
     mount('datagrid')
 
     // Three columns are sized and `lineTotal` is not, so it takes an even share.
-    expect(parts('datagrid')[0]?.style.getPropertyValue('--fm-datagrid-columns')).toBe(
-      '3fr 1.5fr 1fr 1fr',
-    )
+    expect(parts('datagrid')[0]?.style.getPropertyValue('--fm-datagrid-columns')).toBe('3fr 1.5fr 1fr 1fr')
   })
 
   test('shows a column for every answer, in the order the columns ask for', () => {
@@ -204,12 +198,7 @@ describe('a repeater with the datagrid widget', () => {
     mount('datagrid')
 
     const rows = parts('datagrid-row')
-    const cellCounts = rows.map(
-      (row) =>
-        [...row.children].filter(
-          (child) => child.getAttribute('data-formancy-part') === 'datagrid-cell',
-        ).length,
-    )
+    const cellCounts = rows.map((row) => [...row.children].filter((child) => child.getAttribute('data-formancy-part') === 'datagrid-cell').length)
     expect(cellCounts).toEqual([4, 4])
     expect(parts('datagrid-actions')).toHaveLength(rows.length)
   })
@@ -218,9 +207,7 @@ describe('a repeater with the datagrid widget', () => {
     // The only mechanical guard on "this is not a `role="grid"`". Both drivers operate
     // controls with fireEvent and never press Tab, so a grid that swallowed Tab would
     // pass every fixture in the suite while making the form unusable by keyboard.
-    const tabbables = (): number =>
-      document.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])')
-        .length
+    const tabbables = (): number => document.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])').length
 
     mount(undefined)
     const asBlocks = tabbables()
@@ -285,10 +272,8 @@ describe('the row buttons as marks', () => {
     const text = remove.querySelector('[data-formancy-part="row-action-text"]')
     expect(text?.textContent?.trim()).toBe('Remove item 1 of 2')
 
-    expect(screen.getByRole('button', { name: 'Move Items 1 of 2 down' })
-      .getAttribute('data-formancy-part')).toBe('row-down')
-    expect(screen.getByRole('button', { name: 'Move Items 2 of 2 up' })
-      .getAttribute('data-formancy-part')).toBe('row-up')
+    expect(screen.getByRole('button', { name: 'Move Items 1 of 2 down' }).getAttribute('data-formancy-part')).toBe('row-down')
+    expect(screen.getByRole('button', { name: 'Move Items 2 of 2 up' }).getAttribute('data-formancy-part')).toBe('row-up')
   })
 
   test('the renderer draws no mark of its own', () => {
@@ -304,9 +289,6 @@ describe('the row buttons as marks', () => {
     // And the same button in the block rendering, which a theme leaves as a sentence.
     cleanup()
     mount(undefined)
-    expect(
-      screen.getByRole('button', { name: 'Remove item 1 of 2' })
-        .querySelector('[data-formancy-part="row-action-text"]'),
-    ).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Remove item 1 of 2' }).querySelector('[data-formancy-part="row-action-text"]')).not.toBeNull()
   })
 })

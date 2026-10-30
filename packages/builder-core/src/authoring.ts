@@ -93,11 +93,7 @@ export interface AuthoringOptions {
  * model is a way the run ended, not an error in it, and a caller that had to
  * catch it built the failure by hand and called it a document that did not work.
  */
-export async function authorForm(
-  ask: AskModel,
-  instruction: string,
-  options: AuthoringOptions = {},
-): Promise<AuthoringResult> {
+export async function authorForm(ask: AskModel, instruction: string, options: AuthoringOptions = {}): Promise<AuthoringResult> {
   const system = authoringBriefing()
   const asked = await askChecked(
     ask,
@@ -193,11 +189,7 @@ function checkDocument(answer: Checkable): Verdict<FormSchema, AuthoringProblem>
  * Only the most recent problem is repeated. A model given three rounds of
  * accumulated complaints starts fixing the first one again.
  */
-function userPrompt(
-  instruction: string,
-  current: FormSchema | undefined,
-  latest: AuthoringProblem | undefined,
-): string {
+function userPrompt(instruction: string, current: FormSchema | undefined, latest: AuthoringProblem | undefined): string {
   const parts: string[] = []
 
   if (current !== undefined) {

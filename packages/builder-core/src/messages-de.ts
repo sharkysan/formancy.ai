@@ -27,54 +27,39 @@ export const BUILDER_MESSAGES_DE = {
   'refuse.cannotOpen': 'Dieses Dokument lässt sich nicht im Builder öffnen: {reasons}',
   'refuse.noContainer': 'Kein Container bei „{path}“.',
   'refuse.noField': 'Kein Feld bei „{path}“.',
-  'refuse.moveIntoItself':
-    '„{path}“ lässt sich nicht in sich selbst oder eines seiner eigenen Kinder verschieben.',
-  'refuse.unwrapRenames':
-    'Wenn du „{where}“ auflöst, bekommt jede Antwort darin einen neuen Namen – aus „{from}“ wird „{to}“ –, und {refused}',
-  'refuse.renameFollows':
-    'Wenn du „{before}“ in „{after}“ umbenennst, muss jede Regel mit diesem Namen folgen, und {refused}',
+  'refuse.moveIntoItself': '„{path}“ lässt sich nicht in sich selbst oder eines seiner eigenen Kinder verschieben.',
+  'refuse.unwrapRenames': 'Wenn du „{where}“ auflöst, bekommt jede Antwort darin einen neuen Namen – aus „{from}“ wird „{to}“ –, und {refused}',
+  'refuse.renameFollows': 'Wenn du „{before}“ in „{after}“ umbenennst, muss jede Regel mit diesem Namen folgen, und {refused}',
   'refuse.noRule': 'Keine Regel an Position {index}.',
   'refuse.noLayout': 'Kein Layout namens „{name}“.',
-  'refuse.crossLayout':
-    'Zwischen den Layouts „{from}“ und „{to}“ lässt sich nicht verschieben. Entferne es aus dem einen und platziere es im anderen.',
+  'refuse.crossLayout': 'Zwischen den Layouts „{from}“ und „{to}“ lässt sich nicht verschieben. Entferne es aus dem einen und platziere es im anderen.',
   'refuse.downgrade':
     'Dieses Formular ist gegen Spec {from} geschrieben und kann nicht auf {to} zurück: Was die neuere Version hinzugefügt hat, hätte dort keinen Platz – es wäre Datenverlust statt einer Änderung.',
   'refuse.noLayoutNode': 'An dieser Stelle im Layout „{layout}“ ist nichts.',
-  'refuse.notAContainerNode':
-    'An dieser Stelle im Layout „{layout}“ ist nichts, das andere Knoten aufnehmen kann.',
-  'refuse.unwrapLeaf':
-    '„{where}“ hält eine einzige Antwort. Darin gibt es nichts zu behalten, und Auflösen ist kein anderes Wort für Löschen.',
+  'refuse.notAContainerNode': 'An dieser Stelle im Layout „{layout}“ ist nichts, das andere Knoten aufnehmen kann.',
+  'refuse.unwrapLeaf': '„{where}“ hält eine einzige Antwort. Darin gibt es nichts zu behalten, und Auflösen ist kein anderes Wort für Löschen.',
   'refuse.unwrapRepeater':
     '„{where}“ ist eine Wiederholung, und die Felder darin beschreiben eine ZEILE, keine Liste von Fragen. Sie herauszulösen würde aus den Antworten jeder Zeile je eine einzige Antwort machen und jede Zeile nach der ersten verlieren – und nichts würde es melden, weil das entstehende Formular vollkommen gültig wäre. Verschieb die Felder einzeln, wenn du das gemeint hast.',
 
   'proposal.stale':
     'Das Formular hat sich seit diesem Vorschlag geändert; ihn anzuwenden würde diese Änderung verwerfen. Frag noch einmal, um einen Vorschlag für das Formular in seinem jetzigen Zustand zu bekommen.',
   'proposal.empty': 'Dieser Vorschlag ändert nichts am Formular.',
-  'refuse.i18nNoneYet':
-    'Dieses Formular hat noch keine Übersetzungen. Mach zuerst eine Beschriftung übersetzbar.',
+  'refuse.i18nNoneYet': 'Dieses Formular hat noch keine Übersetzungen. Mach zuerst eine Beschriftung übersetzbar.',
   'refuse.i18nNone': 'Dieses Formular hat keine Übersetzungen.',
-  'refuse.fieldNodeHoldsNothing':
-    'Ein Feldknoten platziert genau ein Feld. Darin gibt es nichts zu behalten.',
-  'refuse.wrapNeedsTwo':
-    'Zum Zusammenfassen braucht es mindestens zwei Knoten. Für einen einzelnen nimm insertLayoutNode.',
-  'refuse.wrapperNotContainer':
-    'Die Hülle muss ein Container sein. Ein Feldknoten kann nichts aufnehmen.',
+  'refuse.fieldNodeHoldsNothing': 'Ein Feldknoten platziert genau ein Feld. Darin gibt es nichts zu behalten.',
+  'refuse.wrapNeedsTwo': 'Zum Zusammenfassen braucht es mindestens zwei Knoten. Für einen einzelnen nimm insertLayoutNode.',
+  'refuse.wrapperNotContainer': 'Die Hülle muss ein Container sein. Ein Feldknoten kann nichts aufnehmen.',
   'refuse.nodeListedTwice': 'Dieser Knoten ist zweimal aufgeführt. Jeder kann nur einmal hinein.',
-  'refuse.wrapContainerWithChild':
-    'Ein Container lässt sich nicht zusammen mit etwas aus seinem Inneren zusammenfassen.',
-  'refuse.moveNodeIntoItself':
-    'Das lässt sich nicht in sich selbst oder eines seiner eigenen Kinder verschieben.',
+  'refuse.wrapContainerWithChild': 'Ein Container lässt sich nicht zusammen mit etwas aus seinem Inneren zusammenfassen.',
+  'refuse.moveNodeIntoItself': 'Das lässt sich nicht in sich selbst oder eines seiner eigenen Kinder verschieben.',
   'refuse.notText': '„{property}“ an „{path}“ ist kein Text, es gibt also nichts zu übersetzen.',
   'refuse.defaultLocale':
     '„{locale}“ ist die Standardsprache: Jede andere Sprache fällt auf sie zurück, und ohne sie hätte jede unübersetzte Meldung nichts, worauf sie zurückfallen kann.',
-  'refuse.notASetting':
-    '„{property}“ ist keine Einstellung. Es ist, was der Knoten ist oder wo er steht, und das ändern die Befehle der Anordnung selbst.',
+  'refuse.notASetting': '„{property}“ ist keine Einstellung. Es ist, was der Knoten ist oder wo er steht, und das ändern die Befehle der Anordnung selbst.',
   'refuse.settingName': '„{property}“ ist als Name einer Einstellung eines Layout-Knotens nicht erlaubt.',
   'translations.unreadable': 'Diese Datei ließ sich nicht lesen: Sie ist kein JSON.',
-  'refuse.notACatalogue':
-    'Das ist keine Übersetzungsdatei eines formancy-Builders: Sie hat keine Sprache und keine Liste von Meldungen.',
-  'refuse.ruleCannotFollow':
-    'Regel {number} („{kind}“ für „{target}“) kann der Änderung nicht folgen: {reason} Ändere oder lösche die Regel zuerst.',
+  'refuse.notACatalogue': 'Das ist keine Übersetzungsdatei eines formancy-Builders: Sie hat keine Sprache und keine Liste von Meldungen.',
+  'refuse.ruleCannotFollow': 'Regel {number} („{kind}“ für „{target}“) kann der Änderung nicht folgen: {reason} Ändere oder lösche die Regel zuerst.',
   'refuse.fieldNodeName': 'Ein Feldknoten trägt den Namen des Feldes, das er platziert.',
 
   'layout.codeFor': 'Code für {name}',
@@ -146,8 +131,7 @@ export const BUILDER_MESSAGES_DE = {
   'said.pageAdded': '{page} hinzugefügt.',
   'said.firstPageAdded': {
     one: '{page} hinzugefügt; sie enthält das eine Feld, das auf oberster Ebene war. Das Formular ist jetzt mehrstufig.',
-    other:
-      '{page} hinzugefügt; sie enthält die {count} Felder, die auf oberster Ebene waren. Das Formular ist jetzt mehrstufig.',
+    other: '{page} hinzugefügt; sie enthält die {count} Felder, die auf oberster Ebene waren. Das Formular ist jetzt mehrstufig.',
   },
   'said.cannotAddPage': 'Die Seite lässt sich nicht hinzufügen: {reason}',
   'said.unwrappedEmpty': '{name} war leer und ist entfernt.',
@@ -175,8 +159,7 @@ export const BUILDER_MESSAGES_DE = {
   'said.cannotAdd': 'Lässt sich nicht hinzufügen: {reason}',
   'keys.block.what': 'das Feld unter dem Fokus als Block speichern',
   'blocks.heading': 'Deine Blöcke',
-  'blocks.none':
-    'Noch keine Blöcke. Speichere ein Feld oder eine Gruppe als Block, um sie wieder zu verwenden.',
+  'blocks.none': 'Noch keine Blöcke. Speichere ein Feld oder eine Gruppe als Block, um sie wieder zu verwenden.',
   'blocks.save': 'Als Block speichern',
   'blocks.name': 'Name des Blocks',
   'blocks.saveConfirm': 'Block speichern',
@@ -187,17 +170,13 @@ export const BUILDER_MESSAGES_DE = {
   },
   'said.blockSavedWhole': '„{name}“ als Block gespeichert.',
   'said.blockAdded': 'Block „{name}“ hinzugefügt – {where}.',
-  'refuse.blockIsPage':
-    'Eine Seite ist kein Block: Speichere ein Feld oder eine Gruppe oder Wiederholung von Feldern.',
-  'refuse.blockInRow':
-    'Ein Feld in einer Zeile einer Wiederholung lässt sich nicht als Block speichern: Seine Regeln gelten für jede Zeile.',
-  'refuse.blockRulesInRow':
-    'Ein Block mit Regeln kann nicht in die Zeile einer Wiederholung: Seine Regeln würden für jede Zeile gelten.',
+  'refuse.blockIsPage': 'Eine Seite ist kein Block: Speichere ein Feld oder eine Gruppe oder Wiederholung von Feldern.',
+  'refuse.blockInRow': 'Ein Feld in einer Zeile einer Wiederholung lässt sich nicht als Block speichern: Seine Regeln gelten für jede Zeile.',
+  'refuse.blockRulesInRow': 'Ein Block mit Regeln kann nicht in die Zeile einer Wiederholung: Seine Regeln würden für jede Zeile gelten.',
   'said.moved': '{name} verschoben: {where}.',
   'said.dropped': '{name} verschoben.',
   'said.cannotMove': 'Lässt sich nicht verschieben: {reason}',
-  'said.upgraded':
-    'Dieses Formular steht jetzt auf Spec-Version {version}. Sonst hat sich nichts geändert.',
+  'said.upgraded': 'Dieses Formular steht jetzt auf Spec-Version {version}. Sonst hat sich nichts geändert.',
   'said.cannotUpgrade': 'Lässt sich nicht anheben: {reason}',
   'said.alreadyNewest': 'es ist bereits auf der neuesten Version',
   'layout.label': 'Anordnung',
@@ -205,8 +184,7 @@ export const BUILDER_MESSAGES_DE = {
   'layout.none':
     'Dieses Formular hat keine Anordnung. Ohne eine zeigen die Renderer jedes Feld in der Reihenfolge des Modells, eines pro Zeile – was ein völlig gutes Formular ist. Füge eine Anordnung hinzu, um Felder nebeneinanderzustellen.',
   'layout.addLayout': 'Anordnung hinzufügen',
-  'layout.placesNothing':
-    'Diese Anordnung platziert noch nichts, also folgt das Formular der Reihenfolge des Modells.',
+  'layout.placesNothing': 'Diese Anordnung platziert noch nichts, also folgt das Formular der Reihenfolge des Modells.',
   'layout.unplaced': 'Nicht in dieser Anordnung',
   'layout.addTitle': 'Zur Anordnung hinzufügen',
   'layout.addWhere': 'Wohin soll {what} kommen?',
@@ -215,19 +193,15 @@ export const BUILDER_MESSAGES_DE = {
   'layout.kind.column': 'Spalte',
   'layout.kind.section': 'Abschnitt',
   'layout.kind.qrcode': 'Code',
-  'layout.hint.row':
-    'Stellt seinen Inhalt nebeneinander – und wieder untereinander, wenn für zwei kein Platz ist.',
+  'layout.hint.row': 'Stellt seinen Inhalt nebeneinander – und wieder untereinander, wenn für zwei kein Platz ist.',
   'layout.hint.column': 'Eine Seite einer Zeile.',
   'layout.hint.section': 'Eine benannte Gruppe von Elementen, als eine angesagt.',
-  'layout.hint.qrcode':
-    'Ein scanbarer Code aus einer Antwort. Erfasst selbst nichts und zeigt die Antwort als Text daneben.',
-  'layout.codeLocked':
-    'Ein scanbarer Code braucht Spec-Version {version}. Dieses Formular nennt Version {current}.',
+  'layout.hint.qrcode': 'Ein scanbarer Code aus einer Antwort. Erfasst selbst nichts und zeigt die Antwort als Text daneben.',
+  'layout.codeLocked': 'Ein scanbarer Code braucht Spec-Version {version}. Dieses Formular nennt Version {current}.',
   'layout.hint.unplaced': 'Noch nirgends platziert.',
   'layout.newCode': '{name} als Code',
   'layout.wrapTitle': 'Was soll in einer Zeile neben {name} stehen?',
-  'layout.wrapHelp':
-    'Wähle das Element, das neben {name} kommt. Beide kommen in eine neue Zeile, {name} zuerst.',
+  'layout.wrapHelp': 'Wähle das Element, das neben {name} kommt. Beide kommen in eine neue Zeile, {name} zuerst.',
   'keys.layout.arrows.what': 'zwischen Elementen wechseln',
   'keys.layout.add.what': 'Zeile, Spalte, Abschnitt, Code oder Feld hinzufügen',
   'keys.layout.move.what': 'das gewählte Element verschieben',
@@ -241,8 +215,7 @@ export const BUILDER_MESSAGES_DE = {
   'said.cannotWrap': 'Lässt sich nicht zusammenfassen: {reason}',
   'said.nothingBeside': 'Neben {name} lässt sich nichts stellen.',
   'options.heading': 'Auswahlmöglichkeiten',
-  'options.empty':
-    'Noch keine Auswahlmöglichkeiten. Eine Auswahlliste ohne sie lässt sich nicht beantworten.',
+  'options.empty': 'Noch keine Auswahlmöglichkeiten. Eine Auswahlliste ohne sie lässt sich nicht beantworten.',
   'options.label': 'Beschriftung der Auswahl',
   'options.value': 'Gespeicherter Wert',
   'options.remove': '{name} entfernen',
@@ -264,8 +237,7 @@ export const BUILDER_MESSAGES_DE = {
   'options.keepPlace': 'Behält beim Mischen ihren Platz',
   'list.remove': 'Entfernen',
   'columns.heading': 'Spalten',
-  'columns.empty':
-    'Keine Spalten eingerichtet. Jede Antwort bekommt trotzdem eine, in der Reihenfolge der Felder.',
+  'columns.empty': 'Keine Spalten eingerichtet. Jede Antwort bekommt trotzdem eine, in der Reihenfolge der Felder.',
   'columns.answer': 'Antwort',
   'columns.noSuchField': '{name} – kein solches Feld',
   'columns.width': 'Breite, als Anteil',
@@ -332,20 +304,16 @@ export const BUILDER_MESSAGES_DE = {
     'Jetzt sichtbar, weil die Regel sich nicht entscheiden lässt: Eine Regel, die scheitert, zeigt das Feld, das sie verbergen sollte.',
   'overview.now.required.holds': 'Jetzt Pflicht.',
   'overview.now.required.fails': 'Jetzt keine Pflicht.',
-  'overview.now.required.undecided':
-    'Jetzt keine Pflicht, weil die Regel sich nicht entscheiden lässt.',
+  'overview.now.required.undecided': 'Jetzt keine Pflicht, weil die Regel sich nicht entscheiden lässt.',
   'overview.now.disabled.holds': 'Jetzt gesperrt.',
   'overview.now.disabled.fails': 'Jetzt bearbeitbar.',
-  'overview.now.disabled.undecided':
-    'Jetzt bearbeitbar, weil die Regel sich nicht entscheiden lässt.',
+  'overview.now.disabled.undecided': 'Jetzt bearbeitbar, weil die Regel sich nicht entscheiden lässt.',
   'overview.now.validate.holds': 'Jetzt angenommen.',
   'overview.now.validate.fails': 'Jetzt abgelehnt.',
-  'overview.now.validate.undecided':
-    'Jetzt abgelehnt, weil die Regel sich nicht entscheiden lässt: Eine Prüfung, die scheitert, lehnt die Antwort ab.',
+  'overview.now.validate.undecided': 'Jetzt abgelehnt, weil die Regel sich nicht entscheiden lässt: Eine Prüfung, die scheitert, lehnt die Antwort ab.',
   'overview.now.skip.holds': 'Wird jetzt übersprungen.',
   'overview.now.skip.fails': 'Wird jetzt nicht übersprungen.',
-  'overview.now.skip.undecided':
-    'Wird jetzt nicht übersprungen, weil die Regel sich nicht entscheiden lässt.',
+  'overview.now.skip.undecided': 'Wird jetzt nicht übersprungen, weil die Regel sich nicht entscheiden lässt.',
   'overview.row': 'Zeile {number}',
   'overview.rows.none': 'Die Vorschau hat noch keine Zeilen, also gibt es nichts zu entscheiden.',
   // Not "Regel hinzufügen" again: in German the draft's submit and the button that
@@ -369,16 +337,13 @@ export const BUILDER_MESSAGES_DE = {
     one: '{count} Übersetzung geschrieben.',
     other: '{count} Übersetzungen geschrieben.',
   },
-  'translations.unknown':
-    'Nicht geschrieben, weil dieses Formular sie nicht mehr hat – die Datei wurde exportiert, bevor ein Feld entfernt wurde: {list}',
-  'translations.stale':
-    'Geschrieben, aber aus einem Wortlaut übersetzt, der sich inzwischen geändert hat – einen Blick wert: {list}',
+  'translations.unknown': 'Nicht geschrieben, weil dieses Formular sie nicht mehr hat – die Datei wurde exportiert, bevor ein Feld entfernt wurde: {list}',
+  'translations.stale': 'Geschrieben, aber aus einem Wortlaut übersetzt, der sich inzwischen geändert hat – einen Blick wert: {list}',
   'translations.missing': 'Nicht übersetzt',
   'translations.preview': 'Vorschau auf {locale}',
 
   'prompt.label': 'Beschreib das Formular oder die Änderung, die du willst',
-  'prompt.example':
-    'Ein Kontaktformular mit E-Mail-Adresse und Nachricht, und einer Telefonnummer nur, wenn jemand um Rückruf bittet',
+  'prompt.example': 'Ein Kontaktformular mit E-Mail-Adresse und Nachricht, und einer Telefonnummer nur, wenn jemand um Rückruf bittet',
   'prompt.write': 'Schreiben',
   'prompt.writing': 'Wird geschrieben …',
   'prompt.stop': 'Anhalten',
@@ -390,8 +355,7 @@ export const BUILDER_MESSAGES_DE = {
   },
   'prompt.review.costsStops': {
     one: 'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und {count} Szenario würde nicht mehr gelten: {list}',
-    other:
-      'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und {count} Szenarien würden nicht mehr gelten: {list}',
+    other: 'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und {count} Szenarien würden nicht mehr gelten: {list}',
   },
   'prompt.asked': 'Als Antwort auf „{instruction}“',
   'prompt.apply': 'Diese Änderungen übernehmen',
@@ -401,23 +365,19 @@ export const BUILDER_MESSAGES_DE = {
   'prompt.status.refused': 'Nicht übernommen. {reason}',
   'prompt.status.ready': {
     one: 'Bereit zur Prüfung: {count} Änderung, die keine bereits erfassten Antworten betrifft. Nichts wurde übernommen.',
-    other:
-      'Bereit zur Prüfung: {count} Änderungen, von denen keine bereits erfasste Antworten betrifft. Nichts wurde übernommen.',
+    other: 'Bereit zur Prüfung: {count} Änderungen, von denen keine bereits erfasste Antworten betrifft. Nichts wurde übernommen.',
   },
   'prompt.status.readyCosts': {
     one: 'Bereit zur Prüfung: {count} Änderung, und sie betrifft bereits erfasste Antworten. Nichts wurde übernommen.',
-    other:
-      'Bereit zur Prüfung: {count} Änderungen, und einige davon betreffen bereits erfasste Antworten. Nichts wurde übernommen.',
+    other: 'Bereit zur Prüfung: {count} Änderungen, und einige davon betreffen bereits erfasste Antworten. Nichts wurde übernommen.',
   },
   'prompt.status.readyAfter': {
     one: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderung, die keine bereits erfassten Antworten betrifft. Nichts wurde übernommen.',
-    other:
-      'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderungen, von denen keine bereits erfasste Antworten betrifft. Nichts wurde übernommen.',
+    other: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderungen, von denen keine bereits erfasste Antworten betrifft. Nichts wurde übernommen.',
   },
   'prompt.status.readyAfterCosts': {
     one: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderung, und sie betrifft bereits erfasste Antworten. Nichts wurde übernommen.',
-    other:
-      'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderungen, und einige davon betreffen bereits erfasste Antworten. Nichts wurde übernommen.',
+    other: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderungen, und einige davon betreffen bereits erfasste Antworten. Nichts wurde übernommen.',
   },
   'prompt.status.wouldStop': 'Würde bei Übernahme nicht mehr gelten: {list}.',
   'prompt.status.wouldHold': 'Würde bei Übernahme wieder gelten: {list}.',
@@ -428,15 +388,13 @@ export const BUILDER_MESSAGES_DE = {
   'prompt.status.stopped': 'Angehalten. Nichts wurde übernommen.',
   'prompt.status.unreachable': 'Nichts wurde übernommen. Das Modell war nicht erreichbar: {reason}',
   'prompt.status.unreachableNoReason': 'Nichts wurde übernommen. Das Modell war nicht erreichbar.',
-  'prompt.status.busy':
-    'Nichts wurde übernommen. Eine andere Anfrage wartet noch auf die Antwort des Modells: Schließe sie zuerst ab oder halte sie an.',
+  'prompt.status.busy': 'Nichts wurde übernommen. Eine andere Anfrage wartet noch auf die Antwort des Modells: Schließe sie zuerst ab oder halte sie an.',
   'prompt.status.declined': 'Nichts wurde übernommen. Das Modell hat diese Anfrage abgelehnt.',
 
   'relay.title': 'Diese Anfrage zu einem Modell bringen',
   'relay.turn': 'Runde {attempt} von höchstens {limit}',
   'relay.first': 'Kopiere die Anfrage in einen Chat mit einem Modell und füge seine ganze Antwort unten ein.',
-  'relay.retry':
-    'Diese Antwort hat nicht funktioniert. Kopiere, was falsch war, in denselben Chat und füge die neue Antwort unten ein.',
+  'relay.retry': 'Diese Antwort hat nicht funktioniert. Kopiere, was falsch war, in denselben Chat und füge die neue Antwort unten ein.',
   'relay.leaves.authoring':
     'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage deine Beschreibung und, wenn sie ein Formular ändert, das ganze Formular samt seinen Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
   'relay.leaves.translation':
@@ -453,8 +411,7 @@ export const BUILDER_MESSAGES_DE = {
   'relay.check': 'Diese Antwort prüfen',
   'relay.anyway': 'Trotzdem verwenden',
   'relay.copied': 'Kopiert. Füge es in den Chat ein.',
-  'relay.copyRefused':
-    'Dieser Browser hat das Kopieren nicht erlaubt. Der Text ist im Feld der Anfrage markiert: Kopiere ihn von dort.',
+  'relay.copyRefused': 'Dieser Browser hat das Kopieren nicht erlaubt. Der Text ist im Feld der Anfrage markiert: Kopiere ihn von dort.',
   'relay.noObject':
     'In dieser Antwort ist kein JSON-Objekt. Kopiere die ganze Antwort samt Codeblock – oder verwende sie trotzdem, dann erfährt es das Modell.',
 
@@ -473,8 +430,7 @@ export const BUILDER_MESSAGES_DE = {
   'translate.apply': 'Diese Übersetzungen übernehmen',
   'translate.rest': 'Den Rest übersetzen',
   'translate.preview': 'Vorschau auf {locale}, wie vorgeschlagen',
-  'translate.dropped':
-    'Nicht geschrieben, weil niemand danach gefragt hat oder eine Person sie inzwischen übersetzt hat: {list}',
+  'translate.dropped': 'Nicht geschrieben, weil niemand danach gefragt hat oder eine Person sie inzwischen übersetzt hat: {list}',
   'translate.status.asking': 'Die fehlenden Übersetzungen werden angefragt und die Antwort geprüft.',
   'translate.status.elsewhereAsking': 'Ein Modell übersetzt gerade auf {locale}. Wähle {locale}, um es zu verfolgen oder anzuhalten.',
   'translate.status.elsewhereHeld':
@@ -503,8 +459,7 @@ export const BUILDER_MESSAGES_DE = {
   },
   'translate.status.failed': {
     one: 'Nichts wurde übernommen. {count} Versuch, und die Antwort war immer noch kein Katalog für diese Sprache.',
-    other:
-      'Nichts wurde übernommen. {count} Versuche, und die Antwort war immer noch kein Katalog für diese Sprache.',
+    other: 'Nichts wurde übernommen. {count} Versuche, und die Antwort war immer noch kein Katalog für diese Sprache.',
   },
 
   'scenarios.label': 'Szenarien',
@@ -526,8 +481,7 @@ export const BUILDER_MESSAGES_DE = {
   'palette.firstRow': 'Erste Zeile',
 
   'rule.visible.label': 'Zeige dieses Feld, wenn',
-  'rule.visible.hint':
-    'Sonst verborgen, und seine Antwort wird geleert, sofern das Feld es nicht anders festlegt.',
+  'rule.visible.hint': 'Sonst verborgen, und seine Antwort wird geleert, sofern das Feld es nicht anders festlegt.',
   'rule.required.label': 'Verlange eine Antwort, wenn',
   'rule.required.hint': 'Nur solange die Bedingung gilt.',
   'rule.disabled.label': 'Sperre dieses Feld, wenn',
@@ -541,8 +495,7 @@ export const BUILDER_MESSAGES_DE = {
   'rule.computed.hint':
     'Ein CEL-Ausdruck, der die Antwort liefert und neu berechnet wird, sobald sich ändert, was er liest. Das Feld wird ausgefüllt statt erfragt, also wird ersetzt, was jemand eingetippt hat.',
   'rule.skip.label': 'Überspringe diese Seite, wenn',
-  'rule.skip.hint':
-    'Die Seite wird in beide Richtungen übergangen, und ihre Fragen werden weder gestellt noch geprüft.',
+  'rule.skip.hint': 'Die Seite wird in beide Richtungen übergangen, und ihre Fragen werden weder gestellt noch geprüft.',
 
   'operator.is': 'ist',
   'operator.isNot': 'ist nicht',

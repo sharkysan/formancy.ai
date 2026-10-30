@@ -64,9 +64,7 @@ describe('a session opened in German', () => {
     // session words every one of them — the builders only display it.
     const session = createBuilderSession(base, { text: german })
 
-    const message = refusal(
-      session.moveField(['details', 'address'], { parent: ['details', 'address'], index: 0 }),
-    )
+    const message = refusal(session.moveField(['details', 'address'], { parent: ['details', 'address'], index: 0 }))
 
     expect(message).toBe(german('refuse.moveIntoItself', { path: 'details.address' }))
     expect(message).not.toBe(english('refuse.moveIntoItself', { path: 'details.address' }))
@@ -90,12 +88,8 @@ describe('a session opened in German', () => {
     const targets = view.moveTargetsFor(['intro', 'email'])
     const target = targets[0]!
 
-    expect(target.label).toBe(
-      describeTarget(session.document(), target.location, ['intro', 'email'], german),
-    )
-    expect(target.label).not.toBe(
-      describeTarget(session.document(), target.location, ['intro', 'email'], english),
-    )
+    expect(target.label).toBe(describeTarget(session.document(), target.location, ['intro', 'email'], german))
+    expect(target.label).not.toBe(describeTarget(session.document(), target.location, ['intro', 'email'], english))
   })
 
   test('gives a new field German starting words, because they are written into the form', () => {
@@ -129,12 +123,7 @@ describe('a session opened in German', () => {
   })
 
   test('describes where a layout node would land in German', () => {
-    const label = describeLayoutTarget(
-      arranged(),
-      { layout: 'web', parent: [1], index: 0 },
-      undefined,
-      german,
-    )
+    const label = describeLayoutTarget(arranged(), { layout: 'web', parent: [1], index: 0 }, undefined, german)
 
     expect(label).toBe(german('target.firstItem', { where: german('layout.empty.row') }))
   })
@@ -154,9 +143,7 @@ describe('a session opened with no language', () => {
   test('speaks English, so nothing that never asked for a language changes', () => {
     const session = createBuilderSession(base)
 
-    expect(refusal(session.unwrapField(['details', 'passengers']))).toBe(
-      english('refuse.unwrapRepeater', { where: 'details.passengers' }),
-    )
+    expect(refusal(session.unwrapField(['details', 'passengers']))).toBe(english('refuse.unwrapRepeater', { where: 'details.passengers' }))
     expect(session.text).toBeDefined()
     expect(session.text.locale).toBe('en-GB')
   })
@@ -208,9 +195,7 @@ describe('the refusals the first catalogue missed', () => {
   test('a layout setting that is not a setting is refused in German', () => {
     const session = createBuilderSession(translated(), { text: german })
 
-    expect(refusal(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'kind', 'row'))).toBe(
-      german('refuse.notASetting', { property: 'kind' }),
-    )
+    expect(refusal(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'kind', 'row'))).toBe(german('refuse.notASetting', { property: 'kind' }))
   })
 
   test('a file that is not a catalogue is refused in words rather than thrown', () => {

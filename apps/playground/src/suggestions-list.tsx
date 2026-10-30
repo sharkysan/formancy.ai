@@ -34,12 +34,7 @@ export function SuggestionsList({
       <ul aria-labelledby={lead}>
         {offered.map((suggestion, index) => (
           <li key={suggestion.words}>
-            <SuggestionButton
-              suggestion={suggestion}
-              from={from}
-              describedBy={`${lead}-${String(index)}`}
-              onTried={onTried}
-            />
+            <SuggestionButton suggestion={suggestion} from={from} describedBy={`${lead}-${String(index)}`} onTried={onTried} />
             <span id={`${lead}-${String(index)}`}>{suggestion.shows}</span>
           </li>
         ))}
@@ -65,10 +60,7 @@ function SuggestionButton({
   onTried: (() => void) | undefined
 }): ReactElement {
   const { runs, session } = from
-  const follow = useCallback(
-    (listener: () => void) => followTrying(suggestion.feature, runs, session, listener),
-    [suggestion.feature, runs, session],
-  )
+  const follow = useCallback((listener: () => void) => followTrying(suggestion.feature, runs, session, listener), [suggestion.feature, runs, session])
   const open = useSyncExternalStore(follow, () => canTry(suggestion, runs, session))
 
   return (

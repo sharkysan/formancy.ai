@@ -64,13 +64,7 @@ export interface BuilderProps {
   onSaveBlock?: (block: BuilderBlock) => void
 }
 
-export function FormancyBuilder({
-  session,
-  label,
-  onSelect,
-  blocks,
-  onSaveBlock,
-}: BuilderProps): ReactElement {
+export function FormancyBuilder({ session, label, onSelect, blocks, onSaveBlock }: BuilderProps): ReactElement {
   const view = useBuilder(session)
   // Every word this tree shows, in the language the session was opened in. What a
   // command SAYS afterwards is not worded here at all: builder-core decides it,
@@ -108,9 +102,7 @@ export function FormancyBuilder({
    * first and does not depend on this.
    */
   const [dragging, setDragging] = useState<readonly string[] | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ index: number; edge: 'before' | 'after' } | null>(
-    null,
-  )
+  const [dropTarget, setDropTarget] = useState<{ index: number; edge: 'before' | 'after' } | null>(null)
 
   const itemRefs = useRef<Array<HTMLLIElement | null>>([])
   const treeRef = useRef<HTMLUListElement | null>(null)
@@ -140,8 +132,7 @@ export function FormancyBuilder({
   if (listed.current !== listing) {
     listed.current = listing
     const wanted = focusedKey.current
-    const at =
-      wanted === null ? -1 : view.nodes.findIndex((node) => node.keyPath.join('.') === wanted)
+    const at = wanted === null ? -1 : view.nodes.findIndex((node) => node.keyPath.join('.') === wanted)
     // Gone — deleted — and the clamped index below is then the right answer.
     if (at !== -1 && at !== focusedIndex) setFocusedIndex(at)
   }
@@ -165,7 +156,6 @@ export function FormancyBuilder({
     // otherwise make this fire on every render of theirs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedKey])
-
 
   // Move focus WITHIN the tree, never INTO it. A component that grabs focus
   // when it mounts takes it from wherever the person actually was, and on a
@@ -284,8 +274,7 @@ export function FormancyBuilder({
   /** Types this document's spec version does not define yet. */
   const locked = typesNeedingUpgrade(view.document.specVersion, text)
 
-  const insertTargets = (type: string): MoveTarget[] =>
-    view.insertTargetsFor(newFieldOfType(type, existingKeys, session.text))
+  const insertTargets = (type: string): MoveTarget[] => view.insertTargetsFor(newFieldOfType(type, existingKeys, session.text))
 
   const cancelDialog = (): void => {
     setAdding(null)
@@ -414,11 +403,7 @@ export function FormancyBuilder({
       {count === 0 ? <p data-formancy-part="builder-empty">{text('tree.empty')}</p> : null}
 
       {adding === null ? null : 'block' in adding ? (
-        <div
-          role="dialog"
-          aria-label={text('blocks.addWhere', { name: adding.block.name })}
-          data-formancy-part="add-where"
-        >
+        <div role="dialog" aria-label={text('blocks.addWhere', { name: adding.block.name })} data-formancy-part="add-where">
           <ul>
             {blockTargets(view.document, adding.block, session.text).map((target) => (
               <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>
@@ -456,9 +441,7 @@ export function FormancyBuilder({
                       <button type="button" onClick={() => setAdding({ block })}>
                         {block.name}
                       </button>
-                      {block.description === undefined ? null : (
-                        <span data-formancy-part="palette-hint">{block.description}</span>
-                      )}
+                      {block.description === undefined ? null : <span data-formancy-part="palette-hint">{block.description}</span>}
                     </li>
                   ))}
                 </ul>
@@ -486,11 +469,7 @@ export function FormancyBuilder({
           </button>
         </div>
       ) : (
-        <div
-          role="dialog"
-          aria-label={text('tree.addWhere', { type: labelForType(adding.type, text) })}
-          data-formancy-part="add-where"
-        >
+        <div role="dialog" aria-label={text('tree.addWhere', { type: labelForType(adding.type, text) })} data-formancy-part="add-where">
           <ul>
             {insertTargets(adding.type).map((target) => (
               <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>
@@ -507,11 +486,7 @@ export function FormancyBuilder({
       )}
 
       {moving === null ? null : (
-        <div
-          role="dialog"
-          aria-label={text('tree.moveTitle', { name: nameOf(view.document, moving.node.def) })}
-          data-formancy-part="move-palette"
-        >
+        <div role="dialog" aria-label={text('tree.moveTitle', { name: nameOf(view.document, moving.node.def) })} data-formancy-part="move-palette">
           <ul>
             {moving.targets.map((target) => (
               <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>
@@ -589,5 +564,3 @@ function samePath(a: readonly string[], b: readonly string[]): boolean {
 function labelForType(type: string, text: BuilderText): string {
   return paletteEntries(undefined, text).find((entry) => entry.type === type)?.title ?? type
 }
-
-

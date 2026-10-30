@@ -26,9 +26,5 @@ export { UploaderProvider, useUploader } from './uploads.js'
 export { RichTextEditorProvider, useRichTextEditorFactory } from './rich-text-editor.js'
 export { ResumeNotice } from './resume-notice.js'
 export type { ResumeMigration, ResumeNoticeProps } from './resume-notice.js'
-export type {
-  RichTextEditorFactory,
-  RichTextEditorHandle,
-  RichTextEditorMount,
-} from './rich-text-editor.js'
+export type { RichTextEditorFactory, RichTextEditorHandle, RichTextEditorMount } from './rich-text-editor.js'
 export type { StoredFile, Uploader, UploadOptions } from './uploads.js'

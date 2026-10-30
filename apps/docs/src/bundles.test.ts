@@ -37,9 +37,7 @@ const brotliKilobytes = (packageName: string, entry = 'index.mjs'): number => {
    * on was still writing its dist while this read it.
    */
   if (!existsSync(file)) {
-    throw new Error(
-      `${packageName} has no dist/${entry}. This measures built output — run \`pnpm build\` first; the figures in §9.3 are not the problem.`,
-    )
+    throw new Error(`${packageName} has no dist/${entry}. This measures built output — run \`pnpm build\` first; the figures in §9.3 are not the problem.`)
   }
   const built = readFileSync(file)
   if (built.length < 1024) {
@@ -67,16 +65,10 @@ const brotliKilobytes = (packageName: string, entry = 'index.mjs'): number => {
     }
   }
   visit(entry)
-  return [...loaded].reduce(
-    (total, name) => total + brotliCompressSync(readFileSync(join(dist, name))).length / 1024,
-    0,
-  )
+  return [...loaded].reduce((total, name) => total + brotliCompressSync(readFileSync(join(dist, name))).length / 1024, 0)
 }
 
-const quality = readFileSync(
-  join(repo, 'docs', 'architecture', '09-quality-requirements.md'),
-  'utf8',
-)
+const quality = readFileSync(join(repo, 'docs', 'architecture', '09-quality-requirements.md'), 'utf8')
 
 describe('the bundle figures in §9.3', () => {
   test('are the figures a fresh measurement gives', () => {
@@ -105,16 +97,14 @@ describe('the bundle figures in §9.3', () => {
       { name: 'core/words', packageName: 'core', entry: 'words.mjs' },
     ] as const
     for (const { name, packageName, entry } of ENTRIES) {
-      const row = new RegExp(String.raw`^\|\s*\`@formancy/${name}\` bundle\s*\|.*$`, 'm')
-        .exec(quality)?.[0]
+      const row = new RegExp(String.raw`^\|\s*\`@formancy/${name}\` bundle\s*\|.*$`, 'm').exec(quality)?.[0]
       const quoted = row === undefined ? undefined : /([\d.]+)\s*kB/.exec(row.split('|').at(-2) ?? '')?.[1]
       expect(quoted, `no figure for @formancy/${name} in §9.3`).toBeDefined()
 
       const measured = brotliKilobytes(packageName, entry)
-      expect(
-        Math.abs(Number(quoted) - measured),
-        `§9.3 says @formancy/${name} is ${String(quoted)} kB; it measures ${measured.toFixed(1)} kB`,
-      ).toBeLessThan(0.15)
+      expect(Math.abs(Number(quoted) - measured), `§9.3 says @formancy/${name} is ${String(quoted)} kB; it measures ${measured.toFixed(1)} kB`).toBeLessThan(
+        0.15,
+      )
     }
   })
 

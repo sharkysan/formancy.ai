@@ -75,9 +75,7 @@ describe('what a signature field may declare', () => {
     // Points scale and a picture does not — that is the whole reason for storing
     // strokes. But a stroke at x=300 means nothing without the width it was
     // drawn in, so the box travels with the field rather than with each answer.
-    expect(
-      validateSchema(form('3', [{ key: 'mark', type: 'signature', box: [600, 200] }])).valid,
-    ).toBe(true)
+    expect(validateSchema(form('3', [{ key: 'mark', type: 'signature', box: [600, 200] }])).valid).toBe(true)
   })
 
   test('and refuses a box that is not two positive numbers', () => {
@@ -93,21 +91,15 @@ describe('what a signature field may declare', () => {
     // Structural limits are not optional here: an unbounded point list is a
     // payload amplifier, and every other unbounded thing in this format has a
     // ceiling for the same reason.
-    expect(
-      validateSchema(form('3', [{ key: 'mark', type: 'signature', maxPoints: 4_000 }])).valid,
-    ).toBe(true)
-    expect(
-      validateSchema(form('3', [{ key: 'mark', type: 'signature', maxPoints: 0 }])).valid,
-    ).toBe(false)
+    expect(validateSchema(form('3', [{ key: 'mark', type: 'signature', maxPoints: 4_000 }])).valid).toBe(true)
+    expect(validateSchema(form('3', [{ key: 'mark', type: 'signature', maxPoints: 0 }])).valid).toBe(false)
   })
 
   test('nothing about how it looks, which belongs to the theme', () => {
     // The pen colour, the line weight and the box's border are appearance, and
     // appearance belongs to the consumer's design system in this product
     // ([0008](../../../docs/decisions/0008-layered-packages.md)).
-    const report = validateSchema(
-      form('3', [{ key: 'mark', type: 'signature', penColour: '#000' }]),
-    )
+    const report = validateSchema(form('3', [{ key: 'mark', type: 'signature', penColour: '#000' }]))
     expect(report.valid).toBe(false)
   })
 })

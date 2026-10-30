@@ -67,9 +67,7 @@ describe('the starter schema', () => {
     }
     walk(STARTER_SCHEMA.model.fields as readonly FieldDef[])
 
-    const missing = FIELD_WIDGETS.filter(
-      (widget) => !widgetsUsed.has(widget) && NOT_DEMONSTRATED_YET[widget] === undefined,
-    )
+    const missing = FIELD_WIDGETS.filter((widget) => !widgetsUsed.has(widget) && NOT_DEMONSTRATED_YET[widget] === undefined)
     expect(missing).toEqual([])
 
     // A guard on the guard: an empty widget list would pass forever.
@@ -97,16 +95,10 @@ describe('the starter schema', () => {
     // `DEFAULT_COMPONENTS.hidden` is null in both renderers, so there is nothing to
     // place. Excluded by TYPE rather than by name, so the next hidden field needs no
     // edit here and a non-hidden field can never be waved through.
-    const hidden = new Set(
-      (STARTER_SCHEMA.model.fields as readonly FieldDef[])
-        .filter((field) => field.type === 'hidden')
-        .map((field) => field.key),
-    )
+    const hidden = new Set((STARTER_SCHEMA.model.fields as readonly FieldDef[]).filter((field) => field.type === 'hidden').map((field) => field.key))
     const gaps = (STARTER_SCHEMA.layouts ?? []).flatMap((layout) => {
       const missing = unreferencedPaths(STARTER_SCHEMA, layout.name) ?? []
-      return missing
-        .filter((path) => !hidden.has(path))
-        .map((path) => `${layout.name} does not place ${path}`)
+      return missing.filter((path) => !hidden.has(path)).map((path) => `${layout.name} does not place ${path}`)
     })
 
     expect(gaps).toEqual([])
@@ -178,9 +170,7 @@ describe('the starter schema', () => {
 
   test('demonstrates a rule on a field in a repeater row, written by the editor', () => {
     // The builder writes one since 0129; a demo with none would leave the claim in prose.
-    const inRow = (STARTER_SCHEMA.logic?.rules ?? []).filter(
-      (rule) => rule.target.includes('[]') && rule.editor !== undefined,
-    )
+    const inRow = (STARTER_SCHEMA.logic?.rules ?? []).filter((rule) => rule.target.includes('[]') && rule.editor !== undefined)
 
     expect(inRow.length).toBeGreaterThan(0)
   })

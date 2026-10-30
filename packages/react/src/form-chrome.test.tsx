@@ -98,9 +98,7 @@ describe('the submit control', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: true, data: expect.objectContaining({ email: 'a@b.ch' }) }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ ok: true, data: expect.objectContaining({ email: 'a@b.ch' }) }))
   })
 
   test('a failed submit reports errors in the engine shape', () => {
@@ -109,9 +107,7 @@ describe('the submit control', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: false, errors: { email: ['required'] } }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ ok: false, errors: { email: ['required'] } }))
   })
 })
 

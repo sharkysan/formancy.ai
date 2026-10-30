@@ -55,7 +55,6 @@ export async function setFormAccess(
   return { ok: true }
 }
 
-
 export interface ListedSubmission {
   id: string
   version: number
@@ -66,10 +65,7 @@ export interface ListedSubmission {
 /** The submissions of one form, newest first, each tagged with the schema
  *  version that produced it. Undefined for an unknown form: the caller must
  *  404, and an empty list would lie about that. */
-export async function listSubmissions(
-  deps: ServerDeps,
-  path: string,
-): Promise<ListedSubmission[] | undefined> {
+export async function listSubmissions(deps: ServerDeps, path: string): Promise<ListedSubmission[] | undefined> {
   const form = await deps.storage.getFormByPath(path)
   if (form === undefined) return undefined
 
@@ -175,10 +171,7 @@ function csvCell(value: string): string {
  * hands back the same one, so a response whose answer was lost and is sent again after a reload
  * is refused as already sent rather than stored twice.
  */
-export async function startDraft(
-  deps: ServerDeps,
-  input: { path: string },
-): Promise<{ draftId: string; token: string; submissionToken: string } | undefined> {
+export async function startDraft(deps: ServerDeps, input: { path: string }): Promise<{ draftId: string; token: string; submissionToken: string } | undefined> {
   const current = await resolveForm(deps, input.path)
   if (current === undefined) return undefined
 
@@ -254,10 +247,7 @@ export type ResumeOutcome =
  * and `breaking` refuses to rebind at all. A successful rebind is persisted,
  * so the migration runs once, not on every resume.
  */
-export async function resumeDraft(
-  deps: ServerDeps,
-  input: { path: string; draftId: string; token: string },
-): Promise<ResumeOutcome | undefined> {
+export async function resumeDraft(deps: ServerDeps, input: { path: string; draftId: string; token: string }): Promise<ResumeOutcome | undefined> {
   const current = await resolveForm(deps, input.path)
   if (current === undefined) return undefined
 
@@ -287,8 +277,7 @@ export async function resumeDraft(
 
   const changes = diffSchemas(draftVersion.schema, current.schema)
   const severity = changes.reduce<'compatible' | 'lossy' | 'breaking'>(
-    (worst, change) =>
-      SEVERITY_RANK[change.severity] > SEVERITY_RANK[worst] ? change.severity : worst,
+    (worst, change) => (SEVERITY_RANK[change.severity] > SEVERITY_RANK[worst] ? change.severity : worst),
     'compatible',
   )
 
@@ -425,10 +414,7 @@ export interface ListedVersion {
 
 /** A form's version history, newest first — metadata only, because a history
  *  view rendering fifty full schemas would be its own denial of service. */
-export async function listVersions(
-  deps: ServerDeps,
-  path: string,
-): Promise<ListedVersion[] | undefined> {
+export async function listVersions(deps: ServerDeps, path: string): Promise<ListedVersion[] | undefined> {
   const form = await deps.storage.getFormByPath(path)
   if (form === undefined) return undefined
   const versions = await deps.storage.listVersionsByForm(form.id)
@@ -440,9 +426,7 @@ export async function listVersions(
 }
 
 /** One version's document, or why there is none to give. */
-export type FormVersionOutcome =
-  | { ok: true; version: number; schemaHash: string; schema: FormSchema }
-  | { ok: false; kind: 'unknown_form' | 'unknown_version' }
+export type FormVersionOutcome = { ok: true; version: number; schemaHash: string; schema: FormSchema } | { ok: false; kind: 'unknown_form' | 'unknown_version' }
 
 /**
  * One published version's document, by its number (0207): what an older version's submissions are

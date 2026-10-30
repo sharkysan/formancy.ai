@@ -311,11 +311,7 @@ describe('the arrangement pane', () => {
     seen.push(...shown(root))
 
     expect(untranslated(seen, layoutWords(session.document()))).toEqual([])
-    expect(
-      ['has no arrangement', 'Add an arrangement', 'needs spec version'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['has no arrangement', 'Add an arrangement', 'needs spec version'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 })
 
@@ -354,23 +350,13 @@ describe('the property panels and their editors', () => {
   } as unknown as FormSchema
 
   const panelWords = (document: FormSchema): string[] => {
-    const properties = [
-      ...editablePropertiesFor('select'),
-      ...editablePropertiesFor('repeater', 'datagrid'),
-      ...editableLayoutPropertiesFor('table'),
-    ]
+    const properties = [...editablePropertiesFor('select'), ...editablePropertiesFor('repeater', 'datagrid'), ...editableLayoutPropertiesFor('table')]
     return [
       document.title,
-      ...flatten(document).flatMap((node) => [
-        nameOf(document, node.def),
-        node.def.key,
-        node.def.type,
-      ]),
+      ...flatten(document).flatMap((node) => [nameOf(document, node.def), node.def.key, node.def.type]),
       // A property's choices are the format's tokens; its title and description are
       // the spec's words, translated and marked, and so not allowed here (0121).
-      ...properties.flatMap((property) => [
-        ...(property.choices ?? []),
-      ]),
+      ...properties.flatMap((property) => [...(property.choices ?? [])]),
       'table',
       'Switzerland',
       'ch',
@@ -461,11 +447,7 @@ describe('the logic panel', () => {
 
     await user.click(screen.getAllByRole('button').at(-1)!)
     await settle()
-    await user.click(
-      screen
-        .getAllByRole('button')
-        .find((button) => button.textContent?.includes('Add a comparison'))!,
-    )
+    await user.click(screen.getAllByRole('button').find((button) => button.textContent?.includes('Add a comparison'))!)
     await settle()
     seen.push(...shown(root))
     const kind = root.querySelector('select')!
@@ -476,10 +458,7 @@ describe('the logic panel', () => {
     await settle()
     seen.push(...shown(root))
 
-    const words = [
-      ruled.title,
-      ...flatten(ruled).flatMap((node) => [nameOf(ruled, node.def), node.def.key]),
-    ]
+    const words = [ruled.title, ...flatten(ruled).flatMap((node) => [nameOf(ruled, node.def), node.def.key])]
     expect(untranslated(seen, words)).toEqual([])
     expect(
       [
@@ -539,10 +518,7 @@ describe('the translations, prompt and scenario panes', () => {
   const catalogueWords = (document: FormSchema): string[] => [
     document.title,
     ...Object.keys(document.i18n?.messages ?? {}),
-    ...Object.values(document.i18n?.messages ?? {}).flatMap((messages) => [
-      ...Object.keys(messages),
-      ...Object.values(messages),
-    ]),
+    ...Object.values(document.i18n?.messages ?? {}).flatMap((messages) => [...Object.keys(messages), ...Object.values(messages)]),
   ]
 
   test('the translations pane shows nothing in English that the catalogue did not give it', async () => {
@@ -599,8 +575,7 @@ describe('the translations, prompt and scenario panes', () => {
       },
     } as unknown as FormSchema
     const pseudo = () => createBuilderSession(three, { text: createBuilderText(pseudoLanguage()) })
-    const part = (root: Element, name: string): Element | null =>
-      root.querySelector(`[data-formancy-part="${name}"]`)
+    const part = (root: Element, name: string): Element | null => root.querySelector(`[data-formancy-part="${name}"]`)
     /** What is on screen outside the previews, which are the form in the renderer's words. */
     const outsidePreviews = (root: Element): string[] => {
       const copy = root.cloneNode(true) as Element
@@ -692,9 +667,7 @@ describe('the translations, prompt and scenario panes', () => {
     })
     const problems = told.ok ? [] : told.problems.map((problem) => problem.detail)
 
-    expect(
-      untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems]),
-    ).toEqual([])
+    expect(untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems])).toEqual([])
     expect(
       [
         'Ask a model for the',
@@ -734,13 +707,7 @@ describe('the translations, prompt and scenario panes', () => {
       ...start,
       model: { fields: [...start.model.fields, { key: 'email', type: 'text', label: 'Email' }] },
     } as unknown as FormSchema
-    const words = [
-      ...proposeEdit(start, written).changes.flatMap((change) => [change.path, change.detail]),
-      'Name',
-      'Email',
-      'add an email',
-      'anything',
-    ]
+    const words = [...proposeEdit(start, written).changes.flatMap((change) => [change.path, change.detail]), 'Name', 'Email', 'add an email', 'anything']
 
     const good = await mounted(FormancyPromptPane, {
       session: createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) }),
@@ -839,11 +806,7 @@ describe('the translations, prompt and scenario panes', () => {
 
     expect(untranslated(seen, ['anything', 'the host said this'])).toEqual([])
     expect(seen.map((text) => text.trim())).toContain('⟦Stop⟧')
-    expect(
-      ['Writing the form', 'Stopped.', 'could not be reached'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['Writing the form', 'Stopped.', 'could not be reached'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 
   test('the prompt pane, when the model declines, likewise', async () => {
@@ -897,11 +860,7 @@ describe('the translations, prompt and scenario panes', () => {
       valid: true,
       visible: { canton: true },
     }
-    const words = [
-      ...proposeEdit(right, backwards).changes.flatMap((change) => [change.path, change.detail]),
-      example.name,
-      'invert it',
-    ]
+    const words = [...proposeEdit(right, backwards).changes.flatMap((change) => [change.path, change.detail]), example.name, 'invert it']
 
     const view = await mounted(FormancyPromptPane, {
       session: createBuilderSession(right, { text: createBuilderText(pseudoLanguage()) }),
@@ -918,11 +877,7 @@ describe('the translations, prompt and scenario panes', () => {
     const seen = shown(view.root)
 
     expect(untranslated(seen, words)).toEqual([])
-    expect(
-      ['scenario would stop holding', 'Would stop holding if applied'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['scenario would stop holding', 'Would stop holding if applied'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 
   test('the relay pane, on a first turn and a retry, a copy made and one refused, and given prose, likewise', async () => {
@@ -944,9 +899,7 @@ describe('the translations, prompt and scenario panes', () => {
     })
     // The first copy is let through and the second refused, so both of what Copy can say
     // are on screen once: a walk that only ever refused never showed "Copied".
-    vi.spyOn(navigator.clipboard, 'writeText')
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValue(new Error('refused'))
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValueOnce(undefined).mockRejectedValue(new Error('refused'))
 
     void authorForm(relay.ask, 'anything', { current: start })
     const first = relay.waiting()!
@@ -1057,9 +1010,7 @@ describe('the translations, prompt and scenario panes', () => {
       { name: 'empty is valid', changes: {}, valid: true },
       { name: 'reason is hidden', changes: {}, visible: { reason: false } },
     ] as unknown as Scenario[]
-    const failures = runScenarios(form, scenarios).flatMap((result) =>
-      result.failures.map((failure) => failure.detail),
-    )
+    const failures = runScenarios(form, scenarios).flatMap((result) => result.failures.map((failure) => failure.detail))
     const session = createBuilderSession(form, { text: createBuilderText(pseudoLanguage()) })
 
     const one = await mounted(FormancyScenarioPane, { session, scenarios, removable: true })
@@ -1070,11 +1021,7 @@ describe('the translations, prompt and scenario panes', () => {
     seen.push(...shown(none.root))
 
     expect(untranslated(seen, [...failures, 'empty is valid', 'reason is hidden'])).toEqual([])
-    expect(
-      ['Scenarios', 'does not hold', 'Remove empty is valid', 'No scenarios'].filter(
-        (prefix) => !seen.some((text) => text.includes(prefix)),
-      ),
-    ).toEqual([])
+    expect(['Scenarios', 'does not hold', 'Remove empty is valid', 'No scenarios'].filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
   })
 })
 

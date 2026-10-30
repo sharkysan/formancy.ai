@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  CONTAINER_FIELD_TYPES,
-  CURRENT_SPEC_VERSION,
-  FIELD_TYPES,
-  RULE_KINDS,
-} from '@formancy/spec'
+import { CONTAINER_FIELD_TYPES, CURRENT_SPEC_VERSION, FIELD_TYPES, RULE_KINDS } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import { createFormEngine } from '@formancy/core'
 import type { FieldDef, FieldType, FormSchema, LogicRule } from '@formancy/spec'
@@ -43,12 +38,10 @@ const typesUsed = (fields: readonly FieldDef[]): Set<FieldType> => {
 
 const rulesOf = (schema: FormSchema): readonly LogicRule[] => schema.logic?.rules ?? []
 
-const kindsUsed = (schema: FormSchema): Set<string> =>
-  new Set(rulesOf(schema).map((rule) => rule.kind))
+const kindsUsed = (schema: FormSchema): Set<string> => new Set(rulesOf(schema).map((rule) => rule.kind))
 
 /** Every page key, in document order. */
-const pageKeys = (schema: FormSchema): string[] =>
-  schema.model.fields.filter((field) => field.type === 'page').map((field) => field.key)
+const pageKeys = (schema: FormSchema): string[] => schema.model.fields.filter((field) => field.type === 'page').map((field) => field.key)
 
 describe('the wizard demo', () => {
   test('validates against the spec — a demo must never open on an error screen', () => {
@@ -182,7 +175,10 @@ describe('the wizard demo, run rather than read', () => {
     })
 
   const skippedKeys = (form: ReturnType<typeof createFormEngine>): string[] =>
-    form.pages().filter((page) => page.skipped).map((page) => page.key)
+    form
+      .pages()
+      .filter((page) => page.skipped)
+      .map((page) => page.key)
 
   test('skips the visa step while nobody has said they need a visa', () => {
     // The static text on step one says exactly this. It was false.

@@ -30,8 +30,7 @@ const OUTLASTED: Answer = {
   status: 409,
   body: {
     error: 'busy',
-    message:
-      'This upload took longer than the server holds a file for one request, so it was not accepted. Try again.',
+    message: 'This upload took longer than the server holds a file for one request, so it was not accepted. Try again.',
   },
 }
 
@@ -99,8 +98,7 @@ export async function fileRoutes(
       const field = typeof body.field === 'string' ? body.field : undefined
       const name = typeof body.name === 'string' ? body.name : undefined
       const size = typeof body.size === 'number' ? body.size : undefined
-      const contentType =
-        typeof body.contentType === 'string' ? body.contentType : 'application/octet-stream'
+      const contentType = typeof body.contentType === 'string' ? body.contentType : 'application/octet-stream'
 
       if (field === undefined || name === undefined || size === undefined) {
         return reply.code(400).send({
@@ -139,8 +137,7 @@ export async function fileRoutes(
       )
 
       if (!outcome.ok) {
-        const status =
-          outcome.reason === 'not_allowed' ? 403 : outcome.reason === 'too_large' ? 413 : 400
+        const status = outcome.reason === 'not_allowed' ? 403 : outcome.reason === 'too_large' ? 413 : 400
         return reply.code(status).send({ error: outcome.reason })
       }
 
@@ -171,13 +168,9 @@ export async function fileRoutes(
    */
   await app.register(async (byteRoutes) => {
     byteRoutes.removeAllContentTypeParsers()
-    byteRoutes.addContentTypeParser(
-      '*',
-      { parseAs: 'buffer', bodyLimit: maxFileBytes },
-      (_request, body, done) => {
-        done(null, body)
-      },
-    )
+    byteRoutes.addContentTypeParser('*', { parseAs: 'buffer', bodyLimit: maxFileBytes }, (_request, body, done) => {
+      done(null, body)
+    })
 
     byteRoutes.put(
       '/f/:path/files/:id',
@@ -237,12 +230,10 @@ export async function fileRoutes(
 
         // Every way out that does not keep the bytes gives the file back, and before the reply:
         // a client that sends this file again, as it is told to, must not find it still held.
-        const answer = await receive(fileStore, file, bytes, lease, request.log).catch(
-          async (error: unknown) => {
-            await giveBack(file.id, lease, request.log)
-            throw error
-          },
-        )
+        const answer = await receive(fileStore, file, bytes, lease, request.log).catch(async (error: unknown) => {
+          await giveBack(file.id, lease, request.log)
+          throw error
+        })
         if (answer.status !== 204) await giveBack(file.id, lease, request.log)
         return reply.code(answer.status).send(answer.body)
       },
@@ -270,13 +261,7 @@ export async function fileRoutes(
    *
    * Returns the answer rather than sending it, so the route can give the lease back first.
    */
-  async function receive(
-    store: FileStore,
-    file: FileRecord,
-    bytes: Buffer,
-    lease: string,
-    log: FastifyBaseLogger,
-  ): Promise<Answer> {
+  async function receive(store: FileStore, file: FileRecord, bytes: Buffer, lease: string, log: FastifyBaseLogger): Promise<Answer> {
     // Asked before the bytes are kept, so a file the deployment's scanner refuses is never
     // in its store, not even until the collector runs. The row stays offered: a retry may
     // send the bytes again (0131).

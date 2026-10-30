@@ -16,12 +16,7 @@ export interface AttemptOutcome {
   error?: string
 }
 
-export function afterAttempt(
-  delivery: DeliveryRecord,
-  outcome: AttemptOutcome,
-  now: Date,
-  random: () => number,
-): DeliveryRecord {
+export function afterAttempt(delivery: DeliveryRecord, outcome: AttemptOutcome, now: Date, random: () => number): DeliveryRecord {
   const attempt = delivery.attempt + 1
 
   if (outcome.ok) {
@@ -49,11 +44,7 @@ export function afterAttempt(
 export interface OutboxDeps {
   storage: Storage
   /** Posts one delivery. Injected so the loop is testable without a network. */
-  send: (
-    delivery: DeliveryRecord,
-    webhook: WebhookRecord,
-    nowSeconds: number,
-  ) => Promise<AttemptOutcome>
+  send: (delivery: DeliveryRecord, webhook: WebhookRecord, nowSeconds: number) => Promise<AttemptOutcome>
   now: () => Date
   random: () => number
 }
@@ -156,14 +147,9 @@ async function findWebhook(storage: Storage, id: string): Promise<WebhookRecord 
  * second, but this service does not get to assume the receiver is
  * well-behaved.
  */
-export type ReplayOutcome =
-  | { ok: true; delivery: DeliveryRecord }
-  | { ok: false; kind: 'unknown' | 'not-dead'; state?: DeliveryRecord['state'] }
+export type ReplayOutcome = { ok: true; delivery: DeliveryRecord } | { ok: false; kind: 'unknown' | 'not-dead'; state?: DeliveryRecord['state'] }
 
-export async function replayDelivery(
-  deps: { storage: Storage; now: () => Date },
-  id: string,
-): Promise<ReplayOutcome> {
+export async function replayDelivery(deps: { storage: Storage; now: () => Date }, id: string): Promise<ReplayOutcome> {
   const delivery = await deps.storage.getDelivery(id)
   if (delivery === undefined) return { ok: false, kind: 'unknown' }
   if (delivery.state !== 'dead') return { ok: false, kind: 'not-dead', state: delivery.state }

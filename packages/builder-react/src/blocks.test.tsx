@@ -33,12 +33,7 @@ const form: FormSchema = {
 } as FormSchema
 
 const postal = (): BuilderBlock => {
-  const saved = blockFrom(
-    form,
-    ['billing'],
-    { id: 'postal', name: 'Postal address' },
-    createBuilderText(),
-  )
+  const saved = blockFrom(form, ['billing'], { id: 'postal', name: 'Postal address' }, createBuilderText())
   if (!saved.ok) throw new Error(saved.message)
   return saved.block
 }
@@ -58,29 +53,19 @@ describe('blocks in the builder', () => {
     await user.click(within(where).getByRole('button', { name: 'Order, after Billing address' }))
 
     // A second billing group, renamed so the form's keys stay unique.
-    expect(session.document().model.fields.map((field) => field.key)).toEqual([
-      'customer',
-      'billing',
-      'billing2',
-    ])
-    expect(screen.getByRole('status').textContent).toBe(
-      'Added the block “Postal address” to Order, after Billing address.',
-    )
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['customer', 'billing', 'billing2'])
+    expect(screen.getByRole('status').textContent).toBe('Added the block “Postal address” to Order, after Billing address.')
   })
 
   test('with none saved yet, say how to make one', async () => {
     const user = userEvent.setup()
-    render(
-      <FormancyBuilder session={createBuilderSession(form)} blocks={[]} onSaveBlock={() => {}} />,
-    )
+    render(<FormancyBuilder session={createBuilderSession(form)} blocks={[]} onSaveBlock={() => {}} />)
     await user.tab()
 
     await user.keyboard('a')
 
     expect(
-      within(screen.getByRole('dialog', { name: 'Add a field' })).getByText(
-        'No blocks yet. Save a field or a group as a block to use it again.',
-      ),
+      within(screen.getByRole('dialog', { name: 'Add a field' })).getByText('No blocks yet. Save a field or a group as a block to use it again.'),
     ).toBeTruthy()
   })
 

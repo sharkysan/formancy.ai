@@ -47,8 +47,7 @@ const schema = (): FormSchema => ({
 
 const open = (document: FormSchema = schema()): BuilderSession => createBuilderSession(document)
 
-const rowNames = (): string[] =>
-  screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
+const rowNames = (): string[] => screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
 
 describe('adding a code to the arrangement', () => {
   /**
@@ -83,9 +82,7 @@ describe('adding a code to the arrangement', () => {
     // discoverability equivalent of an undocumented feature. Checked against the palette
     // rather than against a literal.
     const user = await openPalette()
-    const offered = screen
-      .getByRole('dialog', { name: 'Add to the arrangement' })
-      .querySelectorAll('li > button, li > [data-formancy-part="palette-locked"]')
+    const offered = screen.getByRole('dialog', { name: 'Add to the arrangement' }).querySelectorAll('li > button, li > [data-formancy-part="palette-locked"]')
     expect(offered.length).toBeGreaterThan(3)
 
     const legend = document.querySelector('[data-formancy-part="layout-keys"]')?.textContent ?? ''
@@ -142,11 +139,7 @@ describe('adding a code to the arrangement', () => {
     const session = open(spec2())
     const user = await openPalette(session)
     await user.click(screen.getByRole('button', { name: 'Code' }))
-    await user.click(
-      within(
-        screen.getByRole('dialog', { name: 'Which answer should the code hold?' }),
-      ).getByRole('button', { name: 'Email' }),
-    )
+    await user.click(within(screen.getByRole('dialog', { name: 'Which answer should the code hold?' })).getByRole('button', { name: 'Email' }))
 
     // Then the ordinary where-should-it-go step every other entry uses.
     const where = screen.getByRole('dialog', { name: /Where should the code for Email go\?/ })
@@ -163,11 +156,7 @@ describe('adding a code to the arrangement', () => {
     const session = open(spec2())
     const user = await openPalette(session)
     await user.click(screen.getByRole('button', { name: 'Code' }))
-    await user.click(
-      within(
-        screen.getByRole('dialog', { name: 'Which answer should the code hold?' }),
-      ).getByRole('button', { name: 'Email' }),
-    )
+    await user.click(within(screen.getByRole('dialog', { name: 'Which answer should the code hold?' })).getByRole('button', { name: 'Email' }))
     const where = screen.getByRole('dialog', { name: /Where should the code for Email go\?/ })
     await user.click(within(where).getAllByRole('button')[0]!)
 
@@ -224,12 +213,7 @@ describe('reading the arrangement', () => {
   test('shows every node, naming containers by what they hold', () => {
     render(<FormancyLayoutPane session={open()} />)
 
-    expect(rowNames()).toEqual([
-      'Row with First name and Last name',
-      'First name',
-      'Last name',
-      'Email',
-    ])
+    expect(rowNames()).toEqual(['Row with First name and Last name', 'First name', 'Last name', 'Email'])
   })
 
   test('nesting is in aria-level, not only in indentation', () => {
@@ -744,9 +728,7 @@ describe('reporting which node the arrangement is on', () => {
     const seen: Array<readonly number[] | null> = []
     const user = userEvent.setup()
     const session = open()
-    render(
-      <FormancyLayoutPane session={session} layout="web" onSelect={(path) => seen.push(path)} />,
-    )
+    render(<FormancyLayoutPane session={session} layout="web" onSelect={(path) => seen.push(path)} />)
 
     // Reported on arrival, without anybody moving.
     expect(seen.at(-1)).toEqual([0])
@@ -761,9 +743,7 @@ describe('reporting which node the arrangement is on', () => {
     // position 2 before a move is a different node after it.
     const seen: Array<readonly number[] | null> = []
     const session = open()
-    render(
-      <FormancyLayoutPane session={session} layout="web" onSelect={(path) => seen.push(path)} />,
-    )
+    render(<FormancyLayoutPane session={session} layout="web" onSelect={(path) => seen.push(path)} />)
 
     expect(seen.at(-1)).toEqual([0])
     expect(seen.every((path) => path === null || Array.isArray(path))).toBe(true)
@@ -782,10 +762,7 @@ describe('adding a code', () => {
     const session = open(sourced())
 
     expect(
-      session.insertLayoutNode(
-        { layout: 'web', parent: [], index: 0 },
-        { kind: 'qrcode', path: 'first', label: 'First name as a code' } as never,
-      ).ok,
+      session.insertLayoutNode({ layout: 'web', parent: [], index: 0 }, { kind: 'qrcode', path: 'first', label: 'First name as a code' } as never).ok,
     ).toBe(true)
     expect(session.canPublish().valid).toBe(true)
   })
@@ -797,10 +774,7 @@ describe('adding a code', () => {
     // the end. It is also what makes the label above load-bearing rather than polite.
     const session = open(sourced())
 
-    const outcome = session.insertLayoutNode(
-      { layout: 'web', parent: [], index: 0 },
-      { kind: 'qrcode', path: 'first' } as never,
-    )
+    const outcome = session.insertLayoutNode({ layout: 'web', parent: [], index: 0 }, { kind: 'qrcode', path: 'first' } as never)
 
     expect(outcome.ok).toBe(false)
     expect(session.canPublish().valid).toBe(true)

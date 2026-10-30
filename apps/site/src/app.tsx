@@ -2,12 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode } from 'react'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
-import {
-  FormancyForm,
-  FormancyProvider,
-  RichTextEditorProvider,
-  UploaderProvider,
-} from '@formancy/react'
+import { FormancyForm, FormancyProvider, RichTextEditorProvider, UploaderProvider } from '@formancy/react'
 import { createRichTextEditor } from '@formancy/tiptap'
 import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
@@ -56,13 +51,11 @@ export function App(): ReactElement {
           <div className="hero-copy">
             <p className="eyebrow">Visual form builder for Angular and React</p>
             <h1>
-              <span className="glow">Build the form.</span>{' '}<span className="hero-payoff">Ship your product.</span>
+              <span className="glow">Build the form.</span> <span className="hero-payoff">Ship your product.</span>
             </h1>
             <p className="lede">
-              From a simple signup to a multi-step application: build it visually, add rules,
-              and make it yours. Embed your form in Angular or React with your own design system.
-              Conditional questions, live validation and calculated totals are already part of
-              the toolkit.
+              From a simple signup to a multi-step application: build it visually, add rules, and make it yours. Embed your form in Angular or React with your
+              own design system. Conditional questions, live validation and calculated totals are already part of the toolkit.
             </p>
             <div className="actions">
               <a className="action primary" href={PLAYGROUND}>
@@ -79,9 +72,21 @@ export function App(): ReactElement {
         </Section>
 
         <div className="product-path wide" aria-label="From idea to answers">
-          <a href={PLAYGROUND}><span>01 / BUILD</span><strong>Your idea. A working form.</strong><i aria-hidden="true">↗</i></a>
-          <a href="#stack"><span>02 / CONNECT</span><strong>Angular or React. Your style.</strong><i aria-hidden="true">↘</i></a>
-          <a href="#run"><span>03 / COLLECT</span><strong>Your answers. Your infrastructure.</strong><i aria-hidden="true">↘</i></a>
+          <a href={PLAYGROUND}>
+            <span>01 / BUILD</span>
+            <strong>Your idea. A working form.</strong>
+            <i aria-hidden="true">↗</i>
+          </a>
+          <a href="#stack">
+            <span>02 / CONNECT</span>
+            <strong>Angular or React. Your style.</strong>
+            <i aria-hidden="true">↘</i>
+          </a>
+          <a href="#run">
+            <span>03 / COLLECT</span>
+            <strong>Your answers. Your infrastructure.</strong>
+            <i aria-hidden="true">↘</i>
+          </a>
         </div>
 
         <Marquee />
@@ -94,10 +99,9 @@ export function App(): ReactElement {
           <p className="eyebrow">From editor to your application</p>
           <h2>Your next form starts in an editor.</h2>
           <p className="lede">
-            Build a registration form, an application or an internal workflow. Choose the fields,
-            arrange them into sections and pages, and decide when a question appears or becomes
-            required. Your form is saved as JSON and rendered by native Angular or React
-            components. With the formancy backend, the same rules also check incoming submissions.
+            Build a registration form, an application or an internal workflow. Choose the fields, arrange them into sections and pages, and decide when a
+            question appears or becomes required. Your form is saved as JSON and rendered by native Angular or React components. With the formancy backend, the
+            same rules also check incoming submissions.
           </p>
 
           <div className="mirror">
@@ -120,16 +124,14 @@ export function App(): ReactElement {
             <div className="side">
               <h3>Guide people as they fill in the form</h3>
               <p>
-                Show relevant questions, calculate totals and explain validation errors as people
-                type. Define the rules once and use them in either framework.
+                Show relevant questions, calculate totals and explain validation errors as people type. Define the rules once and use them in either framework.
               </p>
             </div>
             <div className="side server">
               <h3>Check answers before storing them</h3>
               <p>
-                The optional backend checks submissions against the same form version and rules.
-                It recalculates totals on the server, so changing a value in the browser cannot
-                bypass those checks.
+                The optional backend checks submissions against the same form version and rules. It recalculates totals on the server, so changing a value in
+                the browser cannot bypass those checks.
               </p>
             </div>
           </div>
@@ -139,18 +141,16 @@ export function App(): ReactElement {
           <p className="eyebrow">Try the forms your users will see</p>
           <h2>Click an answer. Watch the form adapt.</h2>
           <p className="lede">
-            Try these three interactive examples. Change an answer to reveal follow-up questions
-            or update a total. Switch themes to see how the same form can fit different products.
-            These examples use React; the same form definitions also work in Angular.
+            Try these three interactive examples. Change an answer to reveal follow-up questions or update a total. Switch themes to see how the same form can
+            fit different products. These examples use React; the same form definitions also work in Angular.
           </p>
 
           <Examples />
 
           <p className="note">
-            Nothing here is sent anywhere — the page is a static site, and a file you attach stays
-            in this tab, which the submission says out loud rather than pretending otherwise.{' '}
-            <a href={PLAYGROUND}>Open the form builder</a> to add and arrange fields yourself,
-            then preview your form in React and Angular.
+            Nothing here is sent anywhere — the page is a static site, and a file you attach stays in this tab, which the submission says out loud rather than
+            pretending otherwise. <a href={PLAYGROUND}>Open the form builder</a> to add and arrange fields yourself, then preview your form in React and
+            Angular.
           </p>
         </Section>
 
@@ -166,14 +166,12 @@ export function App(): ReactElement {
               <p className="eyebrow">For coding agents</p>
               <h2>Your agent writes the form. formancy checks it before anyone sees it.</h2>
               <p className="lede">
-                One line gives Claude Code — or any MCP client — seven tools. Four of them work
-                with no server and no account. The agent writes a form, is told exactly which
-                expression would silently compute nothing, fixes it, and publishes.
+                One line gives Claude Code — or any MCP client — seven tools. Four of them work with no server and no account. The agent writes a form, is told
+                exactly which expression would silently compute nothing, fixes it, and publishes.
               </p>
               <p className="note">
-                The builder does the same thing for people: describe a form in a sentence and get
-                one — through the same validation, so nothing reaches the editor until it would
-                actually work.
+                The builder does the same thing for people: describe a form in a sentence and get one — through the same validation, so nothing reaches the
+                editor until it would actually work.
               </p>
             </div>
             <Transcript />
@@ -189,9 +187,8 @@ export function App(): ReactElement {
             </span>
           </h2>
           <p className="lede">
-            Use the same form definition in either framework. Start with a supplied theme or
-            connect your own components and styles. React hooks and Angular signals integrate
-            the form with your application; the shared engine handles its rules.
+            Use the same form definition in either framework. Start with a supplied theme or connect your own components and styles. React hooks and Angular
+            signals integrate the form with your application; the shared engine handles its rules.
           </p>
 
           {/* One list, not a diagram beside a list. The planes below ARE these
@@ -228,9 +225,8 @@ export function App(): ReactElement {
           </ol>
 
           <p className="note">
-            The server imports the same three bottom layers the browser does — the identical build,
-            not a port of it. Both renderers are held to one published conformance suite, and a
-            renderer that behaves differently fails it, including one somebody else writes.
+            The server imports the same three bottom layers the browser does — the identical build, not a port of it. Both renderers are held to one published
+            conformance suite, and a renderer that behaves differently fails it, including one somebody else writes.
           </p>
         </Section>
 
@@ -242,9 +238,8 @@ export function App(): ReactElement {
             <p className="eyebrow">Accessibility</p>
             <h2>Edit forms with a mouse or a keyboard.</h2>
             <p className="lede">
-              Add, move and arrange fields without dragging. The editor offers keyboard controls
-              and undo, while the rendered forms connect labels, descriptions and validation errors
-              for assistive technology. Both renderers are checked by the same accessibility tests.
+              Add, move and arrange fields without dragging. The editor offers keyboard controls and undo, while the rendered forms connect labels, descriptions
+              and validation errors for assistive technology. Both renderers are checked by the same accessibility tests.
             </p>
 
             <div className="keys">
@@ -263,10 +258,8 @@ export function App(): ReactElement {
             <p className="eyebrow">Self-hosted</p>
             <h2>Keep forms and submissions on your infrastructure.</h2>
             <p className="lede">
-              Add the optional formancy backend when you need to store submissions, let people
-              resume drafts, export answers to CSV or notify other systems through webhooks.
-              Run it with Docker and PostgreSQL. Each submission keeps its form version, and the
-              audit log records who accessed the data.
+              Add the optional formancy backend when you need to store submissions, let people resume drafts, export answers to CSV or notify other systems
+              through webhooks. Run it with Docker and PostgreSQL. Each submission keeps its form version, and the audit log records who accessed the data.
             </p>
 
             <div className="terminal">
@@ -281,19 +274,18 @@ export function App(): ReactElement {
               <pre>
                 <span className="prompt">$</span> docker compose up -d{'\n'}
                 <span className="ok">✔</span>
-                <span className="out"> postgres   :5439</span>
+                <span className="out"> postgres :5439</span>
                 {'\n'}
                 <span className="ok">✔</span>
-                <span className="out"> formancy   :4380</span>
+                <span className="out"> formancy :4380</span>
                 {'\n'}
                 <span className="ok">✔</span>
-                <span className="out"> admin      :4382</span>
+                <span className="out"> admin :4382</span>
               </pre>
             </div>
 
             <p className="note">
-              No Redis, no second store, no hosted dependency. Point it at your own Postgres in
-              production and nothing about it phones home.
+              No Redis, no second store, no hosted dependency. Point it at your own Postgres in production and nothing about it phones home.
             </p>
           </Section>
         </div>
@@ -427,12 +419,7 @@ function Examples(): ReactElement {
         ))}
       </div>
 
-      <div
-        className="demo"
-        role="tabpanel"
-        id={`example-${example.id}`}
-        aria-labelledby={`example-tab-${example.id}`}
-      >
+      <div className="demo" role="tabpanel" id={`example-${example.id}`} aria-labelledby={`example-tab-${example.id}`}>
         <FormancyProvider engine={engine} key={example.id}>
           <div className="demo-code">
             <div className="window">
@@ -461,12 +448,7 @@ function Examples(): ReactElement {
               <span className="form-window-title">rendered by @formancy/react</span>
               <span className="themes" role="group" aria-label="Theme">
                 {FORM_THEMES.map((each) => (
-                  <button
-                    key={each.id}
-                    type="button"
-                    aria-pressed={theme === each.id}
-                    onClick={() => setTheme(each.id)}
-                  >
+                  <button key={each.id} type="button" aria-pressed={theme === each.id} onClick={() => setTheme(each.id)}>
                     {each.label}
                   </button>
                 ))}
@@ -590,8 +572,7 @@ function Transcript(): ReactElement {
           <b>validate_form</b>
         </li>
         <li className="t-err">
-          <b>✕ monthly (computed)</b> no such overload: double * int. A number field holds a
-          double — write 4 as 4.0.
+          <b>✕ monthly (computed)</b> no such overload: double * int. A number field holds a double — write 4 as 4.0.
         </li>
         <li className="t-tool">
           <b>validate_form</b>
@@ -688,11 +669,7 @@ function Panel({ journey }: { journey: ReturnType<typeof useJourney> }): ReactEl
         </span>
       </header>
       <pre>{JSON.stringify(journey.data, null, 2)}</pre>
-      {journey.seen.has('finale') ? (
-        <p className="sent">sent</p>
-      ) : journey.complete ? (
-        <p className="sent">ready to send</p>
-      ) : null}
+      {journey.seen.has('finale') ? <p className="sent">sent</p> : journey.complete ? <p className="sent">ready to send</p> : null}
     </aside>
   )
 }
@@ -721,20 +698,15 @@ function Finale({ journey }: { journey: ReturnType<typeof useJourney> }): ReactE
   }
 
   return (
-    <section
-      id="finale"
-      className={sent ? 'finale wide sent' : 'finale wide'}
-      data-section="finale"
-      ref={journey.register('finale')}
-    >
+    <section id="finale" className={sent ? 'finale wide sent' : 'finale wide'} data-section="finale" ref={journey.register('finale')}>
       {/* The claim beside the evidence. Stacked, the receipt sat below the sentence
           describing it and the section ran to two screens; side by side, the words and
           the submission they are about are read together, which is the whole payoff. */}
       <div className="finale-words">
         <h2>You have been filling in a form.</h2>
         <p className="lede">
-          Every section answered one field. The panel in the corner was a real submission the
-          whole way down — the same shape the engine produces, built the same way.
+          Every section answered one field. The panel in the corner was a real submission the whole way down — the same shape the engine produces, built the
+          same way.
         </p>
 
         {/* Announced once, politely: somebody who cannot see the stamp land should still

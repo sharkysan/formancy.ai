@@ -3,14 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, test } from 'vitest'
 import type { FastifyInstance } from 'fastify'
-import {
-  authorForm,
-  declinedAnswer,
-  draftScenarios,
-  modelBriefing,
-  modelRequestKind,
-  translateCatalogue,
-} from '@formancy/builder-core'
+import { authorForm, declinedAnswer, draftScenarios, modelBriefing, modelRequestKind, translateCatalogue } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { createMemoryStorage } from '@formancy/server-core'
@@ -144,10 +137,7 @@ describe('whether there is a model', () => {
     // Which provider a deployment pays is the operator's business, not the public's.
     const { app, tokens } = await serve(configured(double().completer))
     expect((await app.inject({ method: 'GET', url: '/model' })).statusCode).toBe(401)
-    expect(
-      (await app.inject({ method: 'GET', url: '/model', headers: { authorization: `Bearer ${tokens.viewer}` } }))
-        .statusCode,
-    ).toBe(403)
+    expect((await app.inject({ method: 'GET', url: '/model', headers: { authorization: `Bearer ${tokens.viewer}` } })).statusCode).toBe(403)
   })
 })
 
@@ -284,11 +274,7 @@ describe('what a builder sends about a form', () => {
     await draftScenarios(throughTheRoute, form, 'Every question is answered.')
 
     expect(statuses).toEqual([200, 200, 200])
-    expect(asked.map((prompt) => prompt.system)).toEqual([
-      modelBriefing('authoring'),
-      modelBriefing('translation'),
-      modelBriefing('scenarios'),
-    ])
+    expect(asked.map((prompt) => prompt.system)).toEqual([modelBriefing('authoring'), modelBriefing('translation'), modelBriefing('scenarios')])
   }, 30_000)
 })
 
@@ -310,9 +296,7 @@ describe('how often', () => {
 describe('what comes back when there is no answer', () => {
   test('a refusal is a decline, with its reason, so the run ends on one turn', async () => {
     // Returned as text it would be checked as a form, and asked again.
-    const { app, tokens } = await serve(
-      configured(double({ ok: false, failure: 'refused', reason: 'The model service declined this request.' }).completer),
-    )
+    const { app, tokens } = await serve(configured(double({ ok: false, failure: 'refused', reason: 'The model service declined this request.' }).completer))
     const response = await ask(app, tokens.editor, { kind: 'authoring', user: 'x' })
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({ declined: 'The model service declined this request.' })
@@ -333,9 +317,7 @@ describe('what comes back when there is no answer', () => {
     // nor the log. The operator has the status, in both of those (C3).
     const written: string[] = []
     const { app, tokens, storage } = await serve(
-      configured(
-        double({ ok: false, failure: 'unavailable', status: 401, cause: 'invalid x-api-key for org-12345' }).completer,
-      ),
+      configured(double({ ok: false, failure: 'unavailable', status: 401, cause: 'invalid x-api-key for org-12345' }).completer),
       undefined,
       undefined,
       { sink: { write: (line) => written.push(line) }, level: 'info' },

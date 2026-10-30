@@ -150,9 +150,7 @@ export function createStop(): Stop {
 }
 
 /** What one answer came to: the thing asked for, or what was wrong with it. */
-export type Verdict<T, P> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly problem: P }
+export type Verdict<T, P> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly problem: P }
 
 /** How a run of turns ended. */
 export type Asked<T, P> =
@@ -214,11 +212,7 @@ export async function askChecked<T, P>(
   const limit = Math.max(1, options.attempts ?? DEFAULT_ATTEMPTS)
   const problems: P[] = []
   let lastAnswer = ''
-  const ended = (
-    how: 'gave-up' | 'stopped' | 'unreachable' | 'busy' | 'declined',
-    attempts: number,
-    reason?: string,
-  ): Asked<T, P> => ({
+  const ended = (how: 'gave-up' | 'stopped' | 'unreachable' | 'busy' | 'declined', attempts: number, reason?: string): Asked<T, P> => ({
     ok: false,
     attempts,
     problems,
@@ -336,9 +330,7 @@ function saysSomething(text: string): string | undefined {
  * decline with no reason in it.
  */
 export type Reading =
-  | { readonly kind: 'object'; readonly value: object }
-  | { readonly kind: 'declined'; readonly reason: string }
-  | { readonly kind: 'unexplained-decline' }
+  { readonly kind: 'object'; readonly value: object } | { readonly kind: 'declined'; readonly reason: string } | { readonly kind: 'unexplained-decline' }
 
 /** What `check` is given: a reading that is not a decline, or `undefined` when there was no object. */
 export type Checkable = Exclude<Reading, { readonly kind: 'declined' }> | undefined
@@ -394,9 +386,7 @@ function declineIn(parsed: object): Reading | undefined {
   const keys = Object.keys(parsed)
   if (keys.length !== 1 || keys[0] !== DECLINE_KEY) return undefined
   const reason: unknown = (parsed as Record<string, unknown>)[DECLINE_KEY]
-  return typeof reason === 'string' && reason.trim() !== ''
-    ? { kind: 'declined', reason: reason.trim() }
-    : { kind: 'unexplained-decline' }
+  return typeof reason === 'string' && reason.trim() !== '' ? { kind: 'declined', reason: reason.trim() } : { kind: 'unexplained-decline' }
 }
 
 /**

@@ -57,16 +57,13 @@ const schema = (rules: unknown[]): FormSchema =>
     logic: { rules },
   }) as unknown as FormSchema
 
-const pathsOf = (rules: unknown[]): string[][] =>
-  unknownReferences(schema(rules)).map((found) => [...found.paths])
+const pathsOf = (rules: unknown[]): string[][] => unknownReferences(schema(rules)).map((found) => [...found.paths])
 
 describe('a rule that reads a path no field provides', () => {
   test('is reported when the root does not exist', () => {
     // The case the builder used to create: `postcode` was renamed and the rule
     // kept reading the old name.
-    expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'postcode == "8000"' }])).toEqual([
-      ['postcode'],
-    ])
+    expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'postcode == "8000"' }])).toEqual([['postcode']])
   })
 
   test('and when a member of a group does not exist, which CEL cannot see', () => {
@@ -77,17 +74,13 @@ describe('a rule that reads a path no field provides', () => {
      * often, since a grouped path is where the data path and the tree path
      * differ.
      */
-    expect(
-      pathsOf([{ target: 'note', kind: 'visible', cel: 'address.nope == "Zug"' }]),
-    ).toEqual([['address.nope']])
+    expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'address.nope == "Zug"' }])).toEqual([['address.nope']])
   })
 
   test('and when a member of a repeater row does not exist', () => {
     // `item` is the row variable, so `item.nope` means `items[].nope`. Also
     // `dyn` to the checker, also absent from the model.
-    expect(
-      pathsOf([{ target: 'items[].total', kind: 'computed', cel: 'item.nope * 2.0' }]),
-    ).toEqual([['items[].nope']])
+    expect(pathsOf([{ target: 'items[].total', kind: 'computed', cel: 'item.nope * 2.0' }])).toEqual([['items[].nope']])
   })
 
   test('says nothing about a rule that reads only what exists', () => {
@@ -113,9 +106,7 @@ describe('a rule that reads a path no field provides', () => {
     // `x` is bound by the macro. Reporting it would invent a field nobody wrote
     // — and `referencedPaths` already knows this, which is why this reuses it
     // rather than walking the source.
-    expect(
-      pathsOf([{ target: 'note', kind: 'visible', cel: 'items.all(x, x.qty > 0.0)' }]),
-    ).toEqual([])
+    expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'items.all(x, x.qty > 0.0)' }])).toEqual([])
   })
 
   test('and nothing about a check, which carries no expression at all', () => {
@@ -131,9 +122,7 @@ describe('a rule that reads a path no field provides', () => {
   test('reports a row path as the model writes it, not as the rule does', () => {
     // So the message names something the author can find in their document.
     // `item.nope` is not a path anybody could search for; `items[].nope` is.
-    const found = unknownReferences(
-      schema([{ target: 'items[].total', kind: 'computed', cel: 'item.nope * 2.0' }]),
-    )
+    const found = unknownReferences(schema([{ target: 'items[].total', kind: 'computed', cel: 'item.nope * 2.0' }]))
 
     expect(found[0]?.message).toContain('items[].nope')
     expect(found[0]?.target).toBe('items[].total')
@@ -142,16 +131,12 @@ describe('a rule that reads a path no field provides', () => {
   test('names every missing path in one rule, not the first', () => {
     // A rule repaired halfway is a rule still broken, and a report that stops
     // at the first path invites exactly that.
-    expect(
-      pathsOf([{ target: 'note', kind: 'visible', cel: 'postcode == "8000" && nope != true' }]),
-    ).toEqual([['nope', 'postcode']])
+    expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'postcode == "8000" && nope != true' }])).toEqual([['nope', 'postcode']])
   })
 
   test('treats a literal row index as the row, since the model has no row numbers', () => {
     // `items[0].qty` is a real thing to write and reads the same field as
     // `items[].qty`. Reporting it would be a false alarm on valid logic.
-    expect(
-      pathsOf([{ target: 'note', kind: 'visible', cel: 'items[0].qty > 0.0' }]),
-    ).toEqual([])
+    expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'items[0].qty > 0.0' }])).toEqual([])
   })
 })

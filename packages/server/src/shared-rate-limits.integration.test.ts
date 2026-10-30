@@ -80,10 +80,7 @@ function events(): { log: FastifyBaseLogger; lines: () => Array<Record<string, u
 }
 
 /** A replica, wired as `main.ts` wires one: its own connections, the shared storage and the shared counter. */
-async function replica(
-  options: Omit<AppOptions, 'authSecret'> = {},
-  store: PostgresRateLimitOptions = {},
-): Promise<FastifyInstance> {
+async function replica(options: Omit<AppOptions, 'authSecret'> = {}, store: PostgresRateLimitOptions = {}): Promise<FastifyInstance> {
   const own = connection()
   const app = await createApp(createPostgresStorage(own), {
     authSecret: SECRET,
@@ -206,8 +203,7 @@ describe('two replicas over one database', () => {
     const limit = { bootstrapAdmin: ADMIN, loginRateLimit: { max: 2, timeWindowMs: 60_000 } }
     const a = await replica(limit)
     const b = await replica(limit)
-    const guess = (app: FastifyInstance) =>
-      app.inject({ method: 'POST', url: '/auth/login', payload: { email: ADMIN.email, password: 'wrong' } })
+    const guess = (app: FastifyInstance) => app.inject({ method: 'POST', url: '/auth/login', payload: { email: ADMIN.email, password: 'wrong' } })
 
     expect((await guess(a)).statusCode).toBe(401)
     expect((await guess(b)).statusCode).toBe(401)

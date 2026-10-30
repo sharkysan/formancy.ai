@@ -1,15 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  computed,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-  untracked,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core'
 import { LEADS, canTry, followTrying, suggestionsFor, trySuggestion } from './suggestions.js'
 import type { Feature, Suggesting, Suggestion } from './suggestions.js'
 

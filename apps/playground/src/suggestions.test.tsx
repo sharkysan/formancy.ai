@@ -2,14 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { computeAccessibleDescription, computeAccessibleName } from 'dom-accessibility-api'
-import {
-  createBuilderSession,
-  createDraftRun,
-  createPromptRun,
-  createRelay,
-  createTranslationRun,
-  missingMessages,
-} from '@formancy/builder-core'
+import { createBuilderSession, createDraftRun, createPromptRun, createRelay, createTranslationRun, missingMessages } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core/authoring'
 import type { FormSchema } from '@formancy/spec'
 import { App } from './app.js'
@@ -17,13 +10,7 @@ import { builderTextFor } from './builder-pane.js'
 import { DEMOS } from './demos.js'
 import { STARTER_SCHEMA } from './starter.js'
 import { STARTER_SCENARIOS } from './starter-scenarios.js'
-import {
-  BACKWARDS_EDIT,
-  DRAFTING_INTENT,
-  FRENCH,
-  OUT_OF_REACH,
-  STARTER_SUGGESTIONS,
-} from './starter-suggestions.js'
+import { BACKWARDS_EDIT, DRAFTING_INTENT, FRENCH, OUT_OF_REACH, STARTER_SUGGESTIONS } from './starter-suggestions.js'
 import { LEADS, trySuggestion } from './suggestions.js'
 
 /**
@@ -72,8 +59,7 @@ const relayPane = (): HTMLElement | null => screen.queryByRole('region', { name:
 const suggestion = (words: string): Promise<HTMLButtonElement> =>
   within(editor()).findByRole('button', { name: words }, { timeout: 10_000 }) as Promise<HTMLButtonElement>
 /** Whether the suggestion with these words is disabled now. */
-const disabled = (words: string): boolean =>
-  (screen.getByRole('button', { name: words }) as HTMLButtonElement).disabled
+const disabled = (words: string): boolean => (screen.getByRole('button', { name: words }) as HTMLButtonElement).disabled
 
 /**
  * Every way a page sends something, spied — the same four `two-builders.test.tsx` spies, for
@@ -136,9 +122,7 @@ describe('what each suggestion says about the starter is true of it', () => {
       ...Object.keys(scenario.values ?? {}),
       ...(scenario.absent ?? []),
     ]
-    const covering = STARTER_SCENARIOS.filter((scenario) =>
-      about(scenario).some((key) => key === 'delivery' || key === 'wantedBy'),
-    )
+    const covering = STARTER_SCENARIOS.filter((scenario) => about(scenario).some((key) => key === 'delivery' || key === 'wantedBy'))
     expect(covering).toEqual([])
   })
 
@@ -267,9 +251,7 @@ describe('something to try, on the starter', () => {
         }
         const panel = screen.getByRole('region', { name: 'Scenarios' })
         await user.click(await suggestion(DRAFTING_INTENT.words))
-        expect(
-          (within(panel).getByRole('textbox', { name: /What should this form do/ }) as HTMLTextAreaElement).value,
-        ).toBe(DRAFTING_INTENT.words)
+        expect((within(panel).getByRole('textbox', { name: /What should this form do/ }) as HTMLTextAreaElement).value).toBe(DRAFTING_INTENT.words)
         expect(relayPane(), 'a suggestion asked the model rather than filling in the box').toBeNull()
 
         await user.click(screen.getByRole('button', { name: 'Translations' }))
@@ -279,11 +261,7 @@ describe('something to try, on the starter', () => {
         expect(request.value).toContain(`"locale": "${FRENCH.locale}"`)
         // Opened on the language asked for, where the review will be, rather than on English
         // with a line saying where the French went.
-        await waitFor(() =>
-          expect((within(editor()).getByRole('combobox', { name: 'Language' }) as HTMLSelectElement).value).toBe(
-            FRENCH.locale,
-          ),
-        )
+        await waitFor(() => expect((within(editor()).getByRole('combobox', { name: 'Language' }) as HTMLSelectElement).value).toBe(FRENCH.locale))
 
         expect(undoButton().disabled, 'a suggestion changed the form').toBe(true)
         expect(sent.fetch).not.toHaveBeenCalled()
@@ -296,49 +274,44 @@ describe('something to try, on the starter', () => {
     },
   )
 
-  test.each(BUILDERS)(
-    'in the %s builder, the change answered backwards through the relay is named by the starter’s examples before Apply',
-    async (which) => {
-      /*
-       * The reason this change is the one suggested. Answered with the canton rule turned
-       * round — valid, compiled, and backwards — the review names every example that pins the
-       * canton while nothing has landed. (Not only those: every example starts from a German
-       * sample, which the backwards rule now asks for a canton.) The names are the starter's
-       * own, read off its examples: typed here, a renamed example would leave this asserting
-       * a sentence nobody shows.
-       */
-      const pinned = STARTER_SCENARIOS.filter(({ visible }) => visible !== undefined && 'canton' in visible)
-      expect(pinned, 'no example pins the canton, so nothing below can name one').not.toEqual([])
-      const backwards = JSON.parse(JSON.stringify(STARTER_SCHEMA)) as {
-        model: { fields: { key: string; options?: unknown[] }[] }
-        logic: { rules: { target: string; cel?: string }[] }
-      }
-      backwards.model.fields.find(({ key }) => key === 'country')?.options?.push({ value: 'AT', label: 'Austria' })
-      for (const rule of backwards.logic.rules.filter(({ target }) => target === 'canton')) rule.cel = 'country != "CH"'
+  test.each(BUILDERS)('in the %s builder, the change answered backwards through the relay is named by the starter’s examples before Apply', async (which) => {
+    /*
+     * The reason this change is the one suggested. Answered with the canton rule turned
+     * round — valid, compiled, and backwards — the review names every example that pins the
+     * canton while nothing has landed. (Not only those: every example starts from a German
+     * sample, which the backwards rule now asks for a canton.) The names are the starter's
+     * own, read off its examples: typed here, a renamed example would leave this asserting
+     * a sentence nobody shows.
+     */
+    const pinned = STARTER_SCENARIOS.filter(({ visible }) => visible !== undefined && 'canton' in visible)
+    expect(pinned, 'no example pins the canton, so nothing below can name one').not.toEqual([])
+    const backwards = JSON.parse(JSON.stringify(STARTER_SCHEMA)) as {
+      model: { fields: { key: string; options?: unknown[] }[] }
+      logic: { rules: { target: string; cel?: string }[] }
+    }
+    backwards.model.fields.find(({ key }) => key === 'country')?.options?.push({ value: 'AT', label: 'Austria' })
+    for (const rule of backwards.logic.rules.filter(({ target }) => target === 'canton')) rule.cel = 'country != "CH"'
 
-      const user = userEvent.setup()
-      render(<App />)
-      await builtWith(which)
-      await user.click(await suggestion(BACKWARDS_EDIT.words))
-      await user.click(screen.getByRole('button', { name: 'Write it' }))
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith(which)
+    await user.click(await suggestion(BACKWARDS_EDIT.words))
+    await user.click(screen.getByRole('button', { name: 'Write it' }))
 
-      const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
-      expect((within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value).toContain(
-        BACKWARDS_EDIT.words,
-      )
-      await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
-      await user.paste(JSON.stringify(backwards))
-      await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+    const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+    expect((within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value).toContain(BACKWARDS_EDIT.words)
+    await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+    await user.paste(JSON.stringify(backwards))
+    await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
 
-      const review = await waitFor(() => screen.getByRole('region', { name: /would stop holding/ }), {
-        timeout: 10_000,
-      })
-      const heading = within(review).getByRole('heading').textContent ?? ''
-      expect(pinned.filter(({ name }) => !heading.includes(name))).toEqual([])
-      expect(review.textContent).toContain(BACKWARDS_EDIT.words)
-      expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
-    },
-  )
+    const review = await waitFor(() => screen.getByRole('region', { name: /would stop holding/ }), {
+      timeout: 10_000,
+    })
+    const heading = within(review).getByRole('heading').textContent ?? ''
+    expect(pinned.filter(({ name }) => !heading.includes(name))).toEqual([])
+    expect(review.textContent).toContain(BACKWARDS_EDIT.words)
+    expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+  })
 
   test.each(BUILDERS)(
     'in the %s builder, none is pressable while the run it would fill waits — and the translation not while its review is held',
@@ -399,10 +372,7 @@ describe('something to try, on the starter', () => {
       render(<App />)
       await builtWith(which)
       await user.click(screen.getByRole('button', { name: 'Translations' }))
-      await user.selectOptions(
-        await within(editor()).findByRole('combobox', { name: 'Language' }, { timeout: 10_000 }),
-        FRENCH.locale,
-      )
+      await user.selectOptions(await within(editor()).findByRole('combobox', { name: 'Language' }, { timeout: 10_000 }), FRENCH.locale)
       const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, FRENCH.locale)
       const ask = builderTextFor('en')('translate.ask', { count: missing.length })
       const paneAsks = (): boolean => within(editor()).queryByRole('button', { name: ask }) !== null
@@ -422,28 +392,16 @@ describe('something to try, on the starter', () => {
         }),
       )
       await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
-      const review = await within(editor()).findByRole(
-        'region',
-        { name: /^Review these translations into fr/ },
-        { timeout: 10_000 },
-      )
+      const review = await within(editor()).findByRole('region', { name: /^Review these translations into fr/ }, { timeout: 10_000 })
       await user.click(within(review).getByRole('button', { name: 'Apply these translations' }))
       await waitFor(() => expect(undoButton().disabled).toBe(false))
 
       expect(paneAsks(), 'the French is finished, and the pane still offers to ask for it').toBe(false)
-      await waitFor(() =>
-        expect(disabled(FRENCH.words), 'nothing in French is missing, and the suggestion still asks for it').toBe(
-          true,
-        ),
-      )
+      await waitFor(() => expect(disabled(FRENCH.words), 'nothing in French is missing, and the suggestion still asks for it').toBe(true))
 
       await user.click(undoButton())
       await within(editor()).findByRole('button', { name: ask }, { timeout: 10_000 })
-      await waitFor(() =>
-        expect(disabled(FRENCH.words), 'the French is half-finished again, and the suggestion did not hear it').toBe(
-          false,
-        ),
-      )
+      await waitFor(() => expect(disabled(FRENCH.words), 'the French is half-finished again, and the suggestion did not hear it').toBe(false))
     },
   )
 
@@ -458,9 +416,7 @@ describe('something to try, on the starter', () => {
     await user.tab()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: BACKWARDS_EDIT.words }))
     await user.keyboard('{Enter}')
-    expect((screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value).toBe(
-      BACKWARDS_EDIT.words,
-    )
+    expect((screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value).toBe(BACKWARDS_EDIT.words)
   })
 
   test('the same suggestions, in either builder, on every tab that has any', async () => {
@@ -482,9 +438,7 @@ describe('something to try, on the starter', () => {
       cleanup()
     }
     expect(drawn.React.map(([name]) => name)).toEqual([LEADS.prompt, LEADS.drafting, LEADS.translation])
-    expect(drawn.React.flat()).toEqual(
-      expect.arrayContaining(STARTER_SUGGESTIONS.flatMap(({ words, shows }) => [words, shows])),
-    )
+    expect(drawn.React.flat()).toEqual(expect.arrayContaining(STARTER_SUGGESTIONS.flatMap(({ words, shows }) => [words, shows])))
     expect(drawn.Angular).toEqual(drawn.React)
   })
 
@@ -495,7 +449,10 @@ describe('something to try, on the starter', () => {
     render(<App />)
     await builtWith(which)
     await suggestion(BACKWARDS_EDIT.words)
-    const named = (): string[] => within(editor()).getAllByRole('treeitem').map((item) => item.textContent ?? '')
+    const named = (): string[] =>
+      within(editor())
+        .getAllByRole('treeitem')
+        .map((item) => item.textContent ?? '')
     expect(named().filter((item) => item.includes('Voucher code'))).not.toEqual([])
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'wizard')
@@ -513,8 +470,6 @@ describe('something to try, on the starter', () => {
     await user.click(screen.getByRole('button', { name: 'Translations' }))
     await within(editor()).findByRole('combobox', { name: 'Language' }, { timeout: 10_000 })
     expect(listed()).toEqual([])
-    expect(
-      STARTER_SUGGESTIONS.filter(({ words }) => screen.queryByRole('button', { name: words }) !== null),
-    ).toEqual([])
+    expect(STARTER_SUGGESTIONS.filter(({ words }) => screen.queryByRole('button', { name: words }) !== null)).toEqual([])
   })
 })

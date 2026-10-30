@@ -16,10 +16,7 @@ import {
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
 import { hasReadOnlyControl } from '@formancy/core'
 import type { FieldSnapshot, PlacedGroup } from '@formancy/core'
-import {
-  datagridColumns,
-  resolveText,
-} from '@formancy/spec'
+import { datagridColumns, resolveText } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
 import { DEFAULT_FIELD_COMPONENTS } from './fields.js'
 import { FormancyComputedAnswerField } from './fields/computed-answer.js'
@@ -330,26 +327,21 @@ export class FormancyRepeaterSection implements OnInit {
    *
    * The React binding computes the same list with the same helper, for the same reasons.
    */
-  protected readonly plan = computed(
-    (): ReadonlyArray<{ key: string; heading: string; align: string | null; width?: number }> => {
-      const def = this.definition
-      if (def?.widget !== 'datagrid') return []
-      return datagridColumns(def, def.columns ?? []).map((entry) => ({
-        key: entry.key,
-        // The author's shortening, else the child's own label, else the labels input,
-        // else the key. Visible text and NOTHING else -- never an id target and never an
-        // aria-label, because a heading that named the answers beneath it is the failure
-        // 0066 separates `header` from `label` to prevent.
-        heading:
-          this.engine.text(entry.column?.header) ??
-          this.engine.text(entry.child?.label) ??
-          this.fallbackFor(`${this.wire()}[0].${entry.key}`) ??
-          entry.key,
-        align: entry.column?.align ?? null,
-        ...(entry.column?.width === undefined ? {} : { width: entry.column.width }),
-      }))
-    },
-  )
+  protected readonly plan = computed((): ReadonlyArray<{ key: string; heading: string; align: string | null; width?: number }> => {
+    const def = this.definition
+    if (def?.widget !== 'datagrid') return []
+    return datagridColumns(def, def.columns ?? []).map((entry) => ({
+      key: entry.key,
+      // The author's shortening, else the child's own label, else the labels input,
+      // else the key. Visible text and NOTHING else -- never an id target and never an
+      // aria-label, because a heading that named the answers beneath it is the failure
+      // 0066 separates `header` from `label` to prevent.
+      heading:
+        this.engine.text(entry.column?.header) ?? this.engine.text(entry.child?.label) ?? this.fallbackFor(`${this.wire()}[0].${entry.key}`) ?? entry.key,
+      align: entry.column?.align ?? null,
+      ...(entry.column?.width === undefined ? {} : { width: entry.column.width }),
+    }))
+  })
 
   /**
    * The authored ratios, as ONE custom property rather than as `grid-template-columns`.
@@ -365,9 +357,7 @@ export class FormancyRepeaterSection implements OnInit {
     const plan = this.plan()
     if (!plan.some((entry) => entry.width !== undefined)) return {}
     return {
-      '--fm-datagrid-columns': plan
-        .map((entry) => (entry.width === undefined ? '1fr' : `${String(entry.width)}fr`))
-        .join(' '),
+      '--fm-datagrid-columns': plan.map((entry) => (entry.width === undefined ? '1fr' : `${String(entry.width)}fr`)).join(' '),
     }
   }
 

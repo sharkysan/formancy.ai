@@ -55,7 +55,11 @@ function dependencyGraph(sbom) {
   const graph = new Map()
   for (const { ref, dependsOn } of Array.isArray(sbom?.dependencies) ? sbom.dependencies : []) {
     const from = npmPurl(ref)
-    if (from !== undefined) graph.set(`${from.name}@${from.version}`, (dependsOn ?? []).map(npmPurl).filter((to) => to !== undefined))
+    if (from !== undefined)
+      graph.set(
+        `${from.name}@${from.version}`,
+        (dependsOn ?? []).map(npmPurl).filter((to) => to !== undefined),
+      )
   }
   return graph
 }
@@ -86,7 +90,8 @@ export function sbomProblems(sbom, { version, packages }) {
         continue
       }
       for (const to of edges) {
-        if (published.has(to.name) && to.version !== version) problems.push(`the SBOM gives ${name} ${to.name} ${to.version}, where this release publishes ${version}`)
+        if (published.has(to.name) && to.version !== version)
+          problems.push(`the SBOM gives ${name} ${to.name} ${to.version}, where this release publishes ${version}`)
         else if (!named.has(`${to.name}@${to.version}`)) problems.push(`the SBOM names no ${to.name} ${to.version}, which it gives ${name}`)
       }
     }
@@ -110,5 +115,7 @@ if (basename(process.argv[1] ?? '') === 'sbom.mjs') {
     for (const problem of problems) console.error(`::error::${problem}`)
     process.exit(1)
   }
-  console.log(`SBOM: ${String(sbom.components.length)} components, naming the ${String(packages.length)} packages this release publishes at ${version}, each given what its manifest declares`)
+  console.log(
+    `SBOM: ${String(sbom.components.length)} components, naming the ${String(packages.length)} packages this release publishes at ${version}, each given what its manifest declares`,
+  )
 }

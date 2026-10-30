@@ -15,8 +15,7 @@ import { createHash, createHmac } from 'node:crypto'
  */
 
 /** The SHA-256 of an empty body, which a GET or DELETE carries. */
-export const EMPTY_PAYLOAD_SHA256 =
-  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+export const EMPTY_PAYLOAD_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
 export interface SignArgs {
   readonly method: 'GET' | 'PUT' | 'DELETE' | 'HEAD'
@@ -74,22 +73,10 @@ export function signRequest(args: SignArgs): Record<string, string> {
     .join('')
   const signedHeaders = names.join(';')
 
-  const canonicalRequest = [
-    method,
-    canonicalPath(url, service),
-    canonicalQuery(url),
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join('\n')
+  const canonicalRequest = [method, canonicalPath(url, service), canonicalQuery(url), canonicalHeaders, signedHeaders, payloadHash].join('\n')
 
   const scope = `${dateStamp}/${region}/${service}/aws4_request`
-  const stringToSign = [
-    'AWS4-HMAC-SHA256',
-    amzDate,
-    scope,
-    sha256Hex(canonicalRequest),
-  ].join('\n')
+  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, scope, sha256Hex(canonicalRequest)].join('\n')
 
   // The key is derived per date, region and service, so a leaked signing key is
   // useless tomorrow, elsewhere, or for another service. That is the whole
@@ -100,9 +87,7 @@ export function signRequest(args: SignArgs): Record<string, string> {
   const signingKey = hmac(serviceKey, 'aws4_request')
   const signature = hmac(signingKey, stringToSign).toString('hex')
 
-  headers['authorization'] =
-    `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${scope}, ` +
-    `SignedHeaders=${signedHeaders}, Signature=${signature}`
+  headers['authorization'] = `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${scope}, ` + `SignedHeaders=${signedHeaders}, Signature=${signature}`
 
   return headers
 }
@@ -156,10 +141,7 @@ function canonicalQuery(url: URL): string {
  * uppercase, and a space is `%20` rather than `+`.
  */
 function uriEncode(value: string): string {
-  return encodeURIComponent(value).replace(
-    /[!'()*]/g,
-    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
-  )
+  return encodeURIComponent(value).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
 }
 
 function sha256Hex(value: string): string {

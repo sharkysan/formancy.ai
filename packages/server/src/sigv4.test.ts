@@ -83,13 +83,7 @@ describe('signRequest', () => {
     })
 
     const declared = /SignedHeaders=([^,]+)/.exec(signed['authorization'] ?? '')?.[1]?.split(';')
-    expect(declared).toEqual([
-      'content-type',
-      'host',
-      'x-amz-content-sha256',
-      'x-amz-date',
-      'x-amz-meta-form',
-    ])
+    expect(declared).toEqual(['content-type', 'host', 'x-amz-content-sha256', 'x-amz-date', 'x-amz-meta-form'])
     for (const name of declared ?? []) expect(signed[name]).toBeDefined()
   })
 
