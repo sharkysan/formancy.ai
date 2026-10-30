@@ -25,8 +25,7 @@ admin counted the summary in the browser, from every submission the listing hand
 to ask for all of them. `GET /f/:path/summary`, behind `submission.read`, now answers one summary per
 version with responses, newest first. The server counts with `summariseAnswers`, the function the
 admin called, against each version's own document, so the counting rules are written once. The
-admin draws it, and lists submissions fifty at a time, with *Show more submissions* for the next.
-The server still reads every submission of the form to count them
+admin draws it, and lists submissions fifty at a time, with *Show more submissions* for the next
 ([0223](docs/decisions/0223-responses-are-summarised-on-the-server.md), which supersedes that part
 of 0206).
 
