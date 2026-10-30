@@ -167,19 +167,17 @@ describe('a summary of answers', () => {
   // Every number was kept to find the range with `Math.min(...numbers)`, and a spread past the
   // engine's argument limit throws: measured on Node 22, at 120,000 numbers, where 100,000 passed.
   // A summary counted on the server for a form that large answered a 500 (0224).
-  test('gives a number its range and mean over more answers than a call can take arguments', () => {
+  //
+  // One question, so the case costs a fifth of what the survey's six would: under CI's coverage
+  // instrumentation, 200,000 of the survey's took nine seconds.
+  test('gives a number its range and mean over more answers than a call can take arguments', { timeout: 30_000 }, () => {
+    const nights: FormSchema = { specVersion: '1', id: 'stays', title: 'Stays', model: { fields: [{ key: 'nights', type: 'number', label: 'Nights' }] } }
     const many = Array.from({ length: 200_000 }, (_, at) => ({ nights: at % 90 }))
-    const mean = many.reduce((total, { nights }) => total + nights, 0) / many.length
+    const mean = many.reduce((total, answer) => total + answer.nights, 0) / many.length
 
-    expect(summariseAnswers(form, many, english)[3]).toEqual({
-      field: 'nights',
-      label: 'Nights',
-      answered: 200_000,
-      kind: 'number',
-      min: 0,
-      max: 89,
-      mean,
-    })
+    expect(summariseAnswers(nights, many, english)).toEqual([
+      { field: 'nights', label: 'Nights', answered: 200_000, kind: 'number', min: 0, max: 89, mean },
+    ])
   })
 
   // So the server can count a page of responses at a time and hold no more than the page (0224).
