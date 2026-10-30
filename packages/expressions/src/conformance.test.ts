@@ -36,7 +36,7 @@ function value(source: string, variables?: VariableDeclarations, values?: Record
 /** The error of an expression that is expected to fail. */
 function failure(source: string, variables?: VariableDeclarations, values?: Record<string, unknown>) {
   const outcome = run(source, variables, values)
-  if (outcome.ok) throw new Error(`expected ${source} to fail, got ${String(outcome.value)}`)
+  if (outcome.ok) throw new Error(`expected ${source} to fail, got ${JSON.stringify(outcome.value)}`)
   return outcome.error
 }
 

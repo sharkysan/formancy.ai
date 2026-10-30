@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { MODEL_REQUEST_KINDS } from '@formancy/builder-core'
 import { completeBuilderRequest } from '@formancy/server-core'
 import type { Actor, AuditDraft, BuilderRequest, BuilderRequestOutcome, Cancellation, Completer } from '@formancy/server-core'
@@ -39,7 +39,7 @@ export const MODEL_BODY_LIMIT_BYTES = 1024 * 1024
  *
  * One route family per plugin, the seam `app.ts`'s size budget names.
  */
-export async function modelRoutes(
+export function modelRoutes(
   app: FastifyInstance,
   {
     model,
@@ -48,11 +48,11 @@ export async function modelRoutes(
     limit,
   }: {
     model: DeploymentModel | undefined
-    requires: (action: 'form.publish') => preHandlerHookHandler
+    requires: (action: 'form.publish') => preHandlerAsyncHookHandler
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
     limit: Budget
   },
-): Promise<void> {
+): void {
   // Asking a model is part of editing a form, so it takes the permission editing does:
   // `form.publish`, which an editor and an admin hold and a viewer does not.
   // None is how a deployment ships, so it is an answer and not a missing resource (0183): a

@@ -71,7 +71,7 @@ export function ThemePane({
     for (const [token, was] of lifted) (host as HTMLElement).style.setProperty(token, was)
     // `overrides` is deliberately not a dependency: this is the theme's own
     // value, which does not change when somebody edits one.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- overrides is the theme's own value, which does not change when somebody edits one
   }, [host, names])
 
   // Whatever was typed, blank included. See `applied` for why the blank stays.

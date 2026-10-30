@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
-import type { Monaco } from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
 import { useKeptExamples } from './examples-pane.js'
 import { PublishNote } from './publish-note.js'
@@ -466,10 +465,16 @@ function SubmissionsPane({ path }: { path: string }) {
 }
 
 /**
+ * What the theme needs of Monaco. `@monaco-editor/react`'s own `Monaco` is `typeof` a module its
+ * types do not resolve from here, so it reads as `any` and every call on it goes unchecked.
+ */
+type ThemeHost = { editor: { defineTheme: (name: string, theme: object) => void } }
+
+/**
  * The JSON editor, in the admin's colours: Monaco draws its own surface, and
  * a stock light editor inside a dark workbench reads as two products.
  */
-function defineNightTheme(monaco: Monaco): void {
+function defineNightTheme(monaco: ThemeHost): void {
   monaco.editor.defineTheme('formancy-night', {
     base: 'vs-dark',
     inherit: true,

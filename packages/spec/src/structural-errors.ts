@@ -140,7 +140,7 @@ function allowedConstants(error: ErrorObject, allErrors: ErrorObject[]): unknown
   // values once per broken field.
   const values = allErrors
     .filter((candidate) => candidate.keyword === 'const' && candidate.schemaPath.startsWith(prefix) && candidate.instancePath === error.instancePath)
-    .map((candidate) => candidate.params['allowedValue'])
+    .map((candidate): unknown => candidate.params['allowedValue'])
   return [...new Set(values)]
 }
 
@@ -173,12 +173,12 @@ const TYPE_CODES = {
 } as const
 
 function stringParam(error: ErrorObject, name: string): string | undefined {
-  const value = error.params[name]
+  const value: unknown = error.params[name]
   return typeof value === 'string' ? value : undefined
 }
 
 function listParam(error: ErrorObject, name: string): unknown[] {
-  const value = error.params[name]
+  const value: unknown = error.params[name]
   return Array.isArray(value) ? value : []
 }
 

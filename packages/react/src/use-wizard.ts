@@ -44,6 +44,7 @@ export function useWizard(): WizardBinding {
       back: () => wizard.back(),
       goTo: (pageIndex: number) => wizard.goTo(pageIndex),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revision is how the memo learns the wizard moved; the rule sees it unread
     [revision, wizard],
   )
 }

@@ -121,7 +121,7 @@ export function ScenarioDrafts({ session, scenarios, onChange, ask, initialValue
   const verdicts = useMemo(
     () => drafts.map((draft) => draftVerdict(session.document(), draft, options)),
     // `revision` is what says the document changed, as in `ScenarioPane`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revision is how the memo learns the document changed; the rule sees it unread
     [drafts, session, options, revision],
   )
 

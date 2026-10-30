@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { healthOf, replayDelivery } from '@formancy/server-core'
 import type { AuditDraft, ServerDeps } from '@formancy/server-core'
 
@@ -9,7 +9,7 @@ import type { AuditDraft, ServerDeps } from '@formancy/server-core'
  * One route family per plugin, the seam `app.ts`'s size budget names. It moved
  * when that file needed room to say which proxy it believes about a client.
  */
-export async function deliveryRoutes(
+export function deliveryRoutes(
   app: FastifyInstance,
   {
     deps,
@@ -17,10 +17,10 @@ export async function deliveryRoutes(
     audit,
   }: {
     deps: ServerDeps
-    requires: (action: 'form.publish') => preHandlerHookHandler
+    requires: (action: 'form.publish') => preHandlerAsyncHookHandler
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
   },
-): Promise<void> {
+): void {
   /**
    * Webhook health, and the deliveries that died.
    *

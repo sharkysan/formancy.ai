@@ -11,7 +11,7 @@ import type { Budget } from '../rate-limits.js'
  * One route family per plugin, the seam `app.ts`'s size budget names. It moved when the
  * submission token needed lines that file had no room for.
  */
-export async function submissionRoutes(
+export function submissionRoutes(
   app: FastifyInstance,
   {
     deps,
@@ -25,7 +25,7 @@ export async function submissionRoutes(
     limit: Budget
     actorOf: (request: FastifyRequest) => Promise<Actor | undefined>
   },
-): Promise<void> {
+): void {
   const submissionLimit = limit
 
   /**
@@ -89,7 +89,7 @@ export async function submissionRoutes(
       if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
 
       return reply.send(
-        await mintChallenge({
+        mintChallenge({
           secret: challengeSecret,
           nowSeconds: Math.floor(new Date(deps.nowIso()).getTime() / 1000),
         }),
@@ -229,7 +229,7 @@ async function checkChallenge(deps: ServerDeps, challengeSecret: string, request
   }
 
   const nowSeconds = Math.floor(new Date(deps.nowIso()).getTime() / 1000)
-  const verified = await verifySolution(challengeSecret, solution, nowSeconds)
+  const verified = verifySolution(challengeSecret, solution, nowSeconds)
   if (!verified.ok) {
     return {
       error: `challenge_${verified.reason}`,

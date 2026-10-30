@@ -13,8 +13,8 @@ import type { Scanner } from './uploads.js'
  */
 export interface ServerDeps {
   storage: Storage
-  newId(): string
-  nowIso(): string
+  newId: () => string
+  nowIso: () => string
   /**
    * Validators this deployment answers, by the name a `check` rule gives.
    *

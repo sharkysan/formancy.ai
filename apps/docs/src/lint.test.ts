@@ -45,15 +45,6 @@ const scripts = manifest.scripts
 /** The messages for a file of the repository, linted with its own content, as `pnpm lint` reads it. */
 const lintOwn = (file: string) => eslint.lintText(readFileSync(file, 'utf8'), { filePath: file }).then(([result]) => result?.messages ?? [])
 
-/**
- * What stops ESLint reading a file: a message that no rule gave -- a parsing
- * error for a tsconfig it cannot read or a file in no project, or the warning
- * that the file is ignored. A rule's finding is `pnpm lint`'s and not the
- * wiring's: the findings are fixed in a change of their own, and this case
- * must not wait on them.
- */
-const unreadable = (file: string) => lintOwn(file).then((messages) => messages.filter((message) => message.ruleId === null))
-
 /** A package's source, which every rule holds, beside which the install fixtures are read. */
 const SOURCE = 'packages/core/src/index.ts'
 
@@ -207,7 +198,9 @@ describe('the linter', TYPED, () => {
   // config -- is typed by tsconfig.tools.json, which `project` must name.
   // A tsconfig the parser cannot read is a fatal message, a TypeScript file
   // in no project one too, and a package ESLint ignores a warning that it
-  // was ignored, so a file of each that lint passes has no such message.
+  // was ignored, so a file of each that lint passes has no message at all:
+  // its own text, linted, is clean, which is how a rule that stopped
+  // reading a tsconfig's files with types is seen.
   test("every package's and app's tsconfig, and the tools', is one lint reads", async () => {
     const firstSource = (directory: string): string | undefined => {
       for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
@@ -226,7 +219,7 @@ describe('the linter', TYPED, () => {
         if (!existsSync(join(directory, 'tsconfig.json')) || !existsSync(join(directory, 'src'))) continue
         const file = firstSource(join(directory, 'src'))
         if (!file) continue
-        expect(await unreadable(file), file).toEqual([])
+        expect(await lintOwn(file), file).toEqual([])
         checked += 1
       }
     }
@@ -235,7 +228,7 @@ describe('the linter', TYPED, () => {
     const { fileNames, errors } = ts.parseJsonConfigFileContent(ts.readConfigFile(tools, ts.sys.readFile).config, ts.sys, root)
     expect(errors).toEqual([])
     expect(fileNames.length, 'files tsconfig.tools.json takes in').toBeGreaterThan(0)
-    for (const file of fileNames) expect(await unreadable(file), relative(root, file)).toEqual([])
+    for (const file of fileNames) expect(await lintOwn(file), relative(root, file)).toEqual([])
   })
 
   // A file TypeScript's wildcard drops is in no program and so is neither

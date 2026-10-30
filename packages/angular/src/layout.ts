@@ -497,7 +497,7 @@ export class FormancyLayout {
     // The host takes no part in layout. Through CSSOM rather than a stylesheet, for the
     // reason written above the template: a component style is a `<style>` element a
     // strict `style-src` blocks, and this has to hold with no CSP configuration at all.
-    inject(ElementRef<HTMLElement>).nativeElement.style.setProperty('display', 'contents')
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.style.setProperty('display', 'contents')
   }
 
   /** The span as a number CSS can count with, and nothing at all for `all`.

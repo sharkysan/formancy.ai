@@ -125,7 +125,8 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
         run(values, evaluationPass) {
           pass = evaluationPass
           try {
-            return parsed(values)
+            const result: unknown = parsed(values)
+            return result
           } finally {
             pass = undefined
           }

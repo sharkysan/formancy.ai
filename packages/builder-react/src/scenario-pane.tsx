@@ -96,7 +96,7 @@ export function ScenarioPane({ session, scenarios, onChange, initialValue, mode,
     // `revision` is the dependency that means "the document changed". Reading
     // it here rather than the document itself is what makes the rerun happen
     // on an edit and not on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revision is how the memo learns the document changed; the rule sees it unread
     [session, scenarios, initialValue, mode, revision],
   )
 

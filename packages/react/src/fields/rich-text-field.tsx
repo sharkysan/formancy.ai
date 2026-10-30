@@ -192,7 +192,7 @@ export function MountedRichText({
       onReady(undefined)
     }
     // Mount once. Everything that changes afterwards is pushed in below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the editor is made once per factory; what changes afterwards is pushed into it below
   }, [make])
 
   useEffect(() => {

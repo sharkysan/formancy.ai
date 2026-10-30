@@ -131,7 +131,7 @@ export function createFakeDriver(options: FakeDriverOptions = {}): RendererDrive
     async ariaSnapshot(): Promise<string> {
       guard('ariaSnapshot')
       return visible()
-        .map((field) => `- textbox "${field.label ?? field.key}": ${JSON.stringify(values[field.key])}`)
+        .map((field) => `- textbox "${typeof field.label === 'string' ? field.label : field.key}": ${JSON.stringify(values[field.key])}`)
         .join('\n')
     },
 

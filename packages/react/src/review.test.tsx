@@ -96,7 +96,9 @@ describe('checking the answers', () => {
     mount(paged, { review: true }, { name: 'Ada', country: 'CH', nights: 3 })
     await toLastPage()
     fireEvent.click(screen.getByRole('button', { name: 'Check your answers' }))
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Change Country' })))
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Change Country' }))
+    })
     expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Country' }))
   })
 
@@ -109,7 +111,9 @@ describe('checking the answers', () => {
     expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['Name', 'Country', 'Nights'])
     const unanswered = [...document.querySelectorAll('[data-formancy-part="review-unanswered"]')]
     expect(unanswered.map((said) => said.textContent)).toEqual(['Not answered'])
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Change Country' })))
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Change Country' }))
+    })
     expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Country' }))
   })
 
@@ -118,7 +122,9 @@ describe('checking the answers', () => {
     mount(flat, { review: true }, { name: 'Ada' })
     fireEvent.click(screen.getByRole('button', { name: 'Check your answers' }))
     expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['Name'])
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Change Name' })))
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Change Name' }))
+    })
     expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Name' }))
   })
 

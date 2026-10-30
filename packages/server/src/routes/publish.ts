@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { publishForm } from '@formancy/server-core'
 import type { Actor, ServerDeps } from '@formancy/server-core'
 import { SCHEMA_HASH_HEADER } from '../headers.js'
@@ -10,10 +10,10 @@ import { SCHEMA_HASH_HEADER } from '../headers.js'
  * size budget named as the seam. It moved when the budget refused the next thing
  * added to it rather than letting the number drift.
  */
-export async function publishRoutes(
+export function publishRoutes(
   app: FastifyInstance,
-  { deps, requires }: { deps: ServerDeps; requires: (action: 'form.publish') => preHandlerHookHandler },
-): Promise<void> {
+  { deps, requires }: { deps: ServerDeps; requires: (action: 'form.publish') => preHandlerAsyncHookHandler },
+): void {
   app.post('/forms', { preHandler: requires('form.publish') }, async (request, reply) => {
     const body = request.body as { path?: unknown; schema?: unknown } | null
     if (body === null || typeof body.path !== 'string' || body.path === '' || body.schema === undefined) {

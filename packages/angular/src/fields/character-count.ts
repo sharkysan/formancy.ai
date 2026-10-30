@@ -26,7 +26,7 @@ export class FormancyCharacterCount {
 
   constructor() {
     // The host takes no part in layout: the two paragraphs are the field's, as React draws them.
-    inject(ElementRef<HTMLElement>).nativeElement.style.setProperty('display', 'contents')
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.style.setProperty('display', 'contents')
     // What it said when the field was drawn is not news; anything after it is, once typing pauses.
     let unchanged: string | undefined | null = null
     effect((onCleanup) => {

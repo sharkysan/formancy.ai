@@ -166,7 +166,7 @@ export async function fileRoutes(
    * object and was refused as no body. Encapsulated, so that no other route is handed raw
    * bytes, nor a body as large as a file past the request body cap.
    */
-  await app.register(async (byteRoutes) => {
+  await app.register((byteRoutes) => {
     byteRoutes.removeAllContentTypeParsers()
     byteRoutes.addContentTypeParser('*', { parseAs: 'buffer', bodyLimit: maxFileBytes }, (_request, body, done) => {
       done(null, body)

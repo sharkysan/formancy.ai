@@ -78,7 +78,7 @@ export function formatPath(path: Path): string {
     } else {
       // A key containing a structural character would parse back as a
       // different path — a silent identity change on the wire. Refuse instead.
-      if (segment === '' || /[.\[\]]/.test(segment)) {
+      if (segment === '' || /[.[\]]/.test(segment)) {
         throw new Error(`Invalid path key ${JSON.stringify(segment)}: keys must be non-empty and free of ".", "[" and "]"`)
       }
       if (segment === UNSTORABLE_KEY) throw new Error(`Invalid path key "${segment}": ${UNSTORABLE}`)

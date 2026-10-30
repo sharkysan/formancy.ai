@@ -135,7 +135,13 @@ async function within<T>(ms: number, work: Promise<T>): Promise<T | 'no answer'>
 /** One count on `store`, as the plugin asks for it. */
 function countOn(store: FastifyRateLimitStore, key: string, windowMs: number): Promise<{ current: number; ttl: number }> {
   return new Promise((resolve, reject) => {
-    store.incr(key, (error, result) => (error === null && result !== undefined ? resolve(result) : reject(error)), windowMs, 1_000)
+    store.incr(
+      key,
+      (error, result) =>
+        error === null && result !== undefined ? resolve(result) : reject(error ?? new Error('The store answered with neither a count nor an error')),
+      windowMs,
+      1_000,
+    )
   })
 }
 

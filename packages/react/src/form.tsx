@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { hasReadOnlyControl, parsePath, placedGroup, placedPage } from '@formancy/core'
 import type { PlacedGroup } from '@formancy/core'
 import { datagridColumns, resolveText } from '@formancy/spec'
-import { LayoutTree, placedPaths } from './layout.js'
+import { LayoutTree } from './layout.js'
 import { useFormEngine, useFormText } from './context.js'
 import { useField } from './use-field.js'
 import { useRepeater } from './use-repeater.js'
@@ -128,8 +128,6 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
 
   const arrangement = schema.layouts?.find((candidate) => candidate.name === layout)
   if (layout !== undefined && arrangement !== undefined) {
-    const placed = new Set(placedPaths(arrangement.nodes))
-
     return (
       <LayoutTree
         schema={schema}
@@ -171,7 +169,6 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
     // A field the layout leaves out is not rendered. That is deliberate — a
     // print layout without the consent checkbox is doing its job — and it is
     // why `unreferencedPaths` exists in the spec for a builder to warn with.
-    void placed
   }
 
   const inPage = (wire: string): boolean => page === undefined || engine.pageOf(parsePath(wire)) === page

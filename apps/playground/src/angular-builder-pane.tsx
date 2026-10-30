@@ -111,7 +111,7 @@ export function AngularBuilderPane({
     // listing them costs nothing and says what the application was built over. The
     // suggestions are the demo's, and another demo is another session — which this
     // application is never kept for — so they are not pushed in either.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the tab and the suggestions are pushed into the application, not dependencies of building it
   }, [session, relay, runs])
 
   // Pushed in, for the same reason.

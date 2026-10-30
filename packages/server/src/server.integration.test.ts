@@ -2677,7 +2677,7 @@ describe('what reaches the log', () => {
     }
     let sent = 0
     const send = async (options: InjectOptions): Promise<LightMyRequestResponse> => {
-      const url = new URL(String(options.url), 'http://sweep.invalid')
+      const url = new URL(typeof options.url === 'string' ? options.url : (options.url?.pathname ?? ''), 'http://sweep.invalid')
       const route = swept.findRoute({ method: String(options.method), url: url.pathname })
       if (route === null) carry(url.pathname)
       else Object.values(route.params).forEach((value) => carry(String(value)))

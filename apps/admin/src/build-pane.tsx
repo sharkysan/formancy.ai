@@ -75,7 +75,7 @@ export function BuildPane({
     }
     // Only on mount: re-running on every keystroke of `source` would throw the
     // undo stack away each time the builder edits it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the session is opened on mount only; a keystroke in source must not throw the undo stack away
   }, [])
 
   if (session === null) {

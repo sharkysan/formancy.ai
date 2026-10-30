@@ -187,7 +187,7 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'How many options must be put in order. Set it to the number of options to ask for a complete order; leave it unset and any number may be ranked — use `required` rather than a minimum of 1, so the reader is told before they start.':
     'Combien d’options doivent être mises en ordre. Réglez-le sur le nombre d’options pour demander un ordre complet ; sans valeur, on peut en classer autant qu’on veut — utilisez `required` plutôt qu’un minimum de 1, pour que la personne le sache avant de commencer.',
   'Most ranked': 'Classées au maximum',
-  'How many options may be put in order, which is how \"your top three\" is asked.':
+  'How many options may be put in order, which is how "your top three" is asked.':
     'Combien d’options peuvent être mises en ordre : c’est ainsi qu’on demande « vos trois premiers ».',
   Rows: 'Lignes',
   'The things the question is asked of, one answer each. The options are the columns every row shares.':

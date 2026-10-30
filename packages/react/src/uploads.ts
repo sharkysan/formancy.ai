@@ -24,7 +24,7 @@ export interface UploadOptions {
   /** Aborted when the person cancels this file. Hand it to `fetch` and the transfer stops. */
   signal: AbortSignal
   /** Bytes sent so far, of how many. `fetch` cannot report an upload's progress; XHR can. */
-  onProgress(sent: number, total: number): void
+  onProgress: (sent: number, total: number) => void
 }
 
 /**

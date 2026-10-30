@@ -199,7 +199,7 @@ export function createRows(store: ValueStore, interaction: InteractionState, wri
       }
       if (from === to) return
 
-      const moved = [...rows]
+      const moved: unknown[] = rows.slice()
       const [row] = moved.splice(from, 1)
       moved.splice(to, 0, row)
       store.set(repeater.path, moved)

@@ -39,9 +39,9 @@ import type { BuilderSession, CommandOutcome } from './session.js'
  */
 export interface PromptRun {
   /** What a pane draws. The same object until something in it changes. */
-  state(): PromptRunState
+  state: () => PromptRunState
   /** Hear each change. Returns what stops listening — a pane going, which ends nothing. */
-  subscribe(listener: () => void): () => void
+  subscribe: (listener: () => void) => () => void
   /**
    * The instruction, as the person types it. Ignored while a run waits: the run is asked
    * with the words in the box. Once it has answered, the box is the person's again, and

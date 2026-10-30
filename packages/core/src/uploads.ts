@@ -49,8 +49,8 @@ export interface UploadQueueOptions<F, S> {
 
 export interface UploadQueue<F> {
   /** The same array until something changes, so a binding can compare it by identity. */
-  pending(): readonly PendingUpload[]
-  subscribe(listener: () => void): () => void
+  pending: () => readonly PendingUpload[]
+  subscribe: (listener: () => void) => () => void
   add(files: Iterable<F>): void
   /** Take a file out, whatever it is doing: not sent, stopped, or dismissed after a failure. */
   cancel(key: string): void
@@ -258,7 +258,8 @@ export function fieldUploads<F extends { readonly name: string; readonly size: n
         const path = pathOf(engine, identity)
         if (path === undefined) return
         const before = engine.getFieldSnapshot(path).value
-        engine.setValue(path, [...(Array.isArray(before) ? before : []), file])
+        const earlier: unknown[] = Array.isArray(before) ? before : []
+        engine.setValue(path, [...earlier, file])
       },
       // Visited once its files have settled, so "required" is not shown while the first
       // file is still on its way.

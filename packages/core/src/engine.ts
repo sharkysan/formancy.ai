@@ -827,7 +827,6 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const checkingWires = new Set<string>()
   const checkGeneration = new Map<string, number>()
   let inFlight = 0
-  let idle: (() => void) | undefined
   let idleWaiters: Array<() => void> = []
 
   /** The check rules that apply on this side. */
@@ -848,7 +847,6 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     const waiting = idleWaiters
     idleWaiters = []
     for (const resolve of waiting) resolve()
-    idle?.()
   }
 
   function runChecksFor(wire: string): void {

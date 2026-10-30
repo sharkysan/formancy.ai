@@ -12,7 +12,7 @@ import Fastify from 'fastify'
 import type { FileStore } from './file-store.js'
 import rateLimit, { type FastifyRateLimitStoreCtor } from '@fastify/rate-limit'
 import { limited } from './rate-limits.js'
-import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import {
   authenticateApiKey,
   authenticateLocal,
@@ -221,7 +221,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
 
   /** 401 without an identity, 403 with one that lacks the permission — the
    *  difference tells a client whether to log in or to give up. */
-  function requires(action: Action): preHandlerHookHandler {
+  function requires(action: Action): preHandlerAsyncHookHandler {
     return async (request, reply) => {
       const actor = await actorOf(request)
       if (actor === undefined) {

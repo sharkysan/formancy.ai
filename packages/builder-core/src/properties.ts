@@ -255,7 +255,7 @@ function layoutBranches(): Array<{ kinds: string[]; properties: Record<string, J
     const resolved = deref(branch) ?? branch
     const properties = resolved.properties ?? {}
     const kind = properties['kind']
-    const kinds = kind?.const !== undefined ? [String(kind.const)] : (kind?.enum ?? []).map(String)
+    const kinds = typeof kind?.const === 'string' ? [kind.const] : (kind?.enum ?? []).filter((name): name is string => typeof name === 'string')
     return { kinds, properties }
   })
 }

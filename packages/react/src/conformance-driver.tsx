@@ -154,7 +154,7 @@ export function createReactDriver(): RendererDriver {
       if (def?.type === 'radio') {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const chosen = (def.options ?? []).find((option) => option.value === value)
-        if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
+        if (chosen === undefined) throw new Error(`No option "${said(value)}" on "${path}"`)
         await settle(() => {
           fireEvent.click(within(group).getByLabelText(textOf(chosen.label) ?? chosen.value))
         })
@@ -175,7 +175,7 @@ export function createReactDriver(): RendererDriver {
           const column = (def.options ?? []).find((candidate) => candidate.value === columnValue)
           const rowGroup = within(group).getByRole('group', { name: textOf(row?.label) ?? rowValue })
           await settle(() => {
-            fireEvent.click(within(rowGroup).getByRole('radio', { name: textOf(column?.label) ?? String(columnValue) }))
+            fireEvent.click(within(rowGroup).getByRole('radio', { name: textOf(column?.label) ?? said(columnValue) }))
           })
         }
         return
@@ -225,7 +225,7 @@ export function createReactDriver(): RendererDriver {
           if ((control as HTMLInputElement).checked !== (value === true)) fireEvent.click(control)
         } else {
           fireEvent.focus(control)
-          fireEvent.change(control, { target: { value: value === null ? '' : String(value) } })
+          fireEvent.change(control, { target: { value: value === null ? '' : said(value) } })
           fireEvent.blur(control)
         }
       })
@@ -466,6 +466,11 @@ async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
     helpUrl: violation.helpUrl,
     nodes: violation.nodes.map((node) => node.html),
   }))
+}
+
+/** A value as a person would read it in a message or type it into a control; a string as it is. */
+function said(value: JsonValue): string {
+  return typeof value === 'string' ? value : JSON.stringify(value)
 }
 
 function escapeRegExp(value: string): string {

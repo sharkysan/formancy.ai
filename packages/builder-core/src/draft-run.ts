@@ -33,9 +33,9 @@ import type { BuilderSession } from './session.js'
  */
 export interface DraftRun {
   /** What a part draws, through `draftsOn`. The same object until something in it changes. */
-  state(): DraftRunState
+  state: () => DraftRunState
   /** Hear each change. Returns what stops listening — a part going, which ends nothing. */
-  subscribe(listener: () => void): () => void
+  subscribe: (listener: () => void) => () => void
   /** The author's words, as they type them. Taken when Draft is pressed. */
   describe(intent: string): void
   /**

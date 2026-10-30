@@ -84,9 +84,9 @@ export function answerKindOf(def: Pick<FieldDef, 'type'>): AnswerKind {
     case 'select':
     case 'radio':
       return 'choice'
-    case 'selectboxes':
     // A ranking is a list of the options ranked; whether one is in it is whether it was
     // ranked at all (0138).
+    case 'selectboxes':
     case 'ranking':
       return 'list'
     case 'file':

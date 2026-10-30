@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { setFormAccess } from '@formancy/server-core'
 import type { AuditDraft, ServerDeps } from '@formancy/server-core'
 
@@ -10,7 +10,7 @@ import type { AuditDraft, ServerDeps } from '@formancy/server-core'
  * One route family per plugin, the seam `app.ts`'s size budget names. It left `app.ts` when
  * the examples kept beside a form needed a plugin registered there (0166).
  */
-export async function accessRoutes(
+export function accessRoutes(
   app: FastifyInstance,
   {
     deps,
@@ -18,10 +18,10 @@ export async function accessRoutes(
     audit,
   }: {
     deps: ServerDeps
-    requires: (action: 'form.publish') => preHandlerHookHandler
+    requires: (action: 'form.publish') => preHandlerAsyncHookHandler
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
   },
-): Promise<void> {
+): void {
   app.put('/f/:path/access', { preHandler: requires('form.publish') }, async (request, reply) => {
     const { path } = request.params as { path: string }
     const body = request.body as { submit?: unknown; allowedOrigins?: unknown } | null

@@ -323,6 +323,7 @@ describe('a host that cannot ask its model', () => {
   test('and one rejected with something other than an Error is said as text', async () => {
     // A host's own wrapper rejecting with a status string is still the host's
     // reason, and reading `.message` off it would have shown `undefined`.
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- a rejection that is not an Error is the case under test
     const ask: AskModel = () => Promise.reject('offline')
 
     const result = await authorForm(ask, 'a contact form')

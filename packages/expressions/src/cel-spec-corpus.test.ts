@@ -235,7 +235,7 @@ function runCase(entry: CorpusCase): Outcome {
   if (expectedCase === 'evalError') {
     if (!compiled.ok) return { kind: 'passed' }
     const outcome = evaluate(compiled.program, bag, { capabilities: CAPABILITIES })
-    return outcome.ok ? { kind: 'failed', detail: `expected an error, got ${String(outcome.value)}` } : { kind: 'passed' }
+    return outcome.ok ? { kind: 'failed', detail: `expected an error, got ${JSON.stringify(outcome.value)}` } : { kind: 'passed' }
   }
 
   const expected = toJs((entry.expected as any).value)
@@ -248,10 +248,10 @@ function runCase(entry: CorpusCase): Outcome {
   if (!outcome.ok) return { kind: 'failed', detail: `evaluate: ${outcome.error.code}` }
   return sameValue(outcome.value, expected)
     ? { kind: 'passed' }
-    : { kind: 'failed', detail: `got ${JSON.stringify(String(outcome.value))}, want ${JSON.stringify(String(expected))}` }
+    : { kind: 'failed', detail: `got ${JSON.stringify(outcome.value)}, want ${JSON.stringify(expected)}` }
 }
 
-const corpus = await getConformanceSuite()
+const corpus = getConformanceSuite()
 const cases = collectCases()
 const results = cases.map((entry) => ({ entry, outcome: runCase(entry) }))
 

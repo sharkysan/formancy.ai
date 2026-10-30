@@ -309,7 +309,7 @@ describe('uploadFile', () => {
     await uploadFile('contact', pdf(), sending())
 
     expect(fetched[0]?.init?.method).toBe('POST')
-    expect(JSON.parse(String(fetched[0]?.init?.body))).toMatchObject({
+    expect(JSON.parse(fetched[0]?.init?.body as string)).toMatchObject({
       field: 'evidence',
       name: 'plan.pdf',
       size: 12,
@@ -329,7 +329,7 @@ describe('uploadFile', () => {
 
     await uploadFile('contact', pdf(), { ...sending(), field: 'items[].receipt' })
 
-    expect(JSON.parse(String(fetched[0]?.init?.body))).toMatchObject({ field: 'items[].receipt' })
+    expect(JSON.parse(fetched[0]?.init?.body as string)).toMatchObject({ field: 'items[].receipt' })
   })
 
   test('reports how far the bytes have got', async () => {
@@ -427,7 +427,7 @@ describe('uploadFile', () => {
 
     // A submission that says nothing about what was attached is worse than one
     // that admits it could not tell.
-    expect(JSON.parse(String(fetched[0]?.init?.body))).toMatchObject({
+    expect(JSON.parse(fetched[0]?.init?.body as string)).toMatchObject({
       contentType: 'application/octet-stream',
     })
   })

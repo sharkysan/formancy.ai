@@ -27,7 +27,7 @@ const valid = {
 const access = (handler: (url: string, init?: RequestInit) => Response): ServerAccess => ({
   baseUrl: 'http://localhost:4380',
   apiKey: 'k_test',
-  fetch: vi.fn((url: string | URL | Request, init?: RequestInit) => Promise.resolve(handler(String(url), init))),
+  fetch: vi.fn((url: string | URL | Request, init?: RequestInit) => Promise.resolve(handler(String(url instanceof Request ? url.url : url), init))),
 })
 
 const json = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -265,7 +265,7 @@ describe('publish_form', () => {
     expect(result.ok).toBe(true)
     expect(seen?.url).toBe('http://localhost:4380/forms')
     expect((seen?.init?.headers as Record<string, string>).authorization).toBe('Bearer k_test')
-    expect(JSON.parse(String(seen?.init?.body))).toMatchObject({ path: 'quote' })
+    expect(JSON.parse(seen?.init?.body as string)).toMatchObject({ path: 'quote' })
   })
 })
 
@@ -318,7 +318,7 @@ describe('talking to a server', () => {
       baseUrl: 'http://localhost:4380/',
       apiKey: 'k',
       fetch: vi.fn((url: string | URL | Request) => {
-        seen = String(url)
+        seen = String(url instanceof Request ? url.url : url)
         return Promise.resolve(json({}))
       }),
     })

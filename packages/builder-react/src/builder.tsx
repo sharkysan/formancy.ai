@@ -154,7 +154,7 @@ export function FormancyBuilder({ session, label, onSelect, blocks, onSaveBlock 
     onSelect?.(selectedKey === null ? null : selectedKey.split('.'))
     // `onSelect` is deliberately absent: a consumer passing an inline arrow would
     // otherwise make this fire on every render of theirs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onSelect is absent so an inline arrow from a consumer does not fire this on every render
   }, [selectedKey])
 
   // Move focus WITHIN the tree, never INTO it. A component that grabs focus

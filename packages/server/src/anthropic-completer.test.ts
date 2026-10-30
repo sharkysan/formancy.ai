@@ -69,9 +69,9 @@ function over(answer: (sent: Sent) => Response | Promise<Response>): {
   const sent: Sent[] = []
   const fetch = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const request: Sent = {
-      url: String(input),
+      url: String(input instanceof Request ? input.url : input),
       headers: new Headers(init?.headers),
-      body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+      body: JSON.parse(init?.body as string) as Record<string, unknown>,
       signal: init?.signal,
     }
     sent.push(request)

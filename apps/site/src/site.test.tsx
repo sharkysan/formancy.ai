@@ -381,15 +381,21 @@ describe('the ending', () => {
     const stamp = screen.getByText('201 Created')
 
     read(...JOURNEY.map((stop) => stop.section))
-    act(() => vi.advanceTimersByTime(600))
+    act(() => {
+      vi.advanceTimersByTime(600)
+    })
     expect(stamp.className).not.toContain('landed')
 
     read('finale')
 
     // A beat, so the receipt is read before the stamp lands on it.
-    act(() => vi.advanceTimersByTime(599))
+    act(() => {
+      vi.advanceTimersByTime(599)
+    })
     expect(stamp.className).not.toContain('landed')
-    act(() => vi.advanceTimersByTime(1))
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
     expect(stamp.className).toContain('landed')
   })
 

@@ -31,9 +31,9 @@ export interface Relay {
   /** Hand this to `authorForm`, or to a prompt pane as its `ask`. */
   readonly ask: AskModel
   /** The turn waiting for a person to carry it, or nothing. The same object until it changes. */
-  waiting(): RelayTurn | undefined
+  waiting: () => RelayTurn | undefined
   /** Hear each change of the turn waiting. Returns what stops listening. */
-  subscribe(listener: () => void): () => void
+  subscribe: (listener: () => void) => () => void
   /**
    * What the person pasted back, for the turn waiting.
    *

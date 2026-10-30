@@ -45,7 +45,7 @@ export async function loadFixtures(source: FixtureSource): Promise<readonly Fixt
     try {
       value = JSON.parse(text)
     } catch (error) {
-      throw new Error(`${file}: not valid JSON: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`${file}: not valid JSON: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
     }
 
     let fixture: Fixture

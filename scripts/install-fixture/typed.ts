@@ -17,5 +17,5 @@ export const answers: InstallCheckAnswers = {
 
 // A country the form does not offer is not an answer to it, so a type that let it through
 // would describe submissions the server refuses.
-// @ts-expect-error
+// @ts-expect-error -- 'DE' is not one of the form's countries, which is what this line proves
 export const wrong: InstallCheckAnswers = { country: 'DE' }

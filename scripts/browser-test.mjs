@@ -130,7 +130,7 @@ async function run() {
     browser = await chromium.launch()
   } catch (error) {
     server.close()
-    throw new Error(`could not launch Chromium (${String(error)}).\nRun \`pnpm exec playwright install --with-deps chromium\`.`)
+    throw new Error(`could not launch Chromium (${String(error)}).\nRun \`pnpm exec playwright install --with-deps chromium\`.`, { cause: error })
   }
 
   const failures = []

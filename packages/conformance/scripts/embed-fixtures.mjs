@@ -35,7 +35,7 @@ for (const file of files) {
   try {
     fixtures.push(JSON.parse(text))
   } catch (error) {
-    throw new Error(`${file}: not valid JSON: ${error.message}`)
+    throw new Error(`${file}: not valid JSON: ${error.message}`, { cause: error })
   }
 }
 

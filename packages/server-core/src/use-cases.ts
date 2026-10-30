@@ -152,7 +152,7 @@ function cellValue(data: unknown, column: string): string {
     // numeric column.
     return "'" + current
   }
-  return String(current)
+  return typeof current === 'string' ? current : typeof current === 'number' || typeof current === 'boolean' ? String(current) : ''
 }
 
 function csvCell(value: string): string {

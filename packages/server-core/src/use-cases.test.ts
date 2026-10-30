@@ -865,7 +865,7 @@ describe('patterns that backtrack are refused at publish', () => {
   test('a polynomial pattern is refused too, with its degree named', async () => {
     const outcome = await publishForm(deps, {
       path: 'reg',
-      schema: withPattern('[^\s@]+@[^\s@]+\.[^\s@]+'),
+      schema: withPattern(String.raw`[^\s@]+@[^\s@]+\.[^\s@]+`),
     })
 
     expect(outcome).toMatchObject({ ok: false, kind: 'unsafe_pattern' })
@@ -874,7 +874,7 @@ describe('patterns that backtrack are refused at publish', () => {
   })
 
   test('an ordinary pattern publishes', async () => {
-    expect(await publishForm(deps, { path: 'reg', schema: withPattern('[A-Z]{2}-\d{4}') })).toMatchObject({
+    expect(await publishForm(deps, { path: 'reg', schema: withPattern(String.raw`[A-Z]{2}-\d{4}`) })).toMatchObject({
       ok: true,
     })
   })

@@ -105,7 +105,7 @@ describe('a builder session says it in its own language', () => {
       errors: SCHEMA_ERRORS_FR,
     })
 
-    expect(() => createBuilderSession(broken, { text: french })).toThrowError(/Un autre champ utilise déjà la clé « email »/)
+    expect(() => createBuilderSession(broken, { text: french })).toThrowError(/Un autre champ utilise déjà la clé «\u00a0email\u00a0»/)
   })
 
   test('and in the validator’s English for a sentence its language does not have', () => {

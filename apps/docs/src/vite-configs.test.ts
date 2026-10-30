@@ -70,6 +70,7 @@ const configs = packageDirectories()
 async function saidWhileLoading(config: string): Promise<string[]> {
   const said: string[] = []
   const record = (message: string): void => {
+    // eslint-disable-next-line no-control-regex -- the escape character is what is being matched
     said.push(message.replace(/\u001b\[[0-9;]*m/g, ''))
   }
   const quiet = createLogger('warn')

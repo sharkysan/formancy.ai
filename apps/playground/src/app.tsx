@@ -204,7 +204,7 @@ export function App() {
       // builder that cannot explain itself.
       setSession(null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- source is read when the pane, demo or language changes, not on each edit the builder writes back to it
   }, [pane, demo, locale])
 
   const monaco = useMonaco()

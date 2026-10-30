@@ -26,7 +26,7 @@ const mint = (seed = 7, maxNumber = 400) => mintChallenge({ secret: SECRET, nowS
 
 describe('solving one', () => {
   test('the browser finds the number and the server accepts it', async () => {
-    const challenge = await mint()
+    const challenge = mint()
 
     const number = await solveChallenge(challenge)
     expect(number).toBeTypeOf('number')
@@ -39,7 +39,7 @@ describe('solving one', () => {
     // and the symptom would be submissions the server rejects for no visible
     // reason.
     for (const seed of [1, 42, 99]) {
-      const challenge = await mint(seed)
+      const challenge = mint(seed)
       const number = await solveChallenge(challenge)
       expect(verifySolution(SECRET, { ...challenge, number: number as number }, NOW).ok).toBe(true)
     }
@@ -65,7 +65,7 @@ describe('solving one', () => {
 
 describe('the ways past it', () => {
   const valid = async (): Promise<Solution> => {
-    const challenge = await mint()
+    const challenge = mint()
     return { ...challenge, number: (await solveChallenge(challenge)) as number }
   }
 
@@ -129,11 +129,11 @@ describe('minting', () => {
   test('two challenges are not the same challenge', async () => {
     // Two visitors solving one puzzle between them would make the work a
     // one-off rather than per submission.
-    expect((await mint(1)).salt).not.toBe((await mint(2)).salt)
+    expect(mint(1).salt).not.toBe(mint(2).salt)
   })
 
   test('the expiry rides in the salt, and comes back from verification', async () => {
-    const challenge = await mint()
+    const challenge = mint()
     const number = (await solveChallenge(challenge)) as number
 
     const outcome = verifySolution(SECRET, { ...challenge, number }, NOW)
@@ -144,7 +144,7 @@ describe('minting', () => {
   })
 
   test('the secret number is not in what is published', async () => {
-    const challenge = await mint()
+    const challenge = mint()
     const number = await solveChallenge(challenge)
 
     // Publishing it would make the search free, which is the whole cost.
@@ -154,7 +154,7 @@ describe('minting', () => {
 
 describe('the header', () => {
   test('survives the round trip', async () => {
-    const challenge = await mint()
+    const challenge = mint()
     const solution: Solution = { ...challenge, number: (await solveChallenge(challenge)) as number }
 
     expect(decodeSolution(encodeSolution(solution))).toEqual(solution)

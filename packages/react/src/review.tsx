@@ -49,13 +49,13 @@ export function useReview(goTo?: (page: number) => void) {
 
   return {
     reviewing,
-    check(): void {
+    check: (): void => {
       const outcome = submit()
       if (outcome.ok) return setReviewing(true)
       const firstInvalid = engine.firstInvalid()
       if (firstInvalid !== null) goTo?.(engine.pageOf(parsePath(firstInvalid)))
     },
-    change(answer: ReviewedAnswer): void {
+    change: (answer: ReviewedAnswer): void => {
       setReviewing(false)
       goToField(answer.field)
     },
