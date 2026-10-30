@@ -285,6 +285,18 @@ describe('sending the response', () => {
     expect(sent()[0]?.body).toEqual({ email: 'a@b.ch' })
   })
 
+  test('sends nothing when the form refused the answers', async () => {
+    // The handler is called with the outcome whether or not the form accepted it; posting a
+    // refused one sent the server a response the respondent had not made valid.
+    render(<FillPane path="contact" quietMs={60_000} />)
+    const user = userEvent.setup()
+    await user.type(await screen.findByLabelText('Email'), 'not-an-email')
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(sent()).toHaveLength(0)
+  })
+
   test('sends the token the form was handed out with, in a header', async () => {
     // Without it an anonymous response is refused, and a retry of one that was sent is stored
     // twice. In the header for the reason the draft key is: a URL lands in logs.
