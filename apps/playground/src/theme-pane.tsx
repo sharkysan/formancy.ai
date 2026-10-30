@@ -69,9 +69,9 @@ export function ThemePane({
     })
     setBase(resolve(host, names))
     for (const [token, was] of lifted) (host as HTMLElement).style.setProperty(token, was)
-    // `overrides` is deliberately not a dependency: this is the theme's own
-    // value, which does not change when somebody edits one.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- overrides is the theme's own value, which does not change when somebody edits one
+    // `overrides` is deliberately not a dependency: it changes on every edit, and the
+    // baseline read here is the theme's own value, which an edit does not change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- overrides changes on every edit; the baseline is read when the host or the token names change, not on each edit
   }, [host, names])
 
   // Whatever was typed, blank included. See `applied` for why the blank stays.
