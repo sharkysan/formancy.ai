@@ -327,7 +327,7 @@
        },
        "pattern": {
         "title": "Pattern",
-        "description": "A regular expression the whole answer must match. Checked when the form is saved, so a broken or dangerous pattern never reaches a person filling the form in.",
+        "description": "A regular expression the whole answer must match, read as JavaScript reads one with the u flag: \\p{L} is any letter, and a character outside the Basic Multilingual Plane is one character. Checked when the form is saved, so a broken or dangerous pattern never reaches a person filling the form in.",
         "type": "string",
         "minLength": 1,
         "maxLength": 500

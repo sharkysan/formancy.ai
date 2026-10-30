@@ -366,6 +366,19 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A pattern that backtracks with Unicode semantics is refused at publish (unreleased)
+
+**If you run a server that has published forms with a `pattern`**, one of them may be a pattern
+that every release from `0.2.0` through `0.11.0` analysed without the `u` flag the engine runs it
+with, and published although it can be made to backtrack
+([0226](docs/decisions/0226-a-pattern-is-analysed-as-it-runs.md)). Nothing finds such a version
+for you. Republish each form after upgrading: an unchanged document is analysed again before the
+server compares it with the one it holds, so a pattern that backtracks is refused with its field
+and complexity, and the form keeps its current version until you publish one with the pattern
+rewritten. A pattern using `\p{…}`, `\P{…}` or `\u{…}` reads differently without `u` and is the
+likeliest, but it is not the only kind, so republish every form with a pattern rather than only
+those.
+
 ## A host's interfaces declare `this: void` (unreleased)
 
 **If you implement `FieldBinding` or `UploadOptions` (React or Angular), core's `UploadQueue`,

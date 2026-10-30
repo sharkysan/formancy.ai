@@ -130,7 +130,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0031](0031-enumeration-resistant-login.md) | Make a failed login indistinguishable from an unknown user | accepted |
 | [0032](0032-csv-formula-neutralisation.md) | Neutralise formulas in exported CSV | accepted |
 | [0044](0044-access-outside-the-document.md) | Who may submit is a property of the deployment, not of the document | accepted |
-| [0045](0045-reject-backtracking-patterns.md) | Refuse a pattern that can be made to backtrack | accepted |
+| [0045](0045-reject-backtracking-patterns.md) | Refuse a pattern that can be made to backtrack | accepted; analysed without the `u` the engine runs it with until 0226 |
 | [0046](0046-keyboard-before-drag.md) | Build the builder UI keyboard path before its drag surface | accepted |
 | [0047](0047-layouts-render.md) | Render layouts, with the DOM as the arrangement | accepted |
 | [0048](0048-webhook-delivery.md) | Deliver webhooks from a transactional outbox, to an address we checked | accepted |
@@ -326,3 +326,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0223](0223-responses-are-summarised-on-the-server.md) | A form's responses are summarised on the server, and the admin reads them a page at a time | accepted; reading every submission, superseded in part by 0224 |
 | [0224](0224-a-summary-is-counted-a-response-at-a-time.md) | A summary is counted a response at a time, and the server reads a page of them at once | accepted |
 | [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md) | The four formancy repositories lint and format by one set of rules, published here as `@formancy/code-style`, and CI fails a change that breaks either | accepted |
+| [0226](0226-a-pattern-is-analysed-as-it-runs.md) | A pattern is analysed as it runs, from the one definition of how it runs | accepted |

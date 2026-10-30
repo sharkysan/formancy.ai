@@ -255,6 +255,18 @@ defects found by review are named there rather than summarised away. What follow
 manufacturer characterising `0.11.0` needs on one page, with the anomalies of earlier releases
 that `0.5.0` to `0.11.0` fix, so that one still running them knows what it is upgrading away from.
 
+**Every release from `0.2.0` through `0.11.0` publishes a `pattern` that backtracks only with
+Unicode semantics.** The engine runs a pattern with the `u` flag, and the analysis that refuses one
+that can be made to backtrack read it without, where `\p{L}` is a p and a brace: `(\p{L}+)+` was
+rated linear and published. With the expression `0.11.0`'s engine compiles, 26 letters and a NUL
+took 392 ms on Node 22, four times as long for every two letters more, measured on 2026-10-30, so
+anyone who can reach such a form can hold the server's CPU with one answer. Found after `0.11.0`
+was released and fixed in no release yet: the change is under *Unreleased* in the changelog. Until
+a release carries it, keeping `\p{…}`, `\P{…}` and `\u{…}` out of published patterns avoids the
+cases found, though they are not all that `u` changes; after it, republishing every form with a
+pattern refuses one that backtracks. Hazard D3 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0226](../decisions/0226-a-pattern-is-analysed-as-it-runs.md).
+
 **`0.10.0` cannot draw a repeater a computed rule writes once the rule has written a row**, and
 earlier releases were not run. The rows a rule writes carry no row id, and both renderers key a row
 by its id, so each throws `Row 0 of "…" has no _id`. Before the rule writes a row, the repeater is

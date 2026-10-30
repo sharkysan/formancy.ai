@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**A pattern that backtracks with Unicode semantics is refused at publish.** The engine runs a
+field's `pattern` with JavaScript's `u` flag, and the analysis that refuses a pattern that can be
+made to backtrack ([0045](docs/decisions/0045-reject-backtracking-patterns.md)) read it without.
+Without `u`, `\p{L}` is the letter p and a brace, so `(\p{L}+)+` was analysed as another
+expression, rated linear and published. Every release from `0.2.0` through `0.11.0` did this, and
+anyone who could reach such a form could hold the server's CPU with one answer: measured on
+Node 22, 26 letters and a NUL took the engine 392 ms, four times as long for every two letters
+more. `@formancy/spec` now defines how a pattern runs, `anchoredPattern` and `PATTERN_FLAGS`, and
+the validator, the engine and the analysis all read it
+([0226](docs/decisions/0226-a-pattern-is-analysed-as-it-runs.md)). A version published before is
+not analysed again until it is republished; MIGRATIONS says how to find one.
+
 **`@formancy/code-style` is a new package: the ESLint rules and the Prettier format the
 formancy repositories share.** Repositories lint and format alike only while they hold the
 same rules, and a copy in each lets a rule changed in one differ in the others until somebody
