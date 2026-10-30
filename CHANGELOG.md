@@ -42,6 +42,12 @@ was said as `[object Object]` in a response's text and in "it is …" beside a r
 its JSON, which a reviewer can read. A submission is untrusted, so the shape of an answer is not
 the shape its question takes.
 
+**The admin's fill pane posts the answers, not the outcome of pressing Submit.** The form hands
+its handler `{ ok, errors, data }` and the pane sent that whole object as the response, so the
+server received the answers under a `data` key beside `ok` and `errors`, and a form the respondent
+had not filled in validly was sent as readily. It now sends `data`, and sends nothing when the
+form refused. Found by `@typescript-eslint/no-misused-promises` on the async handler.
+
 ## 0.11.0 — 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a

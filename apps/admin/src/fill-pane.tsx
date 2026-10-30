@@ -177,6 +177,8 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
       },
       ...(initialValue === undefined ? {} : { initialValue }),
     })
+    // `generation` is bumped to start over: a new one makes a new engine though the schema and the answers are the same.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generation is a restart signal the memo does not read
   }, [schema, initialValue, generation])
 
   const save = useCallback(
@@ -248,13 +250,14 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
         {/* No `submitLabel`: the pane is the admin's and English, and the form is what a
             respondent sees, in its own language — a German form's button is German (0171). */}
         <FormancyForm
-          onSubmit={async (value) => {
-            if (readOnly || sendWith.current === undefined) return
-            const outcome = await submitForm(path, schemaHash, sendWith.current, value)
-            // Refused as already sent is stored as surely as a 201: the first send of it was
-            // (0169). The server's sentence says so, and the answers stay on the page.
-            if (outcome.ok || outcome.error === 'submission_token_spent') finish()
-            setSent(outcome.ok ? 'Submitted.' : outcome.message)
+          onSubmit={(pressed) => {
+            if (!pressed.ok || readOnly || sendWith.current === undefined) return
+            void submitForm(path, schemaHash, sendWith.current, pressed.data).then((outcome) => {
+              // Refused as already sent is stored as surely as a 201: the first send of it was
+              // (0169). The server's sentence says so, and the answers stay on the page.
+              if (outcome.ok || outcome.error === 'submission_token_spent') finish()
+              setSent(outcome.ok ? 'Submitted.' : outcome.message)
+            })
           }}
         />
       </FormancyProvider>

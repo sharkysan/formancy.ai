@@ -67,7 +67,7 @@ beforeEach(() => {
       url,
       method,
       headers: (init?.headers ?? {}) as Record<string, string>,
-      body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
+      body: init?.body === undefined ? undefined : JSON.parse(init.body as string),
     })
     const reply = replies[`${method} ${url}`]
     if (reply === undefined) return new Response('{}', { status: 404 })
@@ -273,6 +273,17 @@ describe('sending the response', () => {
       expect(sent().length).toBeGreaterThan(0)
     })
   }
+
+  test('sends the answers, and not the outcome of pressing Submit', async () => {
+    // The form hands its handler an outcome -- `{ ok, errors, data }` -- and the pane posted that
+    // whole object as the response, so the server was sent the answers under a `data` key
+    // beside `ok` and `errors`, and a response the form refused was sent as readily.
+    render(<FillPane path="contact" quietMs={60_000} />)
+
+    await fillAndSend()
+
+    expect(sent()[0]?.body).toEqual({ email: 'a@b.ch' })
+  })
 
   test('sends the token the form was handed out with, in a header', async () => {
     // Without it an anonymous response is refused, and a retry of one that was sent is stored
