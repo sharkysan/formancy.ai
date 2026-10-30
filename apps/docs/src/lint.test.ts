@@ -31,10 +31,14 @@ import { describe, expect, test } from 'vitest'
  * change that breaks either would otherwise merge green.
  *
  * The one case that lints hands ESLint a file's own content and never
- * another text at its path: on Linux, ESLint linted the file on disk
- * instead of the text given (formancy.ai-health CI run 41045406900,
- * 30 October 2026), so a case that edits a repository file's text would
- * pass there having checked nothing.
+ * another text at its path, and lints no file twice. GitHub Actions sets
+ * CI=true, and typescript-eslint then infers a single run: it builds each
+ * program once, from the files on disk. So a text handed in for a path on
+ * disk is typed as the file there, and a file linted a second time in one
+ * process gives no findings (seen in formancy.ai-health's CI run
+ * 41045406900, 30 October 2026); a case that edited a repository file's
+ * text would pass in CI having checked nothing. `CI=true` reproduces it
+ * locally, and this file passes under it.
  *
  * What it cannot see: whether a rule's verdict is right. It holds that a
  * rule runs and fails the build, not that what it reports is a defect.
