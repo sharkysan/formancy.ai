@@ -366,7 +366,35 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
-## A repeater a computed rule writes is the rule's, row by row (unreleased)
+## A server's first start of 0.11.0 builds an index (0.11.0)
+
+**If you run the server against a database with many submissions**, its first start of `0.11.0`
+creates `submissions_by_form`, an index on `(form_id, submitted_at DESC, id DESC)` that the listing
+pages by ([0222](docs/decisions/0222-submissions-are-listed-a-page-at-a-time.md)). The bootstrap
+creates it with a plain `CREATE INDEX`, which holds back writes to `submissions` while it builds: a
+response sent in that time waits for it. Upgrade when few responses are arriving, or create the
+index yourself beforehand, `CREATE INDEX CONCURRENTLY submissions_by_form ON submissions (form_id,
+submitted_at DESC, id DESC)`, and the bootstrap leaves it be. Nothing else changes: the listing
+without `limit` or `after` answers as it did.
+
+## A full repeater's status, and a field drawn with no control (0.11.0)
+
+**If your own theme styles the shipped parts**, a repeater with a `maxItems` now draws
+`repeater-status`, a polite status region, empty while the repeater has room, that says it is full
+where its Add button was ([0220](docs/decisions/0220-a-full-repeater-says-so.md)). Style its empty
+state with `margin: 0`, never `display: none`, which takes a live region out of the accessibility
+tree.
+
+**If a test of yours counts status regions**, it finds that one more on a repeater with a
+`maxItems`.
+
+**If a test of yours looks up a field drawn with no control by its control id** (a file field in a
+deployment with no uploader, a choice whose source the deployment lacks), it now finds the
+sentence drawn in the control's place, with `tabindex="-1"`. In a list of ticks, the fieldset
+keeps the id, and focus moved by it lands on the sentence
+([0221](docs/decisions/0221-a-field-with-no-control-is-reached-at-its-sentence.md)).
+
+## A repeater a computed rule writes is the rule's, row by row (0.11.0)
 
 **If you read a computed repeater's rows from stored submissions**, the ones stored from now on
 carry an `_id` in each row, as every other repeater's rows do, and the ones stored before do not.

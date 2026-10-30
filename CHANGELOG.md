@@ -8,7 +8,33 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.11.0 — 2026-10-30
+
+**A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a
+document moves between the two either way and nothing migrates. It fixes a crash `0.10.0` shipped:
+a repeater a computed rule writes could not be drawn once the rule had written a row, and `0.10.0`'s
+own notes said only that it was drawn as an ordinary one. It fixes three things a person on a
+keyboard or a screen reader met in a repeater or a field with no control: focus fell to the page
+after a row was removed, a full repeater said nothing of why its Add button went, and a field drawn
+with no control could not be reached from the error summary. And it reads a form's responses a page
+at a time: the listing pages, the summary is counted on the server a page at a time, and a number
+question with very many answers no longer throws. The server answers one route more,
+`GET /f/:path/summary`. It is a minor release because a host can see it, where a breaking change
+lands before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by choosing it**: one on
+`^0.10.0` keeps `0.10.0` until it moves to `^0.11.0`, and a server run from
+`compose.published.yaml` runs the tag `FORMANCY_VERSION` pins.
+
+**What a host sees change.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to change.
+
+- **A computed repeater's rows are stored with an `_id`**, as every other repeater's are, where they
+  were stored without one; `canAddRow` and `canRemoveRow` say `false` for it, and its row commands
+  do nothing (0218).
+- **A repeater with a `maxItems` draws a status region**, `repeater-status`, a part a host's own
+  theme may want to style (0220).
+- **A field drawn with no control puts its control id on the sentence in its place**, so its
+  label's `for` names a paragraph (0221).
+- **The first start builds an index on `submissions`**, and a response sent while it builds waits
+  for it (0222).
 
 **A summary is counted a response at a time, and a number question with very many answers has
 one.** The summary kept every answer to a number question and found its range by spreading them
@@ -84,6 +110,32 @@ repeater's rows are stored with an `_id`**, as every other repeater's are, where
 without one. A submission stored earlier keeps its rows without
 ([0218](docs/decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md), which supersedes that
 part of 0216).
+
+### What 0.11.0 knowingly does not have
+
+Everything 0.10.0 listed still holds, but the computed repeater, a field drawn with no control and
+the admin counting in the browser, each fixed above. Among what still holds:
+
+- **A default left alone is stored as the person's answer**, indistinguishable from one chosen
+  (0197; hazard A10).
+- **Nothing records that the person looked at the review** before sending (0204).
+- **A rule's message is said for its code wherever the field carries it**, and nothing checks a
+  message against its rule (0198; hazard D20).
+- **React's bundle is over its 4 kB budget**, and only core's budget is a gate (0208).
+- **A version stored with a field keyed `__proto__` cannot be opened**, and nothing finds such
+  versions for an operator (0185).
+- **Under Material, a field's description and its count sit outside the form field** (0211).
+- **The images published before `v0.9.0` keep only BuildKit's provenance** (0209).
+- **A computed field whose options come from a source is said by its stored value** (0216).
+
+New, or found while making this release:
+
+- **A listing asked for no page is every submission**, read into the server's memory to send it,
+  so a client written before paging keeps working (0222; arc42 §11.2).
+- **A summary read while responses arrive counts a list that moved**, where the single read was a
+  snapshot (0224).
+- **Nothing is announced when a row is removed.** Focus lands in the row in its place, and a
+  screen reader hears that control, not that a row went (0219).
 
 ## 0.10.0 — 2026-10-29
 
