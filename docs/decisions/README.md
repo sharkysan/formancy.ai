@@ -306,7 +306,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0203](0203-a-limit-is-counted-while-typing.md) | A field with a limit counts while somebody types, and speaks only when they pause | accepted |
 | [0204](0204-answers-can-be-checked-before-they-are-sent.md) | The answers can be checked before they are sent, in words, from one list | accepted; a question nobody answered having no line, superseded in part by 0214 |
 | [0205](0205-a-summary-link-goes-to-its-questions-page.md) | An error summary's link goes to its question's page | accepted |
-| [0206](0206-a-forms-responses-are-summarised-by-question.md) | A form's responses are summarised question by question, for the version they answered | accepted |
+| [0206](0206-a-forms-responses-are-summarised-by-question.md) | A form's responses are summarised question by question, for the version they answered | accepted; counting in the browser, superseded in part by 0223 |
 | [0207](0207-a-versions-document-can-be-read.md) | A version's document can be read by its number, so older submissions are read through it | accepted |
 | [0208](0208-the-published-javascript-carries-no-jsdoc.md) | The published JavaScript carries no JSDoc, and core's budget is a gate | accepted |
 | [0209](0209-the-image-carries-githubs-build-provenance.md) | The image carries GitHub's build provenance, as the documents said it did | accepted |
@@ -323,3 +323,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0220](0220-a-full-repeater-says-so.md) | A full repeater says so where its Add button was | accepted |
 | [0221](0221-a-field-with-no-control-is-reached-at-its-sentence.md) | A field drawn with no control is reached at the sentence that says why | accepted |
 | [0222](0222-submissions-are-listed-a-page-at-a-time.md) | A form's submissions are listed a page at a time, from where the last page ended | accepted |
+| [0223](0223-responses-are-summarised-on-the-server.md) | A form's responses are summarised on the server, and the admin reads them a page at a time | accepted |

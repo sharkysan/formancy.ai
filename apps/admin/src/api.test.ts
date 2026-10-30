@@ -5,7 +5,7 @@ import {
   exportUrl,
   fetchForm,
   fetchForms,
-  fetchSubmissions,
+  fetchSubmissionPage,
   fetchVersions,
   login,
   publish,
@@ -126,7 +126,7 @@ describe('authenticated calls', () => {
     await fetchForms()
     await fetchForm('contact')
     await fetchVersions('contact')
-    await fetchSubmissions('contact')
+    await fetchSubmissionPage('contact')
 
     // The header belongs in one place for exactly this reason: four call sites
     // and none of them can forget it.

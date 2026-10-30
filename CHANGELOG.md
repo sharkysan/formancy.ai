@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**A form's responses are summarised on the server, and the admin reads them a page at a time.** The
+admin counted the summary in the browser, from every submission the listing handed over, so it had
+to ask for all of them. `GET /f/:path/summary`, behind `submission.read`, now answers one summary per
+version with responses, newest first. The server counts with `summariseAnswers`, the function the
+admin called, against each version's own document, so the counting rules are written once. The
+admin draws it, and lists submissions fifty at a time, with *Show more submissions* for the next.
+The server still reads every submission of the form to count them
+([0223](docs/decisions/0223-responses-are-summarised-on-the-server.md), which supersedes that part
+of 0206).
+
 **A form's submissions can be read a page at a time.** `GET /f/:path/submissions` answered every
 submission of a form in one reply, read into the server's memory to send it. `?limit=` now asks for
 at most that many, newest first, between 1 and 1000. The reply's `next` asks for the following page

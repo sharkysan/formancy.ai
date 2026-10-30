@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
@@ -28,13 +28,14 @@ import {
   fetchForm,
   fetchForms,
   fetchModel,
-  fetchSubmissions,
+  fetchSubmissionPage,
+  fetchSummary,
   fetchVersion,
   fetchVersions,
   publish,
   setToken,
 } from './api.js'
-import type { FormListEntry, PublishResult, ServerModel, SubmissionEntry, VersionEntry } from './api.js'
+import type { FormListEntry, PublishResult, ServerModel, SubmissionEntry, VersionEntry, VersionSummary } from './api.js'
 
 /**
  * The self-hosted admin, v0.1 cut: no drag-and-drop builder — a schema editor
@@ -375,27 +376,57 @@ function VersionsPane({ path }: { path: string }) {
 
 function SubmissionsPane({ path }: { path: string }) {
   const [submissions, setSubmissions] = useState<SubmissionEntry[]>([])
-  // Each version's document that has submissions, to read them back through (0193): a submission
-  // answered its own version's questions, which may not be the current one's (0207). A version
-  // whose document could not be fetched leaves its submissions as stored.
-  const [documents, setDocuments] = useState<ReadonlyMap<number, FormSchema>>(new Map())
+  // What the responses say together, counted by the server per version (0223), where the pane
+  // counted the submissions it had listed.
+  const [summaries, setSummaries] = useState<readonly VersionSummary[]>([])
   useEffect(() => {
     let live = true
-    fetchSubmissions(path)
-      .then(async (listed) => {
-        if (!live) return
-        setSubmissions(listed)
-        const numbers = [...new Set(listed.map((submission) => submission.version))]
-        const fetched = await Promise.allSettled(numbers.map((version) => fetchVersion(path, version)))
-        const read = fetched.flatMap((outcome) => (outcome.status === 'fulfilled' ? [[outcome.value.version, outcome.value.schema] as const] : []))
-        if (live) setDocuments(new Map(read))
+    fetchSummary(path)
+      .then((counted) => {
+        if (live) setSummaries(counted)
       })
-      .catch(() => setSubmissions([]))
+      .catch(() => setSummaries([]))
     return () => {
       live = false
     }
   }, [path])
-  const versionsHeard = [...new Set(submissions.map((submission) => submission.version))].sort((a, b) => b - a)
+  // Each version's document that has submissions, to read them back through (0193): a submission
+  // answered its own version's questions, which may not be the current one's (0207). A version
+  // whose document could not be fetched leaves its submissions as stored.
+  const [documents, setDocuments] = useState<ReadonlyMap<number, FormSchema>>(new Map())
+  // A page at a time, the next when the person asks for more (0222): the listing was every
+  // submission of the form. `next` asks for the page after the last one shown, `null` at the end.
+  const [next, setNext] = useState<string | null>(null)
+  const asked = useRef(new Set<number>())
+  const take = useCallback(
+    async (page: { submissions: SubmissionEntry[]; next: string | null }, first: boolean, live: () => boolean) => {
+      if (first) asked.current = new Set()
+      setSubmissions((held) => (first ? page.submissions : [...held, ...page.submissions]))
+      setNext(page.next)
+      // Each version's document once, as its first submission arrives.
+      const numbers = [...new Set(page.submissions.map((submission) => submission.version))].filter((version) => !asked.current.has(version))
+      for (const version of numbers) asked.current.add(version)
+      const fetched = await Promise.allSettled(numbers.map((version) => fetchVersion(path, version)))
+      const read = fetched.flatMap((outcome) => (outcome.status === 'fulfilled' ? [[outcome.value.version, outcome.value.schema] as const] : []))
+      if (live()) setDocuments((held) => new Map([...(first ? [] : held), ...read]))
+    },
+    [path],
+  )
+  useEffect(() => {
+    let live = true
+    fetchSubmissionPage(path)
+      .then((page) => (live ? take(page, true, () => live) : undefined))
+      .catch(() => setSubmissions([]))
+    return () => {
+      live = false
+    }
+  }, [path, take])
+  const more = (): void => {
+    if (next === null) return
+    void fetchSubmissionPage(path, next)
+      .then((page) => take(page, false, () => true))
+      .catch(() => undefined)
+  }
   return (
     <div className="wb-page">
       <p className="wb-page-actions">
@@ -403,17 +434,9 @@ function SubmissionsPane({ path }: { path: string }) {
           Download CSV (columns unioned across versions)
         </a>
       </p>
-      {versionsHeard.map((version) => {
-        const schema = documents.get(version)
-        return schema === undefined ? null : (
-          <ResponsesSummary
-            key={version}
-            schema={schema}
-            version={version}
-            data={submissions.filter((submission) => submission.version === version).map((submission) => submission.data)}
-          />
-        )
-      })}
+      {summaries.map((summary) => (
+        <ResponsesSummary key={summary.version} summary={summary} />
+      ))}
       <table className="wb-table">
         <thead>
           <tr>
@@ -443,6 +466,13 @@ function SubmissionsPane({ path }: { path: string }) {
       {submissions.length === 0 ? (
         <p className="wb-empty-note">No submissions yet.</p>
       ) : null}
+      {next === null ? null : (
+        <p className="wb-page-actions">
+          <button type="button" className="wb-button" onClick={more}>
+            Show more submissions
+          </button>
+        </p>
+      )}
     </div>
   )
 }

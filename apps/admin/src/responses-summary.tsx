@@ -1,31 +1,21 @@
 import type { ReactElement } from 'react'
-import { summariseAnswers } from '@formancy/core/summary'
 import type { QuestionSummary } from '@formancy/core/summary'
-import { createFormText } from '@formancy/core/words'
-import type { FormSchema } from '@formancy/spec'
+import type { VersionSummary } from './api.js'
 
 /**
  * A form's responses together, question by question, before any one of them (0206): how many
  * answered, how many chose each option, a number's range and mean.
  *
- * One version's responses against that version's document: another version's questions may
- * differ, and counting its answers against these would put them under the wrong question. The
- * pane draws one of these per version (0207).
+ * One version's responses against that version's document, as the server counted them (0223):
+ * another version's questions may differ, and counting its answers against these would put them
+ * under the wrong question. The pane draws one of these per version (0207).
  */
-export function ResponsesSummary({
-  schema,
-  version,
-  data,
-}: {
-  schema: FormSchema
-  version: number
-  data: readonly unknown[]
-}): ReactElement {
-  const questions = summariseAnswers(schema, data, createFormText({ locale: schema.i18n?.defaultLocale ?? '' }))
+export function ResponsesSummary({ summary }: { summary: VersionSummary }): ReactElement {
+  const { version, responses, questions } = summary
   return (
     <section className="wb-summary" aria-label={`Summary of version ${String(version)}`}>
       <p className="wb-summary-scope">
-        {data.length === 1 ? '1 response' : `${String(data.length)} responses`} to version {version}.
+        {responses === 1 ? '1 response' : `${String(responses)} responses`} to version {version}.
       </p>
       {questions.map((question) => (
         <Question key={question.field} question={question} />

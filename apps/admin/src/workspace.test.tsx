@@ -50,6 +50,18 @@ const submissions = [
   { id: 's0', submittedAt: '2026-09-19T10:00:00Z', version: 1, data: { email: 'old@example.ch' } },
 ]
 
+/**
+ * The summary as the server counts it (0223): one per version with responses, newest first, each
+ * against its own questions. Version 1's 41 responses, where the listing above holds one, show the
+ * pane draws what it was sent rather than counting what it listed.
+ */
+const summary = {
+  versions: [
+    { version: 2, responses: 1, questions: [{ kind: 'answered', field: 'email', label: 'Email', answered: 1 }] },
+    { version: 1, responses: 41, questions: [{ kind: 'answered', field: 'email', label: 'E-mail address', answered: 41 }] },
+  ],
+}
+
 /** Every request the workspace makes, and a record of what it sent. */
 interface Stub {
   readonly calls: { url: string; method: string; body: unknown; headers: Record<string, string> }[]
@@ -57,6 +69,8 @@ interface Stub {
   publishFails?: boolean
   /** Somebody else published while this editor was editing. */
   publishConflicts?: boolean
+  /** The listing pages one submission at a time (0222), where it hands both over at once. */
+  pagedByOne?: boolean
 }
 
 function serve(stub: Stub): void {
@@ -90,7 +104,13 @@ function serve(stub: Stub): void {
       if (versionAsked === '1') return Promise.resolve(json({ version: 1, schemaHash: '1111111111111111aaaa', schema: SCHEMA_V1 }))
       if (versionAsked === '2') return Promise.resolve(json({ version: 2, schemaHash: '2222222222222222bbbb', schema: SCHEMA }))
       if (url.includes('/versions')) return Promise.resolve(json({ versions }))
-      if (url.includes('/submissions')) return Promise.resolve(json({ submissions }))
+      if (url.endsWith('/summary')) return Promise.resolve(json(summary))
+      if (url.includes('/submissions')) {
+        if (stub.pagedByOne !== true) return Promise.resolve(json({ submissions, next: null }))
+        return Promise.resolve(
+          url.includes('after=s1') ? json({ submissions: [submissions[1]], next: null }) : json({ submissions: [submissions[0]], next: 's1' }),
+        )
+      }
       if (method === 'POST' || method === 'PUT') {
         if (stub.publishConflicts === true) {
           return Promise.resolve(
@@ -243,6 +263,27 @@ describe('the tabs', () => {
     expect(link.getAttribute('href')).toContain('contact')
   })
 
+  // The listing was every submission of the form in one reply (0222). The pane asks for a page,
+  // and for the next only when the person asks for more.
+  test('submissions are listed a page at a time, the next when asked for', async () => {
+    const stub: Stub = { calls: [], pagedByOne: true }
+    const user = await openForm(stub)
+    await user.click(await screen.findByRole('button', { name: 'submissions' }))
+
+    expect(await screen.findByText('ada@example.ch', { selector: 'dd' })).toBeTruthy()
+    expect(screen.queryByText('old@example.ch', { selector: 'dd' })).toBeNull()
+    const listings = () => stub.calls.filter((call) => call.url.includes('/f/contact/submissions?'))
+    expect(listings().map((call) => call.url.split('?')[1])).toEqual(['limit=50'])
+
+    await user.click(screen.getByRole('button', { name: 'Show more submissions' }))
+
+    expect(await screen.findByText('old@example.ch', { selector: 'dd' })).toBeTruthy()
+    expect(screen.getByText('ada@example.ch', { selector: 'dd' })).toBeTruthy()
+    expect(listings().map((call) => call.url.split('?')[1])).toEqual(['limit=50', 'limit=50&after=s1'])
+    // The last page says so, and offers no more.
+    expect(screen.queryByRole('button', { name: 'Show more submissions' })).toBeNull()
+  })
+
   // A submission read back under its question, not as its JSON (0193) — each through the version
   // it was made on (0207): version 1's under the question as version 1 asked it.
   test('a submission is shown question by question, through the version it answered', async () => {
@@ -263,13 +304,16 @@ describe('the tabs', () => {
     const user = await openForm(stub)
     await user.click(await screen.findByRole('button', { name: 'submissions' }))
 
-    const summary = await screen.findByRole('region', { name: 'Summary of version 2' })
-    expect(within(summary).getByText(/1 response to version 2/)).toBeTruthy()
-    expect(within(summary).getByRole('heading', { name: 'Email' })).toBeTruthy()
-    expect(within(summary).getByText('1 answered')).toBeTruthy()
-    // Each version on its own, against its own questions (0207).
+    const current = await screen.findByRole('region', { name: 'Summary of version 2' })
+    expect(within(current).getByText(/1 response to version 2/)).toBeTruthy()
+    expect(within(current).getByRole('heading', { name: 'Email' })).toBeTruthy()
+    expect(within(current).getByText('1 answered')).toBeTruthy()
+    // Each version on its own, against its own questions (0207), and as the server counted it
+    // (0223): 41 responses where the listing holds one.
     const older = await screen.findByRole('region', { name: 'Summary of version 1' })
     expect(within(older).getByRole('heading', { name: 'E-mail address' })).toBeTruthy()
+    expect(within(older).getByText(/41 responses to version 1/)).toBeTruthy()
+    expect(stub.calls.some((call) => call.url.endsWith('/f/contact/summary'))).toBe(true)
   })
 
   test('switching away and back does not lose an unpublished edit', async () => {
