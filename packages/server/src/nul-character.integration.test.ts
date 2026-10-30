@@ -290,7 +290,7 @@ describe('a NUL in a body', () => {
           payload: sent as Record<string, unknown>,
         })
         // A body that is not JSON — a `204`'s, which a refusal never is — points nowhere.
-        const answer = response.body.startsWith('{') ? response.json() : {}
+        const answer: { error?: unknown; pointer?: unknown } = response.body.startsWith('{') ? response.json() : {}
         if (response.statusCode !== 400 || answer.error !== 'nul_character' || answer.pointer !== pointer || errors.length > 0) {
           wrong.push(`${route} ${JSON.stringify(pointer)}: ${String(response.statusCode)} ${response.body.slice(0, 80)}`)
         }

@@ -9,7 +9,7 @@ import type { AuditDraft, ServerDeps } from '@formancy/server-core'
  * One route family per plugin, the seam `app.ts`'s size budget names. It moved
  * when that file needed room to say which proxy it believes about a client.
  */
-export function deliveryRoutes(
+export async function deliveryRoutes(
   app: FastifyInstance,
   {
     deps,
@@ -20,7 +20,7 @@ export function deliveryRoutes(
     requires: (action: 'form.publish') => preHandlerAsyncHookHandler
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
   },
-): void {
+): Promise<void> {
   /**
    * Webhook health, and the deliveries that died.
    *

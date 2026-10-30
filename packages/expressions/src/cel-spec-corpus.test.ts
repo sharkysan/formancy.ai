@@ -225,7 +225,7 @@ function runCase(entry: CorpusCase): Outcome {
 
   const compiled = compile(entry.expr, {
     kind: 'computed',
-    variables: variables,
+    variables,
   })
 
   if (!compiled.ok && isPolicyRefusal(compiled.error.code)) {

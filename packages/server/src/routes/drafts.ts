@@ -14,7 +14,7 @@ const DRAFT_TOKEN_HEADER = 'x-formancy-draft-token'
  * One route family per plugin, the seam `app.ts`'s size budget names. It moved when the
  * deployment's model needed lines that file had no room for.
  */
-export function draftRoutes(app: FastifyInstance, { deps, limit }: { deps: ServerDeps; limit: Budget }): void {
+export async function draftRoutes(app: FastifyInstance, { deps, limit }: { deps: ServerDeps; limit: Budget }): Promise<void> {
   /**
    * Start a draft, and get the only key to it.
    *

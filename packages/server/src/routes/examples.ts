@@ -13,10 +13,10 @@ import type { Actor, KeepExamplesOutcome, ServerDeps } from '@formancy/server-co
  *
  * One route family per plugin, the seam `app.ts`'s size budget names.
  */
-export function exampleRoutes(
+export async function exampleRoutes(
   app: FastifyInstance,
   { deps, actorOf }: { deps: ServerDeps; actorOf: (request: FastifyRequest) => Promise<Actor | undefined> },
-): void {
+): Promise<void> {
   app.get('/f/:path/examples', async (request, reply) => {
     const actor = await actorOf(request)
     if (actor === undefined) return reply.code(401).send({ error: 'unauthenticated' })

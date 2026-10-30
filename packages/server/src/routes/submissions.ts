@@ -11,7 +11,7 @@ import type { Budget } from '../rate-limits.js'
  * One route family per plugin, the seam `app.ts`'s size budget names. It moved when the
  * submission token needed lines that file had no room for.
  */
-export function submissionRoutes(
+export async function submissionRoutes(
   app: FastifyInstance,
   {
     deps,
@@ -25,7 +25,7 @@ export function submissionRoutes(
     limit: Budget
     actorOf: (request: FastifyRequest) => Promise<Actor | undefined>
   },
-): void {
+): Promise<void> {
   const submissionLimit = limit
 
   /**

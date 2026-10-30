@@ -39,7 +39,7 @@ export const MODEL_BODY_LIMIT_BYTES = 1024 * 1024
  *
  * One route family per plugin, the seam `app.ts`'s size budget names.
  */
-export function modelRoutes(
+export async function modelRoutes(
   app: FastifyInstance,
   {
     model,
@@ -52,7 +52,7 @@ export function modelRoutes(
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
     limit: Budget
   },
-): void {
+): Promise<void> {
   // Asking a model is part of editing a form, so it takes the permission editing does:
   // `form.publish`, which an editor and an admin hold and a viewer does not.
   // None is how a deployment ships, so it is an answer and not a missing resource (0183): a
