@@ -40,7 +40,12 @@ string that said nothing of it.
 answer of an unexpected shape as the data it is.** A quantity, a tick or a choice holding a record
 was said as `[object Object]` in a response's text (an uploaded item that is no file record too) and in "it is …" beside a rule; both now give
 its JSON, which a reviewer can read. A submission is untrusted, so the shape of an answer is not
-the shape its question takes.
+the shape its question takes. One function says it for both, `answerAsStored`, which
+`@formancy/core/words` now exports, so that the builder's explanation and the submission read back
+cannot say one answer two ways; a host saying an answer its question does not take can call it too.
+A value that is no record or list is said as `String` says it, as before: JSON would have thrown on
+a bigint, which a host's answers can hold though a stored submission cannot, and written NaN as
+"null", which reads as nothing answered.
 
 **The admin's fill pane posts the answers, not the outcome of pressing Submit.** The form hands
 its handler `{ ok, errors, data }` and the pane sent that whole object as the response, so the

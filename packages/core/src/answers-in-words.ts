@@ -184,9 +184,15 @@ function temporal(def: FieldDef, value: string, language: string): string {
   return value
 }
 
-/** An answer as it was stored, for one the question does not take: a record is data, not "[object Object]". */
+/**
+ * An answer as it was stored, for one the question does not take: a record or a list is its
+ * JSON, not "[object Object]", and a bigint in it its digits; anything else is what `String`
+ * writes. Not JSON throughout: a host's answers can hold what no stored submission can, and
+ * JSON throws on a bigint and writes NaN as "null", which reads as nothing answered.
+ */
 export function answerAsStored(value: unknown): string {
-  return typeof value === 'string' ? value : JSON.stringify(value)
+  if (typeof value !== 'object' || value === null) return String(value)
+  return JSON.stringify(value, (_key, item: unknown) => (typeof item === 'bigint' ? String(item) : item))
 }
 
 function list(items: readonly string[], language: string): string {

@@ -135,6 +135,15 @@ describe('why a field is shown or hidden now', () => {
     expect(verdict?.because[0]).toBe('Country is Switzerland: no — it is {"code":"DE"}')
   })
 
+  test('says an answer JSON cannot write as String writes it', () => {
+    // A preview's answers are the engine's, which a host may hand a bigint or NaN that no
+    // stored submission holds: said as JSON, the bigint threw and took the whole
+    // explanation with it, and NaN read "null", as though nothing were answered.
+    const verdict = explainRule(visibleRule, form([visibleRule]), { country: 41n, age: Number.NaN }, english, capabilities)
+
+    expect(verdict?.because.slice(0, 2)).toEqual(['Country is Switzerland: no — it is 41', 'Age is at least 18: no — it is NaN'])
+  })
+
   test('and agrees with the engine about the same answers', () => {
     // The point of the explanation. Shown, hidden, shown: each verdict is checked
     // against what the engine did with the same rule and the same answers.

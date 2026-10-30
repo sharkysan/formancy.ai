@@ -125,4 +125,13 @@ describe('a submission in words', () => {
     const said = answersInWords(form, { proof: [{ id: 'x' }, 'plain'] }, createFormText({ locale: 'en' }))
     expect(said.map(({ said: words }) => words)).toEqual(['{"id":"x"} and plain'])
   })
+
+  // What JSON cannot write, which a host's answers can hold though a stored submission cannot: a
+  // bigint, alone or in a record, made JSON throw, so the whole submission failed to read back,
+  // and NaN came out as "null", which reads as nothing answered. A value that is not a record is
+  // said as `String` says it, as each was before a record was said as JSON.
+  test('says what JSON cannot write as String writes it', () => {
+    const said = answersInWords(form, { country: Number.NaN, qty: { amount: 1n }, agree: 12n }, createFormText({ locale: 'en' }))
+    expect(said.map(({ said: words }) => words)).toEqual(['NaN', '{"amount":"1"}', '12'])
+  })
 })
