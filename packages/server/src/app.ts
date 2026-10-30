@@ -23,6 +23,7 @@ import {
   listForms,
   listSubmissions,
   listSubmissionPage,
+  summariseResponses,
   formVersion,
   listVersions,
 } from '@formancy/server-core'
@@ -404,6 +405,17 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       return reply.send({ submissions: listed })
     },
   )
+
+  // What a form's responses say together, counted here rather than by a client handed every answer
+  // to count (0223). Audited as a read of them: the counts are drawn from people's answers.
+  app.get('/f/:path/summary', { preHandler: requires('submission.read') }, async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const versions = await summariseResponses(deps, path)
+    if (versions === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    const count = versions.reduce((total, version) => total + version.responses, 0)
+    await audit(request, { action: 'submission.read', subject: path, detail: { count, summary: true } })
+    return reply.send({ versions })
+  })
 
   app.get(
     '/f/:path/submissions/export.csv',

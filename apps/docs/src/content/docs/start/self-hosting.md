@@ -553,6 +553,7 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `GET` | `/f/:path/versions/:version` | management | `form.read` |
 | `GET` | `/f/:path/submissions` | management | `submission.read` |
 | `GET` | `/f/:path/submissions/export.csv` | management | `submission.export` |
+| `GET` | `/f/:path/summary` | management | `submission.read` |
 | `GET` | `/f/:path` | public | — (hands out a `submissionToken`) |
 | `GET` | `/f/:path/challenge` | public | — (404 when `FORMANCY_CHALLENGE_SECRET` is unset) |
 | `POST` | `/f/:path/submissions` | public | — (anonymous: `x-formancy-submission-token`) |
@@ -581,6 +582,12 @@ Pass `next` back as it came. It names where the last page ended, so a response t
 you page is not listed twice and nothing is skipped. A cursor that names no place is refused with
 `400 bad_cursor`
 ([0222](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0222-submissions-are-listed-a-page-at-a-time.md)).
+
+`GET /f/:path/summary` answers what the responses say together, so a client need not fetch every
+one to count them. It gives one summary per version with responses, newest first: how many
+answered each question, how many chose each option, a number's range and mean. Each version is
+counted against its own document, in that document's language
+([0223](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0223-responses-are-summarised-on-the-server.md)).
 
 ## Files
 

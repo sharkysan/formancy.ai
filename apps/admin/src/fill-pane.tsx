@@ -4,7 +4,7 @@ import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider, ResumeNotice } from '@formancy/react'
 import type { ResumeMigration } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
-import { fetchPublicForm, resumeDraft, saveDraft, startDraft, submitForm } from './api.js'
+import { fetchPublicForm, resumeDraft, saveDraft, startDraft, submitForm } from './public-plane.js'
 
 /**
  * Filling in a published form, against the server, with a draft behind it.

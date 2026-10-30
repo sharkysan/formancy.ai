@@ -1,6 +1,7 @@
 # 0206 — A form's responses are summarised question by question, for the version they answered
 
-- **Status:** accepted
+- **Status:** accepted; counting in the browser, superseded in part by
+  [0223](0223-responses-are-summarised-on-the-server.md)
 - **Date:** 2026-10-28
 - **Extends:** [0193](0193-a-submission-is-read-back-in-words.md), which reads one submission in
   words through the version it was made on; this reads them together, under the same constraint

@@ -45,6 +45,8 @@ export {
 } from './use-cases.js'
 export { listSubmissionPage } from './submission-pages.js'
 export type { SubmissionPage } from './submission-pages.js'
+export { summariseResponses } from './response-summaries.js'
+export type { VersionSummary } from './response-summaries.js'
 export type {
   DraftMigration,
   ListedForm,

@@ -567,6 +567,9 @@ a form, mints its challenge and takes its submissions, and `server-core/submitti
 hands out, a draft's and a response's, are signed side by side in `server-core/signing.ts`, so
 that what each is signed over can be read together and one cannot stand in for the other. Both
 `app.ts` and `use-cases.ts` came under the budget with it, and left the size test's list.
+`server-core/response-summaries.ts` holds `summariseResponses`, a form's responses counted by
+question per version with `@formancy/core/summary`, which the admin draws
+([0223](../decisions/0223-responses-are-summarised-on-the-server.md)).
 `server-core/submission-pages.ts` holds `listSubmissionPage`, a form's submissions a page at a time
 from where the last page ended, and the cursor that names the place
 ([0222](../decisions/0222-submissions-are-listed-a-page-at-a-time.md)).
@@ -615,7 +618,10 @@ to make room for registering it. In `apps/admin`, `examples-pane.tsx` holds the 
 examples for its workspace — read once a form is published, saved back one save after another,
 the server's list put back after a save that fails —
 and draws `ScenarioPane` over them in server mode, with drafting through the server's model when
-it has one; `build-pane.tsx` hands the same examples to the prompt pane.
+it has one; `build-pane.tsx` hands the same examples to the prompt pane. `api.ts` is the
+management plane's client, and `public-plane.ts` the routes a respondent's browser calls, which the
+fill-in pane calls the same way; they parted when paging the submissions needed lines `api.ts` had
+no room for ([0223](../decisions/0223-responses-are-summarised-on-the-server.md)).
 
 The webhook outbox shows the split at its sharpest. `server-core/outbox.ts` has
 `afterAttempt` — pure, four arguments, the entire retry policy — and

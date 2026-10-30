@@ -401,6 +401,22 @@ describe('listing and export', () => {
     expect(response.json()).toEqual({ error: 'bad_cursor' })
   })
 
+  // Counted on the server, one summary per version with responses (0223), as many in all as the
+  // listing has.
+  test('the summary counts every response, a version at a time, newest first', async () => {
+    const listed = await app.inject({ method: 'GET', url: '/f/contact-us/submissions', headers: asAdmin() })
+    const all = (listed.json() as { submissions: unknown[] }).submissions.length
+
+    const response = await app.inject({ method: 'GET', url: '/f/contact-us/summary', headers: asAdmin() })
+
+    expect(response.statusCode).toBe(200)
+    const versions = (response.json() as { versions: Array<{ version: number; responses: number; questions: unknown[] }> }).versions
+    expect(versions.map((version) => version.version)).toEqual([...versions.map((version) => version.version)].sort((a, b) => b - a))
+    expect(versions.reduce((total, version) => total + version.responses, 0)).toBe(all)
+    expect(versions.every((version) => version.questions.length > 0)).toBe(true)
+    expect((await app.inject({ method: 'GET', url: '/f/ghost/summary', headers: asAdmin() })).statusCode).toBe(404)
+  })
+
   test('both 404 on an unknown form', async () => {
     expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions', headers: asAdmin() })).statusCode).toBe(404)
     expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions/export.csv', headers: asAdmin() })).statusCode).toBe(404)

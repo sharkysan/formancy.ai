@@ -1,6 +1,7 @@
 import { declinedAnswer, modelRequestKind } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core/authoring'
+import type { QuestionSummary } from '@formancy/core/summary'
 import type { FormSchema } from '@formancy/spec'
 import type { SchemaError } from '@formancy/spec/validate'
 import type { StoredFile, UploadOptions } from '@formancy/react'
@@ -30,7 +31,7 @@ export interface SubmissionEntry {
   data: unknown
 }
 
-const BASE = '/api'
+export const BASE = '/api'
 
 /**
  * The session token, kept in sessionStorage.
@@ -70,7 +71,7 @@ export class Unauthorized extends Error {
 }
 
 /** Every management call goes through here, so none can forget the header. */
-async function authed(input: string, init?: RequestInit): Promise<Response> {
+export async function authed(input: string, init?: RequestInit): Promise<Response> {
   const token = currentToken()
   const response = await fetch(input, {
     ...init,
@@ -214,10 +215,35 @@ export async function fetchVersion(path: string, version: number): Promise<{ ver
   return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema }
 }
 
-export async function fetchSubmissions(path: string): Promise<SubmissionEntry[]> {
-  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`)
+/** One version's responses, summarised by question on the server (0223). */
+export interface VersionSummary {
+  version: number
+  responses: number
+  questions: QuestionSummary[]
+}
+
+/** What a form's responses say together, one summary per version that has any, newest first. */
+export async function fetchSummary(path: string): Promise<VersionSummary[]> {
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/summary`)
+  if (!response.ok) throw new Error(`summary failed: ${response.status}`)
+  return ((await response.json()) as { versions: VersionSummary[] }).versions
+}
+
+/** How many submissions the pane asks for at a time. */
+export const SUBMISSIONS_PER_PAGE = 50
+
+/**
+ * A page of a form's submissions, newest first, from where `after` says the last one ended, or
+ * from the start (0222). `next` asks for the page after this one, and is `null` on the last.
+ */
+export async function fetchSubmissionPage(
+  path: string,
+  after?: string,
+): Promise<{ submissions: SubmissionEntry[]; next: string | null }> {
+  const query = `limit=${String(SUBMISSIONS_PER_PAGE)}${after === undefined ? '' : `&after=${encodeURIComponent(after)}`}`
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions?${query}`)
   if (!response.ok) throw new Error(`submissions failed: ${response.status}`)
-  return ((await response.json()) as { submissions: SubmissionEntry[] }).submissions
+  return (await response.json()) as { submissions: SubmissionEntry[]; next: string | null }
 }
 
 /**
@@ -482,106 +508,4 @@ function putBytes(
     signal.addEventListener('abort', () => request.abort(), { once: true })
     request.send(file)
   })
-}
-
-// --------------------------------------------------------------- the public plane
-//
-// These four take no session. They are the routes a respondent's browser calls,
-// and the admin calls them the same way on purpose: a demonstration that quietly
-// used the management plane would be demonstrating something else.
-
-/**
- * The published form, as a respondent gets it — with the token its response is sent with,
- * a new one each time it is read (0169).
- */
-export async function fetchPublicForm(
-  path: string,
-): Promise<{ version: number; schemaHash: string; schema: FormSchema; submissionToken: string }> {
-  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}`)
-  if (!response.ok) throw new Error(`This form could not be loaded (${String(response.status)}).`)
-  return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema; submissionToken: string }
-}
-
-/**
- * Start a draft. The server picks the id and signs it; the key comes once. So does the token
- * the response is then sent with, which names the draft and is what a resume hands back.
- */
-export async function startDraft(
-  path: string,
-): Promise<{ id: string; token: string; submissionToken: string } | undefined> {
-  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts`, { method: 'POST' })
-  if (!response.ok) return undefined
-  const body = (await response.json()) as { draftId: string; token: string; submissionToken: string }
-  return { id: body.draftId, token: body.token, submissionToken: body.submissionToken }
-}
-
-export async function saveDraft(
-  path: string,
-  id: string,
-  token: string,
-  data: unknown,
-): Promise<boolean> {
-  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    // In the header, never the URL: a token in a URL lands in logs, in a
-    // Referer and in somebody's browser history.
-    headers: { 'content-type': 'application/json', 'x-formancy-draft-token': token },
-    body: JSON.stringify(data),
-  })
-  return response.ok
-}
-
-export interface ResumedDraft {
-  outcome: 'resumed' | 'readOnly'
-  version: number
-  schema: FormSchema
-  schemaHash: string
-  data: Record<string, unknown>
-  migration?: { severity: 'lossy' | 'breaking'; changes: Array<{ kind: string; path?: string }> }
-  /** On `resumed`: the token the response is sent with, the same on every resume. */
-  submissionToken?: string
-}
-
-/** `undefined` for a draft that is gone OR a token that does not match: the
- *  server answers those identically so a reply cannot enumerate ids. */
-export async function resumeDraft(
-  path: string,
-  id: string,
-  token: string,
-): Promise<ResumedDraft | undefined> {
-  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts/${encodeURIComponent(id)}`, {
-    headers: { 'x-formancy-draft-token': token },
-  })
-  if (!response.ok) return undefined
-  return (await response.json()) as ResumedDraft
-}
-
-/** The hash is the version the browser actually rendered, and the server
- *  decides what to do about a stale one. The token is the one this response was handed, so
- *  the same response sent twice is stored once (0169) — in a header, never the URL. A refusal
- *  carries the server's `error` code beside its sentence, because one of them,
- *  `submission_token_spent`, means the response IS stored, and the page has to tell that apart
- *  from the ones that mean it is not. */
-export async function submitForm(
-  path: string,
-  schemaHash: string,
-  submissionToken: string,
-  data: unknown,
-): Promise<{ ok: true } | { ok: false; message: string; error?: string }> {
-  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-formancy-schema-hash': schemaHash,
-      'x-formancy-submission-token': submissionToken,
-    },
-    body: JSON.stringify(data),
-  })
-  if (response.ok) return { ok: true }
-  const body = (await response.json().catch(() => ({}))) as { message?: string; error?: string }
-  return {
-    ok: false,
-    message: body.message ?? body.error ?? `The server refused it (${String(response.status)}).`,
-    ...(body.error === undefined ? {} : { error: body.error }),
-  }
 }
