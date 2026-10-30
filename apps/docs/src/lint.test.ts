@@ -72,6 +72,7 @@ const RELAXED_IN_TESTS = [
   '@typescript-eslint/no-unsafe-return',
   '@typescript-eslint/unbound-method',
   '@typescript-eslint/require-await',
+  '@typescript-eslint/no-explicit-any',
 ]
 
 const HOOKS = ['react-hooks/rules-of-hooks', 'react-hooks/exhaustive-deps']
@@ -151,7 +152,7 @@ describe('the linter', TYPED, () => {
   // error, its typed half off only in the install fixtures, which differ
   // from a package's source by that half and nothing else; JavaScript to
   // the sets' rules that need no types; a test to its source's rules but
-  // the seven relaxations; and a file of a workspace that declares React to
+  // the eight relaxations; and a file of a workspace that declares React to
   // the hooks rules.
   test('every TypeScript and JavaScript file git holds is linted, by the rules its kind is held to', async () => {
     expect(scripts['lint']).toBe('eslint .')

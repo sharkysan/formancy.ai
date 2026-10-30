@@ -102,6 +102,10 @@ const FILES = {
   'src/outside.tsx': HOOKS + 'async function g() {}\ng()\n',
   'src/double.ts': ASYNC_DOUBLE,
   'src/double.test.ts': ASYNC_DOUBLE,
+  'src/reject-forwarded.ts': 'export const fail = (reason: unknown) => new Promise<void>((_resolve, reject) => reject(reason))\n',
+  'src/reject-literal.ts': "export const fail = () => Promise.reject('no')\n",
+  'src/any.ts': 'export const body: any = JSON\n',
+  'src/any.test.ts': 'export const body: any = JSON\n',
   'src/view.jsx': 'export const view = <p>{undefinedThing}</p>\n',
 }
 
@@ -162,6 +166,25 @@ describe('the rules', () => {
   test('an async function that awaits nothing is refused in source and allowed in a test', async () => {
     expect(ruleIds(await lint('src/double.ts'))).toContain('@typescript-eslint/require-await')
     expect(ruleIds(await lint('src/double.test.ts'))).not.toContain('@typescript-eslint/require-await')
+  })
+
+  // only-throw-error lets a value typed any or unknown be thrown, so a
+  // rejection with the same forwarded value (a signal's reason, a driver's
+  // rejection) is the same act: the two rules must not disagree, or every
+  // such forward needs a disable comment. A known non-Error value, a
+  // string literal, is still refused, so a caller cannot be handed a
+  // rejection with no stack.
+  test('a rejection with a forwarded unknown passes, and one with a string literal still fails', async () => {
+    expect(ruleIds(await lint('src/reject-forwarded.ts'))).not.toContain('@typescript-eslint/prefer-promise-reject-errors')
+    expect(ruleIds(await lint('src/reject-literal.ts'))).toContain('@typescript-eslint/prefer-promise-reject-errors')
+  })
+
+  // A test reads an untyped body on purpose and types it any, for the
+  // reason the no-unsafe-* family is relaxed there; source that says any
+  // gives up the types its callers rely on, and is still refused.
+  test('an explicit any is refused in source and allowed in a test', async () => {
+    expect(ruleIds(await lint('src/any.ts'))).toContain('@typescript-eslint/no-explicit-any')
+    expect(ruleIds(await lint('src/any.test.ts'))).not.toContain('@typescript-eslint/no-explicit-any')
   })
 
   // An assertion without its call asserts nothing, and the test that holds

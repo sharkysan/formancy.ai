@@ -68,8 +68,8 @@ in the module.
   space is allowed in a string, a template and JSX text, and refused between two
   tokens. Where `react` points, a hook may not run under a condition or miss a
   dependency.
-- **A test is relaxed** for the `no-unsafe-*` rules, `unbound-method` and
-  `require-await` alone, and held to everything else.
+- **A test is relaxed** for the `no-unsafe-*` rules, `no-explicit-any`, `unbound-method`
+  and `require-await` alone, and held to everything else.
 - **The format** is Prettier's defaults but five: no semicolons, single quotes,
   trailing commas wherever they are allowed, 160 columns, and code embedded in
   a string left as written, because an Angular template's whitespace renders.
