@@ -569,7 +569,8 @@ that what each is signed over can be read together and one cannot stand in for t
 `app.ts` and `use-cases.ts` came under the budget with it, and left the size test's list.
 `server-core/response-summaries.ts` holds `summariseResponses`, a form's responses counted by
 question per version with `@formancy/core/summary`, which the admin draws
-([0223](../decisions/0223-responses-are-summarised-on-the-server.md)).
+([0223](../decisions/0223-responses-are-summarised-on-the-server.md)), read and counted a page
+at a time ([0224](../decisions/0224-a-summary-is-counted-a-response-at-a-time.md)).
 `server-core/submission-pages.ts` holds `listSubmissionPage`, a form's submissions a page at a time
 from where the last page ended, and the cursor that names the place
 ([0222](../decisions/0222-submissions-are-listed-a-page-at-a-time.md)).

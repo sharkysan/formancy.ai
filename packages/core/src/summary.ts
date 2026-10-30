@@ -46,6 +46,26 @@ export function summariseAnswers(
   text: FormText,
   locale: string = schema.i18n?.defaultLocale ?? '',
 ): QuestionSummary[] {
+  const summary = createSummary(schema, text, locale)
+  for (const submission of submissions) summary.add(submission)
+  return summary.questions()
+}
+
+/** A summary counted one submission at a time: what `summariseAnswers` says of all of them. */
+export interface Summary {
+  /** Count one submission's answers. */
+  add(submission: unknown): void
+  /** The questions as counted so far, in document order. */
+  questions(): QuestionSummary[]
+}
+
+/*
+ * `summariseAnswers` one submission at a time (0224), so the server can count a page of them
+ * and hold no more than the page. A number keeps its count, sum and bounds rather than every
+ * answer: the answers were spread into `Math.min`, which throws past the engine's argument
+ * limit, measured at 120,000 on Node 22.
+ */
+export function createSummary(schema: FormSchema, text: FormText, locale: string = schema.i18n?.defaultLocale ?? ''): Summary {
   const tallies = new Map<string, Tally>()
   const labelOf = (def: FieldDef): string => resolveText(schema, def.label, locale) ?? def.key
   const said = (value: unknown, def: FieldDef): string =>
@@ -54,7 +74,8 @@ export function summariseAnswers(
   const tallyOf = (field: string, label: string, kind: Tally['kind'], options: readonly OptionCount[] = []): Tally => {
     const known = tallies.get(field)
     if (known !== undefined) return known
-    const fresh: Tally = { field, label, kind, answered: 0, counts: new Map(options.map((option) => [option.value, option])), numbers: [] }
+    const counts = new Map(options.map((option) => [option.value, option]))
+    const fresh: Tally = { field, label, kind, answered: 0, counts, numbered: 0, sum: 0, min: Infinity, max: -Infinity }
     tallies.set(field, fresh)
     return fresh
   }
@@ -117,21 +138,30 @@ export function summariseAnswers(
       const tally = tallyOf(field, question, shape === 'number' ? 'number' : 'answered')
       if (held === undefined || held === null || held === '' || (Array.isArray(held) && held.length === 0)) continue
       tally.answered += 1
-      if (typeof held === 'number' && Number.isFinite(held)) tally.numbers.push(held)
+      if (typeof held === 'number' && Number.isFinite(held)) {
+        tally.numbered += 1
+        tally.sum += held
+        tally.min = Math.min(tally.min, held)
+        tally.max = Math.max(tally.max, held)
+      }
     }
   }
-  for (const submission of submissions) visit(schema.model.fields, submission, '', '')
-  if (submissions.length === 0) visit(schema.model.fields, undefined, '', '')
+  // Every question is declared before any answer is counted, in the document's order, so one
+  // nobody answered still has its line.
+  visit(schema.model.fields, undefined, '', '')
 
-  return [...tallies.values()].map((tally): QuestionSummary => {
-    const header = { field: tally.field, label: tally.label, answered: tally.answered }
-    if (tally.kind === 'choices') return { ...header, kind: 'choices', counts: [...tally.counts.values()] }
-    if (tally.kind === 'number' && tally.numbers.length > 0) {
-      const sum = tally.numbers.reduce((total, number) => total + number, 0)
-      return { ...header, kind: 'number', min: Math.min(...tally.numbers), max: Math.max(...tally.numbers), mean: sum / tally.numbers.length }
-    }
-    return { ...header, kind: 'answered' }
-  })
+  return {
+    add: (submission) => visit(schema.model.fields, submission, '', ''),
+    questions: () =>
+      [...tallies.values()].map((tally): QuestionSummary => {
+        const header = { field: tally.field, label: tally.label, answered: tally.answered }
+        if (tally.kind === 'choices') return { ...header, kind: 'choices', counts: [...tally.counts.values()] }
+        if (tally.kind === 'number' && tally.numbered > 0) {
+          return { ...header, kind: 'number', min: tally.min, max: tally.max, mean: tally.sum / tally.numbered }
+        }
+        return { ...header, kind: 'answered' }
+      }),
+  }
 }
 
 interface Tally {
@@ -140,7 +170,11 @@ interface Tally {
   readonly kind: 'choices' | 'number' | 'answered'
   answered: number
   readonly counts: Map<string | boolean, OptionCount>
-  readonly numbers: number[]
+  /** A number's: how many were numbers, their sum and their bounds. */
+  numbered: number
+  sum: number
+  min: number
+  max: number
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

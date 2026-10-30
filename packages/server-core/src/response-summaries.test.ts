@@ -112,6 +112,32 @@ describe('a form’s responses, summarised on the server', () => {
     expect((await summariseResponses(deps, 'poll'))?.map((summary) => summary.version)).toEqual([1])
   })
 
+  // Counted a page at a time from the storage, so the server holds a page of responses and not
+  // the form's every one (0224): the whole list is never asked for.
+  test('read the responses a page at a time, never all at once', async () => {
+    await answered(first, Array.from({ length: 2500 }, (_, at) => ({ colour: at % 2 === 0 ? 'red' : 'blue' })))
+    const pages: number[] = []
+    const storage = deps.storage
+    deps = {
+      ...deps,
+      storage: {
+        ...storage,
+        listSubmissionsByForm: () => Promise.reject(new Error('asked for every submission at once')),
+        pageSubmissionsByForm: async (formId, limit, before) => {
+          const page = await storage.pageSubmissionsByForm(formId, limit, before)
+          pages.push(page.length)
+          return page
+        },
+      },
+    }
+
+    const [summary] = (await summariseResponses(deps, 'poll')) ?? []
+
+    expect(summary?.responses).toBe(2500)
+    expect(summary?.questions[0]?.kind === 'choices' ? summary.questions[0].counts.map((c) => c.count) : []).toEqual([1250, 1250])
+    expect(pages).toEqual([1000, 1000, 500])
+  })
+
   test('are none for a form there is none of', async () => {
     expect(await summariseResponses(deps, 'ghost')).toBeUndefined()
   })
