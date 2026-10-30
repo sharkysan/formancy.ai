@@ -15,7 +15,7 @@
 import { ruleKindLabel } from './logic.js'
 import type { BuilderText } from './messages.js'
 import { rulePathOf } from './navigate.js'
-import type { FieldDef, FormSchema, LayoutNode, LogicRule } from '@formancy/spec'
+import type { FormSchema, LayoutNode, LogicRule } from '@formancy/spec'
 import { PAGE_TARGETED_RULE_KINDS, layoutChildren } from '@formancy/spec'
 import { rewritePath } from '@formancy/expressions'
 

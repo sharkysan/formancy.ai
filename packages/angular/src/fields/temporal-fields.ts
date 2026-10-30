@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
 /**

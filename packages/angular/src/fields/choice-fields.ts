@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { optionsStatus } from '@formancy/core/words'
 import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'

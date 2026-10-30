@@ -348,7 +348,7 @@ describe('the catalogue leaving and coming back, as it does in React', () => {
      * inside a promise, which is the shape that swallows an error the moment the
      * `catch` is dropped — and nothing proved it was there, in either renderer.
      */
-    const { view } = await translated()
+    await translated()
 
     fireEvent.change(screen.getByLabelText(/upload/i), {
       target: { files: [new File(['this is not json'], 'notes.txt', { type: 'text/plain' })] },

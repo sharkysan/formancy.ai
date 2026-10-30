@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { CURRENT_SPEC_VERSION, FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_VERSIONS } from './types.js'
+import { FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_VERSIONS } from './types.js'
 import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 

@@ -27,7 +27,7 @@ import {
   formVersion,
   listVersions,
 } from '@formancy/server-core'
-import type { Action, Actor, AuthDeps, Role, Scanner, ServerDeps, ServerOptionsSources, Storage } from '@formancy/server-core'
+import type { Action, Actor, AuthDeps, Scanner, ServerDeps, ServerOptionsSources, Storage } from '@formancy/server-core'
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
 import { checkedMaxFileBytes, DEFAULT_MAX_FILE_BYTES } from './upload-settings.js'
 import { serverLogOptions } from './server-log.js'

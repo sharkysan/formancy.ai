@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { hash as argon2Hash, verify as argon2Verify } from '@node-rs/argon2'
 import { SignJWT, jwtVerify } from 'jose'
-import type { Actor, Role } from '@formancy/server-core'
+import type { Actor } from '@formancy/server-core'
 
 /**
  * The real cryptography, confined to the composition root: argon2id for

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, viewChild, viewChildren } from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core'
 import type { ElementRef } from '@angular/core'
 import { applyRichCommand } from '@formancy/spec'
 import type { RichCommand } from '@formancy/spec'

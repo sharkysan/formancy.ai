@@ -15,7 +15,6 @@ import {
   flatten,
   ModelBusyError,
   nameOf,
-  paletteEntries,
   proposeEdit,
   pseudoLanguage,
   relayLeaves,

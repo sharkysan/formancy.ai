@@ -177,7 +177,7 @@ describe('a submission', () => {
 
 describe('the log', () => {
   test('comes back newest first', async () => {
-    const { d, hash } = await publishedForm()
+    const { d } = await publishedForm()
 
     await d.storage.recordAudit({ id: 'a1', at: '2026-09-25T09:00:00.000Z', action: 'auth.login' })
     await d.storage.recordAudit({ id: 'a2', at: '2026-09-25T11:00:00.000Z', action: 'auth.login' })

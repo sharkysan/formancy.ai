@@ -111,7 +111,7 @@ const choices = (dialog: HTMLElement): HTMLElement[] =>
 
 describe('the structure tree', () => {
   test('is one tab stop, not one per field', async () => {
-    const { press, tab, click } = await mount()
+    const { tab } = await mount()
 
     await tab()
 
@@ -122,7 +122,7 @@ describe('the structure tree', () => {
   })
 
   test('arrows walk it in the order a person reads the form', async () => {
-    const { press, tab, click } = await mount()
+    const { press, tab } = await mount()
     await tab()
 
     await press('{ArrowDown}')
@@ -136,7 +136,7 @@ describe('the structure tree', () => {
   })
 
   test('lists a container before what is inside it, with the depth said out loud', async () => {
-    const { press, tab, click } = await mount()
+    await mount()
 
     expect(keys()).toEqual(['Customer', 'Billing address', 'Street', 'City'])
     // `aria-level` is how a screen reader announces nesting; indentation is not.
@@ -145,7 +145,7 @@ describe('the structure tree', () => {
   })
 
   test('Home and End go to the ends, because a long form is a long walk', async () => {
-    const { press, tab, click } = await mount()
+    const { press, tab } = await mount()
     await tab()
 
     await press('{End}')
@@ -156,7 +156,7 @@ describe('the structure tree', () => {
   })
 
   test('Delete removes the focused field and says so', async () => {
-    const { session, press, tab, click } = await mount()
+    const { session, press, tab } = await mount()
     await tab()
 
     await press('{Delete}')
@@ -168,7 +168,7 @@ describe('the structure tree', () => {
   test('and a refusal is announced rather than swallowed', async () => {
     // Every command here reports through one live region. A command that failed
     // silently would leave somebody pressing the key again.
-    const { press, tab, click } = await mount()
+    const { press, tab } = await mount()
     await tab()
 
     await press('u')
@@ -177,7 +177,7 @@ describe('the structure tree', () => {
   })
 
   test('Ctrl+Z undoes, and Ctrl+Y puts it back', async () => {
-    const { session, press, tab, click } = await mount()
+    const { session, press, tab } = await mount()
     await tab()
     await press('{Delete}')
 
@@ -192,7 +192,7 @@ describe('the structure tree', () => {
     // Removing the focused row detaches it from the document and focus falls to
     // <body>. Without putting it back the tree silently stops responding, which
     // is the defect the React builder has a flag for.
-    const { press, tab, click } = await mount()
+    const { press, tab } = await mount()
     await tab()
 
     await press('{Delete}')
@@ -203,7 +203,7 @@ describe('the structure tree', () => {
 
 describe('adding a field', () => {
   test('a opens a palette of types, described rather than listed', async () => {
-    const { press, tab, click } = await mount()
+    const { press, tab } = await mount()
     await tab()
 
     await press('a')
@@ -231,7 +231,7 @@ describe('adding a field', () => {
   })
 
   test('Escape leaves the palette without adding anything', async () => {
-    const { session, press, tab, click } = await mount()
+    const { session, press, tab } = await mount()
     await tab()
     await press('a')
 
@@ -247,7 +247,7 @@ describe('adding a field', () => {
 
 describe('moving a field', () => {
   test('m offers every destination as a sentence, not as a number', async () => {
-    const { press, tab, click } = await mount()
+    const { press, tab } = await mount()
     await tab()
 
     await press('m')
@@ -273,7 +273,7 @@ describe('moving a field', () => {
   })
 
   test('and a field with nowhere legal to go is told so, rather than shown an empty dialog', async () => {
-    const { press, tab, click } = await mount({
+    const { press, tab } = await mount({
       specVersion: '1',
       id: 'one',
       title: 'One',
@@ -290,7 +290,7 @@ describe('moving a field', () => {
 
 describe('making and unmaking a wizard', () => {
   test('p makes the form a wizard and says what it did to the fields', async () => {
-    const { session, press, tab, click } = await mount()
+    const { session, press, tab } = await mount()
     await tab()
 
     await press('p')
@@ -302,7 +302,7 @@ describe('making and unmaking a wizard', () => {
   })
 
   test('u takes the page away again and keeps the questions', async () => {
-    const { session, press, tab, click } = await mount()
+    const { session, press, tab } = await mount()
     await tab()
     await press('p')
     await press('{Home}')
@@ -316,7 +316,7 @@ describe('making and unmaking a wizard', () => {
 
 describe('what the tree says it is', () => {
   test('every shortcut is listed, so it can be found without being told', async () => {
-    const { press, tab, click } = await mount()
+    await mount()
 
     // The legend is how somebody discovers `m` and `Delete`. A command missing
     // from it is a command only its author knows about.
@@ -326,7 +326,7 @@ describe('what the tree says it is', () => {
   })
 
   test('and carries the part names a theme dresses, with the React builder spelling', async () => {
-    const { press, tab, click } = await mount()
+    await mount()
 
     const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     for (const part of ['builder', 'builder-tree', 'builder-node', 'builder-keys']) {

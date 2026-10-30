@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import Editor, { useMonaco } from '@monaco-editor/react'
-import type { Monaco } from '@monaco-editor/react'
-import { createFormEngine, parsePath } from '@formancy/core'
-import type { FormEngine } from '@formancy/core'
+import { useMonaco } from '@monaco-editor/react'
+import { createFormEngine } from '@formancy/core'
 import type { Scenario } from '@formancy/core/authoring'
 import { validateSchema } from '@formancy/spec/validate'
 import formancySchemaJson from '@formancy/spec/schema.json'
@@ -22,15 +20,7 @@ import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
 import { createBuilderSession, createDraftRun, createPromptRun, createRelay, createTranslationRun } from '@formancy/builder-core'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
-import {
-  FormancyArrangeSurface,
-  FormancyBuilder,
-  FormancyLayoutPane,
-  LayoutPropertyPanel,
-  LogicPanel,
-  PropertyPanel,
-  useBuilder,
-} from '@formancy/builder-react'
+import { FormancyArrangeSurface } from '@formancy/builder-react'
 import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
 import '@formancy/themes/pop.css'
@@ -45,7 +35,7 @@ import { EditorPane } from './editor-pane.js'
 import type { EditorMode } from './editor-pane.js'
 import type { BuilderTab, ModelRuns } from './angular-builder-host.js'
 import type { PaneId } from './panes.js'
-import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
+import { PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
 import { DEMO_BLOCKS } from './demo-blocks.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 import { Problem, SchemaProblems } from './problems.js'

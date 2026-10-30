@@ -20,7 +20,7 @@ import { RULE_KINDS, SPEC_VERSIONS } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'
-import type { ConditionDraft, ConditionField } from './condition-draft.js'
+import type { ConditionDraft } from './condition-draft.js'
 
 /** A draft of nothing yet, for the kinds that write no condition. */
 const NOTHING: ConditionDraft = { join: 'all', items: [] }

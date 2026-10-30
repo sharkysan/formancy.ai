@@ -57,18 +57,6 @@ const ticks = async (count = 20): Promise<void> => {
 const settledSoon = (run: Promise<AuthoringResult>): Promise<AuthoringResult | 'still running'> =>
   Promise.race([run, ticks().then(() => 'still running' as const)])
 
-/** A model that waits until it is told what to say. */
-const waiting = (): { ask: AskModel; answer: (text: string) => void } => {
-  let answer: (text: string) => void = () => undefined
-  const ask = vi.fn<AskModel>(
-    () =>
-      new Promise<string>((resolve) => {
-        answer = resolve
-      }),
-  )
-  return { ask, answer: (text) => answer(text) }
-}
-
 describe('a good answer', () => {
   test('comes back as the document, on the first attempt', async () => {
     const result = await authorForm(scripted(JSON.stringify(GOOD)), 'a contact form')

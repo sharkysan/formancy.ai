@@ -1,4 +1,4 @@
-import type { AccessibilityViolation, ConformanceMessage, DriverFactory, RendererDriver, SubmitResult } from './driver.js'
+import type { AccessibilityViolation, DriverFactory, RendererDriver, SubmitResult } from './driver.js'
 import { ROW_ID } from '@formancy/spec'
 import { BACK_COMMAND, NEXT_COMMAND, addItemCommand, removeItemCommand } from './paths.js'
 import type { Fixture, FixtureStep, StepKind } from './types.js'

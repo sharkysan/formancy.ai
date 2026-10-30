@@ -1,4 +1,4 @@
-import type { FieldDef, FormSchema } from '@formancy/spec'
+import type { FormSchema } from '@formancy/spec'
 import documentSchema from '@formancy/spec/schema.json' with { type: 'json' }
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from './session.js'

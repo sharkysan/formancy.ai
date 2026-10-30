@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { MODEL_REQUEST_KINDS, missingMessages, referencedMessages, relayLeaves } from '@formancy/builder-core'
 import type { ModelRequestKind } from '@formancy/builder-core'

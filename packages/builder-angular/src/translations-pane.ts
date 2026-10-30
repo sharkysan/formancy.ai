@@ -6,7 +6,7 @@ import { BuilderTextPipe } from './text.pipe.js'
 import { FormancyForm } from '@formancy/angular'
 import { FormancyTranslationReview } from './translation-review.js'
 import { previewInjector } from './translations-preview.js'
-import type { AskModel, BuilderSession, CatalogueFile, FormSchema, TranslationRun } from './types.js'
+import type { AskModel, BuilderSession, CatalogueFile, TranslationRun } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /**

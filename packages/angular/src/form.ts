@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, LayoutNode } from '@formancy/spec'

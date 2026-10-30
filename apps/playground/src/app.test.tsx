@@ -39,9 +39,6 @@ const arrangementTree = (): HTMLElement => screen.getByRole('tree', { name: /Arr
  */
 const form = (): HTMLElement => screen.getByRole('region', { name: 'React' })
 
-/** The same document, under the other renderer. */
-const angularForm = (): HTMLElement => screen.getByRole('region', { name: 'Angular' })
-
 describe('the file field', () => {
   test('can actually accept a file, because the app provides an uploader', async () => {
     // The bug this exists for: the playground provided a rich-text editor and no uploader,

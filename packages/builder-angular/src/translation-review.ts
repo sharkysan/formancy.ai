@@ -7,7 +7,7 @@ import type { BuilderMessageId } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { previewInjector } from './translations-preview.js'
-import type { AskModel, BuilderSession, FormSchema, TranslationRun, TranslationRunState } from './types.js'
+import type { AskModel, BuilderSession, TranslationRun, TranslationRunState } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /** What each mark says, in the catalogue's words. */

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, viewChild } from '@angular/core'
-import type { ElementRef, Type } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, viewChild } from '@angular/core'
+import type { ElementRef } from '@angular/core'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 

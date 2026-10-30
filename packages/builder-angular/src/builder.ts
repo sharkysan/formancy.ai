@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input
 import {
   addPageAndSay,
   blockTargets,
-  describeTarget,
   dropAndSay,
   insertAndSay,
   insertBlockAndSay,

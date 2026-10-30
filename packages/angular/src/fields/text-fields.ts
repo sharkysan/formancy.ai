@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
-import type { Type } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core'
 import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { injectScanner } from '../scanning.js'
 import { FormancyTextPipe, injectFormText } from '../text.js'

@@ -3,7 +3,7 @@ import type { BuilderText } from './messages.js'
 import { translationCommands } from './translation.js'
 import { CONTAINER_TYPES, containerAt, containerPaths, dataPathOf, layoutPointer, locate, locateLayout, neighbouringPage } from './navigate.js'
 import type { FieldDef, FormSchema, LayoutNode, LogicRule, SpecVersion, Text } from '@formancy/spec'
-import { CURRENT_SPEC_VERSION, unreferencedPaths, LAYOUT_LEAF_KINDS, layoutChildren, PAGE_TARGETED_RULE_KINDS } from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, unreferencedPaths } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import {
@@ -16,7 +16,7 @@ import {
   samePath,
 } from './layout.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
-import { repathEverywhere, repathRules, underPath, unplaceEverywhere, unplaceOnly, unskipEverywhere } from './repath.js'
+import { repathEverywhere, repathRules, unplaceEverywhere, unplaceOnly, unskipEverywhere } from './repath.js'
 
 /**
  * The headless document engine under the form builder.

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { captureCapabilities } from './capabilities.js'
 import { compile } from './compile.js'
 import { evaluate } from './evaluate.js'
-import type { DeclaredType, VariableDeclarations } from './types.js'
+import type { DeclaredType } from './types.js'
 
 /**
  * The OFFICIAL CEL conformance corpus, run through formancy's public facade.
