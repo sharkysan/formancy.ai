@@ -45,14 +45,14 @@ export async function accessRoutes(
     const outcome = await setFormAccess(deps, {
       path,
       submit,
-      ...(origins === undefined ? {} : { allowedOrigins: origins as string[] }),
+      ...(origins === undefined ? {} : { allowedOrigins: origins }),
     })
     if (!outcome.ok) return reply.code(404).send({ error: 'unknown_form' })
     // A permission change is the event a security review looks for first.
     await audit(request, {
       action: 'form.access.changed',
       subject: path,
-      detail: { submit, allowedOrigins: origins === undefined ? 'unchanged' : (origins as string[]).join(' ') },
+      detail: { submit, allowedOrigins: origins === undefined ? 'unchanged' : origins.join(' ') },
     })
     return reply.code(204).send()
   })

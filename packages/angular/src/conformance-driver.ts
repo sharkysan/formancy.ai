@@ -321,7 +321,7 @@ export function createAngularDriver(
         return within(group)
           .queryAllByRole('button', { name: up })
           .map((button) => up.exec(button.getAttribute('aria-label') ?? '')?.[1] ?? '')
-          .map((shown) => (def.options ?? []).find((option) => textOf(option.label as Text) === shown)?.value ?? shown)
+          .map((shown) => (def.options ?? []).find((option) => textOf(option.label) === shown)?.value ?? shown)
       }
       if (def?.type === 'selectboxes') {
         const group = screen.getByRole('group', { name: labelOf(path) })

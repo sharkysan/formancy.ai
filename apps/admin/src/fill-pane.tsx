@@ -272,7 +272,7 @@ function labelsOf(schema: FormSchema | undefined): Record<string, string> {
   const walk = (fields: readonly { key: string; label?: unknown; fields?: readonly never[] }[]): void => {
     for (const field of fields) {
       if (typeof field.label === 'string') out[field.key] = field.label
-      walk((field.fields ?? []) as never)
+      walk(field.fields ?? [])
     }
   }
   walk((schema?.model.fields ?? []) as never)

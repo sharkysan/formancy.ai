@@ -51,7 +51,7 @@ const schema: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 const engine = () => createFormEngine({ schema, initialValue: { address: { stops: [{ town: 'Bern' }] } } })
 

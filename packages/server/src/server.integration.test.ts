@@ -1115,7 +1115,7 @@ describe('uploaded files', () => {
       payload: body,
     })
     expect(put.statusCode).toBe(204)
-    return file as unknown as Record<string, unknown>
+    return file
   }
 
   test('a file is offered, uploaded and then claimed by a submission', async () => {
@@ -2678,7 +2678,7 @@ describe('what reaches the log', () => {
     let sent = 0
     const send = async (options: InjectOptions): Promise<LightMyRequestResponse> => {
       const url = new URL(String(options.url), 'http://sweep.invalid')
-      const route = swept.findRoute({ method: String(options.method) as HTTPMethods, url: url.pathname })
+      const route = swept.findRoute({ method: String(options.method), url: url.pathname })
       if (route === null) carry(url.pathname)
       else Object.values(route.params).forEach((value) => carry(String(value)))
       url.searchParams.forEach((value) => carry(value))

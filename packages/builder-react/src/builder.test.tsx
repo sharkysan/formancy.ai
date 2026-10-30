@@ -683,7 +683,7 @@ describe('d duplicates the focused field', () => {
           { key: 'phone', type: 'text', label: 'Phone' },
         ],
       },
-    } as FormSchema)
+    })
     render(<FormancyBuilder session={session} />)
 
     await user.tab()

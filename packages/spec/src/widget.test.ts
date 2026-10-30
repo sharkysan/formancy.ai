@@ -58,7 +58,7 @@ function documentWith(field: Record<string, unknown>, specVersion = '2'): Record
 }
 
 const errorsFor = (document: Record<string, unknown>): readonly string[] => {
-  const result = validateSchema(document as never)
+  const result = validateSchema(document)
   // Narrowed on `valid` rather than reaching for `errors`: the result is a
   // discriminated union, and a valid document has no errors property at all.
   return result.valid ? [] : result.errors.map((error) => `${error.path} ${error.message}`)

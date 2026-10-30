@@ -65,19 +65,19 @@ const mountFor = async (key: string): Promise<Mounted> => {
   return {
     session,
     type: async (element, text) => {
-      await user.type(element as HTMLElement, text)
+      await user.type(element, text)
       await settle()
     },
     clear: async (element) => {
-      await user.clear(element as HTMLElement)
+      await user.clear(element)
       await settle()
     },
     click: async (element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
     select: async (element, value) => {
-      await user.selectOptions(element as HTMLElement, value)
+      await user.selectOptions(element, value)
       await settle()
     },
   }
@@ -271,7 +271,7 @@ describe('a choice’s picture', () => {
           },
         ],
       },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['pet'] },
       providers: [provideZonelessChangeDetection()],
@@ -317,7 +317,7 @@ describe('a choice chosen only on its own (0199)', () => {
       id: 'health',
       title: 'Health',
       model: { fields: [{ key: 'allergies', type, label: 'Allergies', options: [{ value: 'none', label: 'None of these' }] }] },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['allergies'] },
       providers: [provideZonelessChangeDetection()],
@@ -354,7 +354,7 @@ describe('a choice that keeps its place (0200)', () => {
       id: 'survey',
       title: 'Survey',
       model: { fields: [{ key: 'channel', type: 'radio', label: 'Channel', shuffle: true, options: [{ value: 'other', label: 'Other' }] }] },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['channel'] },
       providers: [provideZonelessChangeDetection()],
@@ -385,7 +385,7 @@ describe('"Other, please specify" (0202)', () => {
             : { key: 'channel', type, label: 'Channel' },
         ],
       },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['channel'] },
       providers: [provideZonelessChangeDetection()],
@@ -455,19 +455,19 @@ describe('editing a datagrid’s columns', () => {
     return {
       session,
       type: async (element, text) => {
-        await user.type(element as HTMLElement, text)
+        await user.type(element, text)
         await settle()
       },
       clear: async (element) => {
-        await user.clear(element as HTMLElement)
+        await user.clear(element)
         await settle()
       },
       click: async (element) => {
-        await user.click(element as HTMLElement)
+        await user.click(element)
         await settle()
       },
       select: async (element, value) => {
-        await user.selectOptions(element as HTMLElement, value)
+        await user.selectOptions(element, value)
         await settle()
       },
     }
@@ -611,7 +611,7 @@ describe('the kind of question', () => {
       ...schema,
       specVersion: '4',
       model: { fields: [{ key: 'items', type: 'repeater', label: 'Items', fields: [{ key: 'x', type: 'text', label: 'X' }] }] },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['items'] },
       providers: [provideZonelessChangeDetection()],

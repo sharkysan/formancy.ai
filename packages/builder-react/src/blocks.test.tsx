@@ -30,7 +30,7 @@ const form: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 const postal = (): BuilderBlock => {
   const saved = blockFrom(form, ['billing'], { id: 'postal', name: 'Postal address' }, createBuilderText())

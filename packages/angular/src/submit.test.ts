@@ -64,7 +64,7 @@ describe('injectSubmit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Go' }))
     await view.fixture.whenStable()
 
-    const host = view.fixture.componentInstance as SubmitHost
+    const host = view.fixture.componentInstance
     expect(host.outcome).toMatchObject({ ok: false, errors: { email: ['required'] } })
     expect(document.activeElement).toBe(screen.getByLabelText('Email'))
   })
@@ -84,7 +84,7 @@ describe('injectSubmit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Go' }))
     await view.fixture.whenStable()
 
-    const host = view.fixture.componentInstance as SubmitHost
+    const host = view.fixture.componentInstance
     expect(host.outcome).toMatchObject({ ok: true })
   })
 })

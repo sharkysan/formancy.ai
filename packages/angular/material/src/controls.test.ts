@@ -183,7 +183,7 @@ describe('a field Material draws', () => {
         },
       ]),
       specVersion: '5',
-    } as FormSchema)
+    })
     const extras = screen.getByRole('group', { name: 'Extras' })
 
     fireEvent.click(within(extras).getByLabelText('Wrap'))
@@ -555,7 +555,7 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     // the engine refused. A repeater is written two rows, as in the two renderers' rule (0218).
     const drawnWith = async (rule: { kind: 'disabled' | 'computed'; cel: string }): Promise<Element> => {
       const engine = createFormEngine({
-        schema: { ...form([field]), logic: { rules: [{ target: 'f', ...rule }] } } as unknown as FormSchema,
+        schema: { ...form([field]), logic: { rules: [{ target: 'f', ...rule }] } },
         capabilities: { now: () => 0, today: () => '2026-10-29', random: () => 0.5 },
       })
       const view = await render(FormancyForm, {

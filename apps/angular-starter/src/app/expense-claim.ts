@@ -79,4 +79,4 @@ export const EXPENSE_CLAIM: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}

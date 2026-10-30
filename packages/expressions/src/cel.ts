@@ -115,7 +115,7 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
       const parsed = environment.parse(source)
       instrumentForMetering(parsed.ast as unknown as SurgicalNode, environment)
       return {
-        node: parsed.ast as unknown as CelNode,
+        node: parsed.ast,
         check() {
           const result = parsed.check()
           if (!result.valid) return { valid: false, error: result.error }

@@ -191,7 +191,7 @@ export function composeRule(input: {
     // the engine's `invalid`, said in the reader's language — every rule used to carry
     // `condition`, which no catalogue words, and the person read that word (0198).
     ...(message === '' ? {} : { code: freshCode(input.rules ?? [], input.target), message }),
-  } as LogicRule
+  }
 }
 
 /** `condition`, or `condition-2` and on, whichever no rule on the field reports yet. */

@@ -117,7 +117,7 @@ describe('what it produces actually runs', () => {
           ],
         },
         logic: { rules: [{ target: 'shown', kind: 'visible', cel }] },
-      } as FormSchema,
+      },
       initialValue: value,
       capabilities: CLOCK,
     })

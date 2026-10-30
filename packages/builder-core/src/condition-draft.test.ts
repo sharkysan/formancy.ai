@@ -57,7 +57,7 @@ const form: FormSchema = {
       { key: 'shown', type: 'text', label: 'Shown' },
     ],
   },
-} as FormSchema
+}
 
 const fields = conditionFields(form)
 const field = (path: string): ConditionField => fields.find((candidate) => candidate.path === path)!
@@ -232,7 +232,7 @@ describe('what a draft compiles to, as the engine answers it', () => {
         logic: {
           rules: [{ target: 'shown', kind: 'visible', cel: compileGroup(groupOf(draft, fields)) }],
         },
-      } as FormSchema,
+      },
       initialValue: value,
       capabilities: CLOCK,
     }).getFieldSnapshot(['shown']).visible

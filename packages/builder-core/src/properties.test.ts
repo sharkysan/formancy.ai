@@ -175,10 +175,10 @@ const schemaRoot = rawSchema as unknown as {
 const resolve = (node: Record<string, unknown> | undefined): Record<string, unknown> => {
   const ref = node?.['$ref']
   if (typeof ref !== 'string') return node ?? {}
-  return (schemaRoot.$defs[ref.replace('#/$defs/', '')] ?? {}) as Record<string, unknown>
+  return schemaRoot.$defs[ref.replace('#/$defs/', '')] ?? {}
 }
 
-const propertyNames = (node: Record<string, unknown> | undefined): string[] => Object.keys((node?.['properties'] ?? {}) as Record<string, unknown>)
+const propertyNames = (node: Record<string, unknown> | undefined): string[] => Object.keys(node?.['properties'] ?? {})
 
 /** Every property name the schema lets ANY field carry, however it is branched. */
 function everyFieldProperty(): Set<string> {

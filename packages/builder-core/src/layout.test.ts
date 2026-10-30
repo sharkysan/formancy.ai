@@ -826,7 +826,7 @@ describe('describeNode', () => {
    */
   const named = (path: string): string => ({ firstName: 'First name', lastName: 'Last name', email: 'Email', ref: 'Booking reference' })[path] ?? path
 
-  const field = (path: string): LayoutNode => ({ kind: 'field', path }) as LayoutNode
+  const field = (path: string): LayoutNode => ({ kind: 'field', path })
   const container = (kind: string, children: LayoutNode[], label?: string): LayoutNode =>
     ({ kind, children, ...(label === undefined ? {} : { label }) }) as unknown as LayoutNode
 
@@ -837,7 +837,7 @@ describe('describeNode', () => {
   test('names a code by what it encodes, not by being a code', () => {
     // "Code" is not findable in a tree with three of them; "Code for Booking reference"
     // is. The same reasoning a row is named by what it holds.
-    expect(describeNode({ kind: 'qrcode', path: 'ref' } as LayoutNode, named)).toBe('Code for Booking reference')
+    expect(describeNode({ kind: 'qrcode', path: 'ref' }, named)).toBe('Code for Booking reference')
   })
 
   test('names a container by its label when it has one', () => {
@@ -872,7 +872,7 @@ describe('describeNode', () => {
   })
 
   test('names a nested code by what it encodes', () => {
-    expect(describeNode(container('row', [{ kind: 'qrcode', path: 'ref' } as LayoutNode]), named)).toBe('Row with code for Booking reference')
+    expect(describeNode(container('row', [{ kind: 'qrcode', path: 'ref' }]), named)).toBe('Row with code for Booking reference')
   })
 
   test('falls back to the path when the form has no label for it', () => {

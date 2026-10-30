@@ -457,7 +457,7 @@ describe('time', () => {
     model: {
       fields: [{ key: 'slot', type: 'time', label: 'Slot', earliest: '09:00', latest: '17:00' }],
     },
-  } as Partial<FormSchema>)
+  })
 
   test('is a control a person can find and fill in', async () => {
     // By accessible name, like everything else here: a control a screen reader
@@ -496,7 +496,7 @@ describe('time', () => {
 describe('datetime', () => {
   const schema = base({
     model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
-  } as Partial<FormSchema>)
+  })
 
   test('converts the local wall clock the control shows into a stored instant', () => {
     // No browser has a zoned datetime input, so the control is local and this
@@ -520,7 +520,7 @@ describe('datetime', () => {
     const engine = mount(
       base({
         model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
-      } as Partial<FormSchema>),
+      }),
     )
     // Inside `act`, because a write straight to the engine is an external-store
     // update React has to be given the chance to flush before the DOM is read.
@@ -559,7 +559,7 @@ describe('qrcode', () => {
         ],
       },
     ],
-  } as Partial<FormSchema>)
+  })
 
   test('says what the code IS, with a name attached rather than a label beside it', () => {
     // The bug this exists for, reported by somebody looking at the running playground:
@@ -627,7 +627,7 @@ describe('qrcode', () => {
       base({
         model: { fields: [{ key: 'reference', type: 'text', label: 'Booking reference' }] },
         layouts: [{ name: 'web', nodes: [{ kind: 'qrcode', path: 'reference' }] }],
-      } as Partial<FormSchema>),
+      }),
     )
     expect(document.querySelector('[data-formancy-part="code"]')).not.toBeNull()
   })

@@ -27,7 +27,7 @@ const valid = {
 const access = (handler: (url: string, init?: RequestInit) => Response): ServerAccess => ({
   baseUrl: 'http://localhost:4380',
   apiKey: 'k_test',
-  fetch: vi.fn((url: string | URL | Request, init?: RequestInit) => Promise.resolve(handler(String(url), init))) as unknown as typeof globalThis.fetch,
+  fetch: vi.fn((url: string | URL | Request, init?: RequestInit) => Promise.resolve(handler(String(url), init))),
 })
 
 const json = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -289,7 +289,7 @@ describe('talking to a server', () => {
     const server: ServerAccess = {
       baseUrl: 'http://localhost:4380',
       apiKey: 'k',
-      fetch: (() => Promise.reject(new Error('ECONNREFUSED'))) as unknown as typeof globalThis.fetch,
+      fetch: () => Promise.reject(new Error('ECONNREFUSED')),
     }
 
     const result = await listForms(server)
@@ -320,7 +320,7 @@ describe('talking to a server', () => {
       fetch: vi.fn((url: string | URL | Request) => {
         seen = String(url)
         return Promise.resolve(json({}))
-      }) as unknown as typeof globalThis.fetch,
+      }),
     })
 
     expect(seen).toBe('http://localhost:4380/forms')
@@ -443,7 +443,7 @@ describe('publishing against the version the edit was based on', () => {
     moved.model.fields.push({ key: 'phone', type: 'text', label: 'Phone' })
     const { access, calls } = serverOn(moved)
 
-    const result = await publishForm(access, 'contact', document, schemaHash(document as never))
+    const result = await publishForm(access, 'contact', document, schemaHash(document))
 
     expect(result.ok).toBe(false)
     expect(result.summary).toMatch(/changed since/i)
@@ -454,7 +454,7 @@ describe('publishing against the version the edit was based on', () => {
   test('publishes when the server is still on it', async () => {
     const { access, calls } = serverOn(document)
 
-    const result = await publishForm(access, 'contact', document, schemaHash(document as never))
+    const result = await publishForm(access, 'contact', document, schemaHash(document))
 
     expect(result.ok).toBe(true)
     expect(calls.filter((call) => call.startsWith('POST'))).toHaveLength(1)

@@ -409,7 +409,7 @@ describe('the box a name is typed into', () => {
 
   test('required and sent empty, says it is required and invalid, and is described by the error', async () => {
     const engine = createFormEngine({
-      schema: { ...schema, model: { fields: [{ ...schema.model.fields[0]!, required: true }] } } as FormSchema,
+      schema: { ...schema, model: { fields: [{ ...schema.model.fields[0]!, required: true }] } },
       capabilities: { now: () => 0, today: () => '2026-10-28', random: () => 0.5 },
     })
     render(

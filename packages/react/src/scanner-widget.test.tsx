@@ -69,7 +69,7 @@ function schema(widget?: 'scanner'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
 function mount(scan?: Scanner, widget: 'scanner' | undefined = 'scanner'): FormEngine {

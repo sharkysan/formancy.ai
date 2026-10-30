@@ -231,11 +231,7 @@ describe('renameField and the rules that name the field', () => {
     ]
     const session = createBuilderSession(
       // Different kinds, because a field carries one rule per kind.
-      schema(
-        (['visible', 'disabled'] as const).map(
-          (kind, index) => ({ kind, target: 'note', cel: 'postcode == 1', editor: foreign[index] }) as unknown as LogicRule,
-        ),
-      ),
+      schema((['visible', 'disabled'] as const).map((kind, index) => ({ kind, target: 'note', cel: 'postcode == 1', editor: foreign[index] }))),
     )
 
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)

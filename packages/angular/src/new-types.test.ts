@@ -364,7 +364,7 @@ describe('time', () => {
     model: {
       fields: [{ key: 'slot', type: 'time', label: 'Slot', earliest: '09:00', latest: '17:00' }],
     },
-  } as Partial<FormSchema>)
+  })
 
   test('is a control a person can find and fill in', async () => {
     const engine = engineFor(schema)
@@ -396,7 +396,7 @@ describe('time', () => {
 describe('datetime', () => {
   const schema = base({
     model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
-  } as Partial<FormSchema>)
+  })
 
   test('converts the local wall clock the control shows into a stored instant', async () => {
     const engine = engineFor(schema)
@@ -449,7 +449,7 @@ describe('qrcode', () => {
         ],
       },
     ],
-  } as Partial<FormSchema>)
+  })
 
   test('says what the code IS, with a name attached rather than a label beside it', async () => {
     // The bug this exists for, reported against the running playground: the label was a
@@ -758,7 +758,7 @@ describe('the signature field, which must behave as the React one does', () => {
     await renderForm(engineFor(signing()))
     const surface = screen.getByRole('img', { name: /sign here/i })
 
-    expect((surface as HTMLElement).style.touchAction, 'the surface lets the browser treat a touch drag as a pan').toBe('none')
+    expect(surface.style.touchAction, 'the surface lets the browser treat a touch drag as a pan').toBe('none')
   })
 
   test('and prevents the pan itself, for a browser that did not honour that', async () => {
@@ -844,7 +844,7 @@ describe('the signature field, which must behave as the React one does', () => {
     // read with it and a required signature did not say so on it (D4, 0212).
     const schema = signing()
     const fields = schema.model.fields.map((field) => ({ ...field, required: true }))
-    const engine = engineFor({ ...schema, model: { ...schema.model, fields } } as FormSchema)
+    const engine = engineFor({ ...schema, model: { ...schema.model, fields } })
     const view = await renderForm(engine)
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
     await view.fixture.whenStable()
@@ -1023,7 +1023,7 @@ describe('the tag picker, which must behave as the React one does', () => {
     // 0211). It is one combobox, and says it as one, as React's does.
     const schema = tagging()
     const fields = schema.model.fields.map((field) => ({ ...field, required: true }))
-    const engine = engineFor({ ...schema, model: { ...schema.model, fields } } as FormSchema)
+    const engine = engineFor({ ...schema, model: { ...schema.model, fields } })
     const view = await renderForm(engine)
     // Sent empty, so the error is drawn and named too.
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))

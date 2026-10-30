@@ -50,7 +50,7 @@ describe('the Monaco theme the Schema view asks for', () => {
      * would anybody find out? Until now, no.
      */
     const defined: string[] = []
-    defineNightTheme({ editor: { defineTheme: (name: string) => defined.push(name) } } as never)
+    defineNightTheme({ editor: { defineTheme: (name: string) => defined.push(name) } })
 
     const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'editor-pane.tsx'), 'utf8')
     const asked = /theme="([^"]+)"/.exec(source)?.[1]
@@ -68,7 +68,7 @@ describe('the Monaco theme the Schema view asks for', () => {
     let captured: { base?: string; inherit?: boolean; rules?: unknown[] } | undefined
     defineNightTheme({
       editor: { defineTheme: (_name: string, theme: typeof captured) => void (captured = theme) },
-    } as never)
+    })
 
     expect(captured?.base).toBe('vs-dark')
     expect(captured?.inherit).toBe(true)

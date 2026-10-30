@@ -63,7 +63,7 @@ export const DEFAULT_VALUE_LIMITS: ValueLimits = Object.freeze({
   maxNestingDepth: 8,
 })
 
-export function resolveValueLimits(overrides?: Partial<ValueLimits> | undefined): ValueLimits {
+export function resolveValueLimits(overrides?: Partial<ValueLimits>): ValueLimits {
   if (overrides === undefined) return DEFAULT_VALUE_LIMITS
   return Object.freeze({
     maxStringLength: overrides.maxStringLength ?? DEFAULT_VALUE_LIMITS.maxStringLength,
@@ -73,7 +73,7 @@ export function resolveValueLimits(overrides?: Partial<ValueLimits> | undefined)
   })
 }
 
-export function resolveLimits(overrides?: Partial<StructuralLimits> | undefined): StructuralLimits {
+export function resolveLimits(overrides?: Partial<StructuralLimits>): StructuralLimits {
   if (overrides === undefined) return DEFAULT_LIMITS
   return Object.freeze({
     maxAstNodes: overrides.maxAstNodes ?? DEFAULT_LIMITS.maxAstNodes,

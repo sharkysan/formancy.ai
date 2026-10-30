@@ -74,7 +74,7 @@ describe('publishForm', () => {
             { key: 'again', type: 'select', label: 'Again', optionsSource: 'cantons' },
           ],
         },
-      } as unknown as FormSchema,
+      },
     })
 
     const entry = (await deps.storage.listAudit(10)).find((row) => row.subject === 'sourced')
@@ -580,7 +580,7 @@ describe('drafts', () => {
     const evolved = {
       ...schema,
       model: { fields: [...schema.model.fields, { key: 'note', type: 'text' }] },
-    } as typeof schema
+    }
     await publishForm(deps, { path: 'contact-us', schema: evolved })
 
     const resumed = await resumeDraft(deps, { ...started, path: 'contact-us' })

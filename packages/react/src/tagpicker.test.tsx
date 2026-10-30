@@ -226,7 +226,7 @@ describe('a required tag picker', () => {
    */
   const required: FormSchema = {
     ...schema,
-    model: { fields: [{ ...schema.model.fields[0]!, required: true } as FormSchema['model']['fields'][number]] },
+    model: { fields: [{ ...schema.model.fields[0]!, required: true }] },
   }
 
   test('says so on its box, and points at nothing that is not there', async () => {

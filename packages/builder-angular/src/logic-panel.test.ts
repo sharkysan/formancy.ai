@@ -69,15 +69,15 @@ const mountOn = async (keyPath: readonly string[], document: FormSchema = paged)
   return {
     session,
     click: async (element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
     type: async (element, text) => {
-      await user.type(element as HTMLElement, text)
+      await user.type(element, text)
       await settle()
     },
     select: async (element, value) => {
-      await user.selectOptions(element as HTMLElement, value)
+      await user.selectOptions(element, value)
       await settle()
     },
   }
@@ -170,7 +170,7 @@ describe('authoring a rule', () => {
       ...paged,
       specVersion: '5',
       logic: { rules: [{ target: 'total', kind: 'validate', cel: 'total > 0.0', code: 'given', message: 'Enter a total above nothing.' }] },
-    } as FormSchema)
+    })
     expect(screen.getByRole('listitem').textContent).toContain('Enter a total above nothing.')
   })
 
@@ -307,7 +307,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
         { key: 'canton', type: 'text', label: 'Canton' },
       ],
     },
-  } as FormSchema
+  }
 
   const open = async () => {
     const session = createBuilderSession(trip)

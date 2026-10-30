@@ -47,7 +47,7 @@ function documentWith(nodes: unknown[], specVersion = '2'): Record<string, unkno
 }
 
 const errorsFor = (document: Record<string, unknown>): readonly string[] => {
-  const result = validateSchema(document as never)
+  const result = validateSchema(document)
   return result.valid ? [] : result.errors.map((error) => `${error.path} ${error.message}`)
 }
 
@@ -107,7 +107,7 @@ describe('a qrcode node', () => {
     // The whole reason it is a layout node. If this ever fails, the construct has
     // become a field type by accident and every consequence in the file header
     // applies: a CSV column nobody filled in, a diff entry, a computed-rule target.
-    const result = validateSchema(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]) as never)
+    const result = validateSchema(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]))
     expect(result.valid).toBe(true)
     if (!result.valid) return
     expect(result.schema.model.fields.map((field) => field.key)).toEqual(['code'])

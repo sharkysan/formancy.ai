@@ -67,7 +67,7 @@ export function createSessionTokens(secret: string): SessionTokens {
         if (typeof payload.sub !== 'string' || (role !== 'admin' && role !== 'editor' && role !== 'viewer') || (kind !== 'user' && kind !== 'apiKey')) {
           return undefined
         }
-        return { id: payload.sub, role: role as Role, kind }
+        return { id: payload.sub, role: role, kind }
       } catch {
         return undefined
       }

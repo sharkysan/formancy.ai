@@ -490,7 +490,7 @@ export function App() {
                               noValidate
                               data-formancy-theme={theme}
                               ref={setThemeHost}
-                              style={overrides as CSSProperties}
+                              style={overrides}
                             >
                               <FormancyProvider engine={built.engine} key={source}>
                                 <ErrorSummary />

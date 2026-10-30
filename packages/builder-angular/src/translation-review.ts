@@ -267,7 +267,7 @@ export class FormancyTranslationReview {
   protected readonly previewInjector = computed((): Injector | undefined => {
     const waiting = this.reviewed()
     if (waiting === undefined) return undefined
-    const document = waiting.document as FormSchema
+    const document = waiting.document
     return previewInjector(document, this.locale(), this.parent, `${document.id}.proposed`)
   })
 

@@ -248,7 +248,7 @@ const spanning: FormSchema = {
       ],
     },
   ],
-} as FormSchema
+}
 
 const cellOf = (label: string): HTMLElement | null => screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="layout-cell"]')
 
@@ -296,7 +296,7 @@ describe('a node that spans a table\u2019s columns', () => {
                 ],
               },
             ],
-          } as FormSchema,
+          },
         })}
       >
         <FormancyForm layout="web" onSubmit={() => undefined} />
@@ -510,7 +510,7 @@ describe('a group placed whole', () => {
         ],
       },
     ],
-  } as FormSchema
+  }
 
   test('is drawn as its fields, in a group named by its label, where the layout puts it', () => {
     render(

@@ -148,7 +148,7 @@ describe('the briefing itself', () => {
     const objects = [...authoringBriefing().matchAll(/\{[^{}]*\}/g)].flatMap(([candidate]) => {
       try {
         const parsed: unknown = JSON.parse(candidate)
-        return typeof parsed === 'object' && parsed !== null ? [parsed as Record<string, unknown>] : []
+        return typeof parsed === 'object' && parsed !== null ? [parsed] : []
       } catch {
         return []
       }

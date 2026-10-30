@@ -40,7 +40,7 @@ function documentWith(fields: unknown[], specVersion = '2'): Record<string, unkn
 }
 
 const errorsFor = (document: Record<string, unknown>): readonly string[] => {
-  const result = validateSchema(document as never)
+  const result = validateSchema(document)
   return result.valid ? [] : result.errors.map((error) => `${error.path} ${error.message}`)
 }
 

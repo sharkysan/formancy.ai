@@ -36,7 +36,7 @@ const form: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 const postal = (): BuilderBlock => {
   const saved = blockFrom(form, ['billing'], { id: 'postal', name: 'Postal address' }, createBuilderText())
@@ -63,12 +63,12 @@ async function mount(inputs: { blocks?: readonly BuilderBlock[] } = {}) {
       await settle()
     },
     click: async (element: Element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
     type: async (element: Element, value: string) => {
-      await user.clear(element as HTMLElement)
-      await user.type(element as HTMLElement, value)
+      await user.clear(element)
+      await user.type(element, value)
       await settle()
     },
     tab: async () => {

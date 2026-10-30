@@ -214,18 +214,17 @@ describe('dropping on the side to make a row', () => {
    * aim at.
    */
   const withBox = (element: HTMLElement, box: { left: number; width: number }): void => {
-    element.getBoundingClientRect = () =>
-      ({
-        left: box.left,
-        right: box.left + box.width,
-        width: box.width,
-        top: 0,
-        bottom: 40,
-        height: 40,
-        x: box.left,
-        y: 0,
-        toJSON: () => ({}),
-      }) as DOMRect
+    element.getBoundingClientRect = () => ({
+      left: box.left,
+      right: box.left + box.width,
+      width: box.width,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: box.left,
+      y: 0,
+      toJSON: () => ({}),
+    })
   }
 
   test('dropping on the left of a field puts both in a row, dragged one first', () => {
@@ -441,7 +440,7 @@ describe('in a table', () => {
   }
 
   const wide = (element: HTMLElement): void => {
-    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top: 0, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top: 0, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({}) })
   }
 
   const tableSurface = (session: BuilderSession) =>
@@ -578,7 +577,7 @@ describe('dropping in the space between two nodes', () => {
 
   /** Where each element was drawn, top to bottom, 400 wide: jsdom draws nothing. */
   const drawn = (element: HTMLElement, top: number, bottom: number): void => {
-    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
+    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) })
   }
 
   const section = (): HTMLElement => document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!
@@ -727,32 +726,31 @@ describe('a repeater on the preview', () => {
    * naming anything, so a pointer on a row stopped at the row's field, found no node, and
    * aimed at nothing: the repeater could be dropped on only by its legend.
    */
-  const repeaterSchema = (): FormSchema =>
-    ({
-      specVersion: '1',
-      id: 'order',
-      title: 'Order',
-      model: {
-        fields: [
-          {
-            key: 'items',
-            type: 'repeater',
-            label: 'Items',
-            fields: [{ key: 'name', type: 'text', label: 'Name' }],
-          },
-          { key: 'email', type: 'text', label: 'Email' },
+  const repeaterSchema = (): FormSchema => ({
+    specVersion: '1',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        {
+          key: 'items',
+          type: 'repeater',
+          label: 'Items',
+          fields: [{ key: 'name', type: 'text', label: 'Name' }],
+        },
+        { key: 'email', type: 'text', label: 'Email' },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          { kind: 'field', path: 'items' },
+          { kind: 'field', path: 'email' },
         ],
       },
-      layouts: [
-        {
-          name: 'web',
-          nodes: [
-            { kind: 'field', path: 'items' },
-            { kind: 'field', path: 'email' },
-          ],
-        },
-      ],
-    }) as FormSchema
+    ],
+  })
 
   /** What a renderer draws for it: the repeater's fieldset, a row, and the row's field. */
   function RepeaterPreview() {

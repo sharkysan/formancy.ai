@@ -186,7 +186,7 @@ describe('sourceNamesIn', () => {
   })
 
   test('a document naming none lists none', () => {
-    expect(sourceNamesIn({ ...schema, model: { fields: [{ key: 'note', type: 'text' }] } } as FormSchema)).toEqual([])
+    expect(sourceNamesIn({ ...schema, model: { fields: [{ key: 'note', type: 'text' }] } })).toEqual([])
   })
 })
 

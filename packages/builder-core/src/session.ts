@@ -856,7 +856,7 @@ export function createBuilderSession(
         if (value === undefined) Reflect.deleteProperty(node, property)
         else {
           Object.defineProperty(node, property, {
-            value: copy(value) as unknown,
+            value: copy(value),
             writable: true,
             enumerable: true,
             configurable: true,

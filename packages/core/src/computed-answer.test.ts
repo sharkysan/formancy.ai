@@ -10,7 +10,7 @@ import { answerInWords, createFormText } from './words.js'
  * refuses, which the Angular binding could go on showing: a ticked box over `false`. Such a
  * field is drawn as its answer in words, read-only, decided here once for both renderers.
  */
-const field = (def: Partial<FieldDef>): FieldDef => ({ key: 'f', type: 'text', label: 'F', ...def }) as FieldDef
+const field = (def: Partial<FieldDef>): FieldDef => ({ key: 'f', type: 'text', label: 'F', ...def })
 
 describe('a control with a read-only state of its own', () => {
   test('is a box a person types into, drawn as the field’s default control', () => {

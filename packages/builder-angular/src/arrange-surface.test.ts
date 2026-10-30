@@ -380,7 +380,7 @@ describe('dropping in the space between two nodes', () => {
 
   /** Where each element was drawn, top to bottom, 400 wide: jsdom draws nothing. */
   const drawn = (element: HTMLElement, top: number, bottom: number): void => {
-    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
+    element.getBoundingClientRect = () => ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) })
   }
 
   const section = (): HTMLElement => document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!

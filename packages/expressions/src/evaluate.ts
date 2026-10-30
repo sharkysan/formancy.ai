@@ -55,7 +55,7 @@ export function evaluate(program: Program, values: Record<string, unknown>, opti
   }
 }
 
-function resolveBudget(overrides?: Partial<EvaluationBudget> | undefined): EvaluationBudget {
+function resolveBudget(overrides?: Partial<EvaluationBudget>): EvaluationBudget {
   if (overrides === undefined) return DEFAULT_BUDGET
   return {
     maxSteps: overrides.maxSteps ?? DEFAULT_BUDGET.maxSteps,

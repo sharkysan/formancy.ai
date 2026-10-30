@@ -256,7 +256,7 @@ function expressionWords(expression: string, place: Place, line: number): Found[
     ...rest.flatMap((pipe) =>
       splitTopLevel(pipe, ':')
         .slice(1)
-        .map((argument) => ({ text: argument, place: 'code' as Place })),
+        .map((argument): { text: string; place: Place } => ({ text: argument, place: 'code' })),
     ),
   ]
   return pieces.flatMap((piece) => {

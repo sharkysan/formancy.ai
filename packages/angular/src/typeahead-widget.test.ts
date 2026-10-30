@@ -65,7 +65,7 @@ function schemaWith(widget?: 'typeahead'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
 let settle: () => Promise<void> = async () => undefined

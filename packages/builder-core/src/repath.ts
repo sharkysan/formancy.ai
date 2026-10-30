@@ -59,7 +59,7 @@ function pruned(nodes: readonly LayoutNode[], goes: (path: string) => boolean): 
     }
     // The container stays even when it empties. Removing one field should not
     // silently take a row with it and rearrange everything beside it.
-    kept.push({ ...node, children: pruned(layoutChildren(node) as LayoutNode[], goes) })
+    kept.push({ ...node, children: pruned(layoutChildren(node), goes) })
   }
   return kept
 }

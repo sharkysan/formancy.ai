@@ -361,7 +361,7 @@ describe('addPage', () => {
     // document that is already invalid for any other reason too, because every
     // command here is.
     const session = createBuilderSession(base)
-    const nested = session.validTargets({ key: 'x', type: 'page' } as FieldDef)
+    const nested = session.validTargets({ key: 'x', type: 'page' })
 
     // A page has exactly one legal home: the top level.
     expect(nested).toEqual([
@@ -378,7 +378,7 @@ describe('addPage', () => {
     // the engine does not honour.
     const session = createBuilderSession(base)
 
-    const targets = session.validTargets({ key: 'stray', type: 'text' } as FieldDef)
+    const targets = session.validTargets({ key: 'stray', type: 'text' })
 
     expect(targets.filter((t) => t.parent.length === 0)).toEqual([])
     // And it can still go inside a page, which is where it belongs.

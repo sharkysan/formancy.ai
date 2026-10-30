@@ -12,7 +12,7 @@ const formWith = (field: Partial<FieldDef>, specVersion = '5'): FormSchema =>
     specVersion,
     id: 'trip',
     title: 'Trip',
-    model: { fields: [{ key: 'answer', label: 'Answer', type: 'text', ...field } as FieldDef] },
+    model: { fields: [{ key: 'answer', label: 'Answer', type: 'text', ...field }] },
   }) as FormSchema
 
 const errorsOf = (schema: FormSchema) => {
@@ -47,10 +47,10 @@ describe('a default', () => {
   // The JSON type is the document's to say, and the builder's panel reads it to choose the
   // editor: a number field's default typed into a text box would be stored as "2".
   test('is refused in another JSON type than the field’s answer', () => {
-    expect(errorsOf(formWith({ type: 'number', default: '2' as never }))).not.toEqual([])
-    expect(errorsOf(formWith({ type: 'checkbox', default: 'yes' as never }))).not.toEqual([])
-    expect(errorsOf(formWith({ type: 'selectboxes', options, default: 'CH' as never }))).not.toEqual([])
-    expect(errorsOf(formWith({ type: 'text', default: 3 as never }))).not.toEqual([])
+    expect(errorsOf(formWith({ type: 'number', default: '2' }))).not.toEqual([])
+    expect(errorsOf(formWith({ type: 'checkbox', default: 'yes' }))).not.toEqual([])
+    expect(errorsOf(formWith({ type: 'selectboxes', options, default: 'CH' }))).not.toEqual([])
+    expect(errorsOf(formWith({ type: 'text', default: 3 }))).not.toEqual([])
   })
 
   // `''` is a text field unanswered: a default of it says nothing a missing one does not.

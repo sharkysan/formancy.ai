@@ -66,8 +66,6 @@ const CAPABILITIES = captureCapabilities({
   random: () => 0.5,
 })
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // This package compiles without DOM or Node libs on purpose, so `console` is
 // not in scope. Declared here rather than widening the lib: the audit prints
 // its breakdown for a human, and the purity rule stays intact for the library.
@@ -227,7 +225,7 @@ function runCase(entry: CorpusCase): Outcome {
 
   const compiled = compile(entry.expr, {
     kind: 'computed',
-    variables: variables as VariableDeclarations,
+    variables: variables,
   })
 
   if (!compiled.ok && isPolicyRefusal(compiled.error.code)) {

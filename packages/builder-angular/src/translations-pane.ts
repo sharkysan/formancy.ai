@@ -281,7 +281,7 @@ export class FormancyTranslationsPane {
    * for its lifetime — which is the whole reason this preview exists rather than
    * the pane changing `defaultLocale` to look at a language.
    */
-  protected readonly previewInjector = computed((): Injector | undefined => previewInjector(this.view().document as FormSchema, this.chosen(), this.parent))
+  protected readonly previewInjector = computed((): Injector | undefined => previewInjector(this.view().document, this.chosen(), this.parent))
 
   constructor() {
     takeHostOutOfLayout()

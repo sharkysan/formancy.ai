@@ -66,7 +66,7 @@ describe('a rule’s message', () => {
             { target: 'other', kind: 'validate', cel: 'other >= 18', code: 'adult', message: 'Too young.' },
           ],
         },
-      } as FormSchema),
+      }),
     ).toEqual([])
   })
 

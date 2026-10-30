@@ -56,7 +56,7 @@ describe('the wizard demo', () => {
   })
 
   test('holds every container type the format has, since that is what it is for', () => {
-    const seen = typesUsed(WIZARD_SCHEMA.model.fields as readonly FieldDef[])
+    const seen = typesUsed(WIZARD_SCHEMA.model.fields)
 
     // Derived from the spec's constant, so a container type added to the format
     // fails here until this demo shows it.
@@ -64,10 +64,7 @@ describe('the wizard demo', () => {
   })
 
   test('and between the two demos, every field type the format defines is on screen', () => {
-    const together = new Set([
-      ...typesUsed(STARTER_SCHEMA.model.fields as readonly FieldDef[]),
-      ...typesUsed(WIZARD_SCHEMA.model.fields as readonly FieldDef[]),
-    ])
+    const together = new Set([...typesUsed(STARTER_SCHEMA.model.fields), ...typesUsed(WIZARD_SCHEMA.model.fields)])
 
     // No exclusion list on either side. The starter's own test says it covers
     // everything except `group` and `page`; this says the pair covers everything,
@@ -150,7 +147,7 @@ function keysOf(fields: readonly FieldDef[]): string[] {
 
 /** Every key in the document, for telling a field name from a CEL keyword. */
 function allKeys(schema: FormSchema): Set<string> {
-  return new Set(keysOf(schema.model.fields as readonly FieldDef[]))
+  return new Set(keysOf(schema.model.fields))
 }
 
 describe('the wizard demo, run rather than read', () => {

@@ -65,7 +65,7 @@ describe('the starter schema', () => {
         if (field.fields !== undefined) walk(field.fields)
       }
     }
-    walk(STARTER_SCHEMA.model.fields as readonly FieldDef[])
+    walk(STARTER_SCHEMA.model.fields)
 
     const missing = FIELD_WIDGETS.filter((widget) => !widgetsUsed.has(widget) && NOT_DEMONSTRATED_YET[widget] === undefined)
     expect(missing).toEqual([])
@@ -109,7 +109,7 @@ describe('the starter schema', () => {
   })
 
   test('contains every field type it claims to', () => {
-    const seen = typesUsed(STARTER_SCHEMA.model.fields as readonly FieldDef[])
+    const seen = typesUsed(STARTER_SCHEMA.model.fields)
 
     // `group` and `page` are the two that nest a form inside a form: a page
     // turns this into a wizard and a group changes the shape of the data.
@@ -143,7 +143,7 @@ describe('the starter schema', () => {
         }
       }
     }
-    walk(STARTER_SCHEMA.layouts[0]!.nodes as readonly { kind: string }[])
+    walk(STARTER_SCHEMA.layouts[0]!.nodes)
 
     expect(kinds).toContain('tabs')
     expect(kinds).toContain('table')

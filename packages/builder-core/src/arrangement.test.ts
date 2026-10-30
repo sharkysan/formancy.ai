@@ -229,27 +229,26 @@ describe('a group, in the arrangement pane', () => {
    * so the pane offers it while none of its fields is placed — and once it is placed, not
    * its fields, which would be drawn twice (0151).
    */
-  const withGroup = (): FormSchema =>
-    ({
-      specVersion: '1',
-      id: 'claim',
-      title: 'Claim',
-      model: {
-        fields: [
-          { key: 'name', type: 'text', label: 'Name' },
-          {
-            key: 'address',
-            type: 'group',
-            label: 'Address',
-            fields: [
-              { key: 'street', type: 'text', label: 'Street' },
-              { key: 'city', type: 'text', label: 'City' },
-            ],
-          },
-        ],
-      },
-      layouts: [{ name: 'web', nodes: [{ kind: 'field', path: 'name' }] }],
-    }) as FormSchema
+  const withGroup = (): FormSchema => ({
+    specVersion: '1',
+    id: 'claim',
+    title: 'Claim',
+    model: {
+      fields: [
+        { key: 'name', type: 'text', label: 'Name' },
+        {
+          key: 'address',
+          type: 'group',
+          label: 'Address',
+          fields: [
+            { key: 'street', type: 'text', label: 'Street' },
+            { key: 'city', type: 'text', label: 'City' },
+          ],
+        },
+      ],
+    },
+    layouts: [{ name: 'web', nodes: [{ kind: 'field', path: 'name' }] }],
+  })
 
   const offered = (session: ReturnType<typeof createBuilderSession>) =>
     layoutAdditions(session, 'web').flatMap((addition) => (addition.what === 'field' ? [addition.path] : []))

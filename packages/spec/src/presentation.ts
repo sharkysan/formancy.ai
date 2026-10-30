@@ -13,7 +13,7 @@ import type { LayoutNode } from './layout.js'
 
 /** True when a piece of text is a reference into the message catalogue. */
 export function isMessageRef(text: Text | undefined): text is MessageRef {
-  return typeof text === 'object' && text !== null && typeof (text as MessageRef).$t === 'string'
+  return typeof text === 'object' && text !== null && typeof text.$t === 'string'
 }
 
 /**

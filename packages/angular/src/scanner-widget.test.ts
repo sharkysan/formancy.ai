@@ -56,7 +56,7 @@ function schema(widget?: 'scanner'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
 async function mount(scan?: Scanner, widget: 'scanner' | undefined = 'scanner'): Promise<{ engine: FormEngine; settle: () => Promise<void> }> {

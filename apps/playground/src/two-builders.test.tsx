@@ -922,7 +922,7 @@ describe('examples drafted from what the visitor says', () => {
  */
 describe('what the relay pane says leaves, for each request', () => {
   const english = builderTextFor('en')
-  const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, 'fr')
+  const missing = missingMessages(STARTER_SCHEMA, 'fr')
 
   type Visitor = ReturnType<typeof userEvent.setup>
   /** Each request, asked the way a visitor asks it, from where they ask it. */
@@ -1154,7 +1154,7 @@ describe('the Translations tab', () => {
  */
 describe('a model asked for the French the starter is missing', () => {
   const SOURCES = STARTER_SCHEMA.i18n.messages['en'] ?? {}
-  const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, 'fr')
+  const missing = missingMessages(STARTER_SCHEMA, 'fr')
   /** What a chat answered: every missing message, one of them in words this case looks for. */
   const ANSWER = JSON.stringify({
     locale: 'fr',
@@ -1257,7 +1257,7 @@ describe('a model asked for the French the starter is missing', () => {
  */
 describe('a translation and drafts being carried while the visitor looks elsewhere', () => {
   const SOURCES = STARTER_SCHEMA.i18n.messages['en'] ?? {}
-  const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, 'fr')
+  const missing = missingMessages(STARTER_SCHEMA, 'fr')
   const FRENCH = JSON.stringify({
     locale: 'fr',
     defaultLocale: 'en',

@@ -343,7 +343,7 @@ async function currentSchema(access: ServerAccess, path: string): Promise<{ ok: 
     }
   }
 
-  return { ok: true, schema: schema as FormSchema, hash: schemaHash(schema as FormSchema) }
+  return { ok: true, schema: schema as FormSchema, hash: schemaHash(schema) }
 }
 
 export async function listForms(access: ServerAccess): Promise<ToolResult> {

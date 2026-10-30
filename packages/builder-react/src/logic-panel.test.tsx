@@ -520,7 +520,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
         { key: 'canton', type: 'text', label: 'Canton' },
       ],
     },
-  } as FormSchema
+  }
 
   const open = async () => {
     const user = userEvent.setup()

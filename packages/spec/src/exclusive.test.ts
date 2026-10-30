@@ -21,7 +21,7 @@ const formWith = (field: Partial<FieldDef>, specVersion = '5'): FormSchema =>
             { value: 'none', label: 'None of these', exclusive: true },
           ],
           ...field,
-        } as FieldDef,
+        },
       ],
     },
   }) as FormSchema

@@ -19,14 +19,14 @@ describe('a message', () => {
   test('is the English text when no catalogue is given', () => {
     const text = createBuilderText()
 
-    expect(text('tree.empty')).toBe(BUILDER_MESSAGES['tree.empty'] as string)
+    expect(text('tree.empty')).toBe(BUILDER_MESSAGES['tree.empty'])
   })
 
   test('is the catalogue’s text when one is', () => {
     const text = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
 
-    expect(text('tree.empty')).toBe(BUILDER_MESSAGES_DE['tree.empty'] as string)
-    expect(text('tree.empty')).not.toBe(BUILDER_MESSAGES['tree.empty'] as string)
+    expect(text('tree.empty')).toBe(BUILDER_MESSAGES_DE['tree.empty'])
+    expect(text('tree.empty')).not.toBe(BUILDER_MESSAGES['tree.empty'])
   })
 
   test('falls back to English one message at a time, so a partial catalogue is still usable', () => {
@@ -39,7 +39,7 @@ describe('a message', () => {
     const text = createBuilderText({ locale: 'xx', messages: { 'tree.empty': 'Leer.' } })
 
     expect(text('tree.empty')).toBe('Leer.')
-    expect(text('palette.title')).toBe(BUILDER_MESSAGES['palette.title'] as string)
+    expect(text('palette.title')).toBe(BUILDER_MESSAGES['palette.title'])
   })
 
   test('fills its placeholders from the values given', () => {

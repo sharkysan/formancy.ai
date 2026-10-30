@@ -41,7 +41,7 @@ const form: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 const clock = fixedCapabilities({ nowMs: 0, today: '2026-10-09', random: 0.5 })
 

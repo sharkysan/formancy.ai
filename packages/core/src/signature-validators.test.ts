@@ -15,7 +15,7 @@ import { modelViolations } from './model-validators.js'
  * value is an unbounded nested array, so "how much ink" is a payload question
  * before it is a drawing one.
  */
-const field = (over: Partial<FieldDef> = {}): FieldDef => ({ key: 'mark', type: 'signature', ...over }) as FieldDef
+const field = (over: Partial<FieldDef> = {}): FieldDef => ({ key: 'mark', type: 'signature', ...over })
 
 const strokes = (points: number): Array<Array<[number, number]>> => [Array.from({ length: points }, (_, at): [number, number] => [at, at])]
 

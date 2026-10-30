@@ -366,7 +366,7 @@ describe('the uploads of a file field', () => {
     uploads.queue.add([picked('taxi.pdf')])
 
     engine.moveRow(['items'], 0, 1)
-    calls[0]!.resolve(receipt('taxi') as never)
+    calls[0]!.resolve(receipt('taxi'))
     await settle()
 
     const rows = (engine.value() as { items: Array<Record<string, unknown>> }).items
@@ -395,7 +395,7 @@ describe('the uploads of a file field', () => {
     uploads.queue.add([picked('taxi.pdf')])
 
     expect(engine.getFieldSnapshot(['items', 0, 'receipt']).touched).toBe(false)
-    calls[0]!.resolve(receipt('taxi') as never)
+    calls[0]!.resolve(receipt('taxi'))
     await settle()
 
     expect(engine.getFieldSnapshot(['items', 0, 'receipt']).touched).toBe(true)
@@ -411,7 +411,7 @@ describe('the uploads of a file field', () => {
     // A third row first: the repeater opens at its `minItems` of two and goes no lower.
     engine.addRow(['items'])
     engine.removeRow(['items'], 0)
-    calls[0]!.resolve(receipt('taxi') as never)
+    calls[0]!.resolve(receipt('taxi'))
     await settle()
 
     const rows = (engine.value() as { items: Array<Record<string, unknown>> }).items

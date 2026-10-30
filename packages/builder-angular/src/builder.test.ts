@@ -91,7 +91,7 @@ const mount = async (form: FormSchema = schema): Promise<Mounted> => {
       await settle()
     },
     click: async (element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
     tab: async () => {
@@ -459,7 +459,7 @@ describe('d duplicates the focused field', () => {
           { key: 'phone', type: 'text', label: 'Phone' },
         ],
       },
-    } as FormSchema)
+    })
     await tab()
     await press('d')
 

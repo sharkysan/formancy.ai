@@ -35,40 +35,39 @@ const condition: ConditionGroup = {
   ],
 }
 
-const form = (rules: LogicRule[]): FormSchema =>
-  ({
-    specVersion: '4',
-    id: 'trip',
-    title: 'Trip',
-    model: {
-      fields: [
-        {
-          key: 'country',
-          type: 'radio',
-          label: 'Country',
-          options: [
-            { value: 'CH', label: 'Switzerland' },
-            { value: 'DE', label: 'Germany' },
-          ],
-        },
-        { key: 'age', type: 'number', label: 'Age' },
-        { key: 'terms', type: 'checkbox', label: 'Terms' },
-        { key: 'address', type: 'group', fields: [{ key: 'city', type: 'text', label: 'City' }] },
-        { key: 'canton', type: 'text', label: 'Canton' },
-        { key: 'reason', type: 'text', label: 'Reason' },
-        {
-          key: 'items',
-          type: 'repeater',
-          label: 'Items',
-          fields: [
-            { key: 'qty', type: 'number', label: 'Quantity' },
-            { key: 'note', type: 'text', label: 'Note' },
-          ],
-        },
-      ],
-    },
-    logic: { rules },
-  }) as FormSchema
+const form = (rules: LogicRule[]): FormSchema => ({
+  specVersion: '4',
+  id: 'trip',
+  title: 'Trip',
+  model: {
+    fields: [
+      {
+        key: 'country',
+        type: 'radio',
+        label: 'Country',
+        options: [
+          { value: 'CH', label: 'Switzerland' },
+          { value: 'DE', label: 'Germany' },
+        ],
+      },
+      { key: 'age', type: 'number', label: 'Age' },
+      { key: 'terms', type: 'checkbox', label: 'Terms' },
+      { key: 'address', type: 'group', fields: [{ key: 'city', type: 'text', label: 'City' }] },
+      { key: 'canton', type: 'text', label: 'Canton' },
+      { key: 'reason', type: 'text', label: 'Reason' },
+      {
+        key: 'items',
+        type: 'repeater',
+        label: 'Items',
+        fields: [
+          { key: 'qty', type: 'number', label: 'Quantity' },
+          { key: 'note', type: 'text', label: 'Note' },
+        ],
+      },
+    ],
+  },
+  logic: { rules },
+})
 
 const visibleRule: LogicRule = {
   target: 'canton',
@@ -276,28 +275,27 @@ describe('a field keyed after a name every object has', () => {
   // The answers were read with `answers[key]`, so an unanswered field keyed `constructor`
   // was bound as `function Object`: the rule could not be decided, and the overview said the
   // field was shown because of it beside a preview whose engine had decided it (0185).
-  const contractor = (rules: LogicRule[]): FormSchema =>
-    ({
-      specVersion: '4',
-      id: 'works',
-      title: 'Works',
-      model: {
-        fields: [
-          { key: 'constructor', type: 'text', label: 'Contractor' },
-          { key: 'canton', type: 'text', label: 'Canton' },
-          {
-            key: 'items',
-            type: 'repeater',
-            label: 'Items',
-            fields: [
-              { key: 'toString', type: 'text', label: 'Label' },
-              { key: 'note', type: 'text', label: 'Note' },
-            ],
-          },
-        ],
-      },
-      logic: { rules },
-    }) as FormSchema
+  const contractor = (rules: LogicRule[]): FormSchema => ({
+    specVersion: '4',
+    id: 'works',
+    title: 'Works',
+    model: {
+      fields: [
+        { key: 'constructor', type: 'text', label: 'Contractor' },
+        { key: 'canton', type: 'text', label: 'Canton' },
+        {
+          key: 'items',
+          type: 'repeater',
+          label: 'Items',
+          fields: [
+            { key: 'toString', type: 'text', label: 'Label' },
+            { key: 'note', type: 'text', label: 'Note' },
+          ],
+        },
+      ],
+    },
+    logic: { rules },
+  })
   const engineFor = (document: FormSchema, value: Record<string, unknown>) => createFormEngine({ schema: document, initialValue: value, capabilities: CLOCK })
 
   test('decides a rule on the form that reads it unanswered, as the engine does', () => {

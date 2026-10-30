@@ -68,7 +68,7 @@ const withField = (field: Partial<FieldDef>, rules: LogicRule[] = []): FormSchem
   specVersion: '5',
   id: 'one',
   title: 'One',
-  model: { fields: [{ key: 'answer', type: 'text', label: 'Answer', ...field } as FieldDef] },
+  model: { fields: [{ key: 'answer', type: 'text', label: 'Answer', ...field }] },
   ...(rules.length === 0 ? {} : { logic: { rules } }),
 })
 

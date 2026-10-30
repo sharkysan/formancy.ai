@@ -43,7 +43,7 @@ const form: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 const clock = fixedCapabilities({ nowMs: 0, today: '2026-10-09', random: 0.5 })
 
@@ -76,7 +76,7 @@ describe('the rules overview', () => {
   })
 
   test('and says so when the form has no rules at all', async () => {
-    await mount({ session: createBuilderSession({ ...form, logic: { rules: [] } } as FormSchema) })
+    await mount({ session: createBuilderSession({ ...form, logic: { rules: [] } }) })
 
     expect(screen.getByText('This form has no rules: every field always behaves the same way.')).toBeTruthy()
   })

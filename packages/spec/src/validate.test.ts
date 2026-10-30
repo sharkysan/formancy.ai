@@ -441,7 +441,7 @@ describe('span, which places a node across a table\u2019s columns', () => {
           { kind: 'field', path: 'message' },
         ],
       }
-      edit(table as unknown as { columns: number; children: unknown[] })
+      edit(table)
       draft.specVersion = '2'
       draft.layouts = [{ name: 'default', nodes: [table] }] as NonNullable<FormSchema['layouts']>
     })

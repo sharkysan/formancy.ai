@@ -189,7 +189,7 @@ describe('moving a handle by pointer', () => {
    * the handle had not moved and a 60ms wait said it had.
    */
   const press = (element: Element | Window, type: 'pointerDown' | 'pointerMove' | 'pointerUp', clientX: number): void => {
-    fireEvent[type](element as Element, { clientX })
+    fireEvent[type](element, { clientX })
   }
 
   test('a press and a move to the right gives the left pane the difference', async () => {

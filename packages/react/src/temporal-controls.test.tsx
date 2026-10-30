@@ -29,7 +29,7 @@ const mount = (type: 'date' | 'time' | 'datetime', over: Record<string, unknown>
     specVersion: type === 'date' ? '1' : '2',
     id: 'booking',
     title: 'Booking',
-    model: { fields: [{ key: 'when', type, label: 'When', ...over } as never] },
+    model: { fields: [{ key: 'when', type, label: 'When', ...over }] },
   }
   const engine = createFormEngine({
     schema,

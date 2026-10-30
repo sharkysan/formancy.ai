@@ -87,10 +87,8 @@ export class FormancySignatureField extends FieldComponentBase {
 
   private readonly answer = computed(() => {
     const value = this.field.snapshot().value
-    return (typeof value === 'object' && value !== null ? value : {}) as {
-      drawn?: Array<Array<[number, number]>>
-      typed?: string
-    }
+    const answer: { drawn?: Array<Array<[number, number]>>; typed?: string } = typeof value === 'object' && value !== null ? value : {}
+    return answer
   })
 
   protected readonly strokes = computed(() => this.answer().drawn ?? [])

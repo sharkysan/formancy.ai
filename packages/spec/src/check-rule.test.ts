@@ -45,7 +45,7 @@ describe('a check rule', () => {
   })
 
   test('is refused in a version 2 document, with the version it needs', () => {
-    const messages = problems({ ...rule({}), specVersion: '2' } as FormSchema)
+    const messages = problems({ ...rule({}), specVersion: '2' })
 
     expect(messages.length).toBeGreaterThan(0)
     expect(messages[0]).toMatch(/check/)

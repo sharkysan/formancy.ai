@@ -45,7 +45,7 @@ function schemaWith(widget?: 'toggle'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
 async function mount(widget?: 'toggle'): Promise<void> {

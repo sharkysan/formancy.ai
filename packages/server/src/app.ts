@@ -288,7 +288,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     const outcome = await createLocalUser(authDeps, {
       email: body.email,
       password: body.password,
-      role: body.role as Role,
+      role: body.role,
     })
     if (!outcome.ok) return reply.code(422).send({ error: 'rejected', message: outcome.message })
     return reply.code(201).send({ id: outcome.id })
@@ -299,7 +299,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     if (body === null || typeof body.name !== 'string' || (body.role !== 'admin' && body.role !== 'editor' && body.role !== 'viewer')) {
       return reply.code(400).send({ error: 'bad_request', message: 'Body needs { name, role }.' })
     }
-    const outcome = await createApiKey(authDeps, { name: body.name, role: body.role as Role })
+    const outcome = await createApiKey(authDeps, { name: body.name, role: body.role })
     if (!outcome.ok) return reply.code(422).send({ error: 'rejected', message: outcome.message })
     // The one and only time the secret exists in full outside a hash.
     return reply.code(201).send({ id: outcome.id, secret: outcome.secret })

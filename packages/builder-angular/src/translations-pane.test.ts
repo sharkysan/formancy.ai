@@ -57,15 +57,15 @@ const mount = async (form: FormSchema = plain): Promise<Mounted> => {
     session,
     settle,
     click: async (element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
     type: async (element, text) => {
-      await user.type(element as HTMLElement, text)
+      await user.type(element, text)
       await settle()
     },
     select: async (element, value) => {
-      await user.selectOptions(element as HTMLElement, value)
+      await user.selectOptions(element, value)
       await settle()
     },
   }

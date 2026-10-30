@@ -124,7 +124,7 @@ async function mount(schema: FormSchema, text: BuilderText) {
       await settle()
     },
     click: async (element: Element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
   }
@@ -244,7 +244,7 @@ describe('the arrangement pane', () => {
         await settle()
       },
       click: async (element: Element) => {
-        await user.click(element as HTMLElement)
+        await user.click(element)
         await settle()
       },
     }
@@ -370,7 +370,7 @@ describe('the property panels and their editors', () => {
       providers: [provideZonelessChangeDetection()],
     })
     await view.fixture.whenStable()
-    const seen = shown(view.container as Element)
+    const seen = shown(view.container)
     TestBed.resetTestingModule()
     document.body.innerHTML = ''
     return seen

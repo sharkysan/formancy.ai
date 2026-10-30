@@ -286,7 +286,7 @@ describe('a host that cannot ask its model', () => {
      * `instanceof`.
      */
     for (const thrown of [new ModelBusyError(), { name: 'ModelBusyError', message: 'occupé' }]) {
-      const result = await authorForm(() => Promise.reject(thrown as Error), 'a contact form')
+      const result = await authorForm(() => Promise.reject(thrown), 'a contact form')
 
       expect(result).toMatchObject({ ok: false, ended: 'busy', attempts: 1, problems: [], lastAnswer: '' })
       expect(result).not.toHaveProperty('reason')
@@ -335,7 +335,7 @@ describe('a host that cannot ask its model', () => {
   test('and one rejected with something other than an Error is said as text', async () => {
     // A host's own wrapper rejecting with a status string is still the host's
     // reason, and reading `.message` off it would have shown `undefined`.
-    const ask: AskModel = () => Promise.reject('offline' as unknown as Error)
+    const ask: AskModel = () => Promise.reject('offline')
 
     const result = await authorForm(ask, 'a contact form')
 
@@ -362,7 +362,7 @@ describe('a host that cannot ask its model', () => {
     ]
 
     for (const thrown of nothingToSay) {
-      const result = await settledSoon(authorForm(() => Promise.reject(thrown as Error), 'a form'))
+      const result = await settledSoon(authorForm(() => Promise.reject(thrown), 'a form'))
 
       expect(result).toMatchObject({ ok: false, ended: 'unreachable' })
       expect(result).not.toHaveProperty('reason')

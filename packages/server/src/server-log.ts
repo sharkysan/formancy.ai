@@ -140,7 +140,7 @@ function logger(write: (line: Line) => void, level: LogLevel, reqId: unknown): F
   const at =
     (lineLevel: LogLevel) =>
     (first?: unknown): void => {
-      const given = (first instanceof Error ? { err: first } : isRecord(first) ? first : {}) as Record<string, unknown>
+      const given = first instanceof Error ? { err: first } : isRecord(first) ? first : {}
       const event = given['event'] !== 'unlisted' && KINDS.event(given['event']) ? (given['event'] as LogEvent) : undefined
       // Below warn, a line nobody named is Fastify saying it is listening or that a route was
       // not found: nothing an operator reads, and the words are a raw URL.

@@ -138,7 +138,7 @@ describe('a suggestion pressed when it cannot be', () => {
   const page = () => ({
     runs: { prompt: createPromptRun(), translation: createTranslationRun(), drafting: createDraftRun() },
     relay: createRelay(),
-    session: createBuilderSession(STARTER_SCHEMA as unknown as FormSchema),
+    session: createBuilderSession(STARTER_SCHEMA),
   })
 
   test('does not ask again over a translation held for review, which it would forget', async () => {
@@ -203,7 +203,7 @@ describe('a suggestion pressed when it cannot be', () => {
       reworded((i18n) => {
         const english = i18n.messages['en'] ?? {}
         const french = i18n.messages[FRENCH.locale] ?? {}
-        for (const id of missingMessages(STARTER_SCHEMA as unknown as FormSchema, FRENCH.locale)) {
+        for (const id of missingMessages(STARTER_SCHEMA, FRENCH.locale)) {
           french[id] = `${english[id] ?? id} (fr)`
         }
       }),
@@ -373,7 +373,7 @@ describe('something to try, on the starter', () => {
       await builtWith(which)
       await user.click(screen.getByRole('button', { name: 'Translations' }))
       await user.selectOptions(await within(editor()).findByRole('combobox', { name: 'Language' }, { timeout: 10_000 }), FRENCH.locale)
-      const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, FRENCH.locale)
+      const missing = missingMessages(STARTER_SCHEMA, FRENCH.locale)
       const ask = builderTextFor('en')('translate.ask', { count: missing.length })
       const paneAsks = (): boolean => within(editor()).queryByRole('button', { name: ask }) !== null
 

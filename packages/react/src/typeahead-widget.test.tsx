@@ -81,7 +81,7 @@ function schemaWith(widget?: 'typeahead'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
 function mount(widget?: 'typeahead'): FormEngine {
