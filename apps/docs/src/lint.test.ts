@@ -35,9 +35,10 @@ import { describe, expect, test } from 'vitest'
  * CI=true, and typescript-eslint then infers a single run: it builds each
  * program once, from the files on disk. So a text handed in for a path on
  * disk is typed as the file there, and a file linted a second time in one
- * process gives no findings (seen in formancy.ai-health's CI run
- * 41045406900, 30 October 2026); a case that edited a repository file's
- * text would pass in CI having checked nothing. `CI=true` reproduces it
+ * process gives no findings (the first seen in formancy.ai-health's CI run
+ * 41045406900, the second in its run 41083791693, both on 30 October
+ * 2026); a case that edited a repository file's text, or linted one
+ * twice, would pass in CI having checked nothing. `CI=true` reproduces it
  * locally, and this file passes under it.
  *
  * What it cannot see: whether a rule's verdict is right. It holds that a
@@ -49,7 +50,13 @@ const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as
 const scripts = manifest.scripts
 
 /** The messages for a file of the repository, linted with its own content, as `pnpm lint` reads it. */
-const lintOwn = (file: string) => eslint.lintText(readFileSync(file, 'utf8'), { filePath: file }).then(([result]) => result?.messages ?? [])
+const linted = new Set<string>()
+const lintOwn = (file: string) => {
+  // A second lint of a file gives no findings in a single run, which would pass vacuously.
+  if (linted.has(file)) throw new Error(`${file} is linted twice`)
+  linted.add(file)
+  return eslint.lintText(readFileSync(file, 'utf8'), { filePath: file }).then(([result]) => result?.messages ?? [])
+}
 
 /** A package's source, which every rule holds, beside which the install fixtures are read. */
 const SOURCE = 'packages/core/src/index.ts'

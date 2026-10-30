@@ -37,7 +37,8 @@
     file twice: GitHub Actions sets `CI=true`, and typescript-eslint then infers a single run,
     building each program once from the files on disk, so a text handed in for a path on disk
     is typed as the file there, and a file linted a second time in one process gives no
-    findings (seen in formancy.ai-health's CI run 41045406900 on 30 October 2026). With
+    findings (the first seen in formancy.ai-health's CI run 41045406900, the second in its run
+    41083791693, both on 30 October 2026). With
     `CI=true`, which reproduces that locally, its nine cases passed the same day.
   - **`scripts/install-fixture/lint.mjs`**, in `pnpm test:e2e:install` — the packed tarball,
     installed with its dependencies and the newest ESLint and Prettier its peers admit into a
@@ -60,7 +61,7 @@
 
   **Not mechanically enforced:** how the pull request that brings this merges, which GitHub
   leaves to the person merging; that a disable comment's reason is true; and that
-  `packages/code-style/src` is Formancy Health's `scripts/code-style/` at `4f151a2`, and
+  `packages/code-style/src` is Formancy Health's `scripts/code-style/` at `0935874`, and
   Formancy Data's copy the same, which `cmp` showed of all three on 30 October 2026 and
   nothing compares, since a test here cannot read another repository without the network.
 
@@ -96,7 +97,7 @@ And it is larger: with this repository's paths, as first committed, the shared r
 ## Decision
 
 - **One package, `@formancy/code-style`.** `packages/code-style/src` holds the module and its
-  test, Formancy Health's `scripts/code-style/` at `4f151a2` byte for byte, with a manifest, a
+  test, Formancy Health's `scripts/code-style/` at `0935874` byte for byte, with a manifest, a
   README, `LICENSE` and `NOTICE` around them. It is published as it is written, JavaScript with
   no build and no types, at the one version every package here carries
   ([0009](0009-independent-spec-version.md)). The rules, the seven relaxations in a test,

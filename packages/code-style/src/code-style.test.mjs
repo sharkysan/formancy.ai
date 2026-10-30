@@ -115,7 +115,13 @@ const FILES = {
 let root
 let eslint
 
+// CI sets CI=true, and typescript-eslint then infers a single run: it builds
+// each program once, from the files on disk. A case must meet here what it
+// meets there, so every run of this file is one.
+let singleRun
 beforeAll(() => {
+  singleRun = process.env.TSESTREE_SINGLE_RUN
+  process.env.TSESTREE_SINGLE_RUN = 'true'
   root = realpathSync(mkdtempSync(join(tmpdir(), 'code-style-')))
   for (const [path, text] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, path)), { recursive: true })
@@ -124,18 +130,33 @@ beforeAll(() => {
   eslint = new ESLint({ cwd: root, overrideConfigFile: true, overrideConfig: eslintConfig({ root, ...PATHS }) })
 })
 
-afterAll(() => rmSync(root, { recursive: true, force: true }))
+afterAll(() => {
+  if (singleRun === undefined) delete process.env.TSESTREE_SINGLE_RUN
+  else process.env.TSESTREE_SINGLE_RUN = singleRun
+  rmSync(root, { recursive: true, force: true })
+})
+
+const linted = new Map()
 
 /**
- * The messages for one of the files above. A fatal one -- a file the
- * parser could not read, or TypeScript that no program holds -- fails the
- * case, so that none passes on a file nothing linted.
+ * The messages for one of the files above, linted once. In a single run a
+ * file linted again comes back with no findings, so a case may assert on a
+ * file another case linted only through what the first lint returned. A
+ * fatal message -- a file the parser could not read, or TypeScript that no
+ * program holds -- fails the case, so that none passes on a file nothing
+ * linted.
  */
 async function lint(path) {
-  const [result] = await eslint.lintFiles([join(root, path)])
-  const fatal = result.messages.filter((m) => m.fatal)
-  expect(fatal, path).toEqual([])
-  return result.messages
+  if (!linted.has(path)) {
+    const [result] = await eslint.lintFiles([join(root, path)])
+    linted.set(path, result.messages)
+  }
+  const messages = linted.get(path)
+  expect(
+    messages.filter((m) => m.fatal),
+    path,
+  ).toEqual([])
+  return messages
 }
 
 const ruleIds = (messages) => messages.map((m) => m.ruleId)
