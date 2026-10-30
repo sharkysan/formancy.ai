@@ -77,6 +77,10 @@ component_management:
       name: packages/cli
       paths:
         - packages/cli/**
+    - component_id: code-style
+      name: packages/code-style
+      paths:
+        - packages/code-style/**
     - component_id: conformance
       name: packages/conformance
       paths:

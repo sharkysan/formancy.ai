@@ -129,6 +129,9 @@ Each gate exists for a reason that was paid for at least once:
   ([0038](../decisions/0038-esm-only.md)). It runs for **every** published
   package: three of them were on a weaker check than their twelve siblings until
   somebody counted, two with no `attw` at all and one with no check whatsoever.
+  `attw` runs wherever there are types to resolve; `@formancy/themes`, which ships
+  stylesheets, and `@formancy/code-style`, which ships one JavaScript module, have
+  none, and run `publint` alone (`apps/docs/src/published-packages.test.ts`).
 - **`test:e2e:install`** — the tarballs `pnpm pack` produces, installed into a
   plain npm project which is then type-checked with `skipLibCheck` **off**, run
   under Node, and built with Vite. Every other gate runs *inside* the workspace,
@@ -148,6 +151,11 @@ Each gate exists for a reason that was paid for at least once:
   `@formancy/spec` — the one place a command is run from its tarball. Watched failing with
   `SignatureAnswer` taken out of the spec's exports
   ([0190](../decisions/0190-a-form-has-a-type.md)).
+  And it lints a file of that project with the packed `@formancy/code-style`, its
+  dependencies installed by npm and its peers, ESLint and Prettier, at the newest each
+  range admits, and formats with its options: the file's floating promise is reported by a
+  type-aware rule alone, so only once every plugin has loaded and typescript-eslint has
+  built the project's program.
 - **`test:e2e:angular`** — the Angular packages' equivalent, once per Angular version in
   `compatibility.json`: the tarballs installed into an Angular project at that version, with
   Material at the same one, built by that project's own Angular and run in Chromium. The

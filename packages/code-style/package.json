@@ -1,0 +1,64 @@
+{
+  "name": "@formancy/code-style",
+  "version": "0.11.0",
+  "description": "The ESLint rules and the Prettier format the formancy repositories share: one module, which each repository calls with its own paths.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/code-style.mjs"
+  },
+  "files": [
+    "src/code-style.mjs",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "test:coverage": "vitest run --coverage",
+    "test": "vitest run",
+    "check:pkg": "publint"
+  },
+  "//check:pkg": [
+    "publint only, as for @formancy/themes: this package ships one JavaScript module",
+    "and no types, so there is nothing for attw to resolve. Nothing here builds or",
+    "type-checks either: the module is published as it is written, byte for byte the",
+    "copy formancy.ai-health and formancy.ai-data carry until they pin this package."
+  ],
+  "dependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
+    "@eslint/js": "^10.0.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "typescript-eslint": "^8.72.1"
+  },
+  "peerDependencies": {
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3"
+  },
+  "//peerDependencies": [
+    "The tools a repository runs, at versions it chooses, so they are peers. Each",
+    "range starts at the version this package's suite runs, which the workspace",
+    "catalog pins exactly, and the install gate installs the newest each admits: the",
+    "bound of a range is a version something ran (0134). TypeScript's is the",
+    "catalog's own range, for 0039's reason; typescript-eslint asks for it."
+  ],
+  "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "publint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharkysan/formancy.ai.git",
+    "directory": "packages/code-style"
+  },
+  "homepage": "https://github.com/sharkysan/formancy.ai",
+  "bugs": "https://github.com/sharkysan/formancy.ai/issues"
+}

@@ -104,7 +104,8 @@ function publishedPackages(): Array<{
  * expected reports a false positive on the most ordinary consumer there is.
  */
 /**
- * Every source file in `packages` and `apps`, with the package or app it belongs to.
+ * Every source file in `packages` and `apps`, with the package or app it belongs to, and
+ * the install gate's consumer.
  *
  * Read once rather than once per package asked about: the walk is the cost, and repeating
  * it for every published package took this file past its five seconds under a full
@@ -112,7 +113,13 @@ function publishedPackages(): Array<{
  * guard that gets its timeout raised, and then nobody knows what it costs.
  *
  * CSS counts: a theme's only consumer is a stylesheet or a side-effect import, and
- * leaving it out is half of what made this report a false positive.
+ * leaving it out is half of what made this report a false positive. JavaScript modules
+ * count for the same reason: `@formancy/code-style` is imported by a lint configuration,
+ * which is an `.mjs` file by nature.
+ *
+ * `scripts/install-fixture` counts as a consumer of its own. It imports the packed
+ * tarballs by name from a project that is not this one, which is the way a user does and
+ * more so than a workspace sibling, whose import resolves through a symlink to source.
  */
 let sources: ReadonlyArray<{ owner: string; text: string }> | undefined
 function allSources(): ReadonlyArray<{ owner: string; text: string }> {
@@ -125,7 +132,7 @@ function allSources(): ReadonlyArray<{ owner: string; text: string }> {
         walk(join(directory, entry.name), owner)
         continue
       }
-      if (!/\.(ts|tsx|mts|css)$/.test(entry.name)) continue
+      if (!/\.(ts|tsx|mts|js|mjs|css)$/.test(entry.name)) continue
       found.push({ owner, text: readFileSync(join(directory, entry.name), 'utf8') })
     }
   }
@@ -135,6 +142,7 @@ function allSources(): ReadonlyArray<{ owner: string; text: string }> {
       if (entry.isDirectory()) walk(join(root, entry.name), `${group}/${entry.name}`)
     }
   }
+  walk(join(repo, 'scripts', 'install-fixture'), 'scripts/install-fixture')
   sources = found
   return found
 }
@@ -229,8 +237,9 @@ describe('how each published package is checked as a package', () => {
   /** Whether this package ships anything `attw` could resolve types for. */
   const shipsTypes = (manifest: { types?: unknown; exports?: unknown }): boolean => {
     if (manifest.types !== undefined) return true
-    // A CSS-only package maps its entries to `.css` files and declares no types,
-    // which is the one honest reason to skip attw.
+    // A package with no types maps its entries straight to files and declares none:
+    // `.css` files, or the one JavaScript module `@formancy/code-style` ships, beside
+    // which there is no declaration file. That is the one honest reason to skip attw.
     const entries = Object.values((manifest.exports ?? {}) as Record<string, unknown>)
     return entries.some((entry) => typeof entry === 'object' && entry !== null)
   }
@@ -266,15 +275,16 @@ describe('how each published package is checked as a package', () => {
     expect(missing).toEqual([])
   })
 
-  test('and the one package that skips attw really has no types', () => {
+  test('and the packages that skip attw really have no types', () => {
     // So the exemption cannot be claimed by a package that grows types later.
     const skipping = publishedPackages()
       .filter(({ manifest }) => !(manifest.scripts?.['check:pkg'] ?? '').includes('attw'))
       .map(({ name, manifest }) => ({ name, types: shipsTypes(manifest) }))
 
     // A guard on the guard: if this list empties, the assertion below stops
-    // asserting anything and the test should go rather than sit here green.
-    expect(skipping.map(({ name }) => name)).toEqual(['@formancy/themes'])
+    // asserting anything and the test should go rather than sit here green. Named,
+    // so that a third package skipping attw is a decision somebody writes here.
+    expect(skipping.map(({ name }) => name)).toEqual(['@formancy/code-style', '@formancy/themes'])
     expect(skipping.filter(({ types }) => types)).toEqual([])
   })
 })

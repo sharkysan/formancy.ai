@@ -21,19 +21,22 @@
  * into a plain npm project; every entry point resolves, including the separate
  * ones; the types resolve under `bundler` resolution with `skipLibCheck` off; the
  * code runs under Node; an ordinary Vite build compiles a page that imports
- * them, stylesheet included; and the `formancy` bin runs from its tarball and
- * prints a type that compiles there.
+ * them, stylesheet included; the `formancy` bin runs from its tarball and
+ * prints a type that compiles there; and `@formancy/code-style`, with its
+ * dependencies and the peers a repository installs beside it, lints a file of
+ * this project with its type-aware rules and formats with its options.
  *
  * It does **not** talk to npm, so it says nothing about the registry copy: a
  * release that packed differently from `pnpm pack` would still slip through.
  * That is a much smaller gap than the one it closes, and it is in the debt table
  * rather than implied.
  */
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pack, publishable, run } from './pack.mjs'
+import { pack, publishable, repo, run } from './pack.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -43,6 +46,16 @@ const here = dirname(fileURLToPath(import.meta.url))
  * newest, which is what an `npm install` today resolves.
  */
 const REACT = process.env.FORMANCY_REACT ?? '^19.3.0'
+
+/**
+ * The lint tools a repository installs beside `@formancy/code-style`: its peers, at
+ * the ranges it declares, so npm resolves the newest each admits, where the
+ * package's own suite runs the version each range starts at, which the workspace
+ * catalog pins (0134). TypeScript, its third peer, this project has already.
+ */
+const { eslint: ESLINT, prettier: PRETTIER } = JSON.parse(
+  readFileSync(join(repo, 'packages', 'code-style', 'package.json'), 'utf8'),
+).peerDependencies
 
 /**
  * Packages a consumer imports, and why the others are not here.
@@ -108,12 +121,17 @@ try {
           tsx: '^4.20.3',
           vite: '^8.3.0',
           '@vitejs/plugin-react': '^6.1.1',
+          eslint: ESLINT,
+          prettier: PRETTIER,
         },
       },
       null,
       2,
     )}\n`,
   )
+
+  // What every repository has, and the one ignore file `@formancy/code-style` is told to read.
+  writeFileSync(join(project, '.gitignore'), 'node_modules/\ndist/\n')
 
   writeFileSync(
     join(project, 'tsconfig.json'),
@@ -151,8 +169,11 @@ try {
          * `CLAUDE.md` warns about — a glob resolves to different files depending
          * on what npm happened to install. Named by file, there is nothing left
          * to differ.
+         *
+         * `floating.ts` is here for `lint.mjs`: a type-aware rule reads only a file
+         * a tsconfig holds.
          */
-        include: ['consume.ts', 'bundled.tsx', 'render.tsx', 'answers.ts', 'typed.ts'],
+        include: ['consume.ts', 'bundled.tsx', 'render.tsx', 'answers.ts', 'typed.ts', 'floating.ts'],
       },
       null,
       2,
@@ -179,6 +200,12 @@ try {
 
   console.log('rendering a form with the React it installed…')
   run('npx', ['tsx', 'render.tsx'], project)
+
+  console.log('linting a file with the code style it installed…')
+  // Node itself, as a repository's ESLint loads its config: `run` spells a command
+  // for a shell on Windows, and Node is no `.cmd` there.
+  const linted = execFileSync(process.execPath, ['lint.mjs'], { cwd: project, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  console.log(linted.trim())
 
   console.log('and bundling it…')
   run('npx', ['vite', 'build', '--logLevel', 'error'], project)

@@ -8,6 +8,17 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached â€
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**`@formancy/code-style` is a new package: the ESLint rules and the Prettier format the
+formancy repositories share.** Repositories lint and format alike only while they hold the
+same rules, and a copy in each lets a rule changed in one differ in the others until somebody
+copies it again. Published, the module is a version each pins. `eslintConfig` makes a
+repository's ESLint configuration from its own paths, `prettierConfig` is the format, and
+`EXTENSIONS` and `FILES` name the files both tools read. ESLint, Prettier and TypeScript are
+peers the repository brings. Nothing a form, a builder or the server runs imports it, and
+`pnpm test:e2e:install` installs it from its tarball and lints a file with it.
+
 ## 0.11.0 â€” 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a

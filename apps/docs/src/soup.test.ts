@@ -109,6 +109,7 @@ describe('the SOUP composition table', () => {
       14: 'Fourteen',
       15: 'Fifteen',
       16: 'Sixteen',
+      17: 'Seventeen',
     }
     const count = manifests().length
     const word = WORDS[count]

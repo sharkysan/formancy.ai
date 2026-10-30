@@ -84,7 +84,7 @@ What it does **not** do, and must not be assumed to do:
 
 ## Composition and third-party dependencies
 
-Sixteen published packages, layered so that the isomorphic ones cannot
+Seventeen published packages, layered so that the isomorphic ones cannot
 acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)).
 Workspace dependencies between them are not listed: the whole repository is
 delivered as one version under one licence, so assessing `@formancy/server` is
@@ -108,6 +108,12 @@ not separately assessing `@formancy/spec`.
 | `@formancy/cli` | none |
 | `@formancy/themes` | none (CSS only) |
 | `@formancy/tiptap` | `@tiptap/core ^3.31.3`, `@tiptap/extension-bold ^3.31.3`, `@tiptap/extension-bullet-list ^3.31.3`, `@tiptap/extension-document ^3.31.3`, `@tiptap/extension-italic ^3.31.3`, `@tiptap/extension-link ^3.31.3`, `@tiptap/extension-list-item ^3.31.3`, `@tiptap/extension-ordered-list ^3.31.3`, `@tiptap/extension-paragraph ^3.31.3`, `@tiptap/extension-text ^3.31.3`, `@tiptap/pm ^3.31.3` |
+| `@formancy/code-style` | `@eslint-community/eslint-plugin-eslint-comments ^4.8.1`, `@eslint/js ^10.0.1`, `eslint-plugin-react-hooks ^7.1.1`, `globals ^17.13.0`, `typescript-eslint ^8.72.1` (lint tooling; each of ESLint, Prettier and TypeScript is a peer) |
+
+`@formancy/code-style` is development tooling: the ESLint rules and the Prettier
+format a repository's lint and format configuration imports. Nothing a form, a
+builder or the server runs imports it, so a manufacturer whose own build does
+not lint with it has none of its row to assess.
 
 `@formancy/tiptap`'s nine extensions are listed one by one, in the table and in
 the package's own source, rather than taken from `@tiptap/starter-kit` — which

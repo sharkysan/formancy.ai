@@ -35,6 +35,13 @@ catalog:
   publint: ^0.3.24
   "@arethetypeswrong/cli": ^0.18.5
 
+  # Exact, unlike the rest. @formancy/code-style's suite runs these, and its
+  # peer ranges start at them, so the bound of each range is the version that
+  # runs (0134); and Prettier's output can change in any release, which its
+  # own documentation gives as the reason to pin one exactly.
+  eslint: 10.13.0
+  prettier: 3.9.10
+
 minimumReleaseAgeExclude:
   - '@turbo/darwin-64@2.11.2'
   - '@turbo/darwin-arm64@2.11.2'
