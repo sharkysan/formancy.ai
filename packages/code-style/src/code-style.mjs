@@ -63,18 +63,13 @@ const UNUSED_NAMES = {
 }
 
 /**
- * Off in a test alone: a test reads an untyped body on purpose, vitest is
- * handed methods to `expect`, and a test double stands in for an async
- * interface. Of the findings of `require-await` measured on formancy.ai-data
- * on 30 October 2026, 201 of 220 were in tests, nearly all such doubles
- * (`fetch: async () => new Response(...)`, `readFile: async (p) => ...`,
- * `until(async () => cond)`); removing the `async` turns a rejection into a
- * synchronous throw, which changes what the code under test meets.
- * `no-explicit-any` is off there for the same reason as the `no-unsafe-*`
- * family: a test types the untyped body it reads as `any` (seven disables
- * in formancy.ai-data's lint fixes quoted it word for word); source is still
- * held to it. Nothing else is relaxed, and test support -- a corpus, a
- * package's test helpers -- is held to every rule.
+ * Off in a test alone: a test reads an untyped body on purpose, and vitest
+ * is handed methods to `expect`. `no-explicit-any` is off there for the same
+ * reason as the `no-unsafe-*` family: a test types the untyped body it
+ * reads as `any` (seven disables in formancy.ai-data's lint fixes quoted it
+ * word for word); source is still held to it. Nothing else is relaxed, and
+ * test support -- a corpus, a package's test helpers -- is held to every
+ * rule.
  */
 const TEST_RELAXATIONS = {
   '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -83,7 +78,6 @@ const TEST_RELAXATIONS = {
   '@typescript-eslint/no-unsafe-argument': 'off',
   '@typescript-eslint/no-unsafe-return': 'off',
   '@typescript-eslint/unbound-method': 'off',
-  '@typescript-eslint/require-await': 'off',
   '@typescript-eslint/no-explicit-any': 'off',
 }
 
@@ -96,6 +90,25 @@ const TEST_RELAXATIONS = {
  * a known non-Error value, a string or object literal, is still refused.
  */
 const REJECT_ERRORS = ['error', { allowThrowingAny: true, allowThrowingUnknown: true }]
+
+/**
+ * `require-await` is off everywhere, not in tests alone: an `async` function
+ * with no `await` is how a synchronous implementation of an asynchronous
+ * contract keeps its throws as rejections, and the rule cannot tell that
+ * from an `async` left behind by a refactor. Every repository met it where
+ * the contract is async and the body is not. formancy.ai-data, measured on
+ * 30 October 2026: 220 findings, 201 of them in tests (`fetch: async () =>
+ * new Response(...)`, `readFile: async (p) => ...`), the other 19 Fastify
+ * handlers and hooks and test support. formancy.ai, the same day: 68
+ * findings left after every other rule was fixed, all in test-support
+ * implementations of Promise-returning ports outside test files, each of
+ * which throws, so that `async` gives the rejection the real port gives and
+ * `Promise.resolve` would change what the code under test meets. A forgotten
+ * `await` is still caught by `no-floating-promises` and
+ * `no-misused-promises`; what is no longer reported anywhere is a pointless
+ * `async` a refactor left behind.
+ */
+const NO_REQUIRE_AWAIT = 'off'
 
 /**
  * The ESLint configuration for one repository, given its paths:
@@ -142,7 +155,11 @@ export function eslintConfig({ root, project, ignoreFiles, tests, untyped = [], 
       files: [FILES],
       extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],
       languageOptions: { parserOptions: { project, tsconfigRootDir: root } },
-      rules: { '@typescript-eslint/no-unused-vars': ['error', UNUSED_NAMES], '@typescript-eslint/prefer-promise-reject-errors': REJECT_ERRORS },
+      rules: {
+        '@typescript-eslint/no-unused-vars': ['error', UNUSED_NAMES],
+        '@typescript-eslint/prefer-promise-reject-errors': REJECT_ERRORS,
+        '@typescript-eslint/require-await': NO_REQUIRE_AWAIT,
+      },
     },
     {
       // JavaScript, and TypeScript that no tsconfig holds, are linted without

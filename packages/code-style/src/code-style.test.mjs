@@ -36,7 +36,10 @@ const NARROW_SPACE = ' '
 const PARSED = "export const v: { a: number } = JSON.parse('{}')\n"
 const ASSERTION = "import { expect } from 'vitest'\nexpect(1).toBeTruthy\n"
 const FLOATING = 'export async function f() {}\nf()\n'
-const ASYNC_DOUBLE = 'export const read = { readFile: async (_path: string) => 1 }\n'
+const ASYNC_PORT =
+  'export interface Store {\n  get(key: string): Promise<string>\n}\n' +
+  'export class Memory implements Store {\n  async get(key: string): Promise<string> {\n    throw new Error(`no ${key}`)\n  }\n}\n'
+
 const HOOKS = [
   "import { useEffect, useState } from 'react'",
   'export function C({ on, n }: { on: boolean; n: number }) {',
@@ -100,8 +103,8 @@ const FILES = {
   'src/evaluate.mjs': 'export const title = () => document.title\n',
   'src/app/hooks.tsx': HOOKS,
   'src/outside.tsx': HOOKS + 'async function g() {}\ng()\n',
-  'src/double.ts': ASYNC_DOUBLE,
-  'src/double.test.ts': ASYNC_DOUBLE,
+  'src/port.ts': ASYNC_PORT,
+  'src/port.test.ts': ASYNC_PORT,
   'src/reject-forwarded.ts': 'export const fail = (reason: unknown) => new Promise<void>((_resolve, reject) => reject(reason))\n',
   'src/reject-literal.ts': "export const fail = () => Promise.reject('no')\n",
   'src/any.ts': 'export const body: any = JSON\n',
@@ -159,13 +162,15 @@ describe('the rules', () => {
     expect(test).toContain('@typescript-eslint/no-floating-promises')
   })
 
-  // A test double that stands in for an async interface must stay async:
-  // without the keyword a rejection becomes a synchronous throw, and the
-  // code under test meets another failure than the one it will in
-  // production. Source that awaits nothing is still a finding.
-  test('an async function that awaits nothing is refused in source and allowed in a test', async () => {
-    expect(ruleIds(await lint('src/double.ts'))).toContain('@typescript-eslint/require-await')
-    expect(ruleIds(await lint('src/double.test.ts'))).not.toContain('@typescript-eslint/require-await')
+  // A synchronous implementation of an asynchronous contract keeps its
+  // throws as rejections by being `async`, and require-await cannot tell
+  // that from an `async` a refactor left behind: with it on, a store that
+  // throws had to be rewritten, or disabled line by line, in source and in
+  // test alike. What still catches a forgotten `await` stays on.
+  test('an async member that awaits nothing is not refused, and an un-awaited promise still is', async () => {
+    expect(ruleIds(await lint('src/port.ts'))).not.toContain('@typescript-eslint/require-await')
+    expect(ruleIds(await lint('src/port.test.ts'))).not.toContain('@typescript-eslint/require-await')
+    expect(ruleIds(await lint('src/floating.ts'))).toContain('@typescript-eslint/no-floating-promises')
   })
 
   // only-throw-error lets a value typed any or unknown be thrown, so a

@@ -62,9 +62,11 @@ const RELAXED_IN_TESTS = [
   '@typescript-eslint/no-unsafe-argument',
   '@typescript-eslint/no-unsafe-return',
   '@typescript-eslint/unbound-method',
-  '@typescript-eslint/require-await',
   '@typescript-eslint/no-explicit-any',
 ]
+
+/** What the shared rules turn off in every file: a synchronous implementation of an async contract keeps its throws as rejections by being `async`. */
+const OFF_EVERYWHERE = ['@typescript-eslint/require-await']
 
 const HOOKS = ['react-hooks/rules-of-hooks', 'react-hooks/exhaustive-deps']
 
@@ -143,7 +145,7 @@ describe('the linter', TYPED, () => {
   // error, its typed half off only in the install fixtures, which differ
   // from a package's source by that half and nothing else; JavaScript to
   // the sets' rules that need no types; a test to its source's rules but
-  // the eight relaxations; and a file of a workspace that declares React to
+  // the seven relaxations, and `require-await` off in every file; and a file of a workspace that declares React to
   // the hooks rules.
   test('every TypeScript and JavaScript file git holds is linted, by the rules its kind is held to', async () => {
     expect(scripts['lint']).toBe('eslint .')
@@ -167,7 +169,7 @@ describe('the linter', TYPED, () => {
       const test = TEST.test(file)
       const untyped = typescript && isUntyped(file)
       const typed = typescript && !untyped
-      const off = [...(test ? RELAXED_IN_TESTS : []), ...(typed ? [] : TYPED_RULES)]
+      const off = [...OFF_EVERYWHERE, ...(test ? RELAXED_IN_TESTS : []), ...(typed ? [] : TYPED_RULES)]
       for (const rule of Object.keys(rules).filter((rule) => severity(rules[rule]) === 1)) problems.push(`${file}: ${rule} warns`)
       for (const rule of recommended[typescript ? 'typescript' : 'javascript']) {
         if (!off.includes(rule) && severity(rules[rule]) !== 2) problems.push(`${file}: ${rule} is not at error`)
