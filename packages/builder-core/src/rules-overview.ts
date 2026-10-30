@@ -1,4 +1,5 @@
 import { getAt } from '@formancy/core'
+import { answerAsStored } from '@formancy/core/words'
 import { compile, evaluate } from '@formancy/expressions'
 import type { Capabilities, Program, VariableDeclarations } from '@formancy/expressions'
 import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
@@ -123,7 +124,7 @@ function valueInWords(value: unknown, field: ConditionField | undefined, text: B
   if (Array.isArray(value)) return text.list(value.map((item) => valueInWords(item, field, text)))
   const option = field?.options.find((candidate) => candidate.value === value)
   if (option !== undefined) return option.label
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint' ? String(value) : JSON.stringify(value)
+  return answerAsStored(value)
 }
 
 /** What a rule does with the answers given, and why. */

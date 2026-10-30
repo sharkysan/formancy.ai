@@ -25,14 +25,14 @@ out as a string, so five translated choices were five identical, meaningless ann
 screen reader. It names the choice by its value, as the Angular builder already did. Found by
 `@typescript-eslint/no-base-to-string`, which the repository now runs.
 
-**A code node bound to an answer that is not text or a number draws nothing, in both renderers.**
+**A code node bound to an answer that is not text, a number or a boolean draws nothing, in both renderers.**
 An object or a list stored in the field was written out as `[object Object]` (or its items joined)
 and drawn as a scannable code of that. A submission is untrusted and the engine keeps what it is
 given, so the code is now drawn only from a string, a number or a boolean.
 
 **An expression that returns a record with numeric `seconds` and `nanos` keys returns the record.**
-`toExpressionValue` took any such object for one of CEL's durations and wrote it as
-`[object Object]`; CEL's own durations carry `seconds` as a bigint, so the branch never served
+Evaluating an expression took any such object for one of CEL's durations and returned the
+string `[object Object]`; CEL's own durations carry `seconds` as a bigint, so the branch never served
 one. A form's data can hold a record with those keys, and an expression handing it back gave a
 string that said nothing of it.
 

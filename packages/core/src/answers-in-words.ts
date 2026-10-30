@@ -127,7 +127,7 @@ export function answerInWords(schema: FormSchema, def: FieldDef, value: unknown,
 function optionLabeller(schema: FormSchema, locale: string) {
   return (options: readonly FieldOption[] | undefined, value: unknown): string => {
     const option = options?.find((candidate) => candidate.value === value)
-    return option === undefined ? stored(value) : (resolveText(schema, option.label, locale) ?? option.value)
+    return option === undefined ? answerAsStored(value) : (resolveText(schema, option.label, locale) ?? option.value)
   }
 }
 
@@ -143,11 +143,11 @@ function sayAnswer(
   if (Array.isArray(value) && value.length === 0) return undefined
   switch (ANSWER_KINDS[def.type].shape) {
     case 'boolean':
-      return typeof value === 'boolean' ? text(value ? 'answer.yes' : 'answer.no') : stored(value)
+      return typeof value === 'boolean' ? text(value ? 'answer.yes' : 'answer.no') : answerAsStored(value)
     case 'number':
-      return typeof value === 'number' ? new Intl.NumberFormat(language).format(value) : stored(value)
+      return typeof value === 'number' ? new Intl.NumberFormat(language).format(value) : answerAsStored(value)
     case 'temporal':
-      return typeof value === 'string' ? temporal(def, value, language) : stored(value)
+      return typeof value === 'string' ? temporal(def, value, language) : answerAsStored(value)
     case 'choice':
       return optionLabel(def.options, value)
     case 'choices':
@@ -156,19 +156,19 @@ function sayAnswer(
             value.map((item) => optionLabel(def.options, item)),
             language,
           )
-        : stored(value)
+        : answerAsStored(value)
     case 'files':
       return Array.isArray(value)
         ? list(
-            value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : stored(file))),
+            value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : answerAsStored(file))),
             language,
           )
-        : stored(value)
+        : answerAsStored(value)
     case 'signature':
       if (isRecord(value) && typeof value['typed'] === 'string') return value['typed']
       return text('answer.drawnSignature')
     default:
-      return stored(value)
+      return answerAsStored(value)
   }
 }
 
@@ -185,7 +185,7 @@ function temporal(def: FieldDef, value: string, language: string): string {
 }
 
 /** An answer as it was stored, for one the question does not take: a record is data, not "[object Object]". */
-function stored(value: unknown): string {
+export function answerAsStored(value: unknown): string {
   return typeof value === 'string' ? value : JSON.stringify(value)
 }
 

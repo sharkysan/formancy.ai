@@ -3,7 +3,7 @@ import { FORM_WORDS_FR } from './words-fr.js'
 
 export { errorSentence } from './error-words.js'
 export { countSentence } from './count-words.js'
-export { answerInWords, answersInWords } from './answers-in-words.js'
+export { answerAsStored, answerInWords, answersInWords } from './answers-in-words.js'
 export { answersToReview } from './review.js'
 export type { ReviewedAnswer } from './review.js'
 export type { SaidAnswer } from './answers-in-words.js'
