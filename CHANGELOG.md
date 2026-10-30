@@ -38,7 +38,7 @@ string that said nothing of it.
 
 **A submission read back in words, and a rule's explanation of why a field is hidden, say an
 answer of an unexpected shape as the data it is.** A quantity, a tick or a choice holding a record
-was said as `[object Object]` in a response's text and in "it is …" beside a rule; both now give
+was said as `[object Object]` in a response's text (an uploaded item that is no file record too) and in "it is …" beside a rule; both now give
 its JSON, which a reviewer can read. A submission is untrusted, so the shape of an answer is not
 the shape its question takes.
 

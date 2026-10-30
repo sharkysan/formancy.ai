@@ -160,7 +160,7 @@ function sayAnswer(
     case 'files':
       return Array.isArray(value)
         ? list(
-            value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : String(file))),
+            value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : stored(file))),
             language,
           )
         : stored(value)
