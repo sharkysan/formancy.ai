@@ -38,9 +38,11 @@ export const FILES = filesOf(EXTENSIONS)
 /**
  * Prettier's options, and its defaults otherwise. Of the widths measured,
  * 160 columns rewrote the fewest lines (formancy.ai-health 0017), and one
- * width across the four repositories is the point.
+ * width across the four repositories is the point. Code embedded in a
+ * string is left as written: Prettier reflowed an Angular component's
+ * inline template, whose whitespace renders (formancy.ai-health 0017).
  */
-export const prettierConfig = { semi: false, singleQuote: true, trailingComma: 'all', printWidth: 160 }
+export const prettierConfig = { semi: false, singleQuote: true, trailingComma: 'all', printWidth: 160, embeddedLanguageFormatting: 'off' }
 
 /**
  * Unused names fail unless they begin with `_` -- arguments, variables,

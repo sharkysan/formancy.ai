@@ -280,9 +280,19 @@ describe('the paths a repository passes', () => {
 
 describe('the format', () => {
   // Two repositories formatted differently would reformat each other's
-  // files on every change; everything but these four is Prettier's default.
-  test('the style is the four options', async () => {
-    expect(prettierConfig).toEqual({ semi: false, singleQuote: true, trailingComma: 'all', printWidth: 160 })
+  // files on every change; everything but these five is Prettier's default.
+  test('the style is the five options', async () => {
+    expect(prettierConfig).toEqual({ semi: false, singleQuote: true, trailingComma: 'all', printWidth: 160, embeddedLanguageFormatting: 'off' })
     expect(await prettier.format('const a = "x";\n', { ...prettierConfig, parser: 'typescript' })).toBe("const a = 'x'\n")
+  })
+
+  // Prettier's default formats code embedded in a string. It reflowed the
+  // inline templates of an Angular component, where the whitespace inside
+  // an element renders: an option's text " Deutsch " for "Deutsch" failed
+  // five tests of formancy.ai's @formancy/angular. A format that changes
+  // what a template renders is a behaviour change made as style.
+  test('a template embedded in a string is left as it is', async () => {
+    const source = ['export const template = /* HTML */ `', '  <select><option>', '      Deutsch', '  </option></select>', '`', ''].join('\n')
+    expect(await prettier.format(source, { ...prettierConfig, parser: 'typescript' })).toBe(source)
   })
 })

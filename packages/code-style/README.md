@@ -70,8 +70,9 @@ in the module.
   dependency.
 - **A test is relaxed** for the `no-unsafe-*` rules, `unbound-method` and
   `require-await` alone, and held to everything else.
-- **The format** is Prettier's defaults but four: no semicolons, single quotes,
-  trailing commas wherever they are allowed, and 160 columns.
+- **The format** is Prettier's defaults but five: no semicolons, single quotes,
+  trailing commas wherever they are allowed, 160 columns, and code embedded in
+  a string left as written, because an Angular template's whitespace renders.
 
 It ships no type declarations: a repository imports it from a JavaScript
 configuration file.
