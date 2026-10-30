@@ -52,6 +52,17 @@ verified badge, and anyone can check it:
 npm audit signatures
 ```
 
+**Wait for the registry before checking.** A package the run says it published can be missing from
+npm for minutes afterwards: on 2026-10-30, `v0.11.0`'s run published all sixteen at 14:29–14:30
+UTC, and `@formancy/builder-core@0.11.0` was listed about five minutes after the others, with
+`npm install` of it failing `ETARGET` until then. `npm cache clean` does not help; the registry's
+own document for the package is what lags. Ask it directly, and install once every package is
+listed:
+
+```bash
+curl -s https://registry.npmjs.org/@formancy%2fbuilder-core | grep -c '"0.11.0"'
+```
+
 This is the signing story for the packages themselves. There is no private key,
 because there is no key at all — the identity is the workflow's OIDC token,
 which cannot be leaked or lost.
