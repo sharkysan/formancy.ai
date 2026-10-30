@@ -34,9 +34,9 @@ import type { TranslationProposal, TranslationResult } from './translate.js'
  */
 export interface TranslationRun {
   /** What a part draws, through `translationOn`. The same object until something in it changes. */
-  state: () => TranslationRunState
+  state(this: void): TranslationRunState
   /** Hear each change. Returns what stops listening — a part going, which ends nothing. */
-  subscribe: (listener: () => void) => () => void
+  subscribe(this: void, listener: () => void): () => void
   /**
    * Ask `ask` for every message `locale` is missing, over the session's document as it is
    * now, and hold what comes back for review. Whatever the last run came to, for any

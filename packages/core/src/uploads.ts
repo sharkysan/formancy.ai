@@ -49,8 +49,8 @@ export interface UploadQueueOptions<F, S> {
 
 export interface UploadQueue<F> {
   /** The same array until something changes, so a binding can compare it by identity. */
-  pending: () => readonly PendingUpload[]
-  subscribe: (listener: () => void) => () => void
+  pending(this: void): readonly PendingUpload[]
+  subscribe(this: void, listener: () => void): () => void
   add(files: Iterable<F>): void
   /** Take a file out, whatever it is doing: not sent, stopped, or dismissed after a failure. */
   cancel(key: string): void

@@ -4,8 +4,8 @@ import type { ControlProps, FieldSnapshot, Path } from '@formancy/core'
 import { useFormEngine } from './context.js'
 
 export interface FieldBinding extends FieldSnapshot {
-  setValue: (value: unknown) => void
-  touch: () => void
+  setValue(this: void, value: unknown): void
+  touch(this: void): void
   /** Spread onto the input/select/textarea element. */
   controlProps: ControlProps
   /** Spread onto the label element. */

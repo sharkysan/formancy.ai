@@ -8,8 +8,8 @@ export interface FieldBinding {
   /** The live field state. One signal per field: a keystroke elsewhere never
    *  recomputes this, because the engine wakes only the fields it touched. */
   snapshot: Signal<FieldSnapshot>
-  setValue: (value: unknown) => void
-  touch: () => void
+  setValue(this: void, value: unknown): void
+  touch(this: void): void
 }
 
 /**

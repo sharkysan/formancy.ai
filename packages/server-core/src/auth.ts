@@ -18,8 +18,8 @@ export interface Actor {
 
 export interface AuthDeps {
   storage: Storage
-  newId: () => string
-  nowIso: () => string
+  newId(this: void): string
+  nowIso(this: void): string
   /** At least 160 bits of entropy, URL-safe. Injected, never Math.random. */
   randomToken(): string
   hashSecret(secret: string): Promise<string>
