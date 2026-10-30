@@ -20,13 +20,16 @@
   - **`apps/docs/src/lint.test.ts`**, in `pnpm test` — this repository's wiring, derived from
     the files git holds and from the two recommended sets as ESLint computes them: every
     TypeScript and JavaScript file linted by `pnpm lint` as `eslint .`, by the rules its kind
-    is held to and none at `warn`; every package's and app's tsconfig, and
-    `tsconfig.tools.json`, one lint reads; every TypeScript file git holds in a program lint
-    types it with, the Angular packages' tests among them; one `lint` command, at the root;
+    is held to and none at `warn`; the tsconfigs lint types with, read from the
+    configuration ESLint computes, exactly those `pnpm typecheck` runs, and every TypeScript
+    file git holds in one of them as TypeScript reads each, the Angular packages' tests among
+    them, with one file linted, of `tsconfig.tools.json`'s program, as the only program built
+    (the case once linted a file of each of about thirty and took 308 s on CI's runner beside
+    every other suite, run 41117900910 on 30 October 2026; it takes 0.7 s now); one `lint` command, at the root;
     every file resolving to the shared style; the format scripts naming a misformatted file of
     every extension git holds; and every `.gitignore` git holds read by both tools, which both
-    leave the generated validator. Its seven cases failed before `eslint.config.mjs` existed,
-    and the ignore case with `apps/docs/.gitignore` taken from ESLint's `ignoreFiles`, with
+    leave the generated validator. Its cases failed before `eslint.config.mjs` existed,
+    the tsconfig case with `tsconfig.tools.json` dropped from `project`, with a package's tsconfig excluding its first test and with a tracked file outside every tsconfig, and the ignore case with `apps/docs/.gitignore` taken from ESLint's `ignoreFiles`, with
     `.prettierignore` emptied, with an entry added to `apps/docs/.gitignore` that
     `.prettierignore` did not repeat, and with the nested file handed to Prettier, whose
     patterns then reached the whole repository. Its case for the gate — `ci.yml`'s `verify`

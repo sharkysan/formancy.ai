@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, extname, join, relative } from 'node:path'
+import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
 import js from '@eslint/js'
@@ -141,13 +141,14 @@ function reactWorkspaces(): string[] {
 
 const isUntyped = (file: string) => UNTYPED.some((directory) => file.startsWith(directory))
 
-// The first case to lint a file of a tsconfig builds that tsconfig's
-// program, and the tsconfig case builds every package's, every app's and
-// the tools'. Measured on 30 October 2026, under Node 22.23.3, with this file
-// run alone: 20 s for the whole file. The app's limit (vitest.config.ts) is
-// 30 s a case, which a loaded runner could pass on a program's work alone,
-// on nothing the case checks, so these cases wait four times that.
-const TYPED = { timeout: 120_000 }
+// The one case that lints a file builds one program, the tools'. Measured
+// on 30 October 2026, under Node 22.23.3, with CI=true: 0.7 s for that case
+// and 2.8 s for the whole file run alone. It once built a program for each
+// of about thirty tsconfigs and took 308 s on CI's runner beside every other
+// suite (run 41117900910), against 9 to 13 s locally. The app's limit
+// (vitest.config.ts) is 30 s a case, which a loaded runner can pass on one
+// program's work, so these cases wait the same.
+const TYPED = { timeout: 30_000 }
 
 describe('the linter', TYPED, () => {
   // A file ESLint never reads, or reads at warn, or with a recommended rule
@@ -211,53 +212,34 @@ describe('the linter', TYPED, () => {
   // A new package or app must be linted with types without anyone editing
   // the configuration, and a tool config -- a vitest, Vite or tsdown
   // config -- is typed by tsconfig.tools.json, which `project` must name.
-  // A tsconfig the parser cannot read is a fatal message, a TypeScript file
-  // in no project one too, and a package ESLint ignores a warning that it
-  // was ignored, so a file of each that lint passes has no message at all:
-  // its own text, linted, is clean, which is how a rule that stopped
-  // reading a tsconfig's files with types is seen.
-  test("every package's and app's tsconfig, and the tools', is one lint reads", async () => {
-    const firstSource = (directory: string): string | undefined => {
-      for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-        const path = join(directory, entry.name)
-        if (entry.isDirectory()) {
-          const found = firstSource(path)
-          if (found) return found
-        } else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith('.d.ts')) return path
-      }
-      return undefined
-    }
-    let checked = 0
-    for (const group of ['packages', 'apps']) {
-      for (const name of readdirSync(join(root, group))) {
-        const directory = join(root, group, name)
-        if (!existsSync(join(directory, 'tsconfig.json')) || !existsSync(join(directory, 'src'))) continue
-        const file = firstSource(join(directory, 'src'))
-        if (!file) continue
-        expect(await lintOwn(file), file).toEqual([])
-        checked += 1
-      }
-    }
-    expect(checked).toBeGreaterThan(0)
-    const tools = join(root, 'tsconfig.tools.json')
-    const { fileNames, errors } = ts.parseJsonConfigFileContent(ts.readConfigFile(tools, ts.sys.readFile).config, ts.sys, root)
-    expect(errors).toEqual([])
-    expect(fileNames.length, 'files tsconfig.tools.json takes in').toBeGreaterThan(0)
-    for (const file of fileNames) expect(await lintOwn(file), relative(root, file)).toEqual([])
-  })
-
-  // A file TypeScript's wildcard drops is in no program and so is neither
-  // type-checked nor linted with types: where two files differ only in
-  // their extension, `include` takes the .ts and not the .tsx
-  // (formancy.ai-data's apps/host/src/duplicate.test.tsx was found so). So
-  // the programs the configuration names are read as TypeScript reads them,
-  // and every TypeScript file git holds, the install fixtures aside, must be
-  // in one. This is also what holds the Angular packages' specs: each
-  // package has a tsconfig.spec.json that `typecheck` does not run, and
-  // their *.test.ts are in tsconfig.json's programs, which it does.
-  test('every TypeScript file git holds is in a program lint types it with', async () => {
+  // So the programs the configuration names are expanded from the
+  // configuration ESLint computes, and held to the two things a program
+  // is for, without building one for each: they are the tsconfigs
+  // `pnpm typecheck` runs, so that nothing is typed that is not checked and
+  // nothing checked is left untyped; and every TypeScript file git holds,
+  // the install fixtures aside, is in one, as TypeScript itself reads the
+  // tsconfig. A file TypeScript's wildcard drops -- where two files differ
+  // only in their extension, `include` takes the .ts and not the .tsx
+  // (formancy.ai-data's apps/host/src/duplicate.test.tsx was found so) -- is
+  // in no program, and so neither type-checked nor linted with types. This
+  // is also what holds the Angular packages' specs: each package has a
+  // tsconfig.spec.json that `typecheck` does not run, and their *.test.ts
+  // are in tsconfig.json's programs, which it does.
+  //
+  // One file is then linted, of the tools' program, which is the smallest
+  // and the one a package's pattern does not name: a tsconfig the parser
+  // cannot read is a fatal message, and a file in no project one too, so a
+  // file that lint passes has no message at all. That the typed rules are
+  // on for a file, and a program is set for it, the first case holds for
+  // every file; this one holds that a program loads. It is the only
+  // program built here: this case once linted the first file of each of
+  // about thirty and took 308 s on CI's runner, beside every other suite,
+  // against 9 to 13 s locally (CI run 41117900910, 30 October 2026) --
+  // work `pnpm lint` does a step earlier, and which has no bound under
+  // load.
+  test('every tsconfig `pnpm typecheck` runs is one lint reads, and every TypeScript file git holds is in one', async () => {
     const { project } = (await configOf(SOURCE)).languageOptions.parserOptions as { project: string[] }
-    const tsconfigs = project.flatMap((pattern) => {
+    const named = project.flatMap((pattern) => {
       const parts = pattern.replace(/^\.\//, '').split('/')
       return parts
         .reduce(
@@ -273,9 +255,24 @@ describe('the linter', TYPED, () => {
         )
         .filter((path) => existsSync(join(root, path)))
     })
-    expect(tsconfigs.length, 'tsconfigs the configuration names').toBeGreaterThan(0)
+    expect(named.length, 'tsconfigs the configuration names').toBeGreaterThan(0)
+
+    // The tsconfigs typecheck runs: the root's tools, and each workspace's
+    // own, which its script names with `-p` or leaves at the default.
+    const typechecked = ['packages', 'apps'].flatMap((group) =>
+      readdirSync(join(root, group)).flatMap((name) => {
+        const manifest = join(root, group, name, 'package.json')
+        if (!existsSync(manifest)) return []
+        const script = (JSON.parse(readFileSync(manifest, 'utf8')) as { scripts?: Record<string, string> }).scripts?.['typecheck']
+        if (script === undefined) return []
+        return [join(group, name, /-p (\S+)/.exec(script)?.[1] ?? 'tsconfig.json')]
+      }),
+    )
+    expect(scripts['typecheck']).toContain('tsc --noEmit -p tsconfig.tools.json')
+    expect([...named].sort(), 'the tsconfigs lint types with, and those typecheck runs').toEqual([...typechecked, 'tsconfig.tools.json'].sort())
+
     const placed = new Set(
-      tsconfigs.flatMap((tsconfig) => {
+      named.flatMap((tsconfig) => {
         const path = join(root, tsconfig)
         const { fileNames, errors } = ts.parseJsonConfigFileContent(ts.readConfigFile(path, ts.sys.readFile).config, ts.sys, dirname(path))
         expect(errors, tsconfig).toEqual([])
@@ -287,6 +284,8 @@ describe('the linter', TYPED, () => {
       .map(({ file }) => file)
       .filter((file) => !placed.has(realpathSync(join(root, file))))
     expect(unplaced).toEqual([])
+
+    expect(await lintOwn(join(root, 'css-target.ts')), 'css-target.ts, in the tools program').toEqual([])
   })
 
   // `pnpm lint` is one command over the repository. A package's own `lint`
