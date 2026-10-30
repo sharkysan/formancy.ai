@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    // The configs are loaded by Vite, which resolves as a bundler does and
+    // runs the root's files as modules, as the root manifest says.
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "types": ["node"]
+  },
+  "include": [
+    "packages/*/vitest.config.ts",
+    "packages/*/tsdown.config.ts",
+    "apps/*/vite.config.ts",
+    "apps/*/vitest.config.ts",
+    "vitest.coverage.ts",
+    "css-target.ts",
+    "monaco-from-this-site.ts",
+    "scripts/*.d.mts",
+    // Imported by apps/site/vite.config.ts, which is why ESLint found it,
+    // but named by no tsconfig: a program that stopped importing it would
+    // leave it typed and linted by nothing. Named here, it is in its own right.
+    "apps/site/decision-records.ts"
+  ]
+}

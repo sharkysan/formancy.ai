@@ -24,7 +24,6 @@
         "^build"
       ]
     },
-    "lint": {},
     "check:pkg": {
       "dependsOn": [
         "build"

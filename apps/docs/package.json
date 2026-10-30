@@ -17,13 +17,17 @@
     "astro": "^7.3.3"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@formancy/core": "workspace:*",
     "@formancy/expressions": "workspace:*",
     "@formancy/server-core": "workspace:*",
     "@formancy/spec": "workspace:*",
     "@types/node": "^22.10.0",
     "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "typescript": "catalog:",
+    "typescript-eslint": "8.72.1",
     "vite": "^8.3.0",
     "vitest": "catalog:"
   }

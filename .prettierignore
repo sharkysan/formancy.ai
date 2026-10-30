@@ -1,0 +1,10 @@
+# Prettier reads this file and the root .gitignore, and no .gitignore beside
+# a file: so what apps/docs/.gitignore ignores is said here too, and
+# apps/docs/src/lint.test.ts derives it.
+.astro/
+dist/
+
+# Written by packages/spec/scripts/generate-validator.mjs, in one line a
+# function that Prettier would spread over ten thousand: neither formatted
+# nor linted (eslint.config.mjs).
+packages/spec/src/generated/document-validator.js
