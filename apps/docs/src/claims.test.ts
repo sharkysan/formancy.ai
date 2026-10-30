@@ -612,7 +612,10 @@ describe('what the landing page promises the playground does', () => {
     return names.map((name) => readFileSync(join(directory, name), 'utf8')).join('\n')
   }
 
-  const BOTH_RENDERERS = /preview your form in React and Angular/
+  // `\s+` between the words: the source is formatted, so Prettier may wrap this
+  // sentence across lines, and JSX collapses that whitespace, so the page shows
+  // the same words either way.
+  const BOTH_RENDERERS = /preview\s+your\s+form\s+in\s+React\s+and\s+Angular/
 
   test('is a sentence that is actually there, which is a guard on this guard', () => {
     expect(read('apps', 'site', 'src', 'app.tsx')).toMatch(BOTH_RENDERERS)
