@@ -3,7 +3,7 @@ title: What is formancy?
 description: A visual form builder for Angular and React. Conditional fields, validation and your own styling, with one engine running in the browser and on the server. Open source, with an optional self-hosted backend.
 ---
 
-:::caution[Status: beta, version 0.10.0]
+:::caution[Status: beta, version 0.11.0]
 formancy is beta software: **every spec version is frozen; the package APIs are not.**
 
 `specVersion: "5"` — the newest, with a field's `description`, `autocomplete`, `placeholder`

@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.10.0`.** Everything below is true of that
+**This document describes version `0.11.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.10.0`, published to npm under the `@formancy` scope |
+| Package version | `0.11.0`, published to npm under the `@formancy` scope |
 | Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open: a construct needing one opens version `"6"`. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 and 0.10.0 read and write version 5 as 0.8.0 does, so the three read each other's documents |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0, 0.10.0 and 0.11.0 read and write version 5 as 0.8.0 does, so the four read each other's documents |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. From 0.9.0 the release also attests the image with GitHub's build provenance, verified with `gh attestation verify`; every earlier image carries BuildKit's provenance inside its index and none of GitHub's ([0209](../decisions/0209-the-image-carries-githubs-build-provenance.md)). There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -244,8 +244,42 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.10.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0` to `0.10.0` fix, so that one still running them knows what it is upgrading away from.
+manufacturer characterising `0.11.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` to `0.11.0` fix, so that one still running them knows what it is upgrading away from.
+
+**`0.10.0` cannot draw a repeater a computed rule writes once the rule has written a row**, and
+earlier releases were not run. The rows a rule writes carry no row id, and both renderers key a row
+by its id, so each throws `Row 0 of "…" has no _id`. Before the rule writes a row, the repeater is
+drawn as an ordinary one: a row can be added and typed into, and while the expression cannot be
+evaluated such a row stands on the screen, and the server, which drops what arrives for a computed
+field, stores none of it. A repeater's `minItems` is met with an empty row, which the server's
+replay stores for a submission that sent nothing. Measured on 2026-10-29 on `0.10.0`'s code, whose
+changelog says only that such a repeater is drawn as an ordinary one. Fixed in `0.11.0`: a field
+inside a computed one is read-only, a computed repeater's rows are not topped up, added, removed or
+moved, and the rows a rule writes are given ids. Hazard A3, and
+[0218](../decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md).
+
+**`0.8.0` to `0.10.0` cannot summarise a number question with more than about 110,000 answers.**
+`summariseAnswers`, in `@formancy/core/summary`, spread every answer into `Math.min`, which throws
+`RangeError` past the engine's argument limit: on Node 22, 100,000 passed and 120,000 threw. The
+three releases' `summary.ts` is the same file, measured on 2026-10-30; a browser's limit differs
+and was not measured. Fixed in `0.11.0`: a number keeps its count, sum and bounds, and the server
+counts a page of responses at a time
+([0224](../decisions/0224-a-summary-is-counted-a-response-at-a-time.md)).
+
+**`0.10.0` lets focus fall to the page after a person removes a row**, adds the last row a
+repeater allows, or moves a row to an end, in both renderers: the button pressed is drawn out with
+the change and nothing moves focus, so the next Tab starts from the top of the form (WCAG 2.4.3).
+Measured in jsdom on 2026-10-29 on `0.10.0`'s code; earlier releases were not run. Fixed in
+`0.11.0`: focus goes into the new row, the row in a removed one's place, or a moved row's button
+([0219](../decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md)).
+
+**`0.7.0` to `0.10.0` give a field drawn with no control no element carrying its id** — a file
+field in a deployment that takes no uploads, a choice whose source the deployment lacks — measured
+on 2026-10-20, so the error summary's link to it does nothing, and from `0.9.0` `useGoToField` with
+its path focuses nothing. Fixed in `0.11.0`: the sentence in the control's place takes the id, or,
+in a list of ticks, the focus moved by its fieldset's. Hazard D4, and
+[0221](../decisions/0221-a-field-with-no-control-is-reached-at-its-sentence.md).
 
 **Every release from `0.6.0` through `0.9.0` draws a computed field whose control has no read-only
 state as an ordinary control**: a tick box, a choice, a list, a ranking, a matrix, a rating, a
@@ -518,35 +552,30 @@ engine since `0.7.0` refuses it, so its public read answers `200` and every subm
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
-**Found while making `0.10.0` or since, and not changed by it:**
+**Found while making `0.11.0`, and not changed by it:**
 
-- **Focus falls to the page after a person removes a row**, adds the last row a repeater allows,
-  or moves a row to an end, in both renderers. The button pressed is drawn out with the change and
-  nothing moves focus, so the next Tab starts from the top of the form (WCAG 2.4.3). Measured in
-  jsdom on 2026-10-29, after `0.10.0` was published; fixed after it by
-  [0219](../decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md).
-- **A repeater a computed rule writes cannot be drawn once the rule has written a row.** The rows
-  a rule writes carry no row id, and both renderers key a row by its id, so each throws
-  `Row 0 of "…" has no _id` drawing it. Before the rule writes a row, the repeater is drawn as an
-  ordinary one: its rows' fields say they are not read-only, and a row can be added and typed
-  into. While the expression cannot be evaluated the rule writes nothing back, so such a row stands
-  on the screen, and the server, which drops what arrives for a computed field, stores none of it.
-  And a repeater's `minItems` is met with an empty row, which the server's replay stores as
-  `[{ "_id": "r1" }]` for a submission that sent nothing. Measured on 2026-10-29 on `0.10.0`'s code,
-  after it was published; earlier releases were not run. `0.10.0`'s changelog says only that such
-  a repeater is drawn as an ordinary one. Hazard A3, and
-  [0218](../decisions/0218-a-computed-repeater-is-the-rules-row-by-row.md), which fixes it after
-  `0.10.0`.
+- **A listing asked for no page is every submission**, read into the server's memory to send it,
+  so a client written before paging keeps working; only a signed-in caller with `submission.read`
+  can ask ([0222](../decisions/0222-submissions-are-listed-a-page-at-a-time.md), arc42 §11.2).
+- **A summary read while responses arrive counts a list that moved**: a response stored while its
+  pages are read is counted or not by where its place falls, so a count can be one short of a
+  listing made a moment later ([0224](../decisions/0224-a-summary-is-counted-a-response-at-a-time.md)).
+- **Nothing is announced when a row is removed.** Focus lands in the row in its place, and a screen
+  reader hears that control, not that a row went
+  ([0219](../decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md)).
+
+**Found while making `0.10.0`, and not changed by it or by `0.11.0`:**
+
 - **A computed field whose options come from a source is said by its stored value**, not its
   row's label, since nothing asks the source for it (0216).
 
-**Found while making `0.9.0`, and not changed by it or by `0.10.0`:**
+**Found while making `0.9.0`, and not changed by it or by a release since:**
 
 - **Under Material, a field's description and its count are drawn outside the form field**, so
   they are not inside the element that carries the field's path, and a tool reading a field by
   that element misses them ([0211](../decisions/0211-every-id-a-field-names-is-drawn.md)).
 
-**Found while making `0.8.0`, and not changed by it, by `0.9.0` or by `0.10.0`:**
+**Found while making `0.8.0`, and not changed by it or by a release since:**
 
 - **A default left alone is stored as the person's answer**, indistinguishable from the same
   answer chosen, and a required field with a default is answered before anybody reads it, so
@@ -562,12 +591,6 @@ stored documents for the key
 
 **Found while making `0.7.0`, and not changed by it or by a release since:**
 
-- **A field drawn with no control** — a file field in a deployment that takes no uploads, a select
-  whose source the deployment lacks — has no element carrying its id, measured on 2026-10-20, so
-  the error summary's link to it does nothing; and since `0.9.0` `useGoToField` or
-  `injectGoToField` with its path moves to its page and focuses nothing, read from their code.
-  Hazard D4, and [0213](../decisions/0213-a-host-can-take-a-person-to-a-question.md); fixed
-  after `0.10.0` by [0221](../decisions/0221-a-field-with-no-control-is-reached-at-its-sentence.md).
 - **A submission is not required to be an object, and what a form does not define is stored as
   sent.** One sent as a list is stored with `201` unless a required field asks it something —
   `[1, 2]` was, measured on 2026-10-19 — and members the form does not define are stored as they
@@ -636,7 +659,32 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.9.0
+### Characterised by this document, and new since 0.10.0
+
+`0.11.0` reads and writes `specVersion: "5"`, as `0.10.0` does, and adds no third-party
+dependency, table or setting. **The server answers one route more**, `GET /f/:path/summary`,
+behind `submission.read`, and **creates an index** on `submissions` on its first start, during
+which a response sent waits. **What a person can do changes**: a computed repeater's rows take no
+change (above, hazard A3). What a *host* sees is below; [`MIGRATIONS.md`](../../MIGRATIONS.md) has
+what must move.
+
+- **`GET /f/:path/submissions` takes `limit` and `after`** and answers a page, newest first, with
+  `next`, or `400 bad_cursor` for a cursor naming no place; without either it answers as before
+  ([0222](../decisions/0222-submissions-are-listed-a-page-at-a-time.md)).
+- **`GET /f/:path/summary`** answers one summary per version with responses, counted on the
+  server a page at a time; `createSummary` in `@formancy/core/summary` counts one submission at a
+  time ([0223](../decisions/0223-responses-are-summarised-on-the-server.md),
+  [0224](../decisions/0224-a-summary-is-counted-a-response-at-a-time.md)).
+- **A computed repeater's rows are stored with an `_id`**, and `canAddRow` and `canRemoveRow` say
+  `false` for it (0218).
+- **A repeater with a `maxItems` draws the part `repeater-status`**, with the word `repeater.full`
+  in English, German and French ([0220](../decisions/0220-a-full-repeater-says-so.md)).
+- **A field drawn with no control carries its control id on the sentence in its place**, which
+  takes `tabindex="-1"` (0221).
+- **Focus moves after a row's button is pressed**, into the new row, the row in a removed one's
+  place, or a moved row's button (0219).
+
+### Characterised by an earlier version of this document, and new in 0.10.0
 
 `0.10.0` reads and writes `specVersion: "5"`, as `0.9.0` does, and adds no third-party dependency,
 table, setting or route; the server's code changes only in the path it imports an author's tools
