@@ -40,7 +40,7 @@ describe('FormancyForm', () => {
 
     expect(screen.getByLabelText('Email')).toBeTruthy()
     expect(screen.getByLabelText('Message').tagName).toBe('TEXTAREA')
-    expect((screen.getByLabelText('Newsletter') as HTMLInputElement).type).toBe('checkbox')
+    expect(screen.getByLabelText<HTMLInputElement>('Newsletter').type).toBe('checkbox')
   })
 
   test('a hidden field is not in the DOM at all — not merely display:none', () => {

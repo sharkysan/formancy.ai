@@ -94,7 +94,7 @@ function mount(widget?: 'typeahead'): FormEngine {
   return engine
 }
 
-const combobox = (): HTMLInputElement => screen.getByRole('combobox', { name: 'Card language' }) as HTMLInputElement
+const combobox = (): HTMLInputElement => screen.getByRole<HTMLInputElement>('combobox', { name: 'Card language' })
 
 const type = (text: string): void => {
   fireEvent.change(combobox(), { target: { value: text } })

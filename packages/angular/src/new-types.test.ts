@@ -144,7 +144,7 @@ describe('richtext', () => {
   test('Bold wraps the selection in the grammar', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: 'hello there' } })
     box.setSelectionRange(0, 5)
     fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
@@ -155,7 +155,7 @@ describe('richtext', () => {
   test('pressing Bold again takes it off', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: '**hello**' } })
     box.setSelectionRange(2, 7)
     fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
@@ -166,7 +166,7 @@ describe('richtext', () => {
   test('Ctrl+B does the same thing as the button', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: 'hello' } })
     box.setSelectionRange(0, 5)
     fireEvent.keyDown(box, { key: 'b', ctrlKey: true })
@@ -187,7 +187,7 @@ describe('richtext', () => {
   test('a list button marks every line the selection touches', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: 'one\ntwo' } })
     box.setSelectionRange(0, 7)
     fireEvent.click(screen.getByRole('button', { name: 'Bulleted list' }))
@@ -418,7 +418,7 @@ describe('datetime', () => {
     const pad = (part: number): string => String(part).padStart(2, '0')
     const expected =
       `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` + `T${pad(local.getHours())}:${pad(local.getMinutes())}`
-    expect((screen.getByLabelText('Starts') as HTMLInputElement).value).toBe(expected)
+    expect(screen.getByLabelText<HTMLInputElement>('Starts').value).toBe(expected)
   })
 
   test('never stores a malformed string, whatever the control hands back', async () => {
@@ -1137,7 +1137,7 @@ describe('a rating and a slider, which must behave as the React ones do', () => 
 
   test('a slider carries the field’s bounds and step, and shows its value', async () => {
     await renderForm(engineFor(scaleSchema('slider', { step: 0.5 })))
-    const slider = screen.getByRole('slider', { name: /how likely/i }) as HTMLInputElement
+    const slider = screen.getByRole<HTMLInputElement>('slider', { name: /how likely/i })
 
     expect(slider.min).toBe('0')
     expect(slider.max).toBe('10')
@@ -1156,7 +1156,7 @@ describe('a rating and a slider, which must behave as the React ones do', () => 
     await renderForm(engine)
 
     expect(engine.value()).toEqual({})
-    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('5')
+    expect(screen.getByRole<HTMLInputElement>('slider').value).toBe('5')
 
     fireEvent.input(screen.getByRole('slider'), { target: { value: '8' } })
     expect(engine.value()).toEqual({ score: 8 })

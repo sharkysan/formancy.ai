@@ -90,7 +90,7 @@ const answering = (rows = CANTONS, named = CANTONS): { sources: OptionsSources; 
 }
 
 const boxes = (): string[] => screen.queryAllByRole('checkbox').map((box) => box.getAttribute('value') ?? '')
-const checked = (name: string): boolean => (screen.getByRole('checkbox', { name }) as HTMLInputElement).checked
+const checked = (name: string): boolean => screen.getByRole<HTMLInputElement>('checkbox', { name }).checked
 
 describe('a list of ticks whose options come from a source', () => {
   test('draws a box for each row the source returned, named by its label', async () => {

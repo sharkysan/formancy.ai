@@ -189,9 +189,9 @@ describe('a request', () => {
     // while every row the route wrote did. Each is driven here beside rows the route writes.
     const storage = createMemoryStorage()
     const { app, log } = await serve('info', storage, { bootstrapAdmin: { email: 'root@test.ch', password: 'root-password-1' } })
-    const { token } = (await app.inject({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })).json() as {
+    const { token } = (await app.inject({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })).json<{
       token: string
-    }
+    }>()
     const asRoot = { authorization: `Bearer ${token}` }
     const published = await app.inject({
       method: 'POST',
@@ -203,7 +203,7 @@ describe('a request', () => {
       },
     })
     expect(published.statusCode).toBe(201)
-    const { schemaHash } = published.json() as { schemaHash: string }
+    const { schemaHash } = published.json<{ schemaHash: string }>()
     expect((await app.inject({ method: 'PUT', url: '/f/contact/access', headers: asRoot, payload: { submit: 'public' } })).statusCode).toBe(204)
     expect(
       (
@@ -216,7 +216,7 @@ describe('a request', () => {
       ).statusCode,
     ).toBe(200)
     // Sent as a respondent's browser sends it, with the token the form was handed out with (0169).
-    const { submissionToken } = (await app.inject({ method: 'GET', url: '/f/contact' })).json() as { submissionToken: string }
+    const { submissionToken } = (await app.inject({ method: 'GET', url: '/f/contact' })).json<{ submissionToken: string }>()
     expect(
       (
         await app.inject({

@@ -93,7 +93,7 @@ function capture(): { sink: LogSink; lines: () => Array<Record<string, unknown>>
 async function adminSession(storage: Storage): Promise<string> {
   const { app } = await built(storage, { bootstrapAdmin: ADMIN })
   const login = await app.inject({ method: 'POST', url: '/auth/login', payload: ADMIN })
-  return (login.json() as { token: string }).token
+  return login.json<{ token: string }>().token
 }
 
 /** A request to a limited route, with each parameter filled in and the admin's session. */
@@ -206,7 +206,7 @@ describe('the limits the routes register', () => {
       // A HEAD is its GET's route, with the GET's limit, and has no body to read the refusal in.
       if (method === 'HEAD' || counted.has(route)) continue
       const response = await reach(app, { method, url, rateLimit: {} }, 'no-session')
-      const forSession = response.statusCode === 401 && (response.json() as { error?: unknown }).error === 'unauthenticated'
+      const forSession = response.statusCode === 401 && response.json<{ error?: unknown }>().error === 'unauthenticated'
       if (!forSession) unlimited.push(route)
     }
 

@@ -273,9 +273,7 @@ describe('the theme editor', () => {
 
     await user.click(screen.getByRole('button', { name: /^Reset/ }))
 
-    expect((screen.getByRole('textbox', { name: 'ink' }) as HTMLInputElement).value, 'reset returned to the edited value rather than the theme’s').toBe(
-      themeValue,
-    )
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'ink' }).value, 'reset returned to the edited value rather than the theme’s').toBe(themeValue)
   })
 
   test('and whitespace is not a value, so spaces reach nothing', async () => {
@@ -329,8 +327,8 @@ describe('the theme editor', () => {
 
     // The DOM property, not `toBeDisabled`: jest-dom's matchers are not set up
     // in this workspace and the property is what the browser acts on anyway.
-    expect((screen.getByRole('button', { name: /^Reset/ }) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole('button', { name: 'Download CSS' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: /^Reset/ }).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Download CSS' }).disabled).toBe(true)
   })
 
   test('and edits to one theme do not follow you to another', async () => {
@@ -486,7 +484,7 @@ describe('bringing a preset back', () => {
 
     await screen.findByText('Read 1 token for blueprint from mine.css.')
     expect(host().style.getPropertyValue('--fm-radius')).toBe('14px')
-    expect((screen.getByRole('textbox', { name: 'radius' }) as HTMLInputElement).value).toBe('14px')
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'radius' }).value).toBe('14px')
   })
 
   test('and replaces what was being edited rather than mixing two sets of changes', async () => {

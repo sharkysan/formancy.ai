@@ -78,7 +78,7 @@ describe('FormancyForm', () => {
     })
     await renderForm(engine)
 
-    const select = screen.getByLabelText('Country') as HTMLSelectElement
+    const select = screen.getByLabelText<HTMLSelectElement>('Country')
     // The empty option is the unanswered state; without it the browser
     // silently pre-selects the first real option.
     expect(select.options[0]?.value).toBe('')

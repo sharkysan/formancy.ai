@@ -54,12 +54,11 @@ const builtWith = async (which: (typeof BUILDERS)[number]): Promise<void> => {
 }
 
 const editor = (): HTMLElement => screen.getByRole('region', { name: 'Editor' })
-const undoButton = (): HTMLButtonElement => screen.getByRole('button', { name: 'Undo' }) as HTMLButtonElement
+const undoButton = (): HTMLButtonElement => screen.getByRole<HTMLButtonElement>('button', { name: 'Undo' })
 const relayPane = (): HTMLElement | null => screen.queryByRole('region', { name: 'Take this request to a model' })
-const suggestion = (words: string): Promise<HTMLButtonElement> =>
-  within(editor()).findByRole('button', { name: words }, { timeout: 10_000 }) as Promise<HTMLButtonElement>
+const suggestion = (words: string): Promise<HTMLButtonElement> => within(editor()).findByRole<HTMLButtonElement>('button', { name: words }, { timeout: 10_000 })
 /** Whether the suggestion with these words is disabled now. */
-const disabled = (words: string): boolean => (screen.getByRole('button', { name: words }) as HTMLButtonElement).disabled
+const disabled = (words: string): boolean => screen.getByRole<HTMLButtonElement>('button', { name: words }).disabled
 
 /**
  * Every way a page sends something, spied — the same four `two-builders.test.tsx` spies, for
@@ -247,21 +246,21 @@ describe('something to try, on the starter', () => {
 
         for (const { words } of [BACKWARDS_EDIT, OUT_OF_REACH]) {
           await user.click(await suggestion(words))
-          expect((screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value).toBe(words)
+          expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe(words)
         }
         const panel = screen.getByRole('region', { name: 'Scenarios' })
         await user.click(await suggestion(DRAFTING_INTENT.words))
-        expect((within(panel).getByRole('textbox', { name: /What should this form do/ }) as HTMLTextAreaElement).value).toBe(DRAFTING_INTENT.words)
+        expect(within(panel).getByRole<HTMLTextAreaElement>('textbox', { name: /What should this form do/ }).value).toBe(DRAFTING_INTENT.words)
         expect(relayPane(), 'a suggestion asked the model rather than filling in the box').toBeNull()
 
         await user.click(screen.getByRole('button', { name: 'Translations' }))
         await user.click(await suggestion(FRENCH.words))
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
-        const request = within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+        const request = within(relay).getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' })
         expect(request.value).toContain(`"locale": "${FRENCH.locale}"`)
         // Opened on the language asked for, where the review will be, rather than on English
         // with a line saying where the French went.
-        await waitFor(() => expect((within(editor()).getByRole('combobox', { name: 'Language' }) as HTMLSelectElement).value).toBe(FRENCH.locale))
+        await waitFor(() => expect(within(editor()).getByRole<HTMLSelectElement>('combobox', { name: 'Language' }).value).toBe(FRENCH.locale))
 
         expect(undoButton().disabled, 'a suggestion changed the form').toBe(true)
         expect(sent.fetch).not.toHaveBeenCalled()
@@ -299,7 +298,7 @@ describe('something to try, on the starter', () => {
     await user.click(screen.getByRole('button', { name: 'Write it' }))
 
     const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
-    expect((within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value).toContain(BACKWARDS_EDIT.words)
+    expect(within(relay).getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' }).value).toContain(BACKWARDS_EDIT.words)
     await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
     await user.paste(JSON.stringify(backwards))
     await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
@@ -416,7 +415,7 @@ describe('something to try, on the starter', () => {
     await user.tab()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: BACKWARDS_EDIT.words }))
     await user.keyboard('{Enter}')
-    expect((screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value).toBe(BACKWARDS_EDIT.words)
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe(BACKWARDS_EDIT.words)
   })
 
   test('the same suggestions, in either builder, on every tab that has any', async () => {

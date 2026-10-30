@@ -43,7 +43,7 @@ describe('an exclusive option', () => {
     await click(screen.getByRole('checkbox', { name: 'Milk' }))
     await click(screen.getByRole('checkbox', { name: 'None of these' }))
     expect(value()).toEqual(['none'])
-    expect((screen.getByRole('checkbox', { name: 'Nuts' }) as HTMLInputElement).checked).toBe(false)
+    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Nuts' }).checked).toBe(false)
   })
 
   test('is cleared when another is ticked', async () => {

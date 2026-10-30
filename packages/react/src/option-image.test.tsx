@@ -41,7 +41,7 @@ describe('an option with a picture', () => {
     mount('radio', [CAT])
 
     const picture = screen.getByRole('img', { name: 'A tabby asleep in the sun' })
-    expect(picture.closest('label')?.htmlFor).toBe((screen.getByRole('radio') as HTMLInputElement).id)
+    expect(picture.closest('label')?.htmlFor).toBe(screen.getByRole<HTMLInputElement>('radio').id)
     expect(picture.getAttribute('data-formancy-part')).toBe('option-image')
   })
 

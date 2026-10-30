@@ -87,7 +87,7 @@ async function start(relay: Relay, stop?: Stop): Promise<{ run: Promise<Authorin
   return { run }
 }
 
-const requestBox = (): HTMLTextAreaElement => screen.getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+const requestBox = (): HTMLTextAreaElement => screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' })
 
 /**
  * Every way a page sends something, spied: what the pane's sentence says Copy does not do.
@@ -260,7 +260,7 @@ describe('a turn waiting', () => {
     await mount(relay, { name: 'Example Chat', href: 'https://chat.example/new' })
     await start(relay)
 
-    const link = screen.getByRole('link', { name: 'Open Example Chat in a new tab' }) as HTMLAnchorElement
+    const link = screen.getByRole<HTMLAnchorElement>('link', { name: 'Open Example Chat in a new tab' })
     expect(link.href).toBe('https://chat.example/new')
     expect(link.target).toBe('_blank')
     expect(link.rel.split(' ').sort()).toEqual(['noopener', 'noreferrer'])
@@ -352,7 +352,7 @@ describe('a stopped run', () => {
     await waitFor(() => expect(screen.queryByRole('region')).toBeNull())
     await start(relay)
 
-    expect((screen.getByRole('textbox', { name: 'The model’s answer' }) as HTMLTextAreaElement).value).toBe('')
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'The model’s answer' }).value).toBe('')
     expect(screen.queryByRole('button', { name: 'Use it anyway' })).toBeNull()
     expect(screen.getByRole('status').textContent?.trim()).toBe('')
   })

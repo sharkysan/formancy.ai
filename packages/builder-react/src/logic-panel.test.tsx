@@ -488,7 +488,7 @@ describe('the rule kind no builder could write', () => {
     await user.click(screen.getByRole('button', { name: /add a rule/i }))
     await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'computed')
 
-    expect((screen.getByRole('button', { name: /^add rule$/i }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: /^add rule$/i }).disabled).toBe(true)
   })
 })
 
@@ -553,15 +553,15 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
     const { user } = await open()
 
     await user.selectOptions(screen.getByLabelText('Field'), 'terms')
-    expect([...(screen.getByLabelText('Value') as HTMLSelectElement).options].map((o) => o.text)).toEqual(['Yes', 'No'])
+    expect([...screen.getByLabelText<HTMLSelectElement>('Value').options].map((o) => o.text)).toEqual(['Yes', 'No'])
 
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
-    expect((screen.getByLabelText('Value') as HTMLInputElement).type).toBe('date')
+    expect(screen.getByLabelText<HTMLInputElement>('Value').type).toBe('date')
   })
 
   test('and the comparisons offered are the ones the field can take', async () => {
     const { user } = await open()
-    const offered = () => [...(screen.getByLabelText('Comparison') as HTMLSelectElement).options].map((o) => o.value)
+    const offered = () => [...screen.getByLabelText<HTMLSelectElement>('Comparison').options].map((o) => o.value)
 
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
     expect(offered()).toContain('isBefore')
@@ -628,7 +628,7 @@ describe('a rule on a field in a repeater row', () => {
     render(<LogicPanel session={session} keyPath={['items', 'note']} />)
     await user.click(screen.getByRole('button', { name: 'Add a rule' }))
 
-    const field = screen.getByLabelText('Field') as HTMLSelectElement
+    const field = screen.getByLabelText<HTMLSelectElement>('Field')
     expect([...field.options].map((option) => option.text)).toContain('Quantity in this row')
     await user.selectOptions(field, 'items[].qty')
     await user.selectOptions(screen.getByLabelText('Comparison'), 'isAtLeast')

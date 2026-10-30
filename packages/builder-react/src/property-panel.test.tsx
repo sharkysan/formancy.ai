@@ -93,7 +93,7 @@ describe('the property panel', () => {
   test('a closed list is a select of exactly the values the schema allows', async () => {
     mountFor('email')
 
-    const format = screen.getByLabelText('Format') as HTMLSelectElement
+    const format = screen.getByLabelText<HTMLSelectElement>('Format')
     const values = [...format.options].map((option) => option.value)
 
     expect(values).toEqual(['', 'email', 'url', 'uuid'])

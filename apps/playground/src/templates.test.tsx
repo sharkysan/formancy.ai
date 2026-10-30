@@ -27,8 +27,8 @@ test('an imported template reaches both renderers, including its translated cond
   const react = within(screen.getByRole('region', { name: 'React' }))
   const angular = within(screen.getByRole('region', { name: 'Angular' }))
   await user.click(angular.getByRole('radio', { name: 'E-Mail' }))
-  expect((react.getByRole('radio', { name: 'Telefon' }) as HTMLInputElement).checked).toBe(true)
-  expect((angular.getByRole('radio', { name: 'E-Mail' }) as HTMLInputElement).checked).toBe(true)
+  expect(react.getByRole<HTMLInputElement>('radio', { name: 'Telefon' }).checked).toBe(true)
+  expect(angular.getByRole<HTMLInputElement>('radio', { name: 'E-Mail' }).checked).toBe(true)
   // Previewing must not turn Enter or an implicit submit into a page navigation.
   for (const name of ['React form preview', 'Angular form preview']) {
     const event = new Event('submit', { bubbles: true, cancelable: true })
@@ -44,7 +44,7 @@ test('loading a template starts blank instead of submitting the example person',
   await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'hr-job-application')
   const form = within(screen.getByRole('region', { name: 'React' }))
   await waitFor(() => expect(form.getByRole('textbox', { name: 'Full name' })).toBeTruthy())
-  expect((form.getByRole('textbox', { name: 'Full name' }) as HTMLInputElement).value).toBe('')
+  expect(form.getByRole<HTMLInputElement>('textbox', { name: 'Full name' }).value).toBe('')
   expect(screen.getAllByRole('option').some((option) => option.textContent === 'HR — Job application')).toBe(true)
 })
 
@@ -56,8 +56,8 @@ test('a gallery link opens its template and language on first load', async () =>
     render(<App />)
     const form = within(screen.getByRole('region', { name: 'React' }))
     await waitFor(() => expect(form.getByRole('textbox', { name: 'Prénom et nom' })).toBeTruthy())
-    expect((screen.getByRole('combobox', { name: 'Demo' }) as HTMLSelectElement).value).toBe('hr-job-application')
-    expect((screen.getByRole('combobox', { name: 'Language' }) as HTMLSelectElement).value).toBe('fr')
+    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: 'Demo' }).value).toBe('hr-job-application')
+    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: 'Language' }).value).toBe('fr')
   } finally {
     window.history.replaceState({}, '', before)
   }

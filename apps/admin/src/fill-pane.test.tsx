@@ -176,7 +176,7 @@ describe('filling in a published form', () => {
     render(<FillPane path="contact" quietMs={60} />)
 
     await waitFor(() => {
-      expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('kept@example.ch')
+      expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('kept@example.ch')
     })
     const resume = calls.find((c) => c.url.endsWith('/drafts/d1'))
     expect(resume?.headers['x-formancy-draft-token']).toBe('t1')
@@ -249,7 +249,7 @@ describe('filling in a published form', () => {
 
     expect(window.localStorage.getItem('formancy.draft.contact')).toBeNull()
     await waitFor(() => {
-      expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('')
+      expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('')
     })
   })
 })
@@ -330,7 +330,7 @@ describe('sending the response', () => {
     await fillAndSend()
 
     expect(await screen.findByText(/already been sent, and is stored/)).toBeTruthy()
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('a@b.ch')
+    expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('a@b.ch')
   })
 
   test('a response already sent finishes its draft, so the next visit does not resume it', async () => {

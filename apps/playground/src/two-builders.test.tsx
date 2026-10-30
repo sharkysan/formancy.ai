@@ -64,7 +64,7 @@ vi.setConfig({ testTimeout: 60_000 })
  * `disabled` rather than a jest-dom matcher, which this suite does not install —
  * and the property is the thing the browser acts on anyway.
  */
-const undoButton = (): HTMLButtonElement => screen.getByRole('button', { name: 'Undo' }) as HTMLButtonElement
+const undoButton = (): HTMLButtonElement => screen.getByRole<HTMLButtonElement>('button', { name: 'Undo' })
 
 /** Open the Build pane, then choose which builder is on screen. */
 const builtWith = async (which: 'React' | 'Angular'): Promise<void> => {
@@ -253,9 +253,9 @@ describe('describing a change in words', () => {
         // The request, as the person will carry it: the instruction in it, and a chat to
         // take it to whose address carries nothing of it.
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
-        const request = within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+        const request = within(relay).getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' })
         expect(request.value).toContain('add a phone number')
-        const chat = within(relay).getByRole('link', { name: 'Open Claude in a new tab' }) as HTMLAnchorElement
+        const chat = within(relay).getByRole<HTMLAnchorElement>('link', { name: 'Open Claude in a new tab' })
         expect(chat.href).toBe('https://claude.ai/new')
 
         // Copy: the briefing first, then the request the box shows.
@@ -379,8 +379,8 @@ describe('a turn being carried while the visitor looks elsewhere', () => {
 
         // The request is still there to carry, and the prompt pane drawn now is waiting on it.
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
-        expect((within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value).toContain('add a phone number')
-        await waitFor(() => expect((screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value).toBe('add a phone number'), {
+        expect(within(relay).getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' }).value).toContain('add a phone number')
+        await waitFor(() => expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe('add a phone number'), {
           timeout: 10_000,
         })
         expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy()
@@ -431,7 +431,7 @@ describe('a turn being carried while the visitor looks elsewhere', () => {
 
     await builtWith('Angular')
     const review = await screen.findByRole('region', { name: /Review these changes/ }, { timeout: 10_000 })
-    expect((screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value).toBe('add a fax number')
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe('add a fax number')
     expect(within(review).getByText('In answer to “add a phone number”')).toBeTruthy()
     await user.click(within(review).getByRole('button', { name: 'Apply these changes' }))
 
@@ -529,7 +529,7 @@ describe('a model’s answer, against the form’s examples', () => {
     expect(within(review).getByRole('heading').textContent).toContain(pinned!.name)
     // Before Apply: named while nothing has landed, and Apply still there to press.
     expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
-    expect((within(review).getByRole('button', { name: 'Apply these changes' }) as HTMLButtonElement).disabled).toBe(false)
+    expect(within(review).getByRole<HTMLButtonElement>('button', { name: 'Apply these changes' }).disabled).toBe(false)
   })
 })
 
@@ -1096,7 +1096,7 @@ describe('the Translations tab', () => {
       .filter((row) => within(row).queryByRole('rowheader') !== null)
       .map((row) => ({
         source: within(row).getByRole('rowheader').textContent,
-        french: (within(row).getByRole('textbox') as HTMLInputElement).value,
+        french: within(row).getByRole<HTMLInputElement>('textbox').value,
         marked: within(row).queryByText(missing) !== null,
       }))
 
@@ -1207,7 +1207,7 @@ describe('a model asked for the French the starter is missing', () => {
         // The turn is the relay's, drawn at the top of the builder as the prompt pane's is:
         // the French asked for, by the language's tag, and the form's words, not its rules.
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
-        const request = within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+        const request = within(relay).getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' })
         expect(request.value).toContain('"locale": "fr"')
         expect(RULE_WORDS.filter((words) => request.value.includes(words))).toEqual([])
 
@@ -1301,16 +1301,15 @@ describe('a translation and drafts being carried while the visitor looks elsewhe
         await user.selectOptions(within(editor).getByRole('combobox', { name: 'Language' }), 'fr')
         await user.click(within(editor).getByRole('button', { name: `Ask a model for the ${String(missing.length)} missing messages` }))
         const asked = await screen.findByRole('region', { name: 'Take this request to a model' })
-        const request = (within(asked).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value
+        const request = within(asked).getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' }).value
 
         await away[journey](user)
 
         // The request is still there to carry, and the tab drawn now is on French, waiting.
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
-        expect((within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value).toBe(request)
+        expect(within(relay).getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' }).value).toBe(request)
         await waitFor(
-          () =>
-            expect((within(screen.getByRole('region', { name: 'Editor' })).getByRole('combobox', { name: 'Language' }) as HTMLSelectElement).value).toBe('fr'),
+          () => expect(within(screen.getByRole('region', { name: 'Editor' })).getByRole<HTMLSelectElement>('combobox', { name: 'Language' }).value).toBe('fr'),
           { timeout: 10_000 },
         )
         expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy()
@@ -1388,9 +1387,7 @@ describe('a translation and drafts being carried while the visitor looks elsewhe
 
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
         const again = await waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
-        expect((within(again).getByRole('textbox', { name: /What should this form do/ }) as HTMLTextAreaElement).value).toBe(
-          'Only Switzerland asks for a canton.',
-        )
+        expect(within(again).getByRole<HTMLTextAreaElement>('textbox', { name: /What should this form do/ }).value).toBe('Only Switzerland asks for a canton.')
         expect(within(again).getByRole('button', { name: 'Stop drafting' })).toBeTruthy()
 
         await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))

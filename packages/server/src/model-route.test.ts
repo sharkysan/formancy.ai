@@ -71,11 +71,9 @@ async function serve(
     ...(log === undefined ? {} : { log }),
   })
   const login = async (email: string, password: string): Promise<string> =>
-    (
-      (await app!.inject({ method: 'POST', url: '/auth/login', payload: { email, password } })).json() as {
-        token: string
-      }
-    ).token
+    (await app!.inject({ method: 'POST', url: '/auth/login', payload: { email, password } })).json<{
+      token: string
+    }>().token
   const admin = await login(ADMIN.email, ADMIN.password)
   for (const [email, role] of [
     ['editor@test.ch', 'editor'],
@@ -325,7 +323,7 @@ describe('what comes back when there is no answer', () => {
     const response = await ask(app, tokens.editor, { kind: 'authoring', user: 'x' })
     expect(response.statusCode).toBe(502)
     expect(response.json()).toMatchObject({ error: 'model_unavailable' })
-    expect((response.json() as { message: string }).message).toMatch(/key/)
+    expect(response.json<{ message: string }>().message).toMatch(/key/)
     expect(response.body).not.toContain('org-12345')
     const [entry] = (await storage.listAudit(10)).filter((row) => row.action === 'model.asked')
     expect(entry?.detail).toMatchObject({ outcome: 'unavailable', status: 401 })
@@ -356,7 +354,7 @@ describe('the sentence a failure is said with', () => {
     const { app, tokens } = await serve(configured(double(failure).completer))
     const response = await ask(app, tokens.editor, { kind: 'authoring', user: 'x' })
     expect(response.statusCode).toBe(502)
-    expect((response.json() as { message: string }).message).toMatch(sentence)
+    expect(response.json<{ message: string }>().message).toMatch(sentence)
   })
 
   test('a request with nothing to ask is a 400, and the model is not asked', async () => {
@@ -469,7 +467,7 @@ describe('a browser that goes away', () => {
       headers: { authorization: `Bearer ${tokens.admin}` },
       payload: { name: 'a script', role: 'editor' },
     })
-    const { secret } = minted.json() as { secret: string }
+    const { secret } = minted.json<{ secret: string }>()
     let closed: Promise<void> = Promise.resolve()
     app.server.on('request', (_request: IncomingMessage, response: ServerResponse) => {
       closed = new Promise((resolve) => response.once('close', () => resolve()))

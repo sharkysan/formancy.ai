@@ -253,7 +253,7 @@ describe('with the form’s examples', () => {
     await waitFor(() => expect(screen.getByRole('region', { name: /would stop holding: Switzerland asks for a canton/ })).toBeTruthy())
     expect(screen.getByRole('status').textContent).toContain('Would stop holding if applied: Switzerland asks for a canton.')
     expect(session.document()).toEqual(RIGHT)
-    const apply = screen.getByRole('button', { name: 'Apply these changes' }) as HTMLButtonElement
+    const apply = screen.getByRole<HTMLButtonElement>('button', { name: 'Apply these changes' })
     expect(apply.disabled).toBe(false)
     await user.click(apply)
     expect(session.document()).toEqual(BACKWARDS)

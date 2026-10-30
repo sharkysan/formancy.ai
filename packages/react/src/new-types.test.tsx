@@ -138,7 +138,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello there')
     box.setSelectionRange(0, 5)
     await user.click(screen.getByRole('button', { name: 'Bold' }))
@@ -152,7 +152,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello')
     box.setSelectionRange(0, 5)
     await user.click(screen.getByRole('button', { name: 'Bold' }))
@@ -166,7 +166,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello')
     box.setSelectionRange(0, 5)
     box.focus()
@@ -190,7 +190,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.change(box, { target: { value: 'one\ntwo' } })
     box.setSelectionRange(0, 7)
     await user.click(screen.getByRole('button', { name: 'Bulleted list' }))
@@ -202,7 +202,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello')
     box.setSelectionRange(0, 5)
     await user.click(screen.getByRole('button', { name: 'Bold' }))
@@ -530,7 +530,7 @@ describe('datetime', () => {
     const pad = (part: number): string => String(part).padStart(2, '0')
     const expected =
       `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` + `T${pad(local.getHours())}:${pad(local.getMinutes())}`
-    expect((screen.getByLabelText('Starts') as HTMLInputElement).value).toBe(expected)
+    expect(screen.getByLabelText<HTMLInputElement>('Starts').value).toBe(expected)
   })
 
   test('never stores a malformed string, whatever the control hands back', () => {

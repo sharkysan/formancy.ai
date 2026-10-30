@@ -68,7 +68,7 @@ describe('a field Material draws', () => {
       logic: { rules: [{ target: 'a', kind: 'computed', cel }] },
     })
 
-    const control = screen.getByLabelText('A') as HTMLInputElement
+    const control = screen.getByLabelText<HTMLInputElement>('A')
     expect(control.readOnly).toBe(true)
     expect(control.disabled).toBe(false)
   })

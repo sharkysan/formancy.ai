@@ -53,7 +53,7 @@ async function serve(): Promise<{ server: FastifyInstance; storage: Storage; adm
   })
   app = server
   const login = async (email: string, password: string): Promise<string> =>
-    ((await server.inject({ method: 'POST', url: '/auth/login', payload: { email, password } })).json() as { token: string }).token
+    (await server.inject({ method: 'POST', url: '/auth/login', payload: { email, password } })).json<{ token: string }>().token
   const admin = await login(ADMIN.email, ADMIN.password)
   await server.inject({
     method: 'POST',
@@ -123,7 +123,7 @@ describe('a form’s examples over HTTP', () => {
       payload: { scenarios: [{ name: 'Broken', valid: true }] },
     })
     expect(response.statusCode).toBe(422)
-    const body = response.json() as { error: string; problems: string[] }
+    const body = response.json<{ error: string; problems: string[] }>()
     expect(body.error).toBe('invalid_examples')
     expect(body.problems).toHaveLength(1)
     expect(body.problems[0]).toMatch(/^Example 1 \("Broken"\)/)
@@ -163,11 +163,11 @@ describe('a form’s examples over HTTP', () => {
     })
 
     expect(published.statusCode).toBe(201)
-    const body = published.json() as { version: number; warnings?: string[] }
+    const body = published.json<{ version: number; warnings?: string[] }>()
     expect(body.version).toBe(2)
     expect(body.warnings).toHaveLength(1)
     expect(body.warnings?.[0]).toContain('"Switzerland asks for a canton"')
     const live = await server.inject({ method: 'GET', url: '/f/contact' })
-    expect((live.json() as { version: number }).version).toBe(2)
+    expect(live.json<{ version: number }>().version).toBe(2)
   })
 })

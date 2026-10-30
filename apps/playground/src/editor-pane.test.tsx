@@ -88,13 +88,13 @@ describe('editing the schema by hand', () => {
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'Schema' }))
 
-    const before = (screen.getByRole('textbox', { name: 'Schema' }) as HTMLTextAreaElement).value
+    const before = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Schema' }).value
     expect(before, 'the schema editor opened empty').toContain('specVersion')
 
     const edited = before.replace('"title"', '"title2"')
     fireEvent.change(screen.getByRole('textbox', { name: 'Schema' }), { target: { value: edited } })
 
-    expect((screen.getByRole('textbox', { name: 'Schema' }) as HTMLTextAreaElement).value).toBe(edited)
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Schema' }).value).toBe(edited)
   })
 
   test('and an editor that reports no text at all leaves the document alone', () => {

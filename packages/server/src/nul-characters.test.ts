@@ -48,8 +48,8 @@ describe('the pointer to a NUL', () => {
     const deep = await sent(JSON.stringify({ answers: { name: `a${NUL}` } }))
 
     expect(top.json()).toMatchObject({ pointer: '' })
-    expect((top.json() as { message: string }).message).toContain('the body itself')
-    expect((deep.json() as { message: string }).message).toContain('/answers/name')
+    expect(top.json<{ message: string }>().message).toContain('the body itself')
+    expect(deep.json<{ message: string }>().message).toContain('/answers/name')
   })
 })
 
@@ -64,7 +64,7 @@ describe('looking for a NUL', () => {
     const without = await sent(nested('"fine"'))
 
     expect(withNul.statusCode).toBe(400)
-    expect((withNul.json() as { pointer: string }).pointer).toBe('/0'.repeat(depth))
+    expect(withNul.json<{ pointer: string }>().pointer).toBe('/0'.repeat(depth))
     // The draft route reads no body: an unknown form, past the walk.
     expect(without.statusCode).toBe(404)
   })

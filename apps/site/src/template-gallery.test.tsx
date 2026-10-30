@@ -86,7 +86,7 @@ test('an unexpected language value cannot break the gallery or alter editor para
   // DOM values are untrusted even when the authored select has only three options.
   const user = userEvent.setup()
   render(<TemplateGallery />)
-  const select = screen.getByRole('combobox', { name: 'Template language' }) as HTMLSelectElement
+  const select = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Template language' })
   await user.selectOptions(select, 'de')
   const value = 'fr&template=unexpected'
   select.add(new Option('Unexpected', value))

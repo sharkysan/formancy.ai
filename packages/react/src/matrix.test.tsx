@@ -68,7 +68,7 @@ describe('the matrix control', () => {
     fireEvent.click(delivery.getByRole('radio', { name: 'Poor' }))
 
     expect(engine.value()).toEqual({ rating: { taste: 'great', delivery: 'poor' } })
-    expect((taste.getByRole('radio', { name: 'Great' }) as HTMLInputElement).checked).toBe(true)
+    expect(taste.getByRole<HTMLInputElement>('radio', { name: 'Great' }).checked).toBe(true)
     const names = new Set(matrix.getAllByRole('radio').map((radio) => radio.getAttribute('name')))
     expect(names.size).toBe(2)
   })

@@ -219,7 +219,7 @@ describe('authoring a rule', () => {
     await click(screen.getByRole('button', { name: /add a rule/i }))
     await select(kindChooser(), 'computed')
 
-    expect((screen.getByRole('button', { name: /^add rule$/i }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: /^add rule$/i }).disabled).toBe(true)
   })
 
   test('the expression is shown before the rule is added, not after', async () => {
@@ -335,15 +335,15 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
   test('a choice is compared with one of its own options, and a date with a date', async () => {
     const { user, settle } = await open()
 
-    expect([...(screen.getByLabelText('Value') as HTMLSelectElement).options].map((o) => o.text.trim())).toEqual(['Choose a value', 'Switzerland', 'Germany'])
+    expect([...screen.getByLabelText<HTMLSelectElement>('Value').options].map((o) => o.text.trim())).toEqual(['Choose a value', 'Switzerland', 'Germany'])
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
     await settle()
-    expect((screen.getByLabelText('Value') as HTMLInputElement).type).toBe('date')
+    expect(screen.getByLabelText<HTMLInputElement>('Value').type).toBe('date')
   })
 
   test('and the comparisons offered are the ones the field can take', async () => {
     const { user, settle } = await open()
-    const offered = () => [...(screen.getByLabelText('Comparison') as HTMLSelectElement).options].map((o) => o.value)
+    const offered = () => [...screen.getByLabelText<HTMLSelectElement>('Comparison').options].map((o) => o.value)
 
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
     await settle()
@@ -413,7 +413,7 @@ describe('a rule on a field in a repeater row', () => {
     await user.click(screen.getByRole('button', { name: 'Add a rule' }))
     await settle()
 
-    const field = screen.getByLabelText('Field') as HTMLSelectElement
+    const field = screen.getByLabelText<HTMLSelectElement>('Field')
     expect([...field.options].map((option) => option.text.trim())).toContain('Quantity in this row')
     await user.selectOptions(field, 'items[].qty')
     await settle()

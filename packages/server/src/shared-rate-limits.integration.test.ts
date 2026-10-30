@@ -223,7 +223,7 @@ describe('two replicas over one database', () => {
     const a = await replica(options)
     const b = await replica(options)
     const login = await a.inject({ method: 'POST', url: '/auth/login', payload: ADMIN })
-    const admin = (login.json() as { token: string }).token
+    const admin = login.json<{ token: string }>().token
     await a.inject({
       method: 'POST',
       url: '/users',
@@ -235,7 +235,7 @@ describe('two replicas over one database', () => {
       url: '/auth/login',
       payload: { email: 'editor@test.ch', password: 'editor-password-1' },
     })
-    const editor = (editorLogin.json() as { token: string }).token
+    const editor = editorLogin.json<{ token: string }>().token
     const ask = (app: FastifyInstance, token: string) =>
       app.inject({
         method: 'POST',

@@ -990,7 +990,7 @@ describe('a sourced control a rule disables', () => {
     mount({ widget: 'typeahead', sources, initialValue: { canton: 'VD' }, logic: { rules: DISABLED } })
 
     await waitFor(() => {
-      expect((screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement).value).toBe('Vaud')
+      expect(screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' }).value).toBe('Vaud')
     }, WAITING)
     expect(asked.map((request) => request.kind)).toEqual(['labels'])
   })
@@ -1006,7 +1006,7 @@ describe('a sourced control a rule disables', () => {
     // held before this change too; it is here because the gate it goes through is new.
     const { sources, asked } = by(answer)
     mount({ widget: 'typeahead', sources, initialValue: { canton: 'VD' }, logic: { rules: DISABLED } })
-    const box = screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement
+    const box = screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' })
 
     await waitFor(() => {
       expect(asked.map((request) => request.kind)).toEqual(['labels'])
@@ -1050,7 +1050,7 @@ describe('an auditor over what a sourced control says', () => {
 
     mount({ widget: 'typeahead', sources: answering().sources, initialValue: { canton: 'VD' }, logic: { rules: DISABLED } })
     await waitFor(() => {
-      expect((screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement).value).toBe('Vaud')
+      expect(screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' }).value).toBe('Vaud')
     }, WAITING)
     expect(await violationsNow()).toEqual([])
   }, 20_000)

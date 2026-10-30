@@ -364,8 +364,8 @@ describe('a signature a rule disables', () => {
 
     expect(answer(engine)).toEqual({ typed: 'Ann' })
     expect(surface().getAttribute('aria-disabled')).toBe('true')
-    expect((screen.getByRole('textbox', { name: /type your name/i }) as HTMLInputElement).disabled).toBe(true)
-    expect((screen.getByRole('button', { name: /clear/i }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: /type your name/i }).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: /clear/i }).disabled).toBe(true)
   })
 
   test('disabled mid-stroke, takes no more of the stroke than it had', () => {

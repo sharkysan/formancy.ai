@@ -85,7 +85,7 @@ async function mount(widget?: 'typeahead'): Promise<FormEngine> {
   return engine
 }
 
-const combobox = (): HTMLInputElement => screen.getByRole('combobox', { name: 'Card language' }) as HTMLInputElement
+const combobox = (): HTMLInputElement => screen.getByRole<HTMLInputElement>('combobox', { name: 'Card language' })
 
 const type = async (text: string): Promise<void> => {
   fireEvent.input(combobox(), { target: { value: text } })

@@ -103,15 +103,15 @@ beforeAll(async () => {
     url: '/auth/login',
     payload: { email: 'root@test.ch', password: 'root-password-1' },
   })
-  const admin = { authorization: `Bearer ${(login.json() as { token: string }).token}` }
+  const admin = { authorization: `Bearer ${login.json<{ token: string }>().token}` }
   const published = await app.inject({ method: 'POST', url: '/forms', headers: admin, payload: { path: 'contact-us', schema } })
   expect(published.statusCode).toBe(201)
   await app.inject({ method: 'PUT', url: '/f/contact-us/access', headers: admin, payload: { submit: 'public' } })
-  draft = (await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })).json() as typeof draft
+  draft = (await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })).json<typeof draft>()
 
   carried = {
     ...admin,
-    [SCHEMA_HASH_HEADER]: (published.json() as { schemaHash: string }).schemaHash,
+    [SCHEMA_HASH_HEADER]: published.json<{ schemaHash: string }>().schemaHash,
     'x-formancy-draft-token': draft.token,
   }
 }, 180_000)
@@ -337,7 +337,7 @@ describe('what is not refused', () => {
       headers: carried,
       payload: { field: 'evidence', name: 'a.pdf', size: 4, contentType: 'application/pdf' },
     })
-    const { id } = offer.json() as { id: string }
+    const { id } = offer.json<{ id: string }>()
 
     const { response, errors } = await ask({
       method: 'PUT',
@@ -365,7 +365,7 @@ describe('what is not refused', () => {
 
     expect(response.statusCode).toBe(201)
     expect(errors).toEqual([])
-    const [row] = await sql`SELECT data FROM submissions WHERE id = ${(response.json() as { id: string }).id}`
+    const [row] = await sql`SELECT data FROM submissions WHERE id = ${response.json<{ id: string }>().id}`
     expect((row!['data'] as { email: string }).email).toBe(sent)
   })
 })

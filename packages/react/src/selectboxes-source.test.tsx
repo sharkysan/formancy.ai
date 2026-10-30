@@ -107,10 +107,10 @@ describe('a list of ticks whose options come from a source', () => {
     const { sources, asked } = answering(CANTONS.slice(0, 2))
     mount({ sources, initialValue: { cantons: ['VD', 'ZH'] } })
     await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Vaud' })).toBeTruthy(), WAITING)
-    const vaud = screen.getByRole('checkbox', { name: 'Vaud' }) as HTMLInputElement
+    const vaud = screen.getByRole<HTMLInputElement>('checkbox', { name: 'Vaud' })
     expect(vaud.checked).toBe(true)
-    expect((screen.getByRole('checkbox', { name: 'Zürich' }) as HTMLInputElement).checked).toBe(true)
-    expect((screen.getByRole('checkbox', { name: 'Bern' }) as HTMLInputElement).checked).toBe(false)
+    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Zürich' }).checked).toBe(true)
+    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Bern' }).checked).toBe(false)
     expect(asked.filter((request) => request.kind === 'labels').map((request) => request.values)).toEqual([['VD', 'ZH']])
   })
 

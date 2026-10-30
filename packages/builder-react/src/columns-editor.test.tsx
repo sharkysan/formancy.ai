@@ -49,7 +49,7 @@ describe('the columns editor', () => {
     // that the field they meant is missing.
     mount([{ field: 'deleted' }])
 
-    const chooser = screen.getByLabelText('Answer') as HTMLSelectElement
+    const chooser = screen.getByLabelText<HTMLSelectElement>('Answer')
     expect(chooser.value).toBe('deleted')
     expect([...chooser.options].map((option) => option.textContent)).toContain('deleted — no such field')
   })

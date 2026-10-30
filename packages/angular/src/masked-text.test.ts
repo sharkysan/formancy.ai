@@ -39,7 +39,7 @@ async function mount(mask = PHONE) {
   return { engine, settle }
 }
 
-const phone = (): HTMLInputElement => screen.getByRole('textbox', { name: 'Phone' }) as HTMLInputElement
+const phone = (): HTMLInputElement => screen.getByRole<HTMLInputElement>('textbox', { name: 'Phone' })
 
 /**
  * Keystrokes as the browser applies them: the text at the caret changes, the caret

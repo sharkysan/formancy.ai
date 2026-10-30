@@ -207,7 +207,7 @@ export function createReactDriver(): RendererDriver {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const wanted = new Set((Array.isArray(value) ? value : []).map(String))
         for (const option of def.options ?? []) {
-          const box = within(group).getByLabelText(textOf(option.label) ?? option.value) as HTMLInputElement
+          const box = within(group).getByLabelText<HTMLInputElement>(textOf(option.label) ?? option.value)
           if (box.checked !== wanted.has(option.value)) {
             await settle(() => {
               fireEvent.click(box)

@@ -420,7 +420,7 @@ const by = (answers: (request: OptionsRequest) => unknown, extra: { maxRows?: nu
 const en = createFormText({ locale: '' })
 
 const status = (): string => screen.getByRole('status').textContent?.trim() ?? ''
-const box = (): HTMLInputElement => screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement
+const box = (): HTMLInputElement => screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' })
 const pause = (ms = 50): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
 const ZUG = { value: 'ZG', label: 'Zug' }
