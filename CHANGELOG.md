@@ -19,6 +19,12 @@ repository's ESLint configuration from its own paths, `prettierConfig` is the fo
 peers the repository brings. Nothing a form, a builder or the server runs imports it, and
 `pnpm test:e2e:install` installs it from its tarball and lints a file with it.
 
+**The React builder named the Remove button of a translated choice "Remove [object Object]".** A
+choice whose label is a message reference, which a translated form holds, had its label written
+out as a string, so five translated choices were five identical, meaningless announcements to a
+screen reader. It names the choice by its value, as the Angular builder already did. Found by
+`@typescript-eslint/no-base-to-string`, which the repository now runs.
+
 ## 0.11.0 — 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a
