@@ -24,7 +24,7 @@ const repo = join(here, '..', '..', '..')
 const BUDGET = 600
 
 /**
- * What was already over it, measured 2026-09-29, each capped where it stood.
+ * What was already over it, measured 2026-09-29, each capped where it stood and lowered to its formatted length on 2026-10-30 (Prettier shortened them all).
  *
  * Read the notes: they say what the seam is, because a number with no plan is a
  * permission slip. Two of these are generated and one is data, and those are
@@ -32,27 +32,24 @@ const BUDGET = 600
  */
 const CEILINGS: Record<string, { lines: number; why: string }> = {
   'packages/builder-core/src/session.ts': {
-    lines: 1217,
+    lines: 1120,
     why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core. The repath family left for `repath.ts` when this budget refused the rule rewriting, which is the seam working as intended. Finding things — a field by key path, a container, a layout node by position — left for `navigate.ts` when the builder’s words moved into the catalogue: none of it is a command. The translation commands left for `translation.ts` the day one of them needed a line this ceiling would not give.',
   },
   'packages/core/src/engine.ts': {
-    lines: 1252,
+    lines: 1210,
     why: "The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all; what counts as an answer per type left for `answered.ts` when the matrix brought its own idea of one; the validation report's type left for `error-codes.ts`, beside the codes it carries, to pay for the import that types them; when a computed field became read-only, which fields a rule writes went to `computed-targets.ts` and the top-level walk `expressionProblems` shares to `top-level-fields.ts`; and a repeater's rows — their identity, their bounds and the commands that change them — left for `rows.ts` when the bounds needed lines this ceiling would not give; and how each top-level field is declared to its expressions left for `top-level-fields.ts`, read from the format's answer table, when the computed result's shape needed lines (0189); and which types are drawn as a group left for `props.ts`, beside the reasoning that needs it, when a field's description needed lines (0194); and the path helper `topSegment` to `path.ts`, beside the rest, when a field's default needed lines (0197); and `FieldSnapshot`, the contract a renderer reads, to `snapshot.ts` when a rule's message needed lines on it (0198); and what a field's props read from its definition — grouped, described, counted — to `props.ts`, which is handed the definition, when a character count needed a line (0203). The machinery itself still needs the graph and the store, which is why it has not followed.",
   },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 2038,
+    lines: 1859,
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {
-    lines: 828,
+    lines: 800,
     why: 'The landing page, one long document. The seam is one section per file — and the chrome has already gone that way: the bar, the footer, the brand mark and the backdrop left for `chrome.tsx` when the site grew a second page that had written its own, which is the ratchet pointing at something real rather than at a line count. The licence section followed to `licence.tsx` when it gained the paid modules and this ceiling allowed no growth.',
   },
-  'packages/conformance/src/validate.ts': {
-    lines: 603,
-    why: 'Refusing a fixture that could not run honestly. One subject — and four have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, the locale and layout a fixture mounts with to mount.ts, the vocabulary of the spec a fixture may use to vocabulary.ts when ranking added a type, and the JSON predicates under them to values.ts, which both now share.',
-  },
+
   'packages/conformance/src/runner.ts': {
-    lines: 676,
+    lines: 640,
     why: "Executing a fixture against a driver. One subject. What a driver's messages say — the codes at a path, and which are shown as codes — left for `messages.ts` when the check that an error is said needed lines (0191).",
   },
 }
