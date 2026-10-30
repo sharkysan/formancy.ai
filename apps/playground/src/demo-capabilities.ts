@@ -119,7 +119,7 @@ export const DEMO_OPTIONS_SOURCES: OptionsSources = {
   },
 }
 
-export const DEMO_SCANNER: Scanner = ({ label }) => Promise.resolve(window.prompt(`Stand-in for a camera. What does the code for "${label}" read?`))
+export const DEMO_SCANNER: Scanner = async ({ label }) => window.prompt(`Stand-in for a camera. What does the code for "${label}" read?`)
 
 /**
  * Where a visitor takes the model's turn: a chat of their own, in a new tab.
