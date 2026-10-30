@@ -228,9 +228,9 @@ publishes.
 provenance, signing and an SBOM, for one module, where formancy.ai already releases every package
 the other three depend on with all four.
 
-**The rules published under Health's source-available terms.** Rejected for now: every package
-here is Apache-2.0 (0002), and this repository lints itself with this one. The cost is the
-question above, which is the maintainer's to settle before the first publish.
+**The rules published under Health's source-available terms.** Rejected by the maintainer on
+30 October 2026: every package here is Apache-2.0 (0002), and this repository lints itself with
+this one. The cost is the one module under two licences that Consequences records.
 
 **Biome, no linter, linting per package through turbo, warnings, 120 columns, every kind of file
 formatted, `allowDefaultProject` for the tool configs, and a hook before each commit.** Each
