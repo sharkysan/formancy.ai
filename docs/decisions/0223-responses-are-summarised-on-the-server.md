@@ -1,6 +1,7 @@
 # 0223 — A form's responses are summarised on the server, and the admin reads them a page at a time
 
-- **Status:** accepted
+- **Status:** accepted; reading every submission to count them, superseded in part by
+  [0224](0224-a-summary-is-counted-a-response-at-a-time.md)
 - **Date:** 2026-10-30
 - **Deciders:** Daniel Bacher
 - **Supersedes in part:** [0206](0206-a-forms-responses-are-summarised-by-question.md), which

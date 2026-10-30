@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**A summary is counted a response at a time, and a number question with very many answers has
+one.** The summary kept every answer to a number question and found its range by spreading them
+into `Math.min`, which throws past the engine's argument limit: measured on Node 22, 120,000 answers
+threw where 100,000 passed. So a large form's `/f/:path/summary` answered 500. A number now keeps
+its count, sum and bounds. `createSummary` in `@formancy/core/summary` counts one submission at a
+time, and `summariseAnswers` is it over a list. The server counts a page of a thousand responses
+at a time, so it holds a page and the counts, not every response of the form
+([0224](docs/decisions/0224-a-summary-is-counted-a-response-at-a-time.md), which supersedes that
+part of 0223).
+
 **A form's responses are summarised on the server, and the admin reads them a page at a time.** The
 admin counted the summary in the browser, from every submission the listing handed over, so it had
 to ask for all of them. `GET /f/:path/summary`, behind `submission.read`, now answers one summary per

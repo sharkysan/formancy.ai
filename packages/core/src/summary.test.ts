@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
-import { summariseAnswers } from './summary.js'
+import { createSummary, summariseAnswers } from './summary.js'
 import { createFormText } from './words.js'
 
 /**
@@ -164,6 +164,33 @@ describe('a summary of answers', () => {
   })
 
   // A form nobody has answered yet still lists its questions, each answered by none.
+  // Every number was kept to find the range with `Math.min(...numbers)`, and a spread past the
+  // engine's argument limit throws: measured on Node 22, at 120,000 numbers, where 100,000 passed.
+  // A summary counted on the server for a form that large answered a 500 (0224).
+  test('gives a number its range and mean over more answers than a call can take arguments', () => {
+    const many = Array.from({ length: 200_000 }, (_, at) => ({ nights: at % 90 }))
+    const mean = many.reduce((total, { nights }) => total + nights, 0) / many.length
+
+    expect(summariseAnswers(form, many, english)[3]).toEqual({
+      field: 'nights',
+      label: 'Nights',
+      answered: 200_000,
+      kind: 'number',
+      min: 0,
+      max: 89,
+      mean,
+    })
+  })
+
+  // So the server can count a page of responses at a time and hold no more than the page (0224).
+  test('counted one response at a time, says what it says counted all at once', () => {
+    const summary = createSummary(form, english)
+    for (const submission of submissions) summary.add(submission)
+
+    expect(summary.questions()).toEqual(summariseAnswers(form, submissions, english))
+    expect(createSummary(form, english).questions()).toEqual(summariseAnswers(form, [], english))
+  })
+
   test('lists every question with none answered when there are no submissions', () => {
     expect(summariseAnswers(form, [], english).map(({ field, answered }) => [field, answered])).toEqual([
       ['channel', 0],

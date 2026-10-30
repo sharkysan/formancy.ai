@@ -323,4 +323,5 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0220](0220-a-full-repeater-says-so.md) | A full repeater says so where its Add button was | accepted |
 | [0221](0221-a-field-with-no-control-is-reached-at-its-sentence.md) | A field drawn with no control is reached at the sentence that says why | accepted |
 | [0222](0222-submissions-are-listed-a-page-at-a-time.md) | A form's submissions are listed a page at a time, from where the last page ended | accepted |
-| [0223](0223-responses-are-summarised-on-the-server.md) | A form's responses are summarised on the server, and the admin reads them a page at a time | accepted |
+| [0223](0223-responses-are-summarised-on-the-server.md) | A form's responses are summarised on the server, and the admin reads them a page at a time | accepted; reading every submission, superseded in part by 0224 |
+| [0224](0224-a-summary-is-counted-a-response-at-a-time.md) | A summary is counted a response at a time, and the server reads a page of them at once | accepted |
