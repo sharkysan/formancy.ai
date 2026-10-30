@@ -25,6 +25,11 @@ out as a string, so five translated choices were five identical, meaningless ann
 screen reader. It names the choice by its value, as the Angular builder already did. Found by
 `@typescript-eslint/no-base-to-string`, which the repository now runs.
 
+**A code node bound to an answer that is not text or a number draws nothing, in both renderers.**
+An object or a list stored in the field was written out as `[object Object]` (or its items joined)
+and drawn as a scannable code of that. A submission is untrusted and the engine keeps what it is
+given, so the code is now drawn only from a string, a number or a boolean.
+
 ## 0.11.0 — 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a

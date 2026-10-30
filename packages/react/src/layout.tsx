@@ -361,7 +361,7 @@ function CodeNode({ schema, node, locale }: { schema: FormSchema; node: Extract<
   // reader of one.
   const field = useField(node.path)
   const value = field.value
-  const text = typeof value === 'string' ? value : value === null || value === undefined ? '' : String(value)
+  const text = typeof value === 'string' ? value : typeof value === 'number' || typeof value === 'boolean' ? String(value) : ''
 
   return (
     <div data-formancy-part="code" data-state={text === '' ? 'empty' : 'ready'}>

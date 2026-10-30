@@ -307,7 +307,7 @@ export class FormancyCode implements OnInit {
   protected readonly text = computed(() => {
     const value = this.value()
     if (typeof value === 'string') return value
-    return value === null || value === undefined ? '' : String(value)
+    return typeof value === 'number' || typeof value === 'boolean' ? String(value) : ''
   })
 
   /**

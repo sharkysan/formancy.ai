@@ -69,6 +69,15 @@ describe('a code node with an answer', () => {
     expect(svg()).toBeNull()
   })
 
+  test('draws nothing for an answer that is not a value a code can carry', async () => {
+    // An object stored in the field -- a submission is untrusted, and the engine keeps what it
+    // is given -- was written out as "[object Object]" and drawn as a scannable code of that.
+    const { engine, view } = await mount()
+    engine.setValue(['reference'], { not: 'a reference' })
+    await view.fixture.whenStable()
+    expect(svg()).toBeNull()
+  })
+
   test('takes its colour from the theme rather than choosing one', async () => {
     const { engine, view } = await mount()
     engine.setValue(['reference'], 'AB-1234')
