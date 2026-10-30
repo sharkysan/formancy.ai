@@ -20,8 +20,8 @@
     "test:e2e:install": "node scripts/install-test.mjs",
     "test:browser": "node scripts/browser-test.mjs",
     "test:e2e:angular": "node scripts/angular-install-test.mjs",
-    "format": "prettier --write --log-level warn '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'",
-    "format:check": "prettier --check --log-level warn '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'"
+    "format": "prettier --write --log-level warn --ignore-path .gitignore --ignore-path apps/docs/.gitignore --ignore-path .prettierignore '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'",
+    "format:check": "prettier --check --log-level warn --ignore-path .gitignore --ignore-path apps/docs/.gitignore --ignore-path .prettierignore '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'"
   },
   "devDependencies": {
     "@formancy/code-style": "workspace:*",

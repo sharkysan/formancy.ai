@@ -338,17 +338,27 @@ describe('the formatter', () => {
     }
   })
 
-  // ESLint reads every .gitignore for its own directory; Prettier reads the
-  // root's and .prettierignore alone. So what a nested .gitignore (the
-  // docs app's) ignores must be said in .prettierignore too, or a generated
-  // file under it is reformatted by `format` and not linted. Derived: each
-  // entry of each .gitignore git holds is made a path under its directory
-  // that git itself confirms ignored, and ESLint and Prettier must both
-  // leave it.
-  test('what every .gitignore ignores, both tools leave alone, as does the generated validator', async () => {
+  // ESLint reads every .gitignore it is handed, each for its own directory;
+  // Prettier reads the root's and .prettierignore alone unless a script
+  // hands it more with --ignore-path, which replaces those defaults. So both
+  // are derived from the .gitignore files git holds: each must be named by
+  // the ESLint configuration (as the base path of its ignore patterns, which
+  // ESLint's own include helper writes) and by the format scripts' ignore
+  // paths, with .prettierignore beside them; and a path each ignores must
+  // then be left by ESLint's and Prettier's own APIs. Neither check alone
+  // can fail when a nested file only repeats the root's entries, so the
+  // wiring is held by name, and the behaviour by the paths.
+  test('every .gitignore git holds is read by both tools, and both leave the generated validator', async () => {
     const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n').filter(Boolean)
     const ignoreFiles = tracked.filter((file) => file === '.gitignore' || file.endsWith('/.gitignore'))
     expect(ignoreFiles, 'nested ignore files').toContain('apps/docs/.gitignore')
+    const configuration = ((await import(join(root, 'eslint.config.mjs'))) as { default: Array<{ name?: string; basePath?: string }> }).default
+    const bases = configuration.filter((entry) => entry.name?.startsWith('Imported .gitignore patterns')).map((entry) => realpathSync(entry.basePath ?? ''))
+    for (const file of ignoreFiles) expect(bases, `${file} is read by ESLint`).toContain(realpathSync(join(root, dirname(file))))
+    const named = (script: string) => (scripts[script] ?? '').split(' ').flatMap((word, i, words) => (words[i - 1] === '--ignore-path' ? [word] : []))
+    for (const script of ['format', 'format:check']) {
+      expect(named(script).sort(), `${script}'s ignore paths`).toEqual([...ignoreFiles, '.prettierignore'].sort())
+    }
     const paths = ignoreFiles.flatMap((file) =>
       readFileSync(join(root, file), 'utf8')
         .split('\n')
@@ -362,7 +372,7 @@ describe('the formatter', () => {
       const git = spawnSync('git', ['check-ignore', '--quiet', path], { cwd: root })
       expect(path === generated || git.status === 0, `${path} is ignored by git`).toBe(true)
       if (!(await eslint.isPathIgnored(join(root, path)))) notIgnored.push(`${path}: linted`)
-      const { ignored } = await prettier.getFileInfo(join(root, path), { ignorePath: [join(root, '.gitignore'), join(root, '.prettierignore')] })
+      const { ignored } = await prettier.getFileInfo(join(root, path), { ignorePath: named('format:check').map((file) => join(root, file)) })
       if (!ignored) notIgnored.push(`${path}: formatted`)
     }
     expect(notIgnored).toEqual([])
