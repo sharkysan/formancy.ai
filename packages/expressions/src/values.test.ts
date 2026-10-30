@@ -24,7 +24,7 @@ function value(source: string, values: Record<string, unknown>) {
 
 function bindFailure(source: string, values: Record<string, unknown>) {
   const outcome = run(source, values)
-  if (outcome.ok) throw new Error(`expected binding to fail, got ${String(outcome.value)}`)
+  if (outcome.ok) throw new Error(`expected binding to fail, got ${JSON.stringify(outcome.value)}`)
   return outcome.error
 }
 
@@ -148,5 +148,21 @@ describe('bounding the values entering an evaluation', () => {
   test('accepts an ordinary bag under the defaults', () => {
     const items = Array.from({ length: 50 }, (_, index) => ({ n: index, tag: `row ${index}` }))
     expect(outcome('items.size() > 0', { items }, withItems).ok).toBe(true)
+  })
+})
+
+/**
+ * A result that is a map is a map, whatever its keys are called.
+ *
+ * `toExpressionValue` took any object holding a numeric `seconds` and `nanos` for one of CEL's
+ * durations and wrote it out as `String(value)`, which for a plain record is `[object Object]`.
+ * A form's data can hold a record with those two keys (a field a host named so), and an
+ * expression handing it back gave a string that said nothing of it.
+ */
+describe('a result that is a record', () => {
+  test('keeps a record whose keys are seconds and nanos', () => {
+    const outcome = run('row', { row: { seconds: 5, nanos: 0 } }, { kind: 'computed', variables: { row: 'map' } })
+
+    expect(outcome.ok && outcome.value).toEqual({ seconds: 5, nanos: 0 })
   })
 })

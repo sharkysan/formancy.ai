@@ -30,6 +30,12 @@ An object or a list stored in the field was written out as `[object Object]` (or
 and drawn as a scannable code of that. A submission is untrusted and the engine keeps what it is
 given, so the code is now drawn only from a string, a number or a boolean.
 
+**An expression that returns a record with numeric `seconds` and `nanos` keys returns the record.**
+`toExpressionValue` took any such object for one of CEL's durations and wrote it as
+`[object Object]`; CEL's own durations carry `seconds` as a bigint, so the branch never served
+one. A form's data can hold a record with those keys, and an expression handing it back gave a
+string that said nothing of it.
+
 ## 0.11.0 — 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a

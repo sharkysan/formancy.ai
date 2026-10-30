@@ -209,11 +209,6 @@ export function toExpressionValue(value: unknown, source: string): ExpressionVal
   const unsigned = (value as { value?: unknown }).value
   if (typeof unsigned === 'bigint') return fromBigInt(unsigned, source)
 
-  const duration = value as { seconds?: unknown; nanos?: unknown }
-  if (typeof duration.seconds === 'number' && typeof duration.nanos === 'number') {
-    return String(value)
-  }
-
   if (value instanceof Map) {
     const entries: Record<string, ExpressionValue> = {}
     for (const [key, item] of value) entries[String(key)] = toExpressionValue(item, source)
