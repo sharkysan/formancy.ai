@@ -1,6 +1,8 @@
 # 0008 — Layer the packages and enforce the dependency direction
 
-- **Status:** accepted
+- **Status:** accepted; its "no linter at all", true when it was written, made untrue by
+  [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md),
+  which adds no boundary rule, so the layers are still the compiler's and the manifests'
 - **Date:** 2026-09-19
 - **Deciders:** Daniel Bacher
 - **Verified by:** `tsconfig.base.json` sets `lib: ["ES2023"]` with no DOM
@@ -58,6 +60,11 @@ exception can be added to a rule file, usually in the same commit as the
 violation. Adding `@types/node` to an isomorphic package is the same act, but it
 lands in a dependency list a reviewer is already reading. The repository has no
 linter at all and does not need one for this.
+
+> **Since [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)**
+> the repository has a linter, the rules the four formancy repositories share, and CI runs it.
+> It enforces no layer, for the reason above: the layers are still the compiler's and the
+> manifests'.
 
 **Fewer, larger packages.** Rejected. A direction can only be enforced between
 artefacts, and one package has no edges to check. It would also hand every

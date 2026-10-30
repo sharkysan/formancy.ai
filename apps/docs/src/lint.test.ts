@@ -27,6 +27,8 @@ import { describe, expect, test } from 'vitest'
  * types, so a TypeScript importer would have to declare its shape a second
  * time, and what it exports is seen from outside instead -- the rules by
  * ESLint's own account of each file, the style by what Prettier resolves.
+ * And that CI runs both, read from the workflows that are the gate: a
+ * change that breaks either would otherwise merge green.
  *
  * The one case that lints hands ESLint a file's own content and never
  * another text at its path: on Linux, ESLint linted the file on disk
@@ -393,5 +395,49 @@ describe('the formatter', () => {
       if (ignored !== byGit) wrong.push(`${path}: ${byGit ? 'formatted' : 'not formatted'}`)
     }
     expect(wrong).toEqual([])
+  })
+})
+
+/**
+ * The commands a job's steps run, in order: the workflow read as text, as
+ * `npm-token-environment.test.ts` reads it -- a job starts at a line
+ * indented two spaces under `jobs:` and runs to the next line indented as
+ * little -- and a step's command is its `run:`, after `- ` or beneath a
+ * `name:` alike. A block (`run: |`) is its first line, `|`, and names no
+ * command here.
+ */
+function runSteps(workflow: string, job: string): string[] {
+  const lines = readFileSync(join(root, '.github', 'workflows', workflow), 'utf8').split('\n')
+  const start = lines.indexOf(`  ${job}:`)
+  if (start === -1) return []
+  const end = lines.findIndex((line, i) => i > start && /^ {0,2}\S/.test(line))
+  return lines.slice(start + 1, end === -1 ? undefined : end).flatMap((line) => {
+    const run = /^\s+(?:-\s+)?run:\s*(.*?)\s*$/.exec(line)
+    return run === null ? [] : [run[1] ?? '']
+  })
+}
+
+describe('the gate', () => {
+  // The lint rules and the format are held by CI alone (0225): a step
+  // dropped from a workflow lets a change that breaks either merge green,
+  // and a tag cut from it publish. After the build and the typecheck, since
+  // the type-aware rules read the declarations the build wrote, and before
+  // the tests, so that a finding fails the job in a minute and not after
+  // the suite. In CI's verify, and in the release, which runs verify's
+  // gates again so that a tag is not the first time a tree meets them. A
+  // step not found is at -1, so the build is found first: renamed, it
+  // would leave every order below holding of nothing.
+  test.each([
+    ['ci.yml', 'verify', 'pnpm test:coverage'],
+    ['release.yml', 'release', 'pnpm test'],
+  ])('%s, in %s, runs the linter and the formatter’s check after the typecheck', (workflow, job, tests) => {
+    const steps = runSteps(workflow, job)
+    const at = (command: string) => steps.indexOf(command)
+    expect(at('pnpm build'), 'pnpm build').toBeGreaterThanOrEqual(0)
+    expect(at('pnpm typecheck'), 'pnpm typecheck').toBeGreaterThan(at('pnpm build'))
+    for (const command of ['pnpm lint', 'pnpm format:check']) {
+      expect(at(command), command).toBeGreaterThan(at('pnpm typecheck'))
+      expect(at(command), command).toBeLessThan(at(tests))
+    }
   })
 })

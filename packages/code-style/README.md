@@ -17,6 +17,13 @@ ESLint, Prettier and TypeScript are peers: a repository installs them at
 versions of its own, inside the ranges the manifest declares, each of which
 starts at the version this package's suite runs.
 
+It declares no Node of its own. The Node it runs on is ESLint's, which its
+`eslint` peer and its `@eslint/js` dependency both declare as
+`^20.19.0 || ^22.13.0 || >=24` (ESLint 10.13.0 and `@eslint/js` 10.0.1, read on
+2026-10-30). That is the floor that binds, and it is above the `>=22.12.0`
+formancy.ai's manifest declares, whose engine and server CI tests on Node 22.12:
+there, ESLint runs outside the Node it says it runs on.
+
 `eslint.config.mjs`:
 
 ```js
@@ -78,7 +85,12 @@ in the module.
   a string left as written, because an Angular template's whitespace renders.
 
 It ships no type declarations: a repository imports it from a JavaScript
-configuration file.
+configuration file. A configuration TypeScript checks with `checkJs` has nothing
+of it typed. Measured with TypeScript 6.0.3 on 2026-10-30: under `noImplicitAny`,
+which `strict` sets, the import is error TS7016, a module with no declaration
+file; without it, every name imported is `any`, so a misspelled option passes the
+check, and a required path left out is refused only when ESLint loads the
+configuration.
 
 ## Where it comes from
 

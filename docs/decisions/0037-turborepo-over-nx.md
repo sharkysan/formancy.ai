@@ -1,6 +1,8 @@
 # 0037 — pnpm workspaces with Turborepo, not Nx
 
-- **Status:** accepted
+- **Status:** accepted; the `eslint-plugin-boundaries` configuration it anticipated not added
+  by [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md),
+  which brings ESLint for other rules
 - **Date:** 2026-09-19
 - **Deciders:** Daniel Bacher
 - **Verified by:** `.npmrc` sets `node-linker=isolated`, so a package resolves
@@ -11,6 +13,12 @@
   repository yet: there is no ESLint config, and `turbo run lint` matches no
   package script. The layer *ordering* of [0008](0008-layered-packages.md) is
   therefore not mechanically enforced today.
+
+> **Since [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)**
+> there is an ESLint configuration, `eslint.config.mjs`, and `pnpm lint` runs it from the root
+> as `eslint .`, with no turbo task, in CI's `verify` and before a release. It holds no layer:
+> `eslint-plugin-boundaries` is not in it, and the layer ordering of 0008 is still not
+> mechanically enforced.
 
 ## Context
 

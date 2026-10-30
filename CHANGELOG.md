@@ -19,6 +19,22 @@ repository's ESLint configuration from its own paths, `prettierConfig` is the fo
 peers the repository brings. Nothing a form, a builder or the server runs imports it, and
 `pnpm test:e2e:install` installs it from its tarball and lints a file with it.
 
+**CI fails a change that breaks the lint rules or the format**
+([0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
+Style was held by habit, and a promise nobody awaits or an `any` from a parse by nobody: CI's
+`verify`, and a release before it publishes, now run `pnpm lint`, `@eslint/js`'s and
+typescript-eslint's type-aware recommended rules at error, and `pnpm format:check`, Prettier over
+every TypeScript and JavaScript file, both from `@formancy/code-style`. Every file was formatted
+in one commit, which `.git-blame-ignore-revs` has blame skip, and every finding fixed; the five
+that were defects are the entries below. A branch begun before the format conflicts with it
+wherever the format rewrote a line the branch changed: merge `main`, resolve, and run
+`pnpm format`. Interfaces whose functions need no `this` — `FieldBinding` and `UploadOptions`
+in both renderers, core's `UploadQueue`, server-core's `ServerDeps`, and the builder's
+`PromptRun`, `DraftRun`, `TranslationRun` and `Relay` — now declare them as properties rather
+than methods, which `@typescript-eslint/unbound-method` reads as safe to pass on detached; an
+implementation of one is checked against their parameters strictly, where a method's were
+checked both ways.
+
 **The React builder named the Remove button of a translated choice "Remove [object Object]".** A
 choice whose label is a message reference, which a translated form holds, had its label written
 out as a string, so five translated choices were five identical, meaningless announcements to a

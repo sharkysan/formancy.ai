@@ -375,7 +375,14 @@ pnpm install
 pnpm build
 pnpm test        # server tests start a disposable Postgres via Testcontainers
 pnpm typecheck
+pnpm lint        # after pnpm build: the type-aware rules read the built declarations
+pnpm format      # Prettier, over every TypeScript and JavaScript file, before committing
 ```
+
+CI fails a TypeScript or JavaScript file that breaks a lint rule or that Prettier would
+write otherwise. The rules and the format are `@formancy/code-style`, which this repository
+publishes for the four formancy repositories and holds itself to
+([0225](./docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
 
 ### Run the stack locally
 
