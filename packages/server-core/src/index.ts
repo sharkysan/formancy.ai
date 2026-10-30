@@ -43,6 +43,8 @@ export {
   startDraft,
   setFormAccess,
 } from './use-cases.js'
+export { listSubmissionPage } from './submission-pages.js'
+export type { SubmissionPage } from './submission-pages.js'
 export type {
   DraftMigration,
   ListedForm,
@@ -62,6 +64,7 @@ export type {
   FormRecord,
   FormVersionRecord,
   Storage,
+  SubmissionPlace,
   SubmissionRecord,
 } from './ports.js'
 export { createMemoryStorage } from './testing/memory-storage.js'

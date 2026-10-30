@@ -567,6 +567,9 @@ a form, mints its challenge and takes its submissions, and `server-core/submitti
 hands out, a draft's and a response's, are signed side by side in `server-core/signing.ts`, so
 that what each is signed over can be read together and one cannot stand in for the other. Both
 `app.ts` and `use-cases.ts` came under the budget with it, and left the size test's list.
+`server-core/submission-pages.ts` holds `listSubmissionPage`, a form's submissions a page at a time
+from where the last page ended, and the cursor that names the place
+([0222](../decisions/0222-submissions-are-listed-a-page-at-a-time.md)).
 `server-core/options-membership.ts` holds `checkMembership`, which `createSubmission` asks after
 the replay and before anything is written whether each sourced answer is one the deployment's
 source offers, and `sourceNamesIn`, which `publishForm` holds a document's lists to

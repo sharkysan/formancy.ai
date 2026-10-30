@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, lt, lte, max, ne, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, lte, max, ne, or, sql as fragment } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
@@ -414,6 +414,24 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         .from(submissions)
         .where(eq(submissions.formId, formId))
         .orderBy(desc(submissions.submittedAt), desc(submissions.id))
+      return rows.map(toSubmissionRecord)
+    },
+
+    // A row comparison, which reads the index `submissions_by_form` from where the last page ended.
+    async pageSubmissionsByForm(formId, limit, before) {
+      const rows = await db
+        .select()
+        .from(submissions)
+        .where(
+          and(
+            eq(submissions.formId, formId),
+            before === undefined
+              ? undefined
+              : fragment`(${submissions.submittedAt}, ${submissions.id}) < (${before.submittedAt}::timestamptz, ${before.id}::uuid)`,
+          ),
+        )
+        .orderBy(desc(submissions.submittedAt), desc(submissions.id))
+        .limit(limit)
       return rows.map(toSubmissionRecord)
     },
 

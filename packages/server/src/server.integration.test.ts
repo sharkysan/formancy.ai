@@ -371,6 +371,36 @@ describe('listing and export', () => {
     expect(response.body).toContain('a@b.ch')
   })
 
+  // The keyset query on real PostgreSQL (0222): a row comparison over the time and the id, which
+  // the in-memory storage only imitates. A page at a time, the list is the full list, in its order.
+  test('a page at a time lists every submission the full list does, in its order, and says when it ends', async () => {
+    const full = await app.inject({ method: 'GET', url: '/f/contact-us/submissions', headers: asAdmin() })
+    const all = (full.json() as { submissions: Array<{ id: string }> }).submissions.map((s) => s.id)
+    expect(all.length).toBeGreaterThanOrEqual(2)
+
+    const paged: string[] = []
+    let next: string | null = null
+    do {
+      const after: string = next === null ? '' : `&after=${encodeURIComponent(next)}`
+      const page = await app.inject({ method: 'GET', url: `/f/contact-us/submissions?limit=1${after}`, headers: asAdmin() })
+      expect(page.statusCode).toBe(200)
+      const body = page.json() as { submissions: Array<{ id: string }>; next: string | null }
+      expect(body.submissions.length).toBeLessThanOrEqual(1)
+      paged.push(...body.submissions.map((s) => s.id))
+      next = body.next
+    } while (next !== null && paged.length <= all.length)
+
+    expect(paged).toEqual(all)
+  })
+
+  // A cursor read as the start would list again every response the caller already has.
+  test('a cursor that names no place in the list is refused, 400', async () => {
+    const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions?after=nowhere', headers: asAdmin() })
+
+    expect(response.statusCode).toBe(400)
+    expect(response.json()).toEqual({ error: 'bad_cursor' })
+  })
+
   test('both 404 on an unknown form', async () => {
     expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions', headers: asAdmin() })).statusCode).toBe(404)
     expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions/export.csv', headers: asAdmin() })).statusCode).toBe(404)
