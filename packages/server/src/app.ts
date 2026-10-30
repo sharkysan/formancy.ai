@@ -22,6 +22,7 @@ import {
   exportCsv,
   listForms,
   listSubmissions,
+  listSubmissionPage,
   formVersion,
   listVersions,
 } from '@formancy/server-core'
@@ -378,6 +379,18 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     { preHandler: requires('submission.read') },
     async (request, reply) => {
       const { path } = request.params as { path: string }
+      const query = (request.query ?? {}) as { limit?: unknown; after?: unknown }
+      // A page when either is asked for (0222); every submission when neither is, as before, since
+      // a client that ignored `next` would otherwise take the first page for all there is.
+      if (query.limit !== undefined || query.after !== undefined) {
+        const asked = typeof query.limit === 'string' ? Number.parseInt(query.limit, 10) : 100
+        const after = query.after === undefined ? undefined : typeof query.after === 'string' ? query.after : ''
+        const page = await listSubmissionPage(deps, path, { limit: Number.isFinite(asked) ? asked : 100, after })
+        if (page === undefined) return reply.code(404).send({ error: 'unknown_form' })
+        if (page.kind === 'bad_cursor') return reply.code(400).send({ error: 'bad_cursor' })
+        await audit(request, { action: 'submission.read', subject: path, detail: { count: page.submissions.length } })
+        return reply.send({ submissions: page.submissions, next: page.next })
+      }
       const listed = await listSubmissions(deps, path)
       if (listed === undefined) return reply.code(404).send({ error: 'unknown_form' })
       // The event a data protection officer asks about, and the one an audit

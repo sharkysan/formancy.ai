@@ -221,6 +221,17 @@ export function createMemoryStorage(): Storage {
     listSubmissionsByForm: async (formId) =>
       submissions.filter((record) => record.formId === formId).reverse(),
 
+    // Compared as PostgreSQL compares the columns, a time and then an id, so the two storages page
+    // one list the same way.
+    pageSubmissionsByForm: async (formId, limit, before) => {
+      const placed = ({ submittedAt, id }: { submittedAt: string; id: string }): [number, string] => [Date.parse(submittedAt), id]
+      const newer = (a: [number, string], b: [number, string]): boolean => a[0] > b[0] || (a[0] === b[0] && a[1] > b[1])
+      return submissions
+        .filter((record) => record.formId === formId && (before === undefined || newer(placed(before), placed(record))))
+        .sort((a, b) => (newer(placed(a), placed(b)) ? -1 : 1))
+        .slice(0, limit)
+    },
+
     listVersionsByForm: async (formId) =>
       [...versions.values()]
         .filter((version) => version.formId === formId)

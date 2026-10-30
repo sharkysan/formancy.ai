@@ -566,6 +566,22 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `GET` | `/model` | management | `form.publish` |
 | `POST` | `/model/complete` | management | `form.publish` (ten a minute per session) |
 
+### Reading submissions a page at a time
+
+`GET /f/:path/submissions` with no parameters answers every submission of the form, newest first.
+Ask for a page with `limit`, at most 1000, and follow `next` until it is `null`:
+
+```bash
+curl -H "authorization: Bearer $TOKEN" "$SERVER/f/contact-us/submissions?limit=100"
+# → {"submissions":[…],"next":"2026-10-30T09:14:02.511Z_5f0c…"}
+curl -H "authorization: Bearer $TOKEN" "$SERVER/f/contact-us/submissions?limit=100&after=2026-10-30T09%3A14%3A02.511Z_5f0c…"
+```
+
+Pass `next` back as it came. It names where the last page ended, so a response that arrives while
+you page is not listed twice and nothing is skipped. A cursor that names no place is refused with
+`400 bad_cursor`
+([0222](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0222-submissions-are-listed-a-page-at-a-time.md)).
+
 ## Files
 
 Uploads are off until `FORMANCY_FILES_DIR` names somewhere to put bytes. A form

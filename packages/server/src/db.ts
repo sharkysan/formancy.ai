@@ -238,6 +238,9 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       data jsonb NOT NULL,
       submitted_at timestamptz NOT NULL
     )`
+  // A form's submissions in the order they are listed and paged, so a page is read from where the
+  // last one ended rather than by counting the rows before it (0222).
+  await sql`CREATE INDEX IF NOT EXISTS submissions_by_form ON submissions (form_id, submitted_at DESC, id DESC)`
   await sql`
     CREATE TABLE IF NOT EXISTS webhooks (
       id uuid PRIMARY KEY,

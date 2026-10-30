@@ -46,6 +46,12 @@ export interface SubmissionRecord {
   submittedAt: string
 }
 
+/** Where a page of submissions ended: the last one's time and id, the order they are listed in. */
+export interface SubmissionPlace {
+  submittedAt: string
+  id: string
+}
+
 export interface UserRecord {
   id: string
   email: string
@@ -366,6 +372,12 @@ export interface Storage {
   listSubmissions(): Promise<SubmissionRecord[]>
   /** Newest first. */
   listSubmissionsByForm(formId: string): Promise<SubmissionRecord[]>
+  /**
+   * At most `limit` of a form's submissions, newest first by time and then by id, and only those
+   * listed after `before` in that order (0222). Bounded by an index rather than a count of rows
+   * to skip, so a page costs the same at the end of a long list as at its start.
+   */
+  pageSubmissionsByForm(formId: string, limit: number, before?: SubmissionPlace): Promise<SubmissionRecord[]>
   listVersionsByForm(formId: string): Promise<FormVersionRecord[]>
   upsertDraft(record: DraftRecord): Promise<void>
   getDraft(formId: string, draftId: string): Promise<DraftRecord | undefined>

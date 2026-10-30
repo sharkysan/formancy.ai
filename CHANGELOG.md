@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**A form's submissions can be read a page at a time.** `GET /f/:path/submissions` answered every
+submission of a form in one reply, read into the server's memory to send it. `?limit=` now asks for
+at most that many, newest first, between 1 and 1000. The reply's `next` asks for the following page
+with `?after=`, and is `null` on the last. A page is read from where the last one ended, a
+response's time and id, so a response stored while somebody pages is never listed twice or
+skipped. A cursor that names no place is refused, `400 bad_cursor`. Without either parameter the
+reply is every submission, as before: a client that ignored `next` would otherwise take the first
+page for all there is. The first start of this version builds an index on `submissions`, and a
+response sent while it builds waits for it
+([0222](docs/decisions/0222-submissions-are-listed-a-page-at-a-time.md)).
+
 **A field drawn with no control is reached at the sentence that says why.** A file field where
 the host takes no uploads, and a choice whose source the deployment does not have, draw a sentence
 saying so instead of a control. Nothing carried the field's control id, so a required one was named
