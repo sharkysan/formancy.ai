@@ -46,9 +46,7 @@ const rulesOf = (document: FormSchema): LogicRule[] => document.logic?.rules ?? 
 
 describe('renameField and the rules that name the field', () => {
   test('rewrites a condition that reads it, rather than leaving it reading nothing', () => {
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'postcode == "8000"' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'postcode == "8000"' }]))
 
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
 
@@ -56,9 +54,7 @@ describe('renameField and the rules that name the field', () => {
   })
 
   test('and repoints a rule that targets it, which would otherwise aim at nothing', () => {
-    const session = createBuilderSession(
-      schema([{ kind: 'required', target: 'postcode', cel: 'note != ""' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'required', target: 'postcode', cel: 'note != ""' }]))
 
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
 
@@ -89,9 +85,7 @@ describe('renameField and the rules that name the field', () => {
     expect(session.renameField(['address', 'city'], 'town').ok).toBe(true)
 
     const rule = rulesOf(session.document())[0]!
-    expect(rule.cel).toBe(
-      '(has(address.town) && address.town != null && address.town == "Bern") || postcode == "8000"',
-    )
+    expect(rule.cel).toBe('(has(address.town) && address.town != null && address.town == "Bern") || postcode == "8000"')
     const inner = (rule.editor as ConditionGroup).conditions[0] as ConditionGroup
     expect((inner.conditions[0] as Condition).field).toBe('address.town')
   })
@@ -126,10 +120,7 @@ describe('renameField and the rules that name the field', () => {
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
 
     const editor = rulesOf(session.document())[0]?.editor as ConditionGroup
-    expect(editor.conditions.map((condition) => (condition as Condition).field)).toEqual([
-      'zip',
-      'note',
-    ])
+    expect(editor.conditions.map((condition) => (condition as Condition).field)).toEqual(['zip', 'note'])
     // The row that did not move kept everything else about it too.
     expect(editor.conditions[1]).toEqual({ field: 'note', operator: 'isAnswered' })
   })
@@ -138,9 +129,7 @@ describe('renameField and the rules that name the field', () => {
     // The boundary a pattern over source gets wrong. `postcode_uk` is another
     // field, and repointing it at `zip_uk` invents a path nothing has.
     const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'postcode_uk == "X" && postcode == 1' }], [
-        { key: 'postcode_uk', type: 'text', label: 'UK postcode' },
-      ]),
+      schema([{ kind: 'visible', target: 'note', cel: 'postcode_uk == "X" && postcode == 1' }], [{ key: 'postcode_uk', type: 'text', label: 'UK postcode' }]),
     )
 
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
@@ -152,9 +141,7 @@ describe('renameField and the rules that name the field', () => {
     // A literal mentioning the field is not a read of it. Rewriting here
     // changes what the condition COMPARES, which no test downstream can catch
     // because the document stays valid.
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'note == "postcode"' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'note == "postcode"' }]))
 
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
 
@@ -168,9 +155,7 @@ describe('renameField and the rules that name the field', () => {
      * about. So the command refuses and names the rule, which is the outcome
      * somebody can act on.
      */
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'postcode ==' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'postcode ==' }]))
 
     const outcome = session.renameField(['postcode'], 'zip')
 
@@ -181,9 +166,7 @@ describe('renameField and the rules that name the field', () => {
   test('refuses when the new name would be captured by a local in the condition', () => {
     // `zip` is bound by the comprehension, so the spliced text would read the
     // iteration variable instead of the field. Valid CEL, different meaning.
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'note.all(zip, zip != postcode)' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'note.all(zip, zip != postcode)' }]))
 
     const outcome = session.renameField(['postcode'], 'zip')
 
@@ -204,9 +187,7 @@ describe('renameField and the rules that name the field', () => {
      * path. The branch stays as the structural answer to a result that cannot
      * be asked what it reads.
      */
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'postcode == 1' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'postcode == 1' }]))
 
     const outcome = session.renameField(['postcode'], 'if')
 
@@ -225,9 +206,7 @@ describe('renameField and the rules that name the field', () => {
      * `cel: ""` and `draftIsComplete` will not compose one, so the guard has
      * two branches rather than three.
      */
-    const session = createBuilderSession(
-      schema([{ kind: 'check', target: 'postcode', check: 'postcode-exists' } as unknown as LogicRule]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'check', target: 'postcode', check: 'postcode-exists' } as unknown as LogicRule]))
 
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
 
@@ -252,12 +231,7 @@ describe('renameField and the rules that name the field', () => {
     ]
     const session = createBuilderSession(
       // Different kinds, because a field carries one rule per kind.
-      schema(
-        (['visible', 'disabled'] as const).map(
-          (kind, index) =>
-            ({ kind, target: 'note', cel: 'postcode == 1', editor: foreign[index] }) as unknown as LogicRule,
-        ),
-      ),
+      schema((['visible', 'disabled'] as const).map((kind, index) => ({ kind, target: 'note', cel: 'postcode == 1', editor: foreign[index] }))),
     )
 
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
@@ -269,9 +243,7 @@ describe('renameField and the rules that name the field', () => {
     // A command that half-applies is worse than one that refuses: the field is
     // renamed, the rule is not, and the author has the broken state they were
     // being protected from.
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'postcode ==' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'postcode ==' }]))
 
     session.renameField(['postcode'], 'zip')
 
@@ -288,9 +260,7 @@ describe('unwrapField and the rules that read inside the group', () => {
      * is no longer: the rewrite is an AST walk over spans, so there is no
      * pattern to get wrong.
      */
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'address.city == "Zug"' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'address.city == "Zug"' }]))
 
     expect(session.unwrapField(['address']).ok).toBe(true)
 
@@ -298,9 +268,7 @@ describe('unwrapField and the rules that read inside the group', () => {
   })
 
   test('and repoints a rule that targets a field inside it', () => {
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'address.city', cel: 'note != ""' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'address.city', cel: 'note != ""' }]))
 
     expect(session.unwrapField(['address']).ok).toBe(true)
 
@@ -314,9 +282,7 @@ describe('unwrapField and the rules that read inside the group', () => {
      * unavailable on a document it was always safe for, and the message named a
      * rule that had nothing to do with it.
      */
-    const session = createBuilderSession(
-      schema([{ kind: 'visible', target: 'note', cel: 'note == "address"' }]),
-    )
+    const session = createBuilderSession(schema([{ kind: 'visible', target: 'note', cel: 'note == "address"' }]))
 
     expect(session.unwrapField(['address']).ok).toBe(true)
 

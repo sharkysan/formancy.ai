@@ -48,3 +48,8 @@ None of these is a hardship. They are listed because the absence of
   always present and sometimes undefined, and saying so is more honest.
 - One version number across all packages; the spec version is a separate line
   ([0009](../decisions/0009-independent-spec-version.md)).
+- Every TypeScript and JavaScript file is linted by the rules the four formancy repositories
+  share and formatted in their style — no semicolons, single quotes, trailing commas, 160
+  columns — which this repository publishes as `@formancy/code-style`. `pnpm format` writes
+  it, and CI fails a file that breaks a rule or that Prettier would write otherwise
+  ([0225](../decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).

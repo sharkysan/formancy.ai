@@ -42,13 +42,7 @@ export function signBody(secret: string, timestampSeconds: number, body: string)
  * to be idempotent. Generating a fresh one per attempt would turn our retry
  * into their duplicate.
  */
-export function deliveryHeaders(input: {
-  eventId: string
-  secret: string
-  body: string
-  timestampSeconds: number
-  attempt: number
-}): DeliveryHeaders {
+export function deliveryHeaders(input: { eventId: string; secret: string; body: string; timestampSeconds: number; attempt: number }): DeliveryHeaders {
   return {
     'content-type': 'application/json',
     [EVENT_ID_HEADER]: input.eventId,
@@ -65,13 +59,7 @@ export function deliveryHeaders(input: {
  * Exported because a scheme nobody can check is a scheme nobody does check —
  * this is the reference implementation, and the test for our own signing.
  */
-export function verifySignature(input: {
-  secret: string
-  body: string
-  header: string
-  nowSeconds: number
-  toleranceSeconds?: number
-}): boolean {
+export function verifySignature(input: { secret: string; body: string; header: string; nowSeconds: number; toleranceSeconds?: number }): boolean {
   const parts = new Map(
     input.header.split(',').map((part) => {
       const at = part.indexOf('=')

@@ -1,13 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EnvironmentInjector,
-  Injector,
-  computed,
-  inject,
-  input,
-  signal,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, EnvironmentInjector, Injector, computed, inject, input, signal } from '@angular/core'
 import { NgComponentOutlet } from '@angular/common'
 import { referencedMessages } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
@@ -15,7 +6,7 @@ import { BuilderTextPipe } from './text.pipe.js'
 import { FormancyForm } from '@formancy/angular'
 import { FormancyTranslationReview } from './translation-review.js'
 import { previewInjector } from './translations-preview.js'
-import type { AskModel, BuilderSession, CatalogueFile, FormSchema, TranslationRun } from './types.js'
+import type { AskModel, BuilderSession, CatalogueFile, TranslationRun } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /**
@@ -245,12 +236,8 @@ export class FormancyTranslationsPane {
   protected readonly adding = signal('')
   protected readonly problem = signal<string | null>(null)
 
-  protected readonly defaultLocale = computed(
-    () => this.view().document.i18n?.defaultLocale ?? 'en',
-  )
-  protected readonly locales = computed(() =>
-    Object.keys(this.view().document.i18n?.messages ?? {}),
-  )
+  protected readonly defaultLocale = computed(() => this.view().document.i18n?.defaultLocale ?? 'en')
+  protected readonly locales = computed(() => Object.keys(this.view().document.i18n?.messages ?? {}))
   /**
    * Where a held run's work is when the pane is drawn — its language — read once per run, so
    * the pane opens there rather than on the default, where a translation waiting for French
@@ -294,9 +281,7 @@ export class FormancyTranslationsPane {
    * for its lifetime — which is the whole reason this preview exists rather than
    * the pane changing `defaultLocale` to look at a language.
    */
-  protected readonly previewInjector = computed((): Injector | undefined =>
-    previewInjector(this.view().document as FormSchema, this.chosen(), this.parent),
-  )
+  protected readonly previewInjector = computed((): Injector | undefined => previewInjector(this.view().document, this.chosen(), this.parent))
 
   constructor() {
     takeHostOutOfLayout()

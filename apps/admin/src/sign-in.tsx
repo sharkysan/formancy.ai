@@ -41,14 +41,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
         <p className="wb-signin-lede">The admin for the forms this server publishes.</p>
 
         <label htmlFor="admin-email">Email</label>
-        <input
-          id="admin-email"
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          required
-        />
+        <input id="admin-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
 
         <label htmlFor="admin-password">Password</label>
         <input
@@ -69,9 +62,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
             resistance the login endpoint was built for. */}
         {failed === undefined ? null : (
           <p role="alert" className="wb-signin-alert">
-            {failed === 'refused'
-              ? 'That email and password did not match.'
-              : 'The server did not take this sign-in just now. Try again in a minute.'}
+            {failed === 'refused' ? 'That email and password did not match.' : 'The server did not take this sign-in just now. Try again in a minute.'}
           </p>
         )}
       </form>

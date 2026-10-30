@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { hash as argon2Hash, verify as argon2Verify } from '@node-rs/argon2'
 import { SignJWT, jwtVerify } from 'jose'
-import type { Actor, Role } from '@formancy/server-core'
+import type { Actor } from '@formancy/server-core'
 
 /**
  * The real cryptography, confined to the composition root: argon2id for
@@ -45,9 +45,7 @@ export interface SessionTokens {
 
 export function createSessionTokens(secret: string): SessionTokens {
   if (secret.length < 32) {
-    throw new Error(
-      'FORMANCY_AUTH_SECRET must be at least 32 characters. Generate one: openssl rand -base64 33',
-    )
+    throw new Error('FORMANCY_AUTH_SECRET must be at least 32 characters. Generate one: openssl rand -base64 33')
   }
   const key = new TextEncoder().encode(secret)
 
@@ -66,14 +64,10 @@ export function createSessionTokens(secret: string): SessionTokens {
         const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] })
         const role = payload['role']
         const kind = payload['kind']
-        if (
-          typeof payload.sub !== 'string' ||
-          (role !== 'admin' && role !== 'editor' && role !== 'viewer') ||
-          (kind !== 'user' && kind !== 'apiKey')
-        ) {
+        if (typeof payload.sub !== 'string' || (role !== 'admin' && role !== 'editor' && role !== 'viewer') || (kind !== 'user' && kind !== 'apiKey')) {
           return undefined
         }
-        return { id: payload.sub, role: role as Role, kind }
+        return { id: payload.sub, role, kind }
       } catch {
         return undefined
       }

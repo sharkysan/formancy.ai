@@ -80,10 +80,7 @@ function events(): { log: FastifyBaseLogger; lines: () => Array<Record<string, u
 }
 
 /** A replica, wired as `main.ts` wires one: its own connections, the shared storage and the shared counter. */
-async function replica(
-  options: Omit<AppOptions, 'authSecret'> = {},
-  store: PostgresRateLimitOptions = {},
-): Promise<FastifyInstance> {
+async function replica(options: Omit<AppOptions, 'authSecret'> = {}, store: PostgresRateLimitOptions = {}): Promise<FastifyInstance> {
   const own = connection()
   const app = await createApp(createPostgresStorage(own), {
     authSecret: SECRET,
@@ -138,7 +135,13 @@ async function within<T>(ms: number, work: Promise<T>): Promise<T | 'no answer'>
 /** One count on `store`, as the plugin asks for it. */
 function countOn(store: FastifyRateLimitStore, key: string, windowMs: number): Promise<{ current: number; ttl: number }> {
   return new Promise((resolve, reject) => {
-    store.incr(key, (error, result) => (error === null && result !== undefined ? resolve(result) : reject(error)), windowMs, 1_000)
+    store.incr(
+      key,
+      (error, result) =>
+        error === null && result !== undefined ? resolve(result) : reject(error ?? new Error('The store answered with neither a count nor an error')),
+      windowMs,
+      1_000,
+    )
   })
 }
 
@@ -206,8 +209,7 @@ describe('two replicas over one database', () => {
     const limit = { bootstrapAdmin: ADMIN, loginRateLimit: { max: 2, timeWindowMs: 60_000 } }
     const a = await replica(limit)
     const b = await replica(limit)
-    const guess = (app: FastifyInstance) =>
-      app.inject({ method: 'POST', url: '/auth/login', payload: { email: ADMIN.email, password: 'wrong' } })
+    const guess = (app: FastifyInstance) => app.inject({ method: 'POST', url: '/auth/login', payload: { email: ADMIN.email, password: 'wrong' } })
 
     expect((await guess(a)).statusCode).toBe(401)
     expect((await guess(b)).statusCode).toBe(401)
@@ -227,7 +229,7 @@ describe('two replicas over one database', () => {
     const a = await replica(options)
     const b = await replica(options)
     const login = await a.inject({ method: 'POST', url: '/auth/login', payload: ADMIN })
-    const admin = (login.json() as { token: string }).token
+    const admin = login.json<{ token: string }>().token
     await a.inject({
       method: 'POST',
       url: '/users',
@@ -239,7 +241,7 @@ describe('two replicas over one database', () => {
       url: '/auth/login',
       payload: { email: 'editor@test.ch', password: 'editor-password-1' },
     })
-    const editor = (editorLogin.json() as { token: string }).token
+    const editor = editorLogin.json<{ token: string }>().token
     const ask = (app: FastifyInstance, token: string) =>
       app.inject({
         method: 'POST',

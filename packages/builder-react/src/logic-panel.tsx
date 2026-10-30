@@ -28,14 +28,7 @@ import {
   setJoin,
   updateRow,
 } from '@formancy/builder-core'
-import type {
-  ConditionDraft,
-  ConditionField,
-  ConditionGroup,
-  ConditionRow,
-  DraftPlace,
-  Operator,
-} from '@formancy/builder-core'
+import type { ConditionDraft, ConditionField, ConditionGroup, ConditionRow, DraftPlace, Operator } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 /**
@@ -68,9 +61,7 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
   const target = ruleTarget
   const rules = view.document.logic?.rules ?? []
   // Index within the whole list, because removeRule takes one.
-  const mine = rules
-    .map((rule, index) => ({ rule, index }))
-    .filter((entry) => entry.rule.target === ruleTarget)
+  const mine = rules.map((rule, index) => ({ rule, index })).filter((entry) => entry.rule.target === ruleTarget)
 
   return (
     <div data-formancy-part="logic-panel">
@@ -82,16 +73,12 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
         <ul data-formancy-part="logic-list">
           {mine.map(({ rule, index }) => (
             <li key={index} data-formancy-part="logic-rule">
-              <span data-formancy-part="logic-kind">
-                {ruleKindLabel(rule.kind, text)}
-              </span>
+              <span data-formancy-part="logic-kind">{ruleKindLabel(rule.kind, text)}</span>
               {/* The expression, shown. A developer should not have to guess
                   what the condition compiled to. */}
               <code>{rule.cel}</code>
               {/* And what it says when it rejects an answer, read back where it was written. */}
-              {ruleSays(view.document, rule) === undefined ? null : (
-                <span data-formancy-part="logic-message">{ruleSays(view.document, rule)}</span>
-              )}
+              {ruleSays(view.document, rule) === undefined ? null : <span data-formancy-part="logic-message">{ruleSays(view.document, rule)}</span>}
               <button
                 type="button"
                 aria-label={text('logic.remove', { rule: ruleKindLabel(rule.kind, text), target })}
@@ -175,8 +162,7 @@ function RuleDraft({
   // Numbered across the whole condition, so every comparison's controls have a name
   // of their own even when two sit in different groups.
   const numberOf = (row: ConditionRow): number => all.indexOf(row)
-  const labelOf = (part: 'field' | 'comparison' | 'value', row: ConditionRow): string =>
-    comparisonLabel(part, numberOf(row), all.length, text)
+  const labelOf = (part: 'field' | 'comparison' | 'value', row: ConditionRow): string => comparisonLabel(part, numberOf(row), all.length, text)
 
   const comparison = (row: ConditionRow, place: DraftPlace, removable: boolean): ReactElement => (
     <Comparison
@@ -212,12 +198,7 @@ function RuleDraft({
       {writes !== 'check' ? null : (
         <label>
           {text('logic.check')}
-          <input
-            type="text"
-            value={check}
-            onChange={(event) => setCheck(event.target.value)}
-            placeholder={text('logic.check.example')}
-          />
+          <input type="text" value={check} onChange={(event) => setCheck(event.target.value)} placeholder={text('logic.check.example')} />
         </label>
       )}
 
@@ -226,12 +207,7 @@ function RuleDraft({
           {/* Only once there is something to join. A control that does nothing is a
               control somebody has to work out is irrelevant. */}
           {draft.items.length > 1 ? (
-            <JoinChoice
-              label={text('logic.match')}
-              join={draft.join}
-              text={text}
-              onChange={(join) => setDraft((before) => setJoin(before, join))}
-            />
+            <JoinChoice label={text('logic.match')} join={draft.join} text={text} onChange={(join) => setDraft((before) => setJoin(before, join))} />
           ) : null}
 
           {draft.items.map((item, at) => {
@@ -253,10 +229,7 @@ function RuleDraft({
                 <button type="button" onClick={() => setDraft((before) => addRow(before, fields, at))}>
                   {text('logic.group.add', { number })}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setDraft((before) => removeFromDraft(before, { at }))}
-                >
+                <button type="button" onClick={() => setDraft((before) => removeFromDraft(before, { at }))}>
                   {text('logic.group.remove', { number })}
                 </button>
               </fieldset>
@@ -282,12 +255,7 @@ function RuleDraft({
         <>
           <label>
             {text('logic.calculation')}
-            <input
-              type="text"
-              value={expression}
-              onChange={(event) => setExpression(event.target.value)}
-              placeholder={text('logic.calculation.example')}
-            />
+            <input type="text" value={expression} onChange={(event) => setExpression(event.target.value)} placeholder={text('logic.calculation.example')} />
           </label>
           {/* CEL, and said so: a calculation produces a VALUE rather than a
               condition, so the comparison editor is the wrong surface for one
@@ -296,19 +264,12 @@ function RuleDraft({
         </>
       )}
 
-      {carriesCondition ? null : writes === 'check' ? (
-        <p data-formancy-part="logic-hint">{hint}</p>
-      ) : null}
+      {carriesCondition ? null : writes === 'check' ? <p data-formancy-part="logic-hint">{hint}</p> : null}
 
       {asked === undefined ? null : (
         <label>
           {text('logic.message')}
-          <input
-            type="text"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder={text('logic.message.example')}
-          />
+          <input type="text" value={message} onChange={(event) => setMessage(event.target.value)} placeholder={text('logic.message.example')} />
         </label>
       )}
 
@@ -404,10 +365,7 @@ function Comparison({
 
       <label>
         {labelOf('comparison')}
-        <select
-          value={row.operator}
-          onChange={(event) => onChange({ operator: event.target.value as Operator })}
-        >
+        <select value={row.operator} onChange={(event) => onChange({ operator: event.target.value as Operator })}>
           {operatorsFor(kind).map((operator) => (
             <option key={operator} value={operator}>
               {operatorLabel(operator, text)}
@@ -419,12 +377,7 @@ function Comparison({
       {operatorTakesValue(row.operator) ? (
         <label>
           {labelOf('value')}
-          <ValueControl
-            field={field}
-            value={row.text}
-            text={text}
-            onChange={(value) => onChange({ text: value })}
-          />
+          <ValueControl field={field} value={row.text} text={text} onChange={(value) => onChange({ text: value })} />
         </label>
       ) : null}
 

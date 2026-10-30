@@ -1,10 +1,4 @@
-import type {
-  AccessibilityViolation,
-  ConformanceMessage,
-  MountOptions,
-  RendererDriver,
-  SubmitResult,
-} from '../driver.js'
+import type { AccessibilityViolation, ConformanceMessage, MountOptions, RendererDriver, SubmitResult } from '../driver.js'
 import type { ConformanceFieldDef, ConformanceSchema, JsonValue } from '../types.js'
 
 /**
@@ -38,17 +32,7 @@ export interface FakeDriverOptions {
 }
 
 export type FakeDriverMethod =
-  | 'mount'
-  | 'fill'
-  | 'activate'
-  | 'visibleFields'
-  | 'valueOf'
-  | 'errorsFor'
-  | 'currentPage'
-  | 'ariaSnapshot'
-  | 'submit'
-  | 'unmount'
-  | 'audit'
+  'mount' | 'fill' | 'activate' | 'visibleFields' | 'valueOf' | 'errorsFor' | 'currentPage' | 'ariaSnapshot' | 'submit' | 'unmount' | 'audit'
 
 export function createFakeDriver(options: FakeDriverOptions = {}): RendererDriver {
   let schema: ConformanceSchema | undefined
@@ -89,9 +73,7 @@ export function createFakeDriver(options: FakeDriverOptions = {}): RendererDrive
   }
 
   function validate(fields: readonly ConformanceFieldDef[]): ConformanceMessage[] {
-    return fields
-      .filter((field) => field.required === true && isEmpty(values[field.key]))
-      .map((field) => ({ path: field.key, code: 'required' }))
+    return fields.filter((field) => field.required === true && isEmpty(values[field.key])).map((field) => ({ path: field.key, code: 'required' }))
   }
 
   return {
@@ -149,7 +131,7 @@ export function createFakeDriver(options: FakeDriverOptions = {}): RendererDrive
     async ariaSnapshot(): Promise<string> {
       guard('ariaSnapshot')
       return visible()
-        .map((field) => `- textbox "${field.label ?? field.key}": ${JSON.stringify(values[field.key])}`)
+        .map((field) => `- textbox "${typeof field.label === 'string' ? field.label : field.key}": ${JSON.stringify(values[field.key])}`)
         .join('\n')
     },
 

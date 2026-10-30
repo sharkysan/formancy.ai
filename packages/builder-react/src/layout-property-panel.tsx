@@ -31,10 +31,7 @@ export interface LayoutPropertyPanelProps {
   address: LayoutAddress
 }
 
-export function LayoutPropertyPanel({
-  session,
-  address,
-}: LayoutPropertyPanelProps): ReactElement | null {
+export function LayoutPropertyPanel({ session, address }: LayoutPropertyPanelProps): ReactElement | null {
   // From the session, not from a prop: a panel handed a node captured before the edit
   // renders controlled inputs whose value never changes, so every keystroke resets the
   // box and only the last character survives.
@@ -68,11 +65,7 @@ export function LayoutPropertyPanel({
           onChange={(value) => {
             // An empty box means "no value", not "the empty string": writing ''
             // would put a property into the document the author just cleared.
-            session.setLayoutNodeProperty(
-              address,
-              property.name,
-              value === '' || value === undefined ? undefined : value,
-            )
+            session.setLayoutNodeProperty(address, property.name, value === '' || value === undefined ? undefined : value)
           }}
         />
       ))}

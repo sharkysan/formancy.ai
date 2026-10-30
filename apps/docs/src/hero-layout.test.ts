@@ -54,9 +54,7 @@ function rulesFor(selector: string): Array<{ where: string; body: string }> {
 /** What a property ends up as, the later rule winning, as the cascade has it. */
 function settles(selector: string, property: string): string | undefined {
   const found = rulesFor(selector).flatMap(({ body }) =>
-    [...body.matchAll(new RegExp(String.raw`(?:^|;)\s*` + property + String.raw`\s*:([^;]*)`, 'g'))].map((match) =>
-      (match[1] ?? '').trim(),
-    ),
+    [...body.matchAll(new RegExp(String.raw`(?:^|;)\s*` + property + String.raw`\s*:([^;]*)`, 'g'))].map((match) => (match[1] ?? '').trim()),
   )
   return found.at(-1)
 }

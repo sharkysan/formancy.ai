@@ -54,7 +54,13 @@ const PAGES = [
   { path: '/playground/', settle: openTheSchemaEditor, ownFaces: true, editor: true, policy: true },
   // The same page, with a model's turn carried through it: the clipboard is the page's own
   // origin's to write, as a visitor's browser lets it be.
-  { path: '/playground/', label: '/playground/ carrying a model’s turn in each builder, and across a switch', settle: carryATurn, ownFaces: false, clipboard: true },
+  {
+    path: '/playground/',
+    label: '/playground/ carrying a model’s turn in each builder, and across a switch',
+    settle: carryATurn,
+    ownFaces: false,
+    clipboard: true,
+  },
   // A page with code on it, which is where a documentation theme reaches for a highlighter.
   { path: '/docs/start/react/', settle: scrollThrough, ownFaces: false },
 ]
@@ -75,11 +81,7 @@ async function scrollThrough(page) {
 async function openTheStarter(page) {
   const frame = page.locator('iframe[src*="/angular-form-builder/demo/"]')
   await frame.scrollIntoViewIfNeeded()
-  await page
-    .frameLocator('iframe[src*="/angular-form-builder/demo/"]')
-    .getByRole('tree')
-    .first()
-    .waitFor({ timeout: 30_000 })
+  await page.frameLocator('iframe[src*="/angular-form-builder/demo/"]').getByRole('tree').first().waitFor({ timeout: 30_000 })
 }
 
 /**
@@ -183,9 +185,7 @@ async function carryATranslation(page, found) {
     const opened = await language.inputValue()
     found.push([
       named('the turn is still waiting after the switch, the same request, and the tab opens on French'),
-      after === shown && opened === 'fr'
-        ? null
-        : `the request box held ${JSON.stringify(after.slice(-80))}, and the Language select ${JSON.stringify(opened)}`,
+      after === shown && opened === 'fr' ? null : `the request box held ${JSON.stringify(after.slice(-80))}, and the Language select ${JSON.stringify(opened)}`,
     ])
 
     // What a chat answers: the file it was given, every target written.
@@ -195,9 +195,7 @@ async function carryATranslation(page, found) {
       messages: file.messages.map(({ id, source }) => ({ id, source, target: `${source} (fr)` })),
     }
     const carried = angular.getByRole('region', { name: 'Take this request to a model' })
-    await carried
-      .getByRole('textbox', { name: 'The model’s answer' })
-      .fill(`Voici le fichier :\n\n\`\`\`json\n${JSON.stringify(answer, null, 2)}\n\`\`\``)
+    await carried.getByRole('textbox', { name: 'The model’s answer' }).fill(`Voici le fichier :\n\n\`\`\`json\n${JSON.stringify(answer, null, 2)}\n\`\`\``)
     await carried.getByRole('button', { name: 'Check this answer', exact: true }).click()
     const review = angular.getByRole('region', { name: /^Review these translations into fr/ })
     await review.waitFor({ timeout: 15_000 })
@@ -214,13 +212,25 @@ async function carryATranslation(page, found) {
     found.push([named('a translation’s turn carried through the relay'), String(error).split('\n')[0]])
     // A turn left waiting would refuse every one that follows: another demo forgets it, and
     // the starter is chosen again for them.
-    await page.getByRole('combobox', { name: 'Demo' }).selectOption('wizard').catch(() => undefined)
-    await page.getByRole('combobox', { name: 'Demo' }).selectOption('starter').catch(() => undefined)
+    await page
+      .getByRole('combobox', { name: 'Demo' })
+      .selectOption('wizard')
+      .catch(() => undefined)
+    await page
+      .getByRole('combobox', { name: 'Demo' })
+      .selectOption('starter')
+      .catch(() => undefined)
   } finally {
     // The turns that follow start in React, under Fields, so a failure here is named once
     // rather than as theirs too.
-    await page.getByRole('combobox', { name: 'Builder' }).selectOption('react').catch(() => undefined)
-    await page.getByRole('button', { name: 'Fields', exact: true }).click().catch(() => undefined)
+    await page
+      .getByRole('combobox', { name: 'Builder' })
+      .selectOption('react')
+      .catch(() => undefined)
+    await page
+      .getByRole('button', { name: 'Fields', exact: true })
+      .click()
+      .catch(() => undefined)
   }
 }
 
@@ -265,9 +275,7 @@ async function carryOne(page, found, { where, ask, word, fields, shows, between 
     }
 
     const answer = JSON.stringify({ specVersion: '2', id: 'proposed', title: 'Proposed', model: { fields } })
-    await relay
-      .getByRole('textbox', { name: 'The model’s answer' })
-      .fill(`Here is the form:\n\n\`\`\`json\n${answer}\n\`\`\``)
+    await relay.getByRole('textbox', { name: 'The model’s answer' }).fill(`Here is the form:\n\n\`\`\`json\n${answer}\n\`\`\``)
     await relay.getByRole('button', { name: 'Check this answer', exact: true }).click()
     await page.getByRole('heading', { name: /Review these changes/ }).waitFor({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Apply these changes', exact: true }).click()
@@ -305,9 +313,7 @@ export async function checkNoForeignRequests(browser, origin, check) {
       // Hints, from every frame: a connection opened is an address disclosed.
       for (const each of page.frames()) {
         const hinted = await each.evaluate(() =>
-          [...document.querySelectorAll('link[rel~="preconnect"], link[rel~="dns-prefetch"]')].map(
-            (link) => ({ href: link.href, rel: link.rel }),
-          ),
+          [...document.querySelectorAll('link[rel~="preconnect"], link[rel~="dns-prefetch"]')].map((link) => ({ href: link.href, rel: link.rel })),
         )
         for (const { href, rel } of hinted) {
           const at = new URL(href, origin)
@@ -315,22 +321,14 @@ export async function checkNoForeignRequests(browser, origin, check) {
         }
       }
 
-      check(
-        `${label} asks no other site for anything`,
-        foreign.size === 0 ? null : `it asked ${[...foreign].sort().join(', ')}`,
-      )
-      check(
-        `and the recorder saw ${label} ask this one, so it was listening`,
-        own.length > 0 ? null : 'no request reached the route at all',
-      )
+      check(`${label} asks no other site for anything`, foreign.size === 0 ? null : `it asked ${[...foreign].sort().join(', ')}`)
+      check(`and the recorder saw ${label} ask this one, so it was listening`, own.length > 0 ? null : 'no request reached the route at all')
       // What the settling found on the way: a step that did not happen is not a clean page.
       for (const [name, problem] of settled) check(name, problem)
       if (frame !== undefined) {
         check(
           'and it saw the embedded starter’s own requests, so a frame is covered',
-          own.some((pathname) => pathname.startsWith(frame) && pathname !== frame)
-            ? null
-            : `nothing under ${frame} was routed besides the frame itself`,
+          own.some((pathname) => pathname.startsWith(frame) && pathname !== frame) ? null : `nothing under ${frame} was routed besides the frame itself`,
         )
       }
 
@@ -344,18 +342,9 @@ export async function checkNoForeignRequests(browser, origin, check) {
          */
         const faces = await page.evaluate(async () => {
           await document.fonts.ready
-          const first = (element) =>
-            element === null
-              ? null
-              : getComputedStyle(element).fontFamily.split(',')[0].replace(/["']/g, '').trim()
-          const asked = [...new Set([first(document.querySelector('h1')), first(document.body)])].filter(
-            (family) => family !== null,
-          )
-          const loaded = new Set(
-            [...document.fonts]
-              .filter((face) => face.status === 'loaded')
-              .map((face) => face.family.replace(/["']/g, '')),
-          )
+          const first = (element) => (element === null ? null : getComputedStyle(element).fontFamily.split(',')[0].replace(/["']/g, '').trim())
+          const asked = [...new Set([first(document.querySelector('h1')), first(document.body)])].filter((family) => family !== null)
+          const loaded = new Set([...document.fonts].filter((face) => face.status === 'loaded').map((face) => face.family.replace(/["']/g, '')))
           return { asked, missing: asked.filter((family) => !loaded.has(family)) }
         })
         check(

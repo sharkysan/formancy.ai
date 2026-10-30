@@ -8,6 +8,69 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**`@formancy/code-style` is a new package: the ESLint rules and the Prettier format the
+formancy repositories share.** Repositories lint and format alike only while they hold the
+same rules, and a copy in each lets a rule changed in one differ in the others until somebody
+copies it again. Published, the module is a version each pins. `eslintConfig` makes a
+repository's ESLint configuration from its own paths, `prettierConfig` is the format, and
+`EXTENSIONS` and `FILES` name the files both tools read. ESLint, Prettier and TypeScript are
+peers the repository brings. Nothing a form, a builder or the server runs imports it, and
+`pnpm test:e2e:install` installs it from its tarball and lints a file with it.
+
+**CI fails a change that breaks the lint rules or the format**
+([0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
+Style was held by habit, and a promise nobody awaits or an `any` from a parse by nobody: CI's
+`verify`, and a release before it publishes, now run `pnpm lint`, `@eslint/js`'s and
+typescript-eslint's type-aware recommended rules at error, and `pnpm format:check`, Prettier over
+every TypeScript and JavaScript file, both from `@formancy/code-style`. Every file was formatted
+in one commit, which `.git-blame-ignore-revs` has blame skip, and every finding fixed; the five
+that were defects are the entries below. A branch begun before the format conflicts with it
+wherever the format rewrote a line the branch changed: merge `main`, resolve, and run
+`pnpm format`. Interfaces whose functions need no `this` — `FieldBinding` and `UploadOptions`
+in both renderers, core's `UploadQueue`, server-core's `ServerDeps` and `AuthDeps`, and the
+builder's `PromptRun`, `DraftRun`, `TranslationRun` and `Relay` — now declare those functions
+with `this: void`, which says they may be passed on detached, as
+`@typescript-eslint/unbound-method` reads it. They are still methods, so an implementation's
+parameters are checked as they were. The one thing refused that compiled before is an object
+literal written in their place whose function reads `this`, which `this: void` makes `void`
+(TS2339): passed on detached, it would have lost its `this` anyway.
+
+**The React builder named the Remove button of a translated choice "Remove [object Object]".** A
+choice whose label is a message reference, which a translated form holds, had its label written
+out as a string, so five translated choices were five identical, meaningless announcements to a
+screen reader. It names the choice by its value, as the Angular builder already did. Found by
+`@typescript-eslint/no-base-to-string`, which the repository now runs.
+
+**A code node bound to an answer that is not text, a number or a boolean draws nothing, in both renderers.**
+An object or a list stored in the field was written out as `[object Object]` (or its items joined)
+and drawn as a scannable code of that. A submission is untrusted and the engine keeps what it is
+given, so the code is now drawn only from a string, a number or a boolean.
+
+**An expression that returns a record with numeric `seconds` and `nanos` keys returns the record.**
+Evaluating an expression took any such object for one of CEL's durations and returned the
+string `[object Object]`; CEL's own durations carry `seconds` as a bigint, so the branch never served
+one. A form's data can hold a record with those keys, and an expression handing it back gave a
+string that said nothing of it.
+
+**A submission read back in words, and a rule's explanation of why a field is hidden, say an
+answer of an unexpected shape as the data it is.** A quantity, a tick or a choice holding a record
+was said as `[object Object]` in a response's text (an uploaded item that is no file record too) and in "it is …" beside a rule; both now give
+its JSON, which a reviewer can read. A submission is untrusted, so the shape of an answer is not
+the shape its question takes. One function says it for both, `answerAsStored`, which
+`@formancy/core/words` now exports, so that the builder's explanation and the submission read back
+cannot say one answer two ways; a host saying an answer its question does not take can call it too.
+A value that is no record or list is said as `String` says it, as before: JSON would have thrown on
+a bigint, which a host's answers can hold though a stored submission cannot, and written NaN as
+"null", which reads as nothing answered.
+
+**The admin's fill pane posts the answers, not the outcome of pressing Submit.** The form hands
+its handler `{ ok, errors, data }` and the pane sent that whole object as the response, so the
+server received the answers under a `data` key beside `ok` and `errors`, and a form the respondent
+had not filled in validly was sent as readily. It now sends `data`, and sends nothing when the
+form refused. Found by `@typescript-eslint/no-misused-promises` on the async handler.
+
 ## 0.11.0 — 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a

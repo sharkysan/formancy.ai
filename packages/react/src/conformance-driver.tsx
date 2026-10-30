@@ -137,10 +137,7 @@ export function createReactDriver(): RendererDriver {
           <FormancyProvider engine={engine!}>
             {/* No `submitLabel`: the button is found by the form's own word for it, so
                 the suite holds the default rather than a name the driver chose. */}
-            <FormancyForm
-              onSubmit={(outcome) => (lastOutcome = outcome)}
-              {...(options?.layout === undefined ? {} : { layout: options.layout })}
-            />
+            <FormancyForm onSubmit={(outcome) => (lastOutcome = outcome)} {...(options?.layout === undefined ? {} : { layout: options.layout })} />
           </FormancyProvider>,
         )
         await new Promise((resolve) => setTimeout(resolve, 0))
@@ -157,7 +154,7 @@ export function createReactDriver(): RendererDriver {
       if (def?.type === 'radio') {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const chosen = (def.options ?? []).find((option) => option.value === value)
-        if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
+        if (chosen === undefined) throw new Error(`No option "${said(value)}" on "${path}"`)
         await settle(() => {
           fireEvent.click(within(group).getByLabelText(textOf(chosen.label) ?? chosen.value))
         })
@@ -178,9 +175,7 @@ export function createReactDriver(): RendererDriver {
           const column = (def.options ?? []).find((candidate) => candidate.value === columnValue)
           const rowGroup = within(group).getByRole('group', { name: textOf(row?.label) ?? rowValue })
           await settle(() => {
-            fireEvent.click(
-              within(rowGroup).getByRole('radio', { name: textOf(column?.label) ?? String(columnValue) }),
-            )
+            fireEvent.click(within(rowGroup).getByRole('radio', { name: textOf(column?.label) ?? said(columnValue) }))
           })
         }
         return
@@ -212,9 +207,7 @@ export function createReactDriver(): RendererDriver {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const wanted = new Set((Array.isArray(value) ? value : []).map(String))
         for (const option of def.options ?? []) {
-          const box = within(group).getByLabelText(
-            textOf(option.label) ?? option.value,
-          ) as HTMLInputElement
+          const box = within(group).getByLabelText<HTMLInputElement>(textOf(option.label) ?? option.value)
           if (box.checked !== wanted.has(option.value)) {
             await settle(() => {
               fireEvent.click(box)
@@ -232,7 +225,7 @@ export function createReactDriver(): RendererDriver {
           if ((control as HTMLInputElement).checked !== (value === true)) fireEvent.click(control)
         } else {
           fireEvent.focus(control)
-          fireEvent.change(control, { target: { value: value === null ? '' : String(value) } })
+          fireEvent.change(control, { target: { value: value === null ? '' : said(value) } })
           fireEvent.blur(control)
         }
       })
@@ -253,9 +246,7 @@ export function createReactDriver(): RendererDriver {
         const target = path.slice(0, separator)
         const command = path.slice(separator + 1)
         const repeaterWire = target.replace(/\[\d+\]$/, '')
-        const def = fieldAtPath(schema, repeaterWire) as
-          | { addLabel?: string; removeLabel?: string; label?: Text }
-          | undefined
+        const def = fieldAtPath(schema, repeaterWire) as { addLabel?: string; removeLabel?: string; label?: Text } | undefined
         // The document's words, or the form's when it has none — the renderer's rule.
         const label = textOf(def?.label) ?? repeaterWire
         if (command === 'add') {
@@ -291,9 +282,7 @@ export function createReactDriver(): RendererDriver {
 
     async valueOf(path) {
       const { schema } = requireMounted()
-      const def = fieldAtPath(schema, path) as
-        | { type?: string; mask?: string; options?: Array<{ value: string; label: unknown }> }
-        | undefined
+      const def = fieldAtPath(schema, path) as { type?: string; mask?: string; options?: Array<{ value: string; label: unknown }> } | undefined
       if (def?.type === 'radio') {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const checked = within(group)
@@ -421,9 +410,7 @@ export function createReactDriver(): RendererDriver {
       if (lastOutcome === undefined) throw new Error('the submit control reported no outcome')
       const outcome = lastOutcome
       lastOutcome = undefined
-      const messages: ConformanceMessage[] = Object.entries(outcome.errors).flatMap(([errorPath, codes]) =>
-        codes.map((code) => ({ path: errorPath, code })),
-      )
+      const messages: ConformanceMessage[] = Object.entries(outcome.errors).flatMap(([errorPath, codes]) => codes.map((code) => ({ path: errorPath, code })))
       if (outcome.ok) {
         return { status: 'accepted', data: outcome.data as JsonValue, messages }
       }
@@ -462,9 +449,7 @@ async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
     ...ACCESSIBILITY_EXCLUSIONS,
     ...ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
   }
-  const rules = Object.fromEntries(
-    Object.keys(disabled).map((id) => [id, { enabled: false }] as const),
-  )
+  const rules = Object.fromEntries(Object.keys(disabled).map((id) => [id, { enabled: false }] as const))
 
   const results = await axe.run(document.body, {
     runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
@@ -476,13 +461,16 @@ async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
 
   return results.violations.map((violation) => ({
     id: violation.id,
-    ...(violation.impact === undefined || violation.impact === null
-      ? {}
-      : { impact: violation.impact }),
+    ...(violation.impact === undefined || violation.impact === null ? {} : { impact: violation.impact }),
     help: violation.help,
     helpUrl: violation.helpUrl,
     nodes: violation.nodes.map((node) => node.html),
   }))
+}
+
+/** A value as a person would read it in a message or type it into a control; a string as it is. */
+function said(value: JsonValue): string {
+  return typeof value === 'string' ? value : JSON.stringify(value)
 }
 
 function escapeRegExp(value: string): string {

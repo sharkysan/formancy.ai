@@ -43,10 +43,7 @@ export function PublishNote({ state }: { state: PublishResult | undefined }): Re
          * status" would find whichever came first.
          */
         <div className="wb-warnings" role="status" aria-label="Publish warnings">
-          <p>
-            Published, with {state.warnings.length === 1 ? 'something' : 'things'} worth
-            checking:
-          </p>
+          <p>Published, with {state.warnings.length === 1 ? 'something' : 'things'} worth checking:</p>
           <ul>
             {state.warnings.map((warning) => (
               <li key={warning}>{warning}</li>

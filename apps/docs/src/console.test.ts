@@ -55,9 +55,7 @@ function publishedPackages(): Array<{ dir: string; name: string }> {
     .flatMap((entry) => {
       let manifest: { name?: string; private?: boolean; exports?: unknown; main?: unknown }
       try {
-        manifest = JSON.parse(
-          readFileSync(join(root, entry.name, 'package.json'), 'utf8'),
-        ) as typeof manifest
+        manifest = JSON.parse(readFileSync(join(root, entry.name, 'package.json'), 'utf8')) as typeof manifest
       } catch {
         return []
       }
@@ -74,8 +72,7 @@ function shippedSource(dir: string): string[] {
     for (const entry of readdirSync(at, { withFileTypes: true })) {
       const path = join(at, entry.name)
       if (entry.isDirectory()) walk(path)
-      else if (/\.(ts|tsx|mts|js|mjs)$/.test(entry.name) && !/\.test\.|\.spec\./.test(entry.name))
-        out.push(path)
+      else if (/\.(ts|tsx|mts|js|mjs)$/.test(entry.name) && !/\.test\.|\.spec\./.test(entry.name)) out.push(path)
     }
   }
   walk(join(dir, 'src'))
@@ -109,9 +106,7 @@ describe('a published package', () => {
       shippedSource(pkg.dir).flatMap((file) =>
         withoutComments(readFileSync(file, 'utf8'))
           .split('\n')
-          .flatMap((line, at) =>
-            /\bconsole\b/.test(line) ? [`${relative(repo, file).split(sep).join("/")}:${String(at + 1)}`] : [],
-          ),
+          .flatMap((line, at) => (/\bconsole\b/.test(line) ? [`${relative(repo, file).split(sep).join('/')}:${String(at + 1)}`] : [])),
       ),
     )
 

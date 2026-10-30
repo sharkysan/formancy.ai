@@ -59,10 +59,7 @@ export const LEADS: Readonly<Record<Feature, string>> = {
 }
 
 /** The suggestions drawn beside `feature`'s pane, in the order given. None for a form with none. */
-export function suggestionsFor(
-  all: readonly Suggestion[] | undefined,
-  feature: Feature,
-): readonly Suggestion[] {
+export function suggestionsFor(all: readonly Suggestion[] | undefined, feature: Feature): readonly Suggestion[] {
   return (all ?? []).filter((suggestion) => suggestion.feature === feature)
 }
 
@@ -110,12 +107,7 @@ export function canTry(suggestion: Suggestion, runs: ModelRuns, session: Builder
  * Hear every change that can move what `canTry` says of `feature`'s suggestions: its run's,
  * and the form's. Returns what stops listening to both.
  */
-export function followTrying(
-  feature: Feature,
-  runs: ModelRuns,
-  session: BuilderSession,
-  listener: () => void,
-): () => void {
+export function followTrying(feature: Feature, runs: ModelRuns, session: BuilderSession, listener: () => void): () => void {
   const fromRun = runs[feature].subscribe(listener)
   const fromForm = session.subscribe(listener)
   return () => {

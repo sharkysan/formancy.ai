@@ -19,9 +19,7 @@ describe('the admin', () => {
     // A stylesheet, a preconnect or a script on another origin is a request the
     // operator's browser makes before the admin has drawn anything. Every src and href
     // in the shell is read, not a list of the hosts that were there.
-    const elsewhere = [...shell.matchAll(/\s(?:src|href)="([^"]+)"/g)]
-      .map((match) => match[1]!)
-      .filter((address) => /^(?:https?:)?\/\//i.test(address))
+    const elsewhere = [...shell.matchAll(/\s(?:src|href)="([^"]+)"/g)].map((match) => match[1]!).filter((address) => /^(?:https?:)?\/\//i.test(address))
     expect(elsewhere).toEqual([])
   })
 
@@ -29,7 +27,10 @@ describe('the admin', () => {
     // The loader injects a script tag for `${paths.vs}/loader.js`; left unconfigured,
     // that is cdn.jsdelivr.net. main.tsx configures it before anything asks.
     document.body.innerHTML = '<div id="root"></div>'
-    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => undefined)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    )
     await import('./main.js')
     void loader.init().catch(() => undefined)
 

@@ -21,13 +21,7 @@
  * failed a renderer for something no conformance claim covers, and the first
  * time that happened somebody would turn the whole audit off.
  */
-export const ACCESSIBILITY_TAGS: readonly string[] = [
-  'wcag2a',
-  'wcag2aa',
-  'wcag21a',
-  'wcag21aa',
-  'wcag22aa',
-]
+export const ACCESSIBILITY_TAGS: readonly string[] = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 
 /**
  * Rules a form fragment cannot meaningfully be held to, with the reason each
@@ -41,16 +35,11 @@ export const ACCESSIBILITY_TAGS: readonly string[] = [
  * pages: `apps/site` and `apps/admin` are documents and are audited as such.
  */
 export const ACCESSIBILITY_EXCLUSIONS: Readonly<Record<string, string>> = {
-  'html-has-lang':
-    'A mounted form has no <html> element. The host page owns the document language.',
-  'landmark-one-main':
-    'A form is not a page and must not invent a <main>; the host page has one.',
-  'page-has-heading-one':
-    'A renderer that shipped its own <h1> would be imposing a document outline on its host.',
-  region:
-    'Every-region-is-a-landmark is a page-level rule. A form fragment has no landmarks to be outside of.',
-  'landmark-unique':
-    'Only reachable via the rule above, and meaningless without a page to hold the landmarks.',
+  'html-has-lang': 'A mounted form has no <html> element. The host page owns the document language.',
+  'landmark-one-main': 'A form is not a page and must not invent a <main>; the host page has one.',
+  'page-has-heading-one': 'A renderer that shipped its own <h1> would be imposing a document outline on its host.',
+  region: 'Every-region-is-a-landmark is a page-level rule. A form fragment has no landmarks to be outside of.',
+  'landmark-unique': 'Only reachable via the rule above, and meaningless without a page to hold the landmarks.',
 }
 
 /**
@@ -71,6 +60,5 @@ export const ACCESSIBILITY_EXCLUSIONS: Readonly<Record<string, string>> = {
  */
 export const ACCESSIBILITY_UNMEASURABLE_IN_JSDOM: Readonly<Record<string, string>> = {
   'color-contrast': 'jsdom has no layout and no computed colour. Checked in a browser instead.',
-  'target-size':
-    'WCAG 2.2 SC 2.5.8 is a measurement in CSS pixels, and jsdom measures everything as zero.',
+  'target-size': 'WCAG 2.2 SC 2.5.8 is a measurement in CSS pixels, and jsdom measures everything as zero.',
 }

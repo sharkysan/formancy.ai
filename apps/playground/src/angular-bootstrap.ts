@@ -32,10 +32,7 @@ import { AngularPreview } from './angular-preview.js'
  * Separate from `angular-preview.ts` because the Angular compiler drops a plain
  * export that sits beside a component — see the note there.
  */
-export async function mountAngularPreview(
-  host: HTMLElement,
-  engine: FormEngine,
-): Promise<() => void> {
+export async function mountAngularPreview(host: HTMLElement, engine: FormEngine): Promise<() => void> {
   // Angular bootstraps into an element matching the component's selector and
   // will not create one. Made here rather than asked of the caller, so the React
   // side does not have to know the selector.

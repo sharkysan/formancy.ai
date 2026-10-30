@@ -42,7 +42,12 @@ function build(initialValue?: unknown) {
 
 describe('row-scoped computed rules', () => {
   test('computes per row, into that row', () => {
-    const engine = build({ items: [{ price: 10.0, qty: 2.0 }, { price: 5.0, qty: 3.0 }] })
+    const engine = build({
+      items: [
+        { price: 10.0, qty: 2.0 },
+        { price: 5.0, qty: 3.0 },
+      ],
+    })
 
     expect(engine.getFieldSnapshot(['items', 0, 'lineTotal']).value).toBe(20)
     expect(engine.getFieldSnapshot(['items', 1, 'lineTotal']).value).toBe(15)

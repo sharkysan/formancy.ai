@@ -78,6 +78,16 @@ describe('a code node with an answer', () => {
     expect(svg()).toBeNull()
   })
 
+  test('draws nothing for an answer that is not a value a code can carry', () => {
+    // An object stored in the field -- a submission is untrusted, and the engine keeps what it
+    // is given -- was written out as "[object Object]" and drawn as a scannable code of that.
+    const engine = mount()
+    act(() => {
+      engine.setValue(['reference'], { not: 'a reference' })
+    })
+    expect(svg()).toBeNull()
+  })
+
   test('takes its colour from the theme rather than choosing one', () => {
     // `currentColor` and no background. The library's own renderer emits fill="white" and
     // fill="black", which is a renderer shipping appearance -- the thing decision 0004
@@ -86,9 +96,7 @@ describe('a code node with an answer', () => {
     act(() => {
       engine.setValue(['reference'], 'AB-1234')
     })
-    const fills = new Set(
-      [...svg()!.querySelectorAll('rect')].map((rect) => rect.getAttribute('fill')),
-    )
+    const fills = new Set([...svg()!.querySelectorAll('rect')].map((rect) => rect.getAttribute('fill')))
     expect([...fills]).toEqual(['currentColor'])
     expect(svg()!.innerHTML).not.toMatch(/white|#fff/i)
   })

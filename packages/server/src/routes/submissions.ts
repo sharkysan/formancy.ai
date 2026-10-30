@@ -89,7 +89,7 @@ export async function submissionRoutes(
       if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
 
       return reply.send(
-        await mintChallenge({
+        mintChallenge({
           secret: challengeSecret,
           nowSeconds: Math.floor(new Date(deps.nowIso()).getTime() / 1000),
         }),
@@ -214,11 +214,7 @@ export async function submissionRoutes(
  * used — a correct solution stays correct, so without this one puzzle
  * would buy a thousand submissions.
  */
-async function checkChallenge(
-  deps: ServerDeps,
-  challengeSecret: string,
-  request: FastifyRequest,
-): Promise<{ error: string; message: string } | undefined> {
+async function checkChallenge(deps: ServerDeps, challengeSecret: string, request: FastifyRequest): Promise<{ error: string; message: string } | undefined> {
   const header = request.headers[CHALLENGE_HEADER]
   if (typeof header !== 'string' || header === '') {
     return {
@@ -233,7 +229,7 @@ async function checkChallenge(
   }
 
   const nowSeconds = Math.floor(new Date(deps.nowIso()).getTime() / 1000)
-  const verified = await verifySolution(challengeSecret, solution, nowSeconds)
+  const verified = verifySolution(challengeSecret, solution, nowSeconds)
   if (!verified.ok) {
     return {
       error: `challenge_${verified.reason}`,
@@ -243,10 +239,7 @@ async function checkChallenge(
 
   // The expiry comes back from verification rather than being parsed out of
   // the salt a second time — one place reads that format.
-  const spent = await deps.storage.spendChallenge(
-    verified.challenge,
-    new Date(verified.expiresAtSeconds * 1000).toISOString(),
-  )
+  const spent = await deps.storage.spendChallenge(verified.challenge, new Date(verified.expiresAtSeconds * 1000).toISOString())
   if (!spent) {
     return {
       error: 'challenge_spent',

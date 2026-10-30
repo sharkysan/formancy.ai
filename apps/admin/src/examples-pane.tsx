@@ -125,10 +125,7 @@ export function ExamplesPart({
   return (
     <>
       {model === undefined ? null : (
-        <ModelNote
-          model={model}
-          sends="what you say the form should do, its fields, labels and options, the sample and the names of its examples"
-        />
+        <ModelNote model={model} sends="what you say the form should do, its fields, labels and options, the sample and the names of its examples" />
       )}
       {problem}
       {kept.examples.unreadable === undefined ? null : (

@@ -1,12 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, test } from 'vitest'
 import schema from '../formancy.schema.json' with { type: 'json' }
-import {
-  acceptRemoteAnswer,
-  acceptRemoteOptions,
-  capRemoteAnswer,
-  capRemoteOptions,
-} from './options-source.js'
+import { acceptRemoteAnswer, acceptRemoteOptions, capRemoteAnswer, capRemoteOptions } from './options-source.js'
 
 /**
  * A list that arrives at runtime is unchecked input.
@@ -17,18 +12,14 @@ import {
  */
 describe('acceptRemoteOptions', () => {
   test('takes a list of value and label pairs', () => {
-    expect(acceptRemoteOptions([{ value: 'ZH', label: 'Zürich' }])).toEqual([
-      { value: 'ZH', label: 'Zürich' },
-    ])
+    expect(acceptRemoteOptions([{ value: 'ZH', label: 'Zürich' }])).toEqual([{ value: 'ZH', label: 'Zürich' }])
   })
 
   test('keeps only value and label, so nothing else a source sends reaches a renderer', () => {
     // A source that returns its whole row would otherwise hand the control an object
     // with a `disabled`, an `href` or a `__proto__`, and some renderer would eventually
     // spread it into markup.
-    expect(
-      acceptRemoteOptions([{ value: 'ZH', label: 'Zürich', extra: 'ignored', disabled: true }]),
-    ).toEqual([{ value: 'ZH', label: 'Zürich' }])
+    expect(acceptRemoteOptions([{ value: 'ZH', label: 'Zürich', extra: 'ignored', disabled: true }])).toEqual([{ value: 'ZH', label: 'Zürich' }])
   })
 
   test('refuses the WHOLE list when one row is unusable, rather than dropping it', () => {
@@ -36,9 +27,7 @@ describe('acceptRemoteOptions', () => {
     // "your source does not have it" from "we dropped it". The scanner refuses a
     // non-string from a plain-JavaScript host the same way.
     expect(acceptRemoteOptions([{ value: 'ZH', label: 'Zürich' }, { value: 'BE' }])).toBeUndefined()
-    expect(
-      acceptRemoteOptions([{ value: 'ZH', label: 'Zürich' }, { label: 'Bern' }]),
-    ).toBeUndefined()
+    expect(acceptRemoteOptions([{ value: 'ZH', label: 'Zürich' }, { label: 'Bern' }])).toBeUndefined()
   })
 
   test('refuses a label that is a message reference rather than showing it raw', () => {
@@ -165,9 +154,7 @@ describe('acceptRemoteAnswer', () => {
 
   test('keeps only value and label from a page’s rows, as from a list’s', () => {
     // The rows are the same unchecked input whichever envelope they arrive in.
-    expect(
-      acceptRemoteAnswer({ options: [{ ...zurich, disabled: true }], more: false })?.options,
-    ).toEqual([zurich])
+    expect(acceptRemoteAnswer({ options: [{ ...zurich, disabled: true }], more: false })?.options).toEqual([zurich])
   })
 
   test('refuses the WHOLE answer when a page does not say plainly whether it goes on', () => {
@@ -184,10 +171,7 @@ describe('acceptRemoteAnswer', () => {
     // A count that is not a whole number of rows cannot be said honestly, and one past
     // the safe integers cannot be said exactly.
     for (const withheld of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, '2', null, 2 ** 53]) {
-      expect(
-        acceptRemoteAnswer({ options: [zurich], more: false, withheld }),
-        String(withheld),
-      ).toBeUndefined()
+      expect(acceptRemoteAnswer({ options: [zurich], more: false, withheld }), String(withheld)).toBeUndefined()
     }
   })
 
@@ -270,9 +254,7 @@ describe('capRemoteAnswer', () => {
   test('and is one value however often it is answered, so storing it again changes nothing', () => {
     // React's state and Angular's signals compare by identity: a fresh "complete" per
     // answer would render every control again on every search that found everything.
-    expect(capRemoteAnswer(page(false), 10).completeness).toBe(
-      capRemoteAnswer(page(false, 0, rows.slice(0, 2)), 10).completeness,
-    )
+    expect(capRemoteAnswer(page(false), 10).completeness).toBe(capRemoteAnswer(page(false, 0, rows.slice(0, 2)), 10).completeness)
   })
 
   test('a limit that is not a limit shows everything and still says what the source left out', () => {
@@ -298,10 +280,7 @@ describe('capRemoteAnswer', () => {
         fc.nat(30),
         fc.boolean(),
         fc.nat(5),
-        fc.oneof(
-          fc.integer({ min: 1, max: 40 }),
-          fc.constantFrom(0, -1, Number.NaN, Number.POSITIVE_INFINITY),
-        ),
+        fc.oneof(fc.integer({ min: 1, max: 40 }), fc.constantFrom(0, -1, Number.NaN, Number.POSITIVE_INFINITY)),
         (length, more, withheld, limit) => {
           const options = Array.from({ length }, (_, index) => ({
             value: `v${String(index)}`,
@@ -329,9 +308,11 @@ describe('the length bound is the format’s own', () => {
     //
     // So the constant is written in the module and checked here. If the schema ever
     // allows a longer option value, this fails and names the new number.
-    const declared = (schema as unknown as {
-      $defs: { fieldOption: { properties: { value: { maxLength: number } } } }
-    }).$defs.fieldOption.properties.value.maxLength
+    const declared = (
+      schema as unknown as {
+        $defs: { fieldOption: { properties: { value: { maxLength: number } } } }
+      }
+    ).$defs.fieldOption.properties.value.maxLength
 
     // The longest value the module accepts, probed rather than exported: a constant
     // exported only for its test is a constant the test cannot be wrong about.

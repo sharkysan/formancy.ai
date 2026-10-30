@@ -140,7 +140,7 @@ function logger(write: (line: Line) => void, level: LogLevel, reqId: unknown): F
   const at =
     (lineLevel: LogLevel) =>
     (first?: unknown): void => {
-      const given = (first instanceof Error ? { err: first } : isRecord(first) ? first : {}) as Record<string, unknown>
+      const given = first instanceof Error ? { err: first } : isRecord(first) ? first : {}
       const event = given['event'] !== 'unlisted' && KINDS.event(given['event']) ? (given['event'] as LogEvent) : undefined
       // Below warn, a line nobody named is Fastify saying it is listening or that a route was
       // not found: nothing an operator reads, and the words are a raw URL.
@@ -258,9 +258,7 @@ function where(request: FastifyRequest): { reqId: string; method: string; route:
  * Without one, Fastify answers what it refuses before routing by hand, as it always has; with
  * one, through the reply so the refusal can be written — the same status and the same fields.
  */
-export function serverLogOptions(
-  log: ServerLogSettings | undefined,
-): Pick<FastifyServerOptions, 'loggerInstance' | 'logController' | 'frameworkErrors'> {
+export function serverLogOptions(log: ServerLogSettings | undefined): Pick<FastifyServerOptions, 'loggerInstance' | 'logController' | 'frameworkErrors'> {
   if (log === undefined) return {}
   const write = written(log.sink, log.level)
   const lines = new RequestLines(write)
@@ -330,9 +328,7 @@ export function workerLog(given: WorkerLog | undefined): WorkerLog {
  * and trigger that already exists. Those are `debug`; a `WARNING` is `warn`. With no log,
  * nowhere.
  */
-export function databaseNotices(
-  log: FastifyBaseLogger | undefined,
-): (notice: Readonly<Record<string, unknown>>) => void {
+export function databaseNotices(log: FastifyBaseLogger | undefined): (notice: Readonly<Record<string, unknown>>) => void {
   return (notice) => {
     if (log === undefined) return
     const line = { event: 'database.notice', code: notice['code'] }

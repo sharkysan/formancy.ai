@@ -36,12 +36,7 @@ export interface SaidAnswer {
  * `text` gives the words around the answers in the form's language, and `locale` the language
  * the document's own questions and options are read in — its default when not given.
  */
-export function answersInWords(
-  schema: FormSchema,
-  data: unknown,
-  text: FormText,
-  locale: string = schema.i18n?.defaultLocale ?? '',
-): SaidAnswer[] {
+export function answersInWords(schema: FormSchema, data: unknown, text: FormText, locale: string = schema.i18n?.defaultLocale ?? ''): SaidAnswer[] {
   return readAnswers(schema, data, text, locale, () => false).map(({ line }) => line)
 }
 
@@ -57,13 +52,7 @@ export interface ReadAnswer {
  * answer whether the person is being asked it — a review's question, never a stored
  * submission's — and such a field has a line saying so, in its place.
  */
-export function readAnswers(
-  schema: FormSchema,
-  data: unknown,
-  text: FormText,
-  locale: string,
-  asked: (field: string) => boolean,
-): ReadAnswer[] {
+export function readAnswers(schema: FormSchema, data: unknown, text: FormText, locale: string, asked: (field: string) => boolean): ReadAnswer[] {
   const language = text.locale === '' ? 'en-GB' : text.locale
   const out: ReadAnswer[] = []
   const unanswered = (path: string, field: string, label: string): void => {
@@ -120,13 +109,7 @@ export function readAnswers(
  * list, "Food: High and Room: Low" — or nothing when it has none. What a field a computed rule
  * writes is drawn as, where its own control has no read-only state (0216).
  */
-export function answerInWords(
-  schema: FormSchema,
-  def: FieldDef,
-  value: unknown,
-  text: FormText,
-  locale: string = schema.i18n?.defaultLocale ?? '',
-): string {
+export function answerInWords(schema: FormSchema, def: FieldDef, value: unknown, text: FormText, locale: string = schema.i18n?.defaultLocale ?? ''): string {
   const language = text.locale === '' ? 'en-GB' : text.locale
   const optionLabel = optionLabeller(schema, locale)
   if (ANSWER_KINDS[def.type].shape === 'matrix' && isRecord(value)) {
@@ -144,7 +127,7 @@ export function answerInWords(
 function optionLabeller(schema: FormSchema, locale: string) {
   return (options: readonly FieldOption[] | undefined, value: unknown): string => {
     const option = options?.find((candidate) => candidate.value === value)
-    return option === undefined ? String(value) : (resolveText(schema, option.label, locale) ?? option.value)
+    return option === undefined ? answerAsStored(value) : (resolveText(schema, option.label, locale) ?? option.value)
   }
 }
 
@@ -160,22 +143,32 @@ function sayAnswer(
   if (Array.isArray(value) && value.length === 0) return undefined
   switch (ANSWER_KINDS[def.type].shape) {
     case 'boolean':
-      return typeof value === 'boolean' ? text(value ? 'answer.yes' : 'answer.no') : String(value)
+      return typeof value === 'boolean' ? text(value ? 'answer.yes' : 'answer.no') : answerAsStored(value)
     case 'number':
-      return typeof value === 'number' ? new Intl.NumberFormat(language).format(value) : String(value)
+      return typeof value === 'number' ? new Intl.NumberFormat(language).format(value) : answerAsStored(value)
     case 'temporal':
-      return typeof value === 'string' ? temporal(def, value, language) : String(value)
+      return typeof value === 'string' ? temporal(def, value, language) : answerAsStored(value)
     case 'choice':
       return optionLabel(def.options, value)
     case 'choices':
-      return Array.isArray(value) ? list(value.map((item) => optionLabel(def.options, item)), language) : String(value)
+      return Array.isArray(value)
+        ? list(
+            value.map((item) => optionLabel(def.options, item)),
+            language,
+          )
+        : answerAsStored(value)
     case 'files':
-      return Array.isArray(value) ? list(value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : String(file))), language) : String(value)
+      return Array.isArray(value)
+        ? list(
+            value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : answerAsStored(file))),
+            language,
+          )
+        : answerAsStored(value)
     case 'signature':
       if (isRecord(value) && typeof value['typed'] === 'string') return value['typed']
       return text('answer.drawnSignature')
     default:
-      return typeof value === 'string' ? value : JSON.stringify(value)
+      return answerAsStored(value)
   }
 }
 
@@ -189,6 +182,17 @@ function temporal(def: FieldDef, value: string, language: string): string {
     return `${said} UTC`
   }
   return value
+}
+
+/**
+ * An answer as it was stored, for one the question does not take: a record or a list is its
+ * JSON, not "[object Object]", and a bigint in it its digits; anything else is what `String`
+ * writes. Not JSON throughout: a host's answers can hold what no stored submission can, and
+ * JSON throws on a bigint and writes NaN as "null", which reads as nothing answered.
+ */
+export function answerAsStored(value: unknown): string {
+  if (typeof value !== 'object' || value === null) return String(value)
+  return JSON.stringify(value, (_key, item: unknown) => (typeof item === 'bigint' ? String(item) : item))
 }
 
 function list(items: readonly string[], language: string): string {

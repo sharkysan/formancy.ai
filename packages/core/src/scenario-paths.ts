@@ -89,9 +89,7 @@ function walk(defs: readonly FieldDef[], rest: Path, at: Path, inRow: boolean): 
     if (placed.kind === 'missing' || placed.kind === 'nested') return placed
     return { kind: 'unplaced', example: placed.kind === 'field' ? [...here, 0, ...tail] : placed.example }
   }
-  return after.length > 0
-    ? walk(inside, after, [...here, index], true)
-    : { kind: 'row', example: firstField(inside, [...here, index]) }
+  return after.length > 0 ? walk(inside, after, [...here, index], true) : { kind: 'row', example: firstField(inside, [...here, index]) }
 }
 
 // The field keyed `key` among `defs`, looking through pages, which scope nothing; or the page itself.

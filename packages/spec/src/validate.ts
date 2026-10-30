@@ -17,9 +17,7 @@ import type { SchemaError } from './schema-errors.js'
 /** One reason a document is not a valid formancy form. */
 export type { SchemaError }
 
-export type ValidationResult =
-  | { valid: true; schema: FormSchema }
-  | { valid: false; errors: SchemaError[] }
+export type ValidationResult = { valid: true; schema: FormSchema } | { valid: false; errors: SchemaError[] }
 
 /**
  * Check that an unknown value is a formancy form document.
@@ -94,9 +92,7 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     if (field.widget === 'datagrid') {
       for (const [index, child] of (field.fields ?? []).entries()) {
         if (child.fields === undefined) continue
-        errors.push(
-          schemaError(`${path}/fields/${String(index)}`, 'grid.rowNotFlat', { key: child.key }),
-        )
+        errors.push(schemaError(`${path}/fields/${String(index)}`, 'grid.rowNotFlat', { key: child.key }))
       }
     }
 
@@ -128,11 +124,7 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     // a plain string comparison precisely because the shapes are fixed-width and
     // zero-padded: that is the property TEMPORAL_SHAPES exists to guarantee, and it
     // is why this rule can be three lines rather than a date parser.
-    if (
-      field.earliest !== undefined &&
-      field.latest !== undefined &&
-      field.earliest > field.latest
-    ) {
+    if (field.earliest !== undefined && field.latest !== undefined && field.earliest > field.latest) {
       errors.push(
         schemaError(`${path}/earliest`, 'bounds.crossed', {
           earliest: field.earliest,
@@ -253,9 +245,7 @@ function logicErrors(schema: FormSchema): SchemaError[] {
   // The keys of the pages, which are the only legal target of a `skip`. A page is
   // transparent for data and has no data path at all — measured before this
   // existed, a rule aimed at one was refused with "No field has the data path".
-  const pageKeys = new Set(
-    schema.model.fields.filter((field) => field.type === 'page').map((field) => field.key),
-  )
+  const pageKeys = new Set(schema.model.fields.filter((field) => field.type === 'page').map((field) => field.key))
   const claimedKinds = new Set<string>()
   const errors: SchemaError[] = []
 
@@ -289,9 +279,7 @@ function logicErrors(schema: FormSchema): SchemaError[] {
     // a check and make it a second opinion.
     if (rule.kind !== 'validate' && rule.kind !== 'check') {
       if (rule.runsOn !== undefined) {
-        errors.push(
-          schemaError(`/logic/rules/${String(index)}/runsOn`, 'rule.runsOn', { kind: rule.kind }),
-        )
+        errors.push(schemaError(`/logic/rules/${String(index)}/runsOn`, 'rule.runsOn', { kind: rule.kind }))
       }
 
       const claim = `${rule.kind}:${rule.target}`
@@ -334,8 +322,6 @@ function sharedCodeErrors(rules: readonly LogicRule[]): SchemaError[] {
   return errors
 }
 
-
-
 /**
  * The presentation sections: every message reference must resolve, and every
  * layout must place real fields, once each.
@@ -349,9 +335,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
   const i18n = schema.i18n
 
   if (i18n !== undefined && i18n.messages[i18n.defaultLocale] === undefined) {
-    errors.push(
-      schemaError('/i18n/defaultLocale', 'i18n.noDefaultCatalogue', { locale: i18n.defaultLocale }),
-    )
+    errors.push(schemaError('/i18n/defaultLocale', 'i18n.noDefaultCatalogue', { locale: i18n.defaultLocale }))
   }
 
   const known = new Set(Object.keys(i18n?.messages[i18n.defaultLocale] ?? {}))
@@ -362,9 +346,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
       return
     }
     if (!known.has(text.$t)) {
-      errors.push(
-        schemaError(path, 'i18n.unknownMessage', { id: text.$t, locale: i18n.defaultLocale }),
-      )
+      errors.push(schemaError(path, 'i18n.unknownMessage', { id: text.$t, locale: i18n.defaultLocale }))
     }
   }
 
@@ -399,11 +381,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
     /** Where each field was first placed, for the rule about groups below. */
     const placedAt = new Map<string, string>()
     const duplicates = new Set<string>()
-    const walkNodes = (
-      nodes: readonly LayoutNode[],
-      nodeBase: string,
-      parent?: LayoutNode,
-    ): void => {
+    const walkNodes = (nodes: readonly LayoutNode[], nodeBase: string, parent?: LayoutNode): void => {
       for (const [nodeIndex, node] of nodes.entries()) {
         const nodePath = `${nodeBase}/${String(nodeIndex)}`
 
@@ -440,9 +418,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
           // a form showing a booking reference as a field and again as a code is doing
           // what it meant to.
           if (!placeable.has(node.path)) {
-            errors.push(
-              schemaError(`${nodePath}/path`, 'layout.codeUnknownPath', { path: node.path }),
-            )
+            errors.push(schemaError(`${nodePath}/path`, 'layout.codeUnknownPath', { path: node.path }))
           }
           // A code says what it IS, or it says nothing anybody can use. The picture is
           // decoration a screen reader cannot read, and the value beneath it sits in an
@@ -509,9 +485,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
       for (let end = 1; end < segments.length; end += 1) {
         const group = segments.slice(0, end).join('.')
         if (placedAt.has(group)) {
-          errors.push(
-            schemaError(pointer, 'layout.placedInGroup', { path, group, layout: layout.name }),
-          )
+          errors.push(schemaError(pointer, 'layout.placedInGroup', { path, group, layout: layout.name }))
           break
         }
       }
@@ -574,11 +548,7 @@ function forbidNestedPages(field: FieldDef, path: string, errors: SchemaError[])
 
 /** Every field in the document, container children included, with the JSON
  *  Pointer that names it. */
-function* walkFields(
-  fields: readonly FieldDef[],
-  base: string,
-  insideRepeater = false,
-): Generator<{ field: FieldDef; path: string; insideRepeater: boolean }> {
+function* walkFields(fields: readonly FieldDef[], base: string, insideRepeater = false): Generator<{ field: FieldDef; path: string; insideRepeater: boolean }> {
   for (const [index, field] of fields.entries()) {
     const path = `${base}/${String(index)}`
     yield { field, path, insideRepeater }

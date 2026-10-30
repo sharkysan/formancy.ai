@@ -7,7 +7,6 @@ import type { StoredFile } from '../uploads.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 import { FormancyFileThumbnail } from './file-thumbnail.js'
 
-
 /**
  * The file control, over an uploader the host supplies.
  *

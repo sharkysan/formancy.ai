@@ -44,10 +44,7 @@ export type ServerOptionsSources = Readonly<Record<string, ServerOptionsSource>>
  * client dodge the check by omitting a property, and hidden branches have already
  * been stripped by the engine before this runs.
  */
-export function sourcedAnswers(
-  schema: FormSchema,
-  value: unknown,
-): ReadonlyArray<{ path: string; source: string; value: string }> {
+export function sourcedAnswers(schema: FormSchema, value: unknown): ReadonlyArray<{ path: string; source: string; value: string }> {
   const found: Array<{ path: string; source: string; value: string }> = []
 
   const walk = (fields: readonly FieldDef[], data: unknown, prefix: string): void => {
@@ -115,11 +112,7 @@ export type MembershipOutcome =
  * One call per source rather than per answer, so a deployment sees `IN (…)` and not
  * a query per row.
  */
-export async function checkMembership(
-  schema: FormSchema,
-  value: unknown,
-  sources: ServerOptionsSources | undefined,
-): Promise<MembershipOutcome> {
+export async function checkMembership(schema: FormSchema, value: unknown, sources: ServerOptionsSources | undefined): Promise<MembershipOutcome> {
   const answers = sourcedAnswers(schema, value)
   if (answers.length === 0 || sources === undefined) return { ok: true }
 

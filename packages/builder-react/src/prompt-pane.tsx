@@ -85,15 +85,7 @@ export interface PromptPaneProps {
   run?: PromptRun | undefined
 }
 
-export function PromptPane({
-  session,
-  ask,
-  attempts,
-  scenarios,
-  initialValue,
-  mode,
-  run: given,
-}: PromptPaneProps): ReactElement | null {
+export function PromptPane({ session, ask, attempts, scenarios, initialValue, mode, run: given }: PromptPaneProps): ReactElement | null {
   // Every word this pane shows, in the language the session was opened in (0114).
   const { text } = session
   /*
@@ -148,8 +140,7 @@ export function PromptPane({
    */
   const failed = result?.ok === false ? result : undefined
   const declined = failed?.ended === 'declined' ? failed.reason : undefined
-  const problems =
-    failed !== undefined && failed.ended !== 'declined' && failed.problems.length > 0 ? failed : undefined
+  const problems = failed !== undefined && failed.ended !== 'declined' && failed.problems.length > 0 ? failed : undefined
 
   const write = (): void => {
     // The examples in force with the document the answer is for, taken together.
@@ -168,12 +159,7 @@ export function PromptPane({
         placeholder={text('prompt.example')}
         onChange={(event) => run.instruct(event.target.value)}
       />
-      <button
-        ref={writeButton}
-        type="button"
-        disabled={busy || instruction.trim() === ''}
-        onClick={write}
-      >
+      <button ref={writeButton} type="button" disabled={busy || instruction.trim() === ''} onClick={write}>
         {busy ? text('prompt.writing') : text('prompt.write')}
       </button>
       {busy ? (
@@ -198,9 +184,7 @@ export function PromptPane({
           {/* The words this answers. Once the run has answered the box above is the
               person's again, and may say something else — typed here, or in a pane over
               the same run in the other builder (0163). */}
-          {asked === undefined ? null : (
-            <p data-formancy-part="prompt-asked">{text('prompt.asked', { instruction: asked })}</p>
-          )}
+          {asked === undefined ? null : <p data-formancy-part="prompt-asked">{text('prompt.asked', { instruction: asked })}</p>}
           <ul data-formancy-part="prompt-changes">
             {proposal.changes.map((change) => (
               <li key={`${change.kind}:${change.path}`} data-severity={change.severity}>

@@ -77,9 +77,7 @@ const without = (sbom: Sbom, purl: string): Sbom => ({
 
 const dropEdge = (sbom: Sbom, from: string, to: string): Sbom => ({
   ...sbom,
-  dependencies: sbom.dependencies.map((entry) =>
-    entry.ref === from ? { ...entry, dependsOn: entry.dependsOn.filter((target) => target !== to) } : entry,
-  ),
+  dependencies: sbom.dependencies.map((entry) => (entry.ref === from ? { ...entry, dependsOn: entry.dependsOn.filter((target) => target !== to) } : entry)),
 })
 
 describe('the SBOM check', () => {
@@ -89,7 +87,7 @@ describe('the SBOM check', () => {
     expect(problems(cdxgen())).toEqual([])
   })
 
-  test('refuses an SBOM that does not name a published package at the release\'s version', () => {
+  test("refuses an SBOM that does not name a published package at the release's version", () => {
     // cdxgen over the workspace named none of them, because there they are links and not
     // packages: 0.6.0's SBOM named no `@formancy` package at all.
     const missing = problems(without(cdxgen(), 'pkg:npm/%40formancy/core@0.7.0'))
@@ -98,9 +96,7 @@ describe('the SBOM check', () => {
     // Nor one naming it at another version, as an install that fetched the last release
     // from the registry instead of this one's tarball would.
     const stale = cdxgen()
-    stale.components = stale.components.map((entry) =>
-      entry.purl === 'pkg:npm/%40formancy/core@0.7.0' ? component('@formancy/core', '0.6.0') : entry,
-    )
+    stale.components = stale.components.map((entry) => (entry.purl === 'pkg:npm/%40formancy/core@0.7.0' ? component('@formancy/core', '0.6.0') : entry))
     expect(problems(stale)).toContain('the SBOM names no @formancy/core 0.7.0, which this release publishes')
   })
 
@@ -112,29 +108,21 @@ describe('the SBOM check', () => {
     expect(sbom.components.map((entry) => entry.purl)).toContain('pkg:npm/%40marcbachmann/cel-js@8.0.0')
 
     const found = problems(sbom)
-    expect(found).toContain(
-      'the SBOM records no dependency of @formancy/expressions on @marcbachmann/cel-js, which its manifest declares',
-    )
-    expect(found).toContain(
-      'the SBOM gives no published package the CEL evaluator, @marcbachmann/cel-js, which decides whether a submission is valid',
-    )
+    expect(found).toContain('the SBOM records no dependency of @formancy/expressions on @marcbachmann/cel-js, which its manifest declares')
+    expect(found).toContain('the SBOM gives no published package the CEL evaluator, @marcbachmann/cel-js, which decides whether a submission is valid')
   })
 
   test('refuses an SBOM that leaves out a dependency a published package declares', () => {
     // tslib, which both Angular packages depend on, was missing from 0.6.0's SBOM, and most
     // of what fastify, which the server depends on, depends on in turn.
     const sbom = dropEdge(cdxgen(), ref('@formancy/spec', VERSION), ref('ajv', '8.20.0'))
-    expect(problems(sbom)).toEqual([
-      'the SBOM records no dependency of @formancy/spec on ajv, which its manifest declares',
-    ])
+    expect(problems(sbom)).toEqual(['the SBOM records no dependency of @formancy/spec on ajv, which its manifest declares'])
   })
 
   test('refuses an SBOM that gives a published package a dependency it does not name', () => {
     // An edge to a component the SBOM leaves out is a dependency nobody reading the
     // component list will find.
-    expect(problems(without(cdxgen(), 'pkg:npm/ajv@8.20.0'))).toEqual([
-      'the SBOM names no ajv 8.20.0, which it gives @formancy/spec',
-    ])
+    expect(problems(without(cdxgen(), 'pkg:npm/ajv@8.20.0'))).toEqual(['the SBOM names no ajv 8.20.0, which it gives @formancy/spec'])
   })
 
   test('refuses an SBOM that gives a published package another release of a sibling', () => {
@@ -144,13 +132,9 @@ describe('the SBOM check', () => {
     const sbom = cdxgen()
     sbom.components.push(component('@formancy/spec', '0.6.0'))
     sbom.dependencies = sbom.dependencies.map((entry) =>
-      entry.ref === ref('@formancy/core', VERSION)
-        ? { ...entry, dependsOn: [ref('@formancy/expressions', VERSION), ref('@formancy/spec', '0.6.0')] }
-        : entry,
+      entry.ref === ref('@formancy/core', VERSION) ? { ...entry, dependsOn: [ref('@formancy/expressions', VERSION), ref('@formancy/spec', '0.6.0')] } : entry,
     )
-    expect(problems(sbom)).toEqual([
-      'the SBOM gives @formancy/core @formancy/spec 0.6.0, where this release publishes 0.7.0',
-    ])
+    expect(problems(sbom)).toEqual(['the SBOM gives @formancy/core @formancy/spec 0.6.0, where this release publishes 0.7.0'])
   })
 
   test('refuses an SBOM without a dependency graph, rather than finding nothing wrong in it', () => {
@@ -161,9 +145,7 @@ describe('the SBOM check', () => {
 
     const unreadable = cdxgen()
     unreadable.dependencies = unreadable.dependencies.map((entry, index) => ({ ...entry, ref: `ref-${String(index)}` }))
-    expect(problems(unreadable)).toContain(
-      'the SBOM has no dependency graph, so it gives no published package anything',
-    )
+    expect(problems(unreadable)).toContain('the SBOM has no dependency graph, so it gives no published package anything')
 
     expect(problems(undefined).length).toBeGreaterThan(0)
   })
@@ -172,13 +154,8 @@ describe('the SBOM check', () => {
     // What a submission is checked by is not left to whatever the manifests say today:
     // were `@formancy/expressions` to stop declaring it, every check above would pass an
     // SBOM without it, and this one says so.
-    const declared = PACKAGES.map((entry) =>
-      entry.name === '@formancy/expressions' ? { ...entry, dependencies: [] } : entry,
-    )
-    const sbom = without(
-      dropEdge(cdxgen(), ref('@formancy/expressions', VERSION), ref(EVALUATOR, '8.0.0')),
-      'pkg:npm/%40marcbachmann/cel-js@8.0.0',
-    )
+    const declared = PACKAGES.map((entry) => (entry.name === '@formancy/expressions' ? { ...entry, dependencies: [] } : entry))
+    const sbom = without(dropEdge(cdxgen(), ref('@formancy/expressions', VERSION), ref(EVALUATOR, '8.0.0')), 'pkg:npm/%40marcbachmann/cel-js@8.0.0')
     expect(problems(sbom, declared)).toEqual([
       'the SBOM gives no published package the CEL evaluator, @marcbachmann/cel-js, which decides whether a submission is valid',
     ])
@@ -226,7 +203,11 @@ describe('what the check expects', () => {
     // apps and the workspace root as well.
     const expected = publishedByPnpm()
     expect(expected.length).toBeGreaterThan(10)
-    expect(released().map(({ name }) => name).sort()).toEqual(expected.sort())
+    expect(
+      released()
+        .map(({ name }) => name)
+        .sort(),
+    ).toEqual(expected.sort())
   })
 
   test('reads what each package declares, the evaluator and tslib among them', () => {

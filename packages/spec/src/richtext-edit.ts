@@ -57,11 +57,7 @@ const WRAPPERS: Readonly<Record<'strong' | 'emphasis', string>> = {
  * markers, whether the reader selected the word inside them or the whole
  * `**word**` including them. Both are the same gesture to the person doing it.
  */
-export function applyRichCommand(
-  command: RichCommand,
-  selection: TextSelection,
-  options: { readonly href?: string } = {},
-): EditResult {
+export function applyRichCommand(command: RichCommand, selection: TextSelection, options: { readonly href?: string } = {}): EditResult {
   if (command === 'link') return applyLink(selection, options.href ?? '')
   if (command === 'bulletList' || command === 'orderedList') {
     return applyList(selection, command === 'orderedList')
@@ -113,9 +109,7 @@ function applyLink(selection: TextSelection, href: string): EditResult {
     value: value.slice(0, start) + inserted + value.slice(end),
     // With no text selected the caret goes where the label belongs; with text
     // selected it goes to the href, which is the part still missing.
-    ...(text === ''
-      ? { start: start + 1, end: start + 1 }
-      : { start: start + text.length + 3, end: start + text.length + 3 + href.length }),
+    ...(text === '' ? { start: start + 1, end: start + 1 } : { start: start + text.length + 3, end: start + text.length + 3 + href.length }),
   }
 }
 

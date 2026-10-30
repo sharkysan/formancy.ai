@@ -122,19 +122,14 @@ function LiveRule({ rule }: { rule: LogicRule }): ReactElement {
   )
 }
 
-function verdict(
-  rule: LogicRule,
-  field: { visible: boolean; required: boolean; value: unknown },
-): [boolean, string] {
+function verdict(rule: LogicRule, field: { visible: boolean; required: boolean; value: unknown }): [boolean, string] {
   switch (rule.kind) {
     case 'visible':
       return field.visible ? [true, 'shown'] : [false, 'hidden']
     case 'required':
       return field.required ? [true, 'required'] : [false, 'optional']
     case 'computed':
-      return typeof field.value === 'number'
-        ? [true, field.value.toLocaleString('de-CH')]
-        : [false, 'waiting']
+      return typeof field.value === 'number' ? [true, field.value.toLocaleString('de-CH')] : [false, 'waiting']
     default:
       return [false, rule.kind]
   }

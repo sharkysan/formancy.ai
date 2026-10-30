@@ -13,8 +13,7 @@ const problemsIn = (document: FormSchema): Array<{ path: string; message: string
   return report.valid ? [] : report.errors
 }
 
-const form = (specVersion: string, fields: unknown[]): FormSchema =>
-  ({ specVersion, id: 'rank', title: 'Rank', model: { fields } }) as unknown as FormSchema
+const form = (specVersion: string, fields: unknown[]): FormSchema => ({ specVersion, id: 'rank', title: 'Rank', model: { fields } }) as unknown as FormSchema
 
 const coffee = { value: 'coffee', label: 'Coffee' }
 const tea = { value: 'tea', label: 'Tea' }
@@ -53,17 +52,13 @@ describe('a ranking', () => {
 
   test('needs at least two options, since one is not an order', () => {
     expect(problemsIn(form('4', [ranking({ options: [coffee] })]))[0]?.path).toMatch(/\/options/)
-    expect(
-      problemsIn(form('4', [{ key: 'drinks', type: 'ranking', label: 'x' }])).length,
-    ).toBeGreaterThan(0)
+    expect(problemsIn(form('4', [{ key: 'drinks', type: 'ranking', label: 'x' }])).length).toBeGreaterThan(0)
   })
 
   test('refuses two options with one value, which an order could not tell apart', () => {
     // A ranking stores values. Two options sharing one would put a value in the answer
     // that names either of them, and a submission could not say which came first.
-    const problems = problemsIn(
-      form('4', [ranking({ options: [coffee, tea, { ...tea, label: 'Green tea' }] })]),
-    )
+    const problems = problemsIn(form('4', [ranking({ options: [coffee, tea, { ...tea, label: 'Green tea' }] })]))
 
     expect(problems).toHaveLength(1)
     expect(problems[0]?.path).toBe('/model/fields/0/options/2/value')

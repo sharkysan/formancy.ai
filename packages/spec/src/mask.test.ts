@@ -1,15 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { diffSchemas } from './diff.js'
-import {
-  answerFromText,
-  editMasked,
-  fitsMask,
-  formatMasked,
-  maskHasPositions,
-  maskIsNumeric,
-  maskPlaceholder,
-  maskPositions,
-} from './mask.js'
+import { answerFromText, editMasked, fitsMask, formatMasked, maskHasPositions, maskIsNumeric, maskPlaceholder, maskPositions } from './mask.js'
 import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 
@@ -25,12 +16,7 @@ const PHONE = '(999) 999-9999'
 
 describe('what a mask is made of', () => {
   test('a digit, a letter, either, and characters the control writes', () => {
-    expect(maskPositions('9a*-')).toEqual([
-      { slot: 'digit' },
-      { slot: 'letter' },
-      { slot: 'either' },
-      { literal: '-' },
-    ])
+    expect(maskPositions('9a*-')).toEqual([{ slot: 'digit' }, { slot: 'letter' }, { slot: 'either' }, { literal: '-' }])
   })
 
   test('and a backslash writes the character after it, so a mask can show a 9', () => {
@@ -176,17 +162,13 @@ describe('the document', () => {
   test('refuses a mask with nowhere to type, which would take no answer at all', () => {
     const result = validateSchema(masked('+41'))
 
-    expect(result.valid ? [] : result.errors).toMatchObject([
-      { path: '/model/fields/0/mask', code: 'mask.noPositions' },
-    ])
+    expect(result.valid ? [] : result.errors).toMatchObject([{ path: '/model/fields/0/mask', code: 'mask.noPositions' }])
   })
 
   test('and a mask in a document older than version 4, which no older reader knows', () => {
     const result = validateSchema(masked(PHONE, '3'))
 
-    expect(result.valid ? [] : result.errors).toMatchObject([
-      { path: '/model/fields/0/mask', code: 'version.mask', values: { version: '4' } },
-    ])
+    expect(result.valid ? [] : result.errors).toMatchObject([{ path: '/model/fields/0/mask', code: 'version.mask', values: { version: '4' } }])
   })
 
   test('a mask added to a field is a tightening, so stored answers are checked again', () => {

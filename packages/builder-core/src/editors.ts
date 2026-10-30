@@ -21,11 +21,7 @@ import type { BuilderText } from './messages.js'
  * not change, and the button would look broken. The label is written into the
  * document, so it is in the author's language.
  */
-export function nextChoice(
-  options: readonly FieldOption[],
-  text: BuilderText,
-  list: 'options' | 'rows' = 'options',
-): FieldOption {
+export function nextChoice(options: readonly FieldOption[], text: BuilderText, list: 'options' | 'rows' = 'options'): FieldOption {
   const prefix = list === 'rows' ? 'row' : 'option'
   const taken = new Set(options.map((option) => String(option.value)))
   let n = options.length + 1
@@ -66,10 +62,7 @@ export const LIST_WORDS = {
  * leaves the picture as decoration rather than describing it as nothing. And the
  * description goes with the picture: with no address there is nothing to describe.
  */
-export function withPicture(
-  option: FieldOption,
-  change: { src?: string; alt?: string },
-): FieldOption {
+export function withPicture(option: FieldOption, change: { src?: string; alt?: string }): FieldOption {
   const src = change.src ?? option.image?.src ?? ''
   const alt = change.alt ?? option.image?.alt
   const { image: _, ...rest } = option

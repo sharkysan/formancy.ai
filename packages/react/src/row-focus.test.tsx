@@ -53,7 +53,7 @@ const focused = (): string | null => {
   const active = document.activeElement
   return active instanceof HTMLInputElement ? `Name: ${active.value}` : (active?.textContent?.trim() ?? null)
 }
-const names = () => screen.getAllByLabelText('Name') as HTMLInputElement[]
+const names = () => screen.getAllByLabelText<HTMLInputElement>('Name')
 
 describe('focus after a row command', () => {
   // A person adds a row to answer it.

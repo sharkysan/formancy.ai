@@ -110,9 +110,9 @@ describe('the add and remove buttons', () => {
   test('a disabled repeater offers its buttons disabled, and its rows with them', () => {
     // A rule that disabled the repeater left every row editable and every button live.
     mount(guests({}, [{ target: 'guests', kind: 'disabled', cel: 'true' }]), { guests: [{}, {}] })
-    expect((screen.getByRole('button', { name: 'Add guest' }) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole('button', { name: 'Remove guest 1 of 2' }) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole('button', { name: 'Move Guests 1 of 2 down' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add guest' }).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Remove guest 1 of 2' }).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Move Guests 1 of 2 down' }).disabled).toBe(true)
     expect(screen.getAllByRole('textbox', { name: 'Name' }).every((box) => (box as HTMLInputElement).disabled)).toBe(true)
   })
 })
@@ -161,9 +161,7 @@ describe('a hidden repeater', () => {
   test('is not drawn at all, as a hidden field is not', async () => {
     // A rule hiding the repeater cleared its rows and left its fieldset and its add button on
     // the screen, so a person could add rows to a question that was withdrawn.
-    const engine = mount(guests({}, [{ target: 'guests', kind: 'visible', cel: 'coming == true' }], [
-      { key: 'coming', type: 'checkbox', label: 'Coming' },
-    ]))
+    const engine = mount(guests({}, [{ target: 'guests', kind: 'visible', cel: 'coming == true' }], [{ key: 'coming', type: 'checkbox', label: 'Coming' }]))
     expect(screen.queryByRole('group', { name: /^Guests/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Add guest' })).toBeNull()
     await act(async () => engine.setValue(['coming'], true))

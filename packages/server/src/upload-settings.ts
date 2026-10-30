@@ -27,10 +27,7 @@ export const LARGEST_MAX_FILE_BYTES = 2_147_483_647
  */
 export function checkedMaxFileBytes(value: number, setting: string): number {
   if (!Number.isInteger(value) || value < 1 || value > LARGEST_MAX_FILE_BYTES) {
-    throw new Error(
-      `${setting} must be a whole number of bytes from 1 to ${String(LARGEST_MAX_FILE_BYTES)}, ` +
-        'the largest size the files table holds.',
-    )
+    throw new Error(`${setting} must be a whole number of bytes from 1 to ${String(LARGEST_MAX_FILE_BYTES)}, ` + 'the largest size the files table holds.')
   }
   return value
 }

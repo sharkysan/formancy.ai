@@ -74,6 +74,15 @@ jobs:
       # is not a gate is a comment.
       - run: pnpm build:web
       - run: pnpm typecheck
+      # Every TypeScript and JavaScript file holds to the lint rules and to
+      # Prettier's format, which the check reads and never writes (0225). The
+      # rules are @formancy/code-style, which this repository publishes for the
+      # four formancy repositories and lints itself with. After the build,
+      # because the type-aware rules read the declarations it wrote; before the
+      # tests, so that a finding fails this job in a minute rather than after
+      # the suite. apps/docs/src/lint.test.ts holds the two steps here.
+      - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm test:coverage
       # Pinned to a commit like every third-party action, for release.yml's reason: it
       # is handed CODECOV_TOKEN, and a tag can be moved. workflow-actions.test holds it.

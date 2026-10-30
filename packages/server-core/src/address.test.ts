@@ -82,5 +82,4 @@ describe('isIpLiteral', () => {
     expect(isIpLiteral('example.ch')).toBe(false)
     expect(isIpLiteral('localhost')).toBe(false)
   })
-
 })

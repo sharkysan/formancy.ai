@@ -67,7 +67,7 @@ beforeEach(() => {
       url,
       method,
       headers: (init?.headers ?? {}) as Record<string, string>,
-      body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
+      body: init?.body === undefined ? undefined : JSON.parse(init.body as string),
     })
     const reply = replies[`${method} ${url}`]
     if (reply === undefined) return new Response('{}', { status: 404 })
@@ -176,7 +176,7 @@ describe('filling in a published form', () => {
     render(<FillPane path="contact" quietMs={60} />)
 
     await waitFor(() => {
-      expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('kept@example.ch')
+      expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('kept@example.ch')
     })
     const resume = calls.find((c) => c.url.endsWith('/drafts/d1'))
     expect(resume?.headers['x-formancy-draft-token']).toBe('t1')
@@ -204,7 +204,7 @@ describe('filling in a published form', () => {
   })
 
   test('a draft that can no longer be submitted says so, and stops saving', async () => {
-        window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
+    window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
     replies['GET /api/f/contact/drafts/d1'] = {
       body: {
         outcome: 'readOnly',
@@ -249,7 +249,7 @@ describe('filling in a published form', () => {
 
     expect(window.localStorage.getItem('formancy.draft.contact')).toBeNull()
     await waitFor(() => {
-      expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('')
+      expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('')
     })
   })
 })
@@ -273,6 +273,29 @@ describe('sending the response', () => {
       expect(sent().length).toBeGreaterThan(0)
     })
   }
+
+  test('sends the answers, and not the outcome of pressing Submit', async () => {
+    // The form hands its handler an outcome -- `{ ok, errors, data }` -- and the pane posted that
+    // whole object as the response, so the server was sent the answers under a `data` key
+    // beside `ok` and `errors`, and a response the form refused was sent as readily.
+    render(<FillPane path="contact" quietMs={60_000} />)
+
+    await fillAndSend()
+
+    expect(sent()[0]?.body).toEqual({ email: 'a@b.ch' })
+  })
+
+  test('sends nothing when the form refused the answers', async () => {
+    // The handler is called with the outcome whether or not the form accepted it; posting a
+    // refused one sent the server a response the respondent had not made valid.
+    render(<FillPane path="contact" quietMs={60_000} />)
+    const user = userEvent.setup()
+    await user.type(await screen.findByLabelText('Email'), 'not-an-email')
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(sent()).toHaveLength(0)
+  })
 
   test('sends the token the form was handed out with, in a header', async () => {
     // Without it an anonymous response is refused, and a retry of one that was sent is stored
@@ -330,7 +353,7 @@ describe('sending the response', () => {
     await fillAndSend()
 
     expect(await screen.findByText(/already been sent, and is stored/)).toBeTruthy()
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('a@b.ch')
+    expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('a@b.ch')
   })
 
   test('a response already sent finishes its draft, so the next visit does not resume it', async () => {

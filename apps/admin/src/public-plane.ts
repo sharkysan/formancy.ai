@@ -15,9 +15,7 @@ import { BASE, authed } from './api.js'
  * The published form, as a respondent gets it — with the token its response is sent with,
  * a new one each time it is read (0169).
  */
-export async function fetchPublicForm(
-  path: string,
-): Promise<{ version: number; schemaHash: string; schema: FormSchema; submissionToken: string }> {
+export async function fetchPublicForm(path: string): Promise<{ version: number; schemaHash: string; schema: FormSchema; submissionToken: string }> {
   const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}`)
   if (!response.ok) throw new Error(`This form could not be loaded (${String(response.status)}).`)
   return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema; submissionToken: string }
@@ -27,21 +25,14 @@ export async function fetchPublicForm(
  * Start a draft. The server picks the id and signs it; the key comes once. So does the token
  * the response is then sent with, which names the draft and is what a resume hands back.
  */
-export async function startDraft(
-  path: string,
-): Promise<{ id: string; token: string; submissionToken: string } | undefined> {
+export async function startDraft(path: string): Promise<{ id: string; token: string; submissionToken: string } | undefined> {
   const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts`, { method: 'POST' })
   if (!response.ok) return undefined
   const body = (await response.json()) as { draftId: string; token: string; submissionToken: string }
   return { id: body.draftId, token: body.token, submissionToken: body.submissionToken }
 }
 
-export async function saveDraft(
-  path: string,
-  id: string,
-  token: string,
-  data: unknown,
-): Promise<boolean> {
+export async function saveDraft(path: string, id: string, token: string, data: unknown): Promise<boolean> {
   const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts/${encodeURIComponent(id)}`, {
     method: 'PUT',
     // In the header, never the URL: a token in a URL lands in logs, in a
@@ -65,11 +56,7 @@ export interface ResumedDraft {
 
 /** `undefined` for a draft that is gone OR a token that does not match: the
  *  server answers those identically so a reply cannot enumerate ids. */
-export async function resumeDraft(
-  path: string,
-  id: string,
-  token: string,
-): Promise<ResumedDraft | undefined> {
+export async function resumeDraft(path: string, id: string, token: string): Promise<ResumedDraft | undefined> {
   const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts/${encodeURIComponent(id)}`, {
     headers: { 'x-formancy-draft-token': token },
   })

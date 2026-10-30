@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
-import {
-  createDraftRun,
-  draftExpectations,
-  draftProblems,
-  draftQuotes,
-  draftStatus,
-  draftVerdict,
-  draftsOn,
-} from '@formancy/builder-core'
+import { createDraftRun, draftExpectations, draftProblems, draftQuotes, draftStatus, draftVerdict, draftsOn } from '@formancy/builder-core'
 import type { AskModel, BuilderSession, DraftRun } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core/authoring'
 
@@ -59,16 +51,7 @@ export interface ScenarioDraftsProps {
   drafting?: DraftRun | undefined
 }
 
-export function ScenarioDrafts({
-  session,
-  scenarios,
-  onChange,
-  ask,
-  initialValue,
-  mode,
-  attempts,
-  drafting,
-}: ScenarioDraftsProps): ReactElement {
+export function ScenarioDrafts({ session, scenarios, onChange, ask, initialValue, mode, attempts, drafting }: ScenarioDraftsProps): ReactElement {
   const { text } = session
   const revision = useSyncExternalStore(
     (listener) => session.subscribe(listener),
@@ -138,7 +121,7 @@ export function ScenarioDrafts({
   const verdicts = useMemo(
     () => drafts.map((draft) => draftVerdict(session.document(), draft, options)),
     // `revision` is what says the document changed, as in `ScenarioPane`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revision is how the memo learns the document changed; the rule sees it unread
     [drafts, session, options, revision],
   )
 

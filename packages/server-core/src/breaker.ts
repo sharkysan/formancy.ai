@@ -63,11 +63,7 @@ export function mayAttempt(webhook: WebhookRecord, now: Date): boolean {
  * would leave a destination that fails twice for every success permanently
  * one blip from opening, and that destination is working.
  */
-export function afterWebhookAttempt(
-  webhook: WebhookRecord,
-  ok: boolean,
-  now: Date,
-): WebhookRecord {
+export function afterWebhookAttempt(webhook: WebhookRecord, ok: boolean, now: Date): WebhookRecord {
   if (ok) {
     return { ...webhook, consecutiveFailures: 0, openedAt: null }
   }

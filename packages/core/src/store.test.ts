@@ -51,10 +51,7 @@ describe('createValueStore', () => {
       store.set(['address', 'city'], 'Bern')
     })
 
-    expect(seen).toEqual([[
-      'address.city',
-      'email',
-    ].sort()])
+    expect(seen).toEqual([['address.city', 'email'].sort()])
   })
 
   test('a nested transact joins the outer transaction rather than notifying twice', () => {

@@ -23,10 +23,7 @@ async function connect(access?: ServerAccess): Promise<Client> {
 }
 
 /** The text an agent would read. */
-const textOf = (result: unknown): string =>
-  ((result as { content: { text?: string }[] }).content ?? [])
-    .map((part) => part.text ?? '')
-    .join('\n')
+const textOf = (result: unknown): string => ((result as { content: { text?: string }[] }).content ?? []).map((part) => part.text ?? '').join('\n')
 
 /**
  * What a prompt actually says, narrowed to its text parts.
@@ -37,9 +34,7 @@ const textOf = (result: unknown): string =>
  * would quietly stop reading half of it.
  */
 const promptText = (messages: readonly { content: { type: string; text?: string } }[]): string =>
-  messages
-    .map((message) => (message.content.type === 'text' ? (message.content.text ?? '') : ''))
-    .join('\n')
+  messages.map((message) => (message.content.type === 'text' ? (message.content.text ?? '') : '')).join('\n')
 
 describe('the tools a client can see', () => {
   test('all nine, each with a description', async () => {
@@ -362,11 +357,7 @@ describe('the prompts a client can see', () => {
 
     const { prompts } = await client.listPrompts()
 
-    expect(prompts.map((prompt) => prompt.name).sort()).toEqual([
-      'build_a_form',
-      'change_a_form',
-      'embed_a_form',
-    ])
+    expect(prompts.map((prompt) => prompt.name).sort()).toEqual(['build_a_form', 'change_a_form', 'embed_a_form'])
     for (const prompt of prompts) expect(prompt.description ?? '').not.toBe('')
   })
 
@@ -412,9 +403,7 @@ describe('the prompts a client can see', () => {
      * actually matters — publish with the hash — left the word in step 3's
      * description and the case stayed green. Found by mutating it.
      */
-    const instruction = said
-      .split('\n')
-      .find((line) => line.includes('publish_form') && line.includes('basedOn'))
+    const instruction = said.split('\n').find((line) => line.includes('publish_form') && line.includes('basedOn'))
     expect(instruction, 'nothing tells the model to publish with the hash').toBeDefined()
   })
 

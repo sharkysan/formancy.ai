@@ -2,11 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test } from 'vitest'
 import axe from 'axe-core'
 
-import {
-  ACCESSIBILITY_EXCLUSIONS,
-  ACCESSIBILITY_TAGS,
-  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
-} from '@formancy/conformance'
+import { ACCESSIBILITY_EXCLUSIONS, ACCESSIBILITY_TAGS, ACCESSIBILITY_UNMEASURABLE_IN_JSDOM } from '@formancy/conformance'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
@@ -85,7 +81,7 @@ function schemaWith(widget?: 'typeahead'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
 function mount(widget?: 'typeahead'): FormEngine {
@@ -98,8 +94,7 @@ function mount(widget?: 'typeahead'): FormEngine {
   return engine
 }
 
-const combobox = (): HTMLInputElement =>
-  screen.getByRole('combobox', { name: 'Card language' }) as HTMLInputElement
+const combobox = (): HTMLInputElement => screen.getByRole<HTMLInputElement>('combobox', { name: 'Card language' })
 
 const type = (text: string): void => {
   fireEvent.change(combobox(), { target: { value: text } })
@@ -109,8 +104,7 @@ const press = (key: string): void => {
   fireEvent.keyDown(combobox(), { key })
 }
 
-const optionLabels = (): string[] =>
-  screen.getAllByRole('option').map((option) => option.textContent ?? '')
+const optionLabels = (): string[] => screen.getAllByRole('option').map((option) => option.textContent ?? '')
 
 /** The option the text box currently names, read the way a screen reader does. */
 const activeOptionLabel = (): string | null => {
@@ -189,13 +183,7 @@ describe('a select with the typeahead widget', () => {
     // whole control unreachable without a pointer (WCAG 2.1.1).
     mount('typeahead')
     press('ArrowDown')
-    expect(optionLabels()).toEqual([
-      'Deutsch',
-      'Français',
-      'Italiano',
-      'Türkçe',
-      'Schwiizerdütsch',
-    ])
+    expect(optionLabels()).toEqual(['Deutsch', 'Français', 'Italiano', 'Türkçe', 'Schwiizerdütsch'])
   })
 
   test('narrows as somebody types, folded, and keeps the document order', () => {
@@ -341,9 +329,7 @@ describe('a select with the typeahead widget', () => {
 
     // And nothing else in it: an anchor that also wrapped the label would put the popup
     // back where it started, under the whole field rather than under the box.
-    const parts = [...(anchor?.children ?? [])].map((child) =>
-      child.getAttribute('data-formancy-part'),
-    )
+    const parts = [...(anchor?.children ?? [])].map((child) => child.getAttribute('data-formancy-part'))
     expect(parts).toEqual(['typeahead', 'typeahead-listbox'])
 
     // The status region is a sibling of the anchor, not a child of it.

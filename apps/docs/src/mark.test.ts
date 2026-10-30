@@ -56,8 +56,7 @@ function shapes(source: string): Shape[] {
   return [...code.matchAll(/<rect\b([^>]*)\/?>/g)].map(([, attributes]) => {
     // An absent position is 0, as SVG reads it; an absent fill is the site's bar, which
     // fills its stem and arms from the stylesheet.
-    const attribute = (name: string, absent: string): string =>
-      new RegExp(`\\b${name}="([^"]*)"`).exec(attributes!)?.[1] ?? absent
+    const attribute = (name: string, absent: string): string => new RegExp(`\\b${name}="([^"]*)"`).exec(attributes!)?.[1] ?? absent
     return {
       x: attribute('x', '0'),
       y: attribute('y', '0'),
@@ -144,8 +143,7 @@ describe('the mark', () => {
     // The bar and the social card colour the mark through `--client` and `--server`, so
     // those two are what has to agree. Shape for shape, too.
     const css = read('apps', 'site', 'src', 'shell.css')
-    const token = (name: string): string =>
-      new RegExp(`--${name}:\\s*([^;]+);`).exec(css)?.[1]?.trim().toLowerCase() ?? ''
+    const token = (name: string): string => new RegExp(`--${name}:\\s*([^;]+);`).exec(css)?.[1]?.trim().toLowerCase() ?? ''
     const [, stem, arm] = mark()
     expect(token('client')).toBe(stem!.fill)
     expect(token('server')).toBe(arm!.fill)
@@ -161,9 +159,7 @@ describe('the mark', () => {
     const png = readFileSync(join(repo, 'apps', 'site', 'public', 'apple-touch-icon.png'))
     const [ground, stem, arm] = mark()
     const scale = pixels(png).width / 64
-    expect([pixel(png, 2, 2), pixel(png, 20 * scale, 32 * scale), pixel(png, 40 * scale, 20 * scale)]).toEqual(
-      [ground!.fill, stem!.fill, arm!.fill],
-    )
+    expect([pixel(png, 2, 2), pixel(png, 20 * scale, 32 * scale), pixel(png, 40 * scale, 20 * scale)]).toEqual([ground!.fill, stem!.fill, arm!.fill])
   })
 
   test('and every page an application serves names it as its icon', () => {

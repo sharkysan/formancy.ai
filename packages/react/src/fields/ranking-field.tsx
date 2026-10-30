@@ -34,8 +34,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
   const ranked = order.flatMap((value) => options.filter((option) => option.value === value))
   const unranked = options.filter((option) => !order.includes(option.value))
 
-  const buttonId = (action: 'up' | 'down' | 'remove' | 'rank', value: string): string =>
-    `${field.ids.control}:${action}:${value}`
+  const buttonId = (action: 'up' | 'down' | 'remove' | 'rank', value: string): string => `${field.ids.control}:${action}:${value}`
 
   // The button to focus once the new order is drawn. A layout effect, so focus moves
   // before the browser paints the list without it — moving a focused element drops focus.
@@ -65,10 +64,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
   const rank = (value: string): void => {
     const position = unranked.findIndex((option) => option.value === value)
     const following = unranked[position + 1] ?? unranked[position - 1]
-    reorder(
-      [...order, value],
-      following === undefined ? buttonId('up', value) : buttonId('rank', following.value),
-    )
+    reorder([...order, value], following === undefined ? buttonId('up', value) : buttonId('rank', following.value))
   }
 
   return (

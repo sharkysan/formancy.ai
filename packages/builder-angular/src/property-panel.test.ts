@@ -65,29 +65,26 @@ const mountFor = async (key: string): Promise<Mounted> => {
   return {
     session,
     type: async (element, text) => {
-      await user.type(element as HTMLElement, text)
+      await user.type(element, text)
       await settle()
     },
     clear: async (element) => {
-      await user.clear(element as HTMLElement)
+      await user.clear(element)
       await settle()
     },
     click: async (element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
     select: async (element, value) => {
-      await user.selectOptions(element as HTMLElement, value)
+      await user.selectOptions(element, value)
       await settle()
     },
   }
 }
 
 const fieldNamed = (key: string, session: BuilderSession): Record<string, unknown> =>
-  session.document().model.fields.find((field) => field.key === key) as unknown as Record<
-    string,
-    unknown
-  >
+  session.document().model.fields.find((field) => field.key === key) as unknown as Record<string, unknown>
 
 describe('the property panel', () => {
   test('offers what the schema says this type has, and nothing it does not', async () => {
@@ -197,9 +194,7 @@ describe('editing a field’s choices', () => {
     // asked for "Label" cannot tell the field's from the choice's.
     await mountFor('country')
 
-    expect(screen.getAllByLabelText('Choice label').map((box) => (box as HTMLInputElement).value)).toEqual([
-      'Switzerland',
-    ])
+    expect(screen.getAllByLabelText('Choice label').map((box) => (box as HTMLInputElement).value)).toEqual(['Switzerland'])
     expect(screen.getAllByLabelText(/^label$/i)).toHaveLength(1)
   })
 
@@ -227,9 +222,7 @@ describe('editing a field’s choices', () => {
     // The distinction the two columns exist to make.
     const { session, click, type } = await mountFor('country')
     await click(screen.getByRole('button', { name: /add a choice/i }))
-    const before = (fieldNamed('country', session)['options'] as Array<Record<string, unknown>>)[1]?.[
-      'value'
-    ]
+    const before = (fieldNamed('country', session)['options'] as Array<Record<string, unknown>>)[1]?.['value']
 
     await type(screen.getAllByLabelText(/label/i).at(-1)!, 'Zurich')
 
@@ -278,7 +271,7 @@ describe('a choice’s picture', () => {
           },
         ],
       },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['pet'] },
       providers: [provideZonelessChangeDetection()],
@@ -297,9 +290,7 @@ describe('a choice’s picture', () => {
     await user.type(screen.getByLabelText('What the picture shows'), 'A tabby')
     await settle()
 
-    expect(fieldNamed('pet', session)['options']).toEqual([
-      { value: 'cat', label: 'Cat', image: { src: '/cat.png', alt: 'A tabby' } },
-    ])
+    expect(fieldNamed('pet', session)['options']).toEqual([{ value: 'cat', label: 'Cat', image: { src: '/cat.png', alt: 'A tabby' } }])
   })
 
   test('and clearing its address takes the picture away rather than keeping it', async () => {
@@ -326,7 +317,7 @@ describe('a choice chosen only on its own (0199)', () => {
       id: 'health',
       title: 'Health',
       model: { fields: [{ key: 'allergies', type, label: 'Allergies', options: [{ value: 'none', label: 'None of these' }] }] },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['allergies'] },
       providers: [provideZonelessChangeDetection()],
@@ -363,7 +354,7 @@ describe('a choice that keeps its place (0200)', () => {
       id: 'survey',
       title: 'Survey',
       model: { fields: [{ key: 'channel', type: 'radio', label: 'Channel', shuffle: true, options: [{ value: 'other', label: 'Other' }] }] },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['channel'] },
       providers: [provideZonelessChangeDetection()],
@@ -394,7 +385,7 @@ describe('"Other, please specify" (0202)', () => {
             : { key: 'channel', type, label: 'Channel' },
         ],
       },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['channel'] },
       providers: [provideZonelessChangeDetection()],
@@ -464,19 +455,19 @@ describe('editing a datagrid’s columns', () => {
     return {
       session,
       type: async (element, text) => {
-        await user.type(element as HTMLElement, text)
+        await user.type(element, text)
         await settle()
       },
       clear: async (element) => {
-        await user.clear(element as HTMLElement)
+        await user.clear(element)
         await settle()
       },
       click: async (element) => {
-        await user.click(element as HTMLElement)
+        await user.click(element)
         await settle()
       },
       select: async (element, value) => {
-        await user.selectOptions(element as HTMLElement, value)
+        await user.selectOptions(element, value)
         await settle()
       },
     }
@@ -496,9 +487,7 @@ describe('editing a datagrid’s columns', () => {
 
     await click(screen.getByRole('button', { name: /configure the sku column/i }))
 
-    const columns = (
-      session.document().model.fields[0] as unknown as Record<string, unknown>
-    )['columns'] as Array<Record<string, unknown>>
+    const columns = (session.document().model.fields[0] as unknown as Record<string, unknown>)['columns'] as Array<Record<string, unknown>>
     expect(columns).toEqual([{ field: 'sku' }])
     // A choice, never a text box: a typed name is a column over nothing.
     expect(screen.getByRole('combobox', { name: /answer/i })).toBeTruthy()
@@ -511,15 +500,11 @@ describe('editing a datagrid’s columns', () => {
     await click(screen.getByRole('button', { name: /configure the sku column/i }))
 
     await type(screen.getByRole('spinbutton', { name: /width, as a share/i }), '2')
-    let columns = (
-      session.document().model.fields[0] as unknown as Record<string, unknown>
-    )['columns'] as Array<Record<string, unknown>>
+    let columns = (session.document().model.fields[0] as unknown as Record<string, unknown>)['columns'] as Array<Record<string, unknown>>
     expect(columns[0]?.['width']).toBe(2)
 
     await clear(screen.getByRole('spinbutton', { name: /width, as a share/i }))
-    columns = (session.document().model.fields[0] as unknown as Record<string, unknown>)[
-      'columns'
-    ] as Array<Record<string, unknown>>
+    columns = (session.document().model.fields[0] as unknown as Record<string, unknown>)['columns'] as Array<Record<string, unknown>>
     // Absent means "an even share"; `width: 0` is refused outright as a column
     // nobody can see.
     expect('width' in (columns[0] ?? {})).toBe(false)
@@ -542,9 +527,7 @@ describe('editing a datagrid’s columns', () => {
     await type(screen.getByRole('textbox', { name: /short heading/i }), 'Code')
     await clear(screen.getByRole('textbox', { name: /short heading/i }))
 
-    const columns = (
-      session.document().model.fields[0] as unknown as Record<string, unknown>
-    )['columns'] as Array<Record<string, unknown>>
+    const columns = (session.document().model.fields[0] as unknown as Record<string, unknown>)['columns'] as Array<Record<string, unknown>>
     expect('header' in (columns[0] ?? {})).toBe(false)
   })
 
@@ -597,9 +580,7 @@ describe('a matrix in the property panel', () => {
     await view.fixture.whenStable()
 
     expect(screen.getByText('Rows')).toBeTruthy()
-    expect(
-      screen.getAllByLabelText('Row label').map((input) => (input as HTMLInputElement).value),
-    ).toEqual(['Taste'])
+    expect(screen.getAllByLabelText('Row label').map((input) => (input as HTMLInputElement).value)).toEqual(['Taste'])
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Add a row' }))
     await view.fixture.whenStable()
@@ -630,7 +611,7 @@ describe('the kind of question', () => {
       ...schema,
       specVersion: '4',
       model: { fields: [{ key: 'items', type: 'repeater', label: 'Items', fields: [{ key: 'x', type: 'text', label: 'X' }] }] },
-    } as FormSchema)
+    })
     const view = await render(FormancyPropertyPanel, {
       componentInputs: { session, keyPath: ['items'] },
       providers: [provideZonelessChangeDetection()],

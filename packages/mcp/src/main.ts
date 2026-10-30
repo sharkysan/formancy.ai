@@ -21,13 +21,9 @@ if ((baseUrl === undefined) !== (apiKey === undefined)) {
   // Half-configured is the state worth refusing: a URL with no key produces a
   // 401 on every call, and a key with no URL produces nothing at all. Both
   // look like the tool being broken rather than unconfigured.
-  throw new Error(
-    'Set FORMANCY_URL and FORMANCY_API_KEY together, or neither. With neither, the local tools still work.',
-  )
+  throw new Error('Set FORMANCY_URL and FORMANCY_API_KEY together, or neither. With neither, the local tools still work.')
 }
 
-const server = createFormancyMcpServer(
-  baseUrl === undefined || apiKey === undefined ? {} : { access: { baseUrl, apiKey } },
-)
+const server = createFormancyMcpServer(baseUrl === undefined || apiKey === undefined ? {} : { access: { baseUrl, apiKey } })
 
 await server.connect(new StdioServerTransport())

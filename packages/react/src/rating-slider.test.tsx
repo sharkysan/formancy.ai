@@ -110,7 +110,7 @@ describe('a rating', () => {
 describe('a slider', () => {
   test('is a range input carrying the field’s bounds and step', () => {
     mount(schemaFor('slider', { step: 0.5 }))
-    const slider = screen.getByRole('slider', { name: /how likely/i }) as HTMLInputElement
+    const slider = screen.getByRole<HTMLInputElement>('slider', { name: /how likely/i })
 
     expect(slider.min).toBe('0')
     expect(slider.max).toBe('10')
@@ -124,7 +124,7 @@ describe('a slider', () => {
     // reader would assume, and it is wrong.
     mount(schemaFor('slider'))
 
-    expect((screen.getByRole('slider') as HTMLInputElement).step).toBe('1')
+    expect(screen.getByRole<HTMLInputElement>('slider').step).toBe('1')
   })
 
   test('shows the value, because a track with no number is a guess', () => {
@@ -146,7 +146,7 @@ describe('a slider', () => {
     const engine = mount(schemaFor('slider'))
 
     expect(engine.value()).toEqual({})
-    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('5')
+    expect(screen.getByRole<HTMLInputElement>('slider').value).toBe('5')
   })
 
   test('and records what was dragged to', () => {
@@ -267,9 +267,7 @@ describe('when a scale has been left alone', () => {
         id: 'survey',
         title: 'Survey',
         model: {
-          fields: [
-            { key: 'score', type: 'number', label: 'Score', min: 0, max: 10, step: 5, widget: 'rating' } as never,
-          ],
+          fields: [{ key: 'score', type: 'number', label: 'Score', min: 0, max: 10, step: 5, widget: 'rating' } as never],
         },
       },
       initialValue: { score: 7 },

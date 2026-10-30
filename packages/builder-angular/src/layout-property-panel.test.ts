@@ -74,11 +74,11 @@ const mountAt = async (path: readonly number[]): Promise<Mounted> => {
   return {
     session,
     type: async (element, text) => {
-      await user.type(element as HTMLElement, text)
+      await user.type(element, text)
       await settle()
     },
     clear: async (element) => {
-      await user.clear(element as HTMLElement)
+      await user.clear(element)
       await settle()
     },
   }

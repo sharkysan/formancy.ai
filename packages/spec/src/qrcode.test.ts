@@ -47,7 +47,7 @@ function documentWith(nodes: unknown[], specVersion = '2'): Record<string, unkno
 }
 
 const errorsFor = (document: Record<string, unknown>): readonly string[] => {
-  const result = validateSchema(document as never)
+  const result = validateSchema(document)
   return result.valid ? [] : result.errors.map((error) => `${error.path} ${error.message}`)
 }
 
@@ -72,9 +72,7 @@ describe('the leaf kinds', () => {
 
 describe('a qrcode node', () => {
   test('encodes a path the model has', () => {
-    expect(errorsFor(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]))).toEqual(
-      [],
-    )
+    expect(errorsFor(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]))).toEqual([])
   })
 
   test('is refused when the path names nothing', () => {
@@ -88,11 +86,7 @@ describe('a qrcode node', () => {
   test('holds no children, and is refused if given any', () => {
     // The union's invariant, enforced rather than trusted: a childless node that
     // accepted children would be a node fourteen walkers disagree about.
-    const errors = errorsFor(
-      documentWith([
-        { kind: 'qrcode', path: 'code', label: 'A code', children: [{ kind: 'field', path: 'code' }] },
-      ]),
-    )
+    const errors = errorsFor(documentWith([{ kind: 'qrcode', path: 'code', label: 'A code', children: [{ kind: 'field', path: 'code' }] }]))
     expect(errors).not.toEqual([])
   })
 
@@ -106,18 +100,14 @@ describe('a qrcode node', () => {
     // A picture of a code says nothing to a screen reader, so the node's label and the
     // value behind it are the accessible content. Optional, because a code beside the
     // field it encodes needs no second name.
-    expect(
-      errorsFor(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }])),
-    ).toEqual([])
+    expect(errorsFor(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]))).toEqual([])
   })
 
   test('does not add a field to the model', () => {
     // The whole reason it is a layout node. If this ever fails, the construct has
     // become a field type by accident and every consequence in the file header
     // applies: a CSV column nobody filled in, a diff entry, a computed-rule target.
-    const result = validateSchema(
-      documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]) as never,
-    )
+    const result = validateSchema(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]))
     expect(result.valid).toBe(true)
     if (!result.valid) return
     expect(result.schema.model.fields.map((field) => field.key)).toEqual(['code'])

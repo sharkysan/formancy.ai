@@ -18,10 +18,7 @@ import type { Change, FieldDef, FieldOption, FormSchema } from './types.js'
  * referenced the old path, so `compareRules` needs it to tell an expression
  * that followed a field from one that changed its mind.
  */
-export function compareFields(
-  before: FormSchema,
-  after: FormSchema,
-): { changes: Change[]; renamed: ReadonlyMap<string, string> } {
+export function compareFields(before: FormSchema, after: FormSchema): { changes: Change[]; renamed: ReadonlyMap<string, string> } {
   const changes: Change[] = []
   const renamed = new Map<string, string>()
 
@@ -35,16 +32,10 @@ export function compareFields(
 
   for (const entry of afterByPath.values()) {
     const ownBefore = entry.beforeScope + entry.def.key
-    const renameSource =
-      entry.def.renamedFrom === undefined ? undefined : entry.beforeScope + entry.def.renamedFrom
+    const renameSource = entry.def.renamedFrom === undefined ? undefined : entry.beforeScope + entry.def.renamedFrom
     const path = `model.fields.${entry.dataPath}`
 
-    if (
-      renameSource !== undefined &&
-      beforeByPath.has(renameSource) &&
-      !beforeByPath.has(ownBefore) &&
-      !consumed.has(renameSource)
-    ) {
+    if (renameSource !== undefined && beforeByPath.has(renameSource) && !beforeByPath.has(ownBefore) && !consumed.has(renameSource)) {
       consumed.add(renameSource)
       renamed.set(renameSource, entry.dataPath)
       changes.push({
@@ -68,10 +59,7 @@ export function compareFields(
       severity: entry.def.required === true ? 'lossy' : 'compatible',
       kind: 'field.added',
       path,
-      detail:
-        entry.def.required === true
-          ? `Added as required. Existing submissions have no value for it and are now invalid.`
-          : `Added as optional.`,
+      detail: entry.def.required === true ? `Added as required. Existing submissions have no value for it and are now invalid.` : `Added as optional.`,
     })
   }
 
@@ -100,12 +88,7 @@ interface FlatField {
   def: FieldDef
 }
 
-function flatten(
-  defs: readonly FieldDef[],
-  scope: string,
-  beforeScope: string,
-  out: Map<string, FlatField>,
-): void {
+function flatten(defs: readonly FieldDef[], scope: string, beforeScope: string, out: Map<string, FlatField>): void {
   for (const def of defs) {
     // Pages hold no data, so they contribute no identity of their own.
     if (def.type === 'page') {
@@ -220,11 +203,7 @@ function comparePair(previous: FieldDef, next: FieldDef, path: string): Change[]
  * leaves an answer outside the document's own vocabulary, and relabelling one
  * leaves every answer exactly where it was.
  */
-function compareOptions(
-  previous: readonly FieldOption[] | undefined,
-  next: readonly FieldOption[] | undefined,
-  path: string,
-): Change[] {
+function compareOptions(previous: readonly FieldOption[] | undefined, next: readonly FieldOption[] | undefined, path: string): Change[] {
   if (previous === undefined && next === undefined) return []
 
   const was = new Map((previous ?? []).map((option) => [option.value, option]))
@@ -251,9 +230,7 @@ function compareOptions(
     })
   }
 
-  const relabelled = [...now.keys()].filter(
-    (value) => was.has(value) && !same(was.get(value)?.label, now.get(value)?.label),
-  )
+  const relabelled = [...now.keys()].filter((value) => was.has(value) && !same(was.get(value)?.label, now.get(value)?.label))
   if (relabelled.length > 0) {
     changes.push({
       severity: 'compatible',
@@ -266,9 +243,7 @@ function compareOptions(
   // Compared here because nothing else would: `options` is excluded from the residual
   // backstop as a property this function accounts for, so a picture changed and not
   // compared here would diff as nothing at all (0108, 0126).
-  const repictured = [...now.keys()].filter(
-    (value) => was.has(value) && !same(was.get(value)?.image, now.get(value)?.image),
-  )
+  const repictured = [...now.keys()].filter((value) => was.has(value) && !same(was.get(value)?.image, now.get(value)?.image))
   if (repictured.length > 0) {
     changes.push({
       severity: 'compatible',
@@ -349,12 +324,7 @@ function compareConstraints(previous: FieldDef, next: FieldDef, path: string): C
  * be assumed harmless.
  */
 function residualChange(previous: FieldDef, next: FieldDef, path: string): Change[] {
-  const rest = (def: FieldDef): string =>
-    canonicalize(
-      Object.fromEntries(
-        Object.entries(def).filter(([property]) => !COMPARED_PROPERTIES.has(property)),
-      ),
-    )
+  const rest = (def: FieldDef): string => canonicalize(Object.fromEntries(Object.entries(def).filter(([property]) => !COMPARED_PROPERTIES.has(property))))
 
   if (rest(previous) === rest(next)) return []
 

@@ -92,8 +92,6 @@ describe('injectField', () => {
   })
 
   test('a component outside provideFormancy fails loudly', async () => {
-    await expect(
-      render(EmailField, { providers: [provideZonelessChangeDetection()] }),
-    ).rejects.toThrow(/provideFormancy/)
+    await expect(render(EmailField, { providers: [provideZonelessChangeDetection()] })).rejects.toThrow(/provideFormancy/)
   })
 })

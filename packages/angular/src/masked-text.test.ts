@@ -39,8 +39,7 @@ async function mount(mask = PHONE) {
   return { engine, settle }
 }
 
-const phone = (): HTMLInputElement =>
-  screen.getByRole('textbox', { name: 'Phone' }) as HTMLInputElement
+const phone = (): HTMLInputElement => screen.getByRole<HTMLInputElement>('textbox', { name: 'Phone' })
 
 /**
  * Keystrokes as the browser applies them: the text at the caret changes, the caret
@@ -54,9 +53,7 @@ function type(input: HTMLInputElement, text: string, caret = input.value.length)
     const at = input.selectionStart ?? input.value.length
     input.value = input.value.slice(0, at) + typed + input.value.slice(at)
     input.setSelectionRange(at + 1, at + 1)
-    input.dispatchEvent(
-      new InputEvent('input', { bubbles: true, inputType: 'insertText', data: typed }),
-    )
+    input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: typed }))
   }
 }
 

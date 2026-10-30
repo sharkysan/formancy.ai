@@ -76,8 +76,15 @@ reviews are against. The short version:
 - **Measure numbers, do not estimate them.** The one number in this repository that was
   estimated was wrong by a factor of thirty, and it was hiding a design error.
 - Branch from `main`, target `main`. Name the branch after what it changes.
+- **Run `pnpm format` before you commit, and `pnpm lint` after `pnpm build`.** CI fails a
+  TypeScript or JavaScript file that breaks a lint rule or that Prettier would write otherwise
+  ([0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)). Fix a finding rather than disable it; a disable comment says why after `--`.
 - Run the gates for what you touched: `pnpm build`, `pnpm build:web`, `pnpm typecheck`,
-  `pnpm test:coverage`, `pnpm check:pkg`.
+  `pnpm lint`, `pnpm format:check`, `pnpm test:coverage`, `pnpm check:pkg`.
+- **A branch begun before every file was formatted** conflicts with `main` wherever the format
+  rewrote a line the branch changed, or one beside it. Merge `main` into it, resolve each
+  conflict for your own change, run `pnpm format`, then `pnpm build` and `pnpm lint`, and fix
+  what it finds.
 
 ## Reporting a vulnerability
 

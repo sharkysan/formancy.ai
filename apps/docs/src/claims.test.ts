@@ -121,10 +121,7 @@ describe('the spec version the documents name', () => {
     // the version the code implements is right here, and a landing page naming a
     // different one is always wrong. Bump CURRENT_SPEC_VERSION without touching the
     // page and this fails.
-    const types = readFileSync(
-      join(repo, 'packages', 'spec', 'src', 'types.ts'),
-      'utf8',
-    )
+    const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
     const current = /CURRENT_SPEC_VERSION: SpecVersion = '(\d+)'/.exec(types)?.[1]
     expect(current, 'could not read CURRENT_SPEC_VERSION').toBeDefined()
 
@@ -176,10 +173,7 @@ describe('the spec version the documents name', () => {
             opens: paragraph.trim().slice(0, 60),
             // A version is written `"2"` or "version 2"; a decision record number
             // is neither, so `[0051]` cannot be mistaken for one.
-            versions: [
-              ...[...paragraph.matchAll(/"(\d+)"/g)].map((m) => m[1]),
-              ...[...paragraph.matchAll(/version (\d+)/gi)].map((m) => m[1]),
-            ],
+            versions: [...[...paragraph.matchAll(/"(\d+)"/g)].map((m) => m[1]), ...[...paragraph.matchAll(/version (\d+)/gi)].map((m) => m[1])],
           })),
       )
 
@@ -189,9 +183,7 @@ describe('the spec version the documents name', () => {
 
     const stale = claiming
       .filter(({ versions }) => !versions.includes(current ?? ''))
-      .map(({ name, opens, versions }) =>
-        `${name}: "${opens}..." names ${versions.join(', ') || 'no version'}, and the code implements ${String(current)}`,
-      )
+      .map(({ name, opens, versions }) => `${name}: "${opens}..." names ${versions.join(', ') || 'no version'}, and the code implements ${String(current)}`)
     expect(stale).toEqual([])
   })
 })
@@ -257,17 +249,15 @@ describe('the claim a regulated buyer reads', () => {
     // point at nothing, which on a due-diligence paragraph is worse than not linking:
     // the reader concludes the material does not exist rather than that it moved.
     const linked = surfaces().flatMap(({ name, text }) =>
-      [
-        ...text.matchAll(/(?:blob|tree)\/main\/(docs\/[A-Za-z0-9/._-]+)/g),
-        ...text.matchAll(/\]\(\.\/(docs\/[A-Za-z0-9/._-]+?)\/?\)/g),
-      ].map((match) => ({ name, path: match[1] ?? '' })),
+      [...text.matchAll(/(?:blob|tree)\/main\/(docs\/[A-Za-z0-9/._-]+)/g), ...text.matchAll(/\]\(\.\/(docs\/[A-Za-z0-9/._-]+?)\/?\)/g)].map((match) => ({
+        name,
+        path: match[1] ?? '',
+      })),
     )
 
     expect(linked.length).toBeGreaterThan(4)
 
-    const missing = linked
-      .filter(({ path }) => !existsSync(join(repo, path)))
-      .map(({ name, path }) => `${name} links ${path}, which is not in the repository`)
+    const missing = linked.filter(({ path }) => !existsSync(join(repo, path))).map(({ name, path }) => `${name} links ${path}, which is not in the repository`)
     expect(missing).toEqual([])
   })
 })
@@ -354,12 +344,10 @@ describe('the spec version 2 freeze', () => {
 
     // The layout kinds come from the document schema, which is where they are exhaustive:
     // each branch of `layoutNode` declares its own `kind` as a const.
-    const schema = JSON.parse(
-      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
-    ) as { $defs: Record<string, { oneOf?: Array<{ properties?: { kind?: { const?: string } } }> }> }
-    const kinds = (schema.$defs['layoutNode']?.oneOf ?? [])
-      .map((branch) => branch.properties?.kind?.const)
-      .filter((kind): kind is string => kind !== undefined)
+    const schema = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8')) as {
+      $defs: Record<string, { oneOf?: Array<{ properties?: { kind?: { const?: string } } }> }>
+    }
+    const kinds = (schema.$defs['layoutNode']?.oneOf ?? []).map((branch) => branch.properties?.kind?.const).filter((kind): kind is string => kind !== undefined)
 
     // Per version, since there are three. Attributing every non-version-1 type to
     // version 2 was right while 2 was the newest and became a lie the moment 3
@@ -426,9 +414,7 @@ describe('the spec version 2 freeze', () => {
     expect(widgets.length).toBeGreaterThan(0)
 
     const text = under('### What version 2 added')
-    const missing = [...types, ...kinds, ...widgets].filter(
-      (name) => !text.includes(`\`${name}\``),
-    )
+    const missing = [...types, ...kinds, ...widgets].filter((name) => !text.includes(`\`${name}\``))
     expect(missing).toEqual([])
   })
 
@@ -441,9 +427,7 @@ describe('the spec version 2 freeze', () => {
     expect(widgetsInThree.length).toBeGreaterThan(0)
 
     const text = under('### What version 3 added')
-    expect(
-      [...typesInThree, ...widgetsInThree].filter((name) => !text.includes(`\`${name}\``)),
-    ).toEqual([])
+    expect([...typesInThree, ...widgetsInThree].filter((name) => !text.includes(`\`${name}\``))).toEqual([])
   })
 
   test('and names every widget and field type version 4 added', () => {
@@ -459,9 +443,7 @@ describe('the spec version 2 freeze', () => {
     expect(typesInFour.length, 'version 4 has added no field type to name').toBeGreaterThan(0)
 
     const text = under('### What version 4 added')
-    expect(
-      [...widgetsInFour, ...typesInFour].filter((name) => !text.includes(`\`${name}\``)),
-    ).toEqual([])
+    expect([...widgetsInFour, ...typesInFour].filter((name) => !text.includes(`\`${name}\``))).toEqual([])
   })
 
   test('and says every version the code speaks is frozen, and none is open', () => {
@@ -471,9 +453,7 @@ describe('the spec version 2 freeze', () => {
     // constructs, when this case says so again.
     const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
     const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
-    const versions = [
-      ...(/export const SPEC_VERSIONS = \[([^\]]*)\]/.exec(types)?.[1] ?? '').matchAll(/'(\d+)'/g),
-    ].map((match) => match[1]!)
+    const versions = [...(/export const SPEC_VERSIONS = \[([^\]]*)\]/.exec(types)?.[1] ?? '').matchAll(/'(\d+)'/g)].map((match) => match[1]!)
 
     expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(4)
     for (const version of versions) {
@@ -525,9 +505,7 @@ describe('the files the coverage policy excludes as configuration', () => {
       const lines = body.split(/\r?\n/).filter((line) => line.trim() !== '')
       expect(lines.length, `${path} is long enough to hide logic`).toBeLessThan(20)
       for (const keyword of ['if (', 'for (', 'while (', '=>', 'function ']) {
-        expect(body.includes(keyword), `${path} contains \`${keyword}\`, so it is code rather than wiring`).toBe(
-          false,
-        )
+        expect(body.includes(keyword), `${path} contains \`${keyword}\`, so it is code rather than wiring`).toBe(false)
       }
     }
   })
@@ -576,11 +554,7 @@ describe('the files the coverage policy excludes as barrels', () => {
           .filter(({ line }) => !line.startsWith('export type'))
 
         if (behaviour.length > 0) {
-          offenders.push(
-            `${group}/${entry.name}/src/index.ts holds behaviour at line ${String(
-              behaviour[0]?.at,
-            )}: ${behaviour[0]?.line ?? ''}`,
-          )
+          offenders.push(`${group}/${entry.name}/src/index.ts holds behaviour at line ${String(behaviour[0]?.at)}: ${behaviour[0]?.line ?? ''}`)
         }
       }
     }
@@ -633,14 +607,15 @@ describe('what the landing page promises the playground does', () => {
    */
   const playgroundSources = (): string => {
     const directory = join(repo, 'apps', 'playground', 'src')
-    const names = readdirSync(directory).filter(
-      (name) => /\.tsx?$/.test(name) && !/\.test\./.test(name),
-    )
+    const names = readdirSync(directory).filter((name) => /\.tsx?$/.test(name) && !/\.test\./.test(name))
     expect(names.length, 'the playground has no sources, so nothing below is checked').toBeGreaterThan(5)
     return names.map((name) => readFileSync(join(directory, name), 'utf8')).join('\n')
   }
 
-  const BOTH_RENDERERS = /preview your form in React and Angular/
+  // `\s+` between the words: the source is formatted, so Prettier may wrap this
+  // sentence across lines, and JSX collapses that whitespace, so the page shows
+  // the same words either way.
+  const BOTH_RENDERERS = /preview\s+your\s+form\s+in\s+React\s+and\s+Angular/
 
   test('is a sentence that is actually there, which is a guard on this guard', () => {
     expect(read('apps', 'site', 'src', 'app.tsx')).toMatch(BOTH_RENDERERS)
@@ -655,12 +630,8 @@ describe('what the landing page promises the playground does', () => {
      */
     const playground = playgroundSources()
 
-    expect(playground, 'the playground stopped rendering the React form').toMatch(
-      /<FormancyForm\s/,
-    )
-    expect(playground, 'the playground stopped mounting the Angular renderer').toMatch(
-      /<AngularPane\s/,
-    )
+    expect(playground, 'the playground stopped rendering the React form').toMatch(/<FormancyForm\s/)
+    expect(playground, 'the playground stopped mounting the Angular renderer').toMatch(/<AngularPane\s/)
   })
 
   test('and mounts the Angular BUILDER too, over the same session as the React one', () => {
@@ -672,19 +643,14 @@ describe('what the landing page promises the playground does', () => {
      * importable by nothing either
      * ([0096](../../../docs/decisions/0096-two-builders-one-session.md)).
      */
-    expect(
-      playgroundSources(),
-      'the playground stopped mounting the Angular builder',
-    ).toMatch(/<AngularBuilderPane\s/)
+    expect(playgroundSources(), 'the playground stopped mounting the Angular builder').toMatch(/<AngularBuilderPane\s/)
 
     // One session, passed to both. A `session=` that was not the same expression
     // would be two documents pretending to be one. Whitespace-tolerant: the call is
     // laid out over several lines once it carries more than fits on one, and a guard
     // that knew only the one-line spelling failed on a formatter's line break.
     const pane = read('apps', 'playground', 'src', 'angular-builder-pane.tsx')
-    expect(pane, 'the Angular builder stopped using the session it was given').toMatch(
-      /mountAngularBuilder\(\s*element,\s*session,/,
-    )
+    expect(pane, 'the Angular builder stopped using the session it was given').toMatch(/mountAngularBuilder\(\s*element,\s*session,/)
 
     // And the package can be imported at all, which is the defect that hid this.
     const manifest = JSON.parse(read('packages', 'builder-angular', 'package.json')) as {
@@ -700,9 +666,7 @@ describe('what the landing page promises the playground does', () => {
     // resolves to the first match — so the second renderer's controls lose their
     // accessible names entirely. Measured. The namespaces are what prevent it,
     // and they are easy to remove while the page still looks right.
-    const namespaces = [...playgroundSources().matchAll(/forRenderer\('([a-z]+)'\)/g)].map(
-      (match) => match[1]!,
-    )
+    const namespaces = [...playgroundSources().matchAll(/forRenderer\('([a-z]+)'\)/g)].map((match) => match[1]!)
 
     expect(namespaces.length).toBe(2)
     expect(new Set(namespaces).size, 'both renderers were given the same form id').toBe(2)
@@ -710,8 +674,7 @@ describe('what the landing page promises the playground does', () => {
 })
 
 describe('what the roadmap says is still to do', () => {
-  const roadmap = (): string =>
-    readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'), 'utf8')
+  const roadmap = (): string => readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'), 'utf8')
 
   /** The numbered list of what is still to do, and nothing after it. */
   const stillToDo = (): string => {
@@ -764,10 +727,7 @@ describe('what the roadmap says is still to do', () => {
      * `rewritePath` stops being exported, or `repath.ts` stops rewriting a
      * rule's three path-bearing places, this fails.
      */
-    const exported = readFileSync(
-      join(repo, 'packages', 'expressions', 'src', 'index.ts'),
-      'utf8',
-    )
+    const exported = readFileSync(join(repo, 'packages', 'expressions', 'src', 'index.ts'), 'utf8')
     expect(exported).toMatch(/export \{ rewritePath \}/)
 
     const repath = readFileSync(join(repo, 'packages', 'builder-core', 'src', 'repath.ts'), 'utf8')
@@ -808,14 +768,9 @@ describe('what the roadmap says is still to do', () => {
 
     // Exported from the entry an author's tools import, which no form loads (0217).
     const core = readFileSync(join(repo, 'packages', 'core', 'src', 'authoring.ts'), 'utf8')
-    expect(core, 'the unknown-path check is no longer exported').toMatch(
-      /export \{ unknownReferences \}/,
-    )
+    expect(core, 'the unknown-path check is no longer exported').toMatch(/export \{ unknownReferences \}/)
 
-    const publishing = readFileSync(
-      join(repo, 'packages', 'server-core', 'src', 'publishing.ts'),
-      'utf8',
-    )
+    const publishing = readFileSync(join(repo, 'packages', 'server-core', 'src', 'publishing.ts'), 'utf8')
     expect(publishing, 'publishing no longer computes warnings').toContain('unknownReferences(')
     expect(publishing, 'a successful publish no longer carries them').toContain('warnings')
 
@@ -832,9 +787,7 @@ describe('what the roadmap says is still to do', () => {
       readFileSync(join(server, 'app.ts'), 'utf8'),
       ...readdirSync(join(server, 'routes')).map((name) => readFileSync(join(server, 'routes', name), 'utf8')),
     ].join('\n')
-    const draftRoutes = [...app.matchAll(/app\.(post|put|get)\(\s*'(\/f\/:path\/drafts[^']*)'/g)].map(
-      (match) => `${match[1]!.toUpperCase()} ${match[2]!}`,
-    )
+    const draftRoutes = [...app.matchAll(/app\.(post|put|get)\(\s*'(\/f\/:path\/drafts[^']*)'/g)].map((match) => `${match[1]!.toUpperCase()} ${match[2]!}`)
     // Start, save, resume. Anything fewer and the paragraph below is the wrong
     // paragraph.
     expect(draftRoutes.length).toBeGreaterThanOrEqual(3)
@@ -859,13 +812,10 @@ describe('what the roadmap says is still to do', () => {
  * be wrong and the code is the thing that decides.
  */
 describe('where a rule runs when it does not say', () => {
-  const engineSource = (): string =>
-    readFileSync(join(repo, 'packages', 'core', 'src', 'engine.ts'), 'utf8')
+  const engineSource = (): string => readFileSync(join(repo, 'packages', 'core', 'src', 'engine.ts'), 'utf8')
 
   const runsOnProperty = (): { description?: string; default?: string } => {
-    const schema = JSON.parse(
-      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
-    ) as Record<string, unknown>
+    const schema = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8')) as Record<string, unknown>
     const found: Array<Record<string, unknown>> = []
     const walk = (node: unknown): void => {
       if (node === null || typeof node !== 'object') return
@@ -911,12 +861,10 @@ describe('where a rule runs when it does not say', () => {
 
   /** What the check branch of the rule's conditional block overrides. */
   const checkBranchDefault = (): unknown => {
-    const schema = JSON.parse(
-      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
-    ) as { $defs: Record<string, { allOf?: Array<Record<string, any>> }> }
-    const block = (schema.$defs['logicRule']?.allOf ?? []).find(
-      (entry) => entry['if']?.properties?.kind?.const === 'check',
-    )
+    const schema = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8')) as {
+      $defs: Record<string, { allOf?: Array<Record<string, any>> }>
+    }
+    const block = (schema.$defs['logicRule']?.allOf ?? []).find((entry) => entry['if']?.properties?.kind?.const === 'check')
     return block?.['then']?.properties?.runsOn?.default
   }
 
@@ -934,10 +882,7 @@ describe('where a rule runs when it does not say', () => {
     // the rule's conditional block at all -- so everything the schema said per
     // kind was published nowhere. This is the value arriving where a developer
     // meets it.
-    const reference = readFileSync(
-      join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'reference', 'spec.md'),
-      'utf8',
-    )
+    const reference = readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'reference', 'spec.md'), 'utf8')
     expect(reference).toContain('default `"' + checkFallback() + '"`')
   })
 })
@@ -1050,9 +995,7 @@ describe('what a reader found that nineteen guards had not', () => {
    */
   /** Every field type, widget and layout kind the document schema defines. */
   const vocabulary = (): Set<string> => {
-    const schema = JSON.parse(
-      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
-    ) as Record<string, unknown>
+    const schema = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8')) as Record<string, unknown>
 
     const found = new Set<string>()
     const VOCABULARY_KEYS = ['fieldType', 'widget', 'kind']
@@ -1084,10 +1027,7 @@ describe('what a reader found that nineteen guards had not', () => {
 
   /** The first cell of each row in the reserved-names table. */
   const reservedNames = (): Array<{ cell: string; names: string[] }> => {
-    const roadmap = readFileSync(
-      join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'),
-      'utf8',
-    )
+    const roadmap = readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'), 'utf8')
     const from = roadmap.indexOf('## Field type names that were reserved')
     expect(from, 'the roadmap has no reserved-names section').toBeGreaterThan(-1)
     const after = roadmap.indexOf('\n## ', from + 1)
@@ -1140,9 +1080,7 @@ describe('what a reader found that nineteen guards had not', () => {
     for (const { cell, names } of reservedNames()) {
       if (cell.includes('~~')) continue
       for (const name of names) {
-        expect(defined.has(name), `the roadmap lists \`${name}\` as not here yet, and the schema defines it`).toBe(
-          false,
-        )
+        expect(defined.has(name), `the roadmap lists \`${name}\` as not here yet, and the schema defines it`).toBe(false)
       }
     }
   })
@@ -1154,22 +1092,15 @@ describe('what a reader found that nineteen guards had not', () => {
      * The table above is held by the case before this one; the sentence was not, because
      * it is prose rather than a row.
      */
-    const roadmap = readFileSync(
-      join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'),
-      'utf8',
-    )
-    const sentence = roadmap
-      .split('\n\n')
-      .find((paragraph) => paragraph.startsWith('Field **type names**'))
+    const roadmap = readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'), 'utf8')
+    const sentence = roadmap.split('\n\n').find((paragraph) => paragraph.startsWith('Field **type names**'))
     expect(sentence, 'the roadmap no longer has the reserved-names sentence').toBeDefined()
     const names = [...(sentence ?? '').matchAll(/`([^`]+)`/g)].map((match) => match[1]!)
     expect(names.length, 'no names were read out of the sentence').toBeGreaterThan(0)
 
     const defined = vocabulary()
     for (const name of names) {
-      expect(defined.has(name), `the roadmap says ${name} is absent, and the schema defines it`).toBe(
-        false,
-      )
+      expect(defined.has(name), `the roadmap says ${name} is absent, and the schema defines it`).toBe(false)
     }
   })
 
@@ -1189,10 +1120,7 @@ describe('what a reader found that nineteen guards had not', () => {
     for (const { name, text } of liveDocuments()) {
       for (const [sentence, named] of text.matchAll(/(?:visual editor|builder) is built in ([^.;\n]*)/gi)) {
         for (const framework of frameworks) {
-          expect(
-            named!.toLowerCase().includes(framework),
-            `${name} says the editor ${sentence.trim()} — there is a ${framework} builder too`,
-          ).toBe(true)
+          expect(named!.toLowerCase().includes(framework), `${name} says the editor ${sentence.trim()} — there is a ${framework} builder too`).toBe(true)
         }
       }
     }
@@ -1216,9 +1144,7 @@ describe('what a reader found that nineteen guards had not', () => {
      */
     const readme = readFileSync(join(repo, 'README.md'), 'utf8')
     const map = readme.slice(readme.indexOf('## Layout'))
-    const mapped = new Set(
-      [...map.matchAll(/^((?:packages|apps)\/[\w-]+)/gm)].map((match) => match[1]!),
-    )
+    const mapped = new Set([...map.matchAll(/^((?:packages|apps)\/[\w-]+)/gm)].map((match) => match[1]!))
     const present = ['packages', 'apps'].flatMap((top) =>
       readdirSync(join(repo, top), { withFileTypes: true })
         .filter((entry) => entry.isDirectory() && existsSync(join(repo, top, entry.name, 'package.json')))
@@ -1226,7 +1152,10 @@ describe('what a reader found that nineteen guards had not', () => {
     )
 
     expect(present.length, 'no packages or apps were found to compare against').toBeGreaterThan(10)
-    expect(present.filter((path) => !mapped.has(path)), 'not on the README’s map').toEqual([])
+    expect(
+      present.filter((path) => !mapped.has(path)),
+      'not on the README’s map',
+    ).toEqual([])
   })
 })
 
@@ -1238,8 +1167,7 @@ describe('the version a status note names', () => {
    * three spec versions are frozen" of four and the front page called version 4 open after
    * it froze — written by hand, and moved by hand, one at a time.
    */
-  const version = (JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8')) as { version: string })
-    .version
+  const version = (JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8')) as { version: string }).version
 
   test('is the version the workspace is on, in each place that names one', () => {
     const notes = {
@@ -1254,9 +1182,7 @@ describe('the version a status note names', () => {
 
   test('and none counts the frozen spec versions, which is how one went stale', () => {
     for (const file of ['README.md', 'apps/docs/src/content/docs/index.md']) {
-      expect(readFileSync(join(repo, file), 'utf8'), file).not.toMatch(
-        /\b(?:one|two|three|four|five|all \w+) (?:of the \w+ )?spec versions are frozen/i,
-      )
+      expect(readFileSync(join(repo, file), 'utf8'), file).not.toMatch(/\b(?:one|two|three|four|five|all \w+) (?:of the \w+ )?spec versions are frozen/i)
     }
   })
 })

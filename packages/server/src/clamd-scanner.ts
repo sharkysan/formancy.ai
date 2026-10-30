@@ -62,13 +62,7 @@ export function createClamdScanner({
         const answer: Buffer[] = []
         let failure: Error | undefined
 
-        socket.setTimeout(timeoutMs, () =>
-          socket.destroy(
-            new Error(
-              `clamd at ${host}:${String(port)} did not answer within ${String(timeoutMs)} ms`,
-            ),
-          ),
-        )
+        socket.setTimeout(timeoutMs, () => socket.destroy(new Error(`clamd at ${host}:${String(port)} did not answer within ${String(timeoutMs)} ms`)))
         socket.on('connect', () => {
           socket.write('zINSTREAM\0')
           for (let at = 0; at < bytes.byteLength; at += CHUNK) {
@@ -91,14 +85,11 @@ export function createClamdScanner({
         socket.on('close', () => {
           const reply = Buffer.concat(answer).toString('utf8').replace(/\0+$/, '').trim()
           if (reply === '') {
-            reject(
-              failure ?? new Error(`clamd at ${host}:${String(port)} closed without answering`),
-            )
+            reject(failure ?? new Error(`clamd at ${host}:${String(port)} closed without answering`))
             return
           }
           const verdict = verdictOf(reply)
-          if (verdict === undefined)
-            reject(new Error(`clamd answered something unexpected: ${reply}`))
+          if (verdict === undefined) reject(new Error(`clamd answered something unexpected: ${reply}`))
           else resolve(verdict)
         })
       }),

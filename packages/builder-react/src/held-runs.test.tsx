@@ -138,19 +138,13 @@ describe('a translation the host holds', () => {
     await user.click(screen.getByRole('button', { name: /Ask a model/ }))
 
     await user.selectOptions(language(), 'de')
-    expect(screen.getByRole('status').textContent).toBe(
-      session.text('translate.status.elsewhereAsking', { locale: 'fr' }),
-    )
+    expect(screen.getByRole('status').textContent).toBe(session.text('translate.status.elsewhereAsking', { locale: 'fr' }))
     expect(screen.queryByRole('button', { name: /Ask a model|Stop/ })).toBeNull()
     expect(slow.cancelled).not.toHaveBeenCalled()
 
     slow.release(FRENCH)
     await user.selectOptions(language(), 'en')
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe(
-        session.text('translate.status.elsewhereHeld', { locale: 'fr' }),
-      ),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(session.text('translate.status.elsewhereHeld', { locale: 'fr' })))
     expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
 
     await user.selectOptions(language(), 'fr')
@@ -252,9 +246,7 @@ describe('drafts the host holds', () => {
     const slow = held()
     const drafting = createDraftRun()
     const onChange = vi.fn()
-    const { unmount } = render(
-      <ScenarioPane session={createBuilderSession(FORM)} scenarios={[]} onChange={onChange} ask={slow.model} drafting={drafting} />,
-    )
+    const { unmount } = render(<ScenarioPane session={createBuilderSession(FORM)} scenarios={[]} onChange={onChange} ask={slow.model} drafting={drafting} />)
     await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'Only other asks why.')
     await user.click(screen.getByRole('button', { name: 'Draft examples' }))
     await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
@@ -264,12 +256,8 @@ describe('drafts the host holds', () => {
     slow.release(ANSWER)
     await waitFor(() => expect(drafting.state().drafts).toHaveLength(1))
 
-    render(
-      <ScenarioPane session={createBuilderSession(FORM)} scenarios={[]} onChange={onChange} ask={slow.model} drafting={drafting} />,
-    )
-    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /What should this form do/ }).value).toBe(
-      'Only other asks why.',
-    )
+    render(<ScenarioPane session={createBuilderSession(FORM)} scenarios={[]} onChange={onChange} ask={slow.model} drafting={drafting} />)
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /What should this form do/ }).value).toBe('Only other asks why.')
     const drafts = screen.getByRole('list', { name: 'Drafted examples' })
     expect(within(drafts).getByText('Holds against the form as it is.')).toBeTruthy()
     await user.click(within(drafts).getByRole('button', { name: `Keep ${HOLDS.name}` }))
@@ -281,13 +269,7 @@ describe('drafts the host holds', () => {
     const user = userEvent.setup()
     const drafting = createDraftRun()
     const { unmount } = render(
-      <ScenarioPane
-        session={createBuilderSession(FORM)}
-        scenarios={[]}
-        onChange={() => undefined}
-        ask={() => Promise.resolve(ANSWER)}
-        drafting={drafting}
-      />,
+      <ScenarioPane session={createBuilderSession(FORM)} scenarios={[]} onChange={() => undefined} ask={() => Promise.resolve(ANSWER)} drafting={drafting} />,
     )
     await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'Only other asks why.')
     await user.click(screen.getByRole('button', { name: 'Draft examples' }))
@@ -313,9 +295,7 @@ describe('drafts the host holds', () => {
     const session = createBuilderSession(FORM)
     const slow = held()
     const drafting = createDraftRun()
-    const { unmount } = render(
-      <ScenarioPane session={session} scenarios={[]} onChange={() => undefined} ask={slow.model} drafting={drafting} />,
-    )
+    const { unmount } = render(<ScenarioPane session={session} scenarios={[]} onChange={() => undefined} ask={slow.model} drafting={drafting} />)
     await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'anything')
     await user.click(screen.getByRole('button', { name: 'Draft examples' }))
     unmount()
@@ -325,9 +305,7 @@ describe('drafts the host holds', () => {
     await user.click(screen.getByRole('button', { name: 'Stop drafting' }))
 
     const statuses = await screen.findAllByRole('status')
-    await waitFor(() =>
-      expect(statuses.some((status) => status.textContent === 'Stopped. Nothing was drafted.')).toBe(true),
-    )
+    await waitFor(() => expect(statuses.some((status) => status.textContent === 'Stopped. Nothing was drafted.')).toBe(true))
     expect(slow.cancelled).toHaveBeenCalledTimes(1)
   })
 })

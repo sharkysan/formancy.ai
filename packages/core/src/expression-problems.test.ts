@@ -13,10 +13,7 @@ import type { FormSchema } from '@formancy/spec'
  */
 const CAPABILITIES = { now: () => 0, today: () => '2026-09-24', random: () => 0.5 }
 
-const form = (
-  fields: FormSchema['model']['fields'],
-  rules: NonNullable<FormSchema['logic']>['rules'],
-): FormSchema => ({
+const form = (fields: FormSchema['model']['fields'], rules: NonNullable<FormSchema['logic']>['rules']): FormSchema => ({
   specVersion: '1',
   id: 'quote',
   title: 'Quote',
@@ -68,17 +65,12 @@ describe('the bug this exists for', () => {
 })
 
 describe('every arithmetic operator, and every position', () => {
-  test.each(['seats * 4', '4 * seats', 'seats + 1', 'seats - 1', 'seats / 2', 'seats % 2'])(
-    'catches %s',
-    (cel) => {
-      expect(expressionProblems(form(NUMBERS, [{ target: 'total', kind: 'computed', cel }]))).toHaveLength(1)
-    },
-  )
+  test.each(['seats * 4', '4 * seats', 'seats + 1', 'seats - 1', 'seats / 2', 'seats % 2'])('catches %s', (cel) => {
+    expect(expressionProblems(form(NUMBERS, [{ target: 'total', kind: 'computed', cel }]))).toHaveLength(1)
+  })
 
   test('catches it inside a larger expression', () => {
-    const problems = expressionProblems(
-      form(NUMBERS, [{ target: 'total', kind: 'computed', cel: '(seats * 4) + price' }]),
-    )
+    const problems = expressionProblems(form(NUMBERS, [{ target: 'total', kind: 'computed', cel: '(seats * 4) + price' }]))
 
     expect(problems).toHaveLength(1)
   })
@@ -129,10 +121,7 @@ describe('what it must not report', () => {
   })
 
   test('a genuine type mistake is reported, but without the decimal-point advice', () => {
-    const schema = form(
-      [...NUMBERS, { key: 'name', type: 'text', label: 'Name' }],
-      [{ target: 'total', kind: 'computed', cel: 'seats * name' }],
-    )
+    const schema = form([...NUMBERS, { key: 'name', type: 'text', label: 'Name' }], [{ target: 'total', kind: 'computed', cel: 'seats * name' }])
 
     // `double * string` fails exactly as silently, so it is reported too. The
     // hint is not: telling this author to write `4.0` sends them looking in
@@ -173,10 +162,7 @@ describe('what it must not report', () => {
   })
 
   test('a field inside a page, which contributes no path segment', () => {
-    const schema = form(
-      [{ key: 'step1', type: 'page', label: 'Step 1', fields: NUMBERS }],
-      [{ target: 'total', kind: 'computed', cel: 'seats * 4' }],
-    )
+    const schema = form([{ key: 'step1', type: 'page', label: 'Step 1', fields: NUMBERS }], [{ target: 'total', kind: 'computed', cel: 'seats * 4' }])
 
     // Named `seats`, not `step1.seats`. If the walk here disagreed with the
     // engine's, this would read as an undeclared identifier and be skipped.

@@ -31,13 +31,7 @@ const schemaTextarea = vi.hoisted(() => ({ onChange: undefined as ((value?: stri
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, onChange }: { value?: string; onChange?: (value?: string) => void }) => {
     schemaTextarea.onChange = onChange
-    return (
-      <textarea
-        aria-label="Schema"
-        value={value ?? ''}
-        onChange={(event) => onChange?.(event.target.value)}
-      />
-    )
+    return <textarea aria-label="Schema" value={value ?? ''} onChange={(event) => onChange?.(event.target.value)} />
   },
   useMonaco: () => null,
 }))
@@ -56,12 +50,9 @@ describe('the Monaco theme the Schema view asks for', () => {
      * would anybody find out? Until now, no.
      */
     const defined: string[] = []
-    defineNightTheme({ editor: { defineTheme: (name: string) => defined.push(name) } } as never)
+    defineNightTheme({ editor: { defineTheme: (name: string) => defined.push(name) } })
 
-    const source = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), 'editor-pane.tsx'),
-      'utf8',
-    )
+    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'editor-pane.tsx'), 'utf8')
     const asked = /theme="([^"]+)"/.exec(source)?.[1]
 
     expect(asked, 'the editor asks for no theme at all').toBeDefined()
@@ -77,7 +68,7 @@ describe('the Monaco theme the Schema view asks for', () => {
     let captured: { base?: string; inherit?: boolean; rules?: unknown[] } | undefined
     defineNightTheme({
       editor: { defineTheme: (_name: string, theme: typeof captured) => void (captured = theme) },
-    } as never)
+    })
 
     expect(captured?.base).toBe('vs-dark')
     expect(captured?.inherit).toBe(true)
@@ -97,13 +88,13 @@ describe('editing the schema by hand', () => {
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'Schema' }))
 
-    const before = (screen.getByRole('textbox', { name: 'Schema' }) as HTMLTextAreaElement).value
+    const before = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Schema' }).value
     expect(before, 'the schema editor opened empty').toContain('specVersion')
 
     const edited = before.replace('"title"', '"title2"')
     fireEvent.change(screen.getByRole('textbox', { name: 'Schema' }), { target: { value: edited } })
 
-    expect((screen.getByRole('textbox', { name: 'Schema' }) as HTMLTextAreaElement).value).toBe(edited)
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Schema' }).value).toBe(edited)
   })
 
   test('and an editor that reports no text at all leaves the document alone', () => {

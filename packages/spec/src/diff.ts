@@ -89,15 +89,7 @@ export function diffSchemas(before: FormSchema, after: FormSchema): Change[] {
  * and the reason a future `attachments` or `access` section cannot slip
  * through as "no change".
  */
-const EXPLAINED_AREAS: ReadonlySet<string> = new Set([
-  'specVersion',
-  'id',
-  'title',
-  'model',
-  'logic',
-  'i18n',
-  'layouts',
-])
+const EXPLAINED_AREAS: ReadonlySet<string> = new Set(['specVersion', 'id', 'title', 'model', 'logic', 'i18n', 'layouts'])
 
 /** What a form is called. Never part of an answer, so never worse than compatible. */
 function compareNaming(before: FormSchema, after: FormSchema): Change[] {

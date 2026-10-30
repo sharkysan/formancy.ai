@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  CONTAINER_FIELD_TYPES,
-  CURRENT_SPEC_VERSION,
-  FIELD_TYPES,
-  RULE_KINDS,
-} from '@formancy/spec'
+import { CONTAINER_FIELD_TYPES, CURRENT_SPEC_VERSION, FIELD_TYPES, RULE_KINDS } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import { createFormEngine } from '@formancy/core'
 import type { FieldDef, FieldType, FormSchema, LogicRule } from '@formancy/spec'
@@ -43,12 +38,10 @@ const typesUsed = (fields: readonly FieldDef[]): Set<FieldType> => {
 
 const rulesOf = (schema: FormSchema): readonly LogicRule[] => schema.logic?.rules ?? []
 
-const kindsUsed = (schema: FormSchema): Set<string> =>
-  new Set(rulesOf(schema).map((rule) => rule.kind))
+const kindsUsed = (schema: FormSchema): Set<string> => new Set(rulesOf(schema).map((rule) => rule.kind))
 
 /** Every page key, in document order. */
-const pageKeys = (schema: FormSchema): string[] =>
-  schema.model.fields.filter((field) => field.type === 'page').map((field) => field.key)
+const pageKeys = (schema: FormSchema): string[] => schema.model.fields.filter((field) => field.type === 'page').map((field) => field.key)
 
 describe('the wizard demo', () => {
   test('validates against the spec — a demo must never open on an error screen', () => {
@@ -63,7 +56,7 @@ describe('the wizard demo', () => {
   })
 
   test('holds every container type the format has, since that is what it is for', () => {
-    const seen = typesUsed(WIZARD_SCHEMA.model.fields as readonly FieldDef[])
+    const seen = typesUsed(WIZARD_SCHEMA.model.fields)
 
     // Derived from the spec's constant, so a container type added to the format
     // fails here until this demo shows it.
@@ -71,10 +64,7 @@ describe('the wizard demo', () => {
   })
 
   test('and between the two demos, every field type the format defines is on screen', () => {
-    const together = new Set([
-      ...typesUsed(STARTER_SCHEMA.model.fields as readonly FieldDef[]),
-      ...typesUsed(WIZARD_SCHEMA.model.fields as readonly FieldDef[]),
-    ])
+    const together = new Set([...typesUsed(STARTER_SCHEMA.model.fields), ...typesUsed(WIZARD_SCHEMA.model.fields)])
 
     // No exclusion list on either side. The starter's own test says it covers
     // everything except `group` and `page`; this says the pair covers everything,
@@ -157,7 +147,7 @@ function keysOf(fields: readonly FieldDef[]): string[] {
 
 /** Every key in the document, for telling a field name from a CEL keyword. */
 function allKeys(schema: FormSchema): Set<string> {
-  return new Set(keysOf(schema.model.fields as readonly FieldDef[]))
+  return new Set(keysOf(schema.model.fields))
 }
 
 describe('the wizard demo, run rather than read', () => {
@@ -182,7 +172,10 @@ describe('the wizard demo, run rather than read', () => {
     })
 
   const skippedKeys = (form: ReturnType<typeof createFormEngine>): string[] =>
-    form.pages().filter((page) => page.skipped).map((page) => page.key)
+    form
+      .pages()
+      .filter((page) => page.skipped)
+      .map((page) => page.key)
 
   test('skips the visa step while nobody has said they need a visa', () => {
     // The static text on step one says exactly this. It was false.

@@ -27,9 +27,7 @@ export function isJsonValue(value: unknown): boolean {
       // survive the file round-trip that every driver reads it through.
       return Number.isFinite(value)
     case 'object':
-      return Array.isArray(value)
-        ? value.every(isJsonValue)
-        : Object.values(value as Record<string, unknown>).every(isJsonValue)
+      return Array.isArray(value) ? value.every(isJsonValue) : Object.values(value as Record<string, unknown>).every(isJsonValue)
     default:
       return false
   }

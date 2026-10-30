@@ -136,12 +136,7 @@ const FOOTER = [
 
 /** The file, as it should be on disk. */
 export function codecovConfig(packages = coveredPackages()) {
-  const components = packages.flatMap(({ path, id }) => [
-    `    - component_id: ${id}`,
-    `      name: ${path}`,
-    '      paths:',
-    `        - ${path}/**`,
-  ])
+  const components = packages.flatMap(({ path, id }) => [`    - component_id: ${id}`, `      name: ${path}`, '      paths:', `        - ${path}/**`])
 
   return `${[...HEADER, '', ...BODY, ...components, ...FOOTER].join('\n')}\n`
 }

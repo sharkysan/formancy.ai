@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import postgres from 'postgres'
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
-import type { FastifyInstance, HTTPMethods, InjectOptions, LightMyRequestResponse } from 'fastify'
+import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify'
 import type { FormSchema } from '@formancy/spec'
 import { bootstrapSchema } from './db.js'
 import { solveChallenge } from '@formancy/server-core'
@@ -60,7 +60,7 @@ function asAdmin(headers: Record<string, string> = {}): Record<string, string> {
 async function handedOut(path: string, on: FastifyInstance = app): Promise<Record<string, string>> {
   const read = await on.inject({ method: 'GET', url: `/f/${path}` })
   expect(read.statusCode).toBe(200)
-  return { [SUBMISSION_TOKEN_HEADER]: (read.json() as { submissionToken: string }).submissionToken }
+  return { [SUBMISSION_TOKEN_HEADER]: read.json<{ submissionToken: string }>().submissionToken }
 }
 
 /**
@@ -109,7 +109,7 @@ beforeAll(async () => {
     url: '/auth/login',
     payload: { email: 'root@test.ch', password: 'root-password-1' },
   })
-  adminToken = (login.json() as { token: string }).token
+  adminToken = login.json<{ token: string }>().token
 }, 180_000)
 
 afterAll(async () => {
@@ -125,7 +125,7 @@ describe('the walking skeleton, end to end', () => {
     const response = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema } })
 
     expect(response.statusCode).toBe(201)
-    const body = response.json() as { version: number; schemaHash: string }
+    const body = response.json<{ version: number; schemaHash: string }>()
     expect(body.version).toBe(1)
     expect(body.schemaHash).toMatch(/^[0-9a-f]{64}$/)
     schemaHash = body.schemaHash
@@ -159,7 +159,7 @@ describe('the walking skeleton, end to end', () => {
     const response = await app.inject({ method: 'GET', url: '/f/contact-us' })
 
     expect(response.statusCode).toBe(200)
-    const body = response.json() as { version: number; schemaHash: string; schema: FormSchema }
+    const body = response.json<{ version: number; schemaHash: string; schema: FormSchema }>()
     expect(body.schemaHash).toBe(schemaHash)
     expect(body.schema.model.fields.map((f) => f.key)).toContain('email')
   })
@@ -195,7 +195,7 @@ describe('the walking skeleton, end to end', () => {
     })
 
     expect(response.statusCode).toBe(201)
-    const body = response.json() as { data: Record<string, unknown> }
+    const body = response.json<{ data: Record<string, unknown> }>()
     expect('canton' in body.data).toBe(false)
     expect(body.data['total']).toBe(20)
   })
@@ -221,20 +221,20 @@ describe('the walking skeleton, end to end', () => {
     })
 
     expect(response.statusCode).toBe(409)
-    const body = response.json() as { error: string; current: { schemaHash: string } }
+    const body = response.json<{ error: string; current: { schemaHash: string } }>()
     expect(body.error).toBe('FORM_VERSION_CHANGED')
     expect(body.current.schemaHash).toBe(schemaHash)
   })
 
   test('republishing an identical schema stays at version 1', async () => {
     const response = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema } })
-    expect((response.json() as { version: number }).version).toBe(1)
+    expect(response.json<{ version: number }>().version).toBe(1)
   })
 
   test('publishing a changed schema bumps the version, and the old hash now 409s', async () => {
     const changed = { ...schema, title: 'Contact us please' }
     const publish = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema: changed } })
-    expect((publish.json() as { version: number }).version).toBe(2)
+    expect(publish.json<{ version: number }>().version).toBe(2)
 
     const submit = await app.inject({
       method: 'POST',
@@ -246,9 +246,7 @@ describe('the walking skeleton, end to end', () => {
   })
 
   test('the database refuses to mutate a published version — immutability is a trigger, not a convention', async () => {
-    await expect(sql`UPDATE form_versions SET schema_hash = 'tampered' WHERE version = 1`).rejects.toThrow(
-      /immutable/,
-    )
+    await expect(sql`UPDATE form_versions SET schema_hash = 'tampered' WHERE version = 1`).rejects.toThrow(/immutable/)
   })
 
   test('the database refuses to orphan a submission from its version', async () => {
@@ -304,7 +302,7 @@ describe("a repeater's rows, posted straight at the API", () => {
   beforeAll(async () => {
     const published = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'fees', schema: fees } })
     expect(published.statusCode).toBe(201)
-    feesHash = (published.json() as { schemaHash: string }).schemaHash
+    feesHash = published.json<{ schemaHash: string }>().schemaHash
     await app.inject({ method: 'PUT', url: '/f/fees/access', headers: asAdmin(), payload: { submit: 'public' } })
   })
 
@@ -353,7 +351,7 @@ describe('listing and export', () => {
     const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions', headers: asAdmin() })
 
     expect(response.statusCode).toBe(200)
-    const body = response.json() as { submissions: Array<{ version: number; data: unknown }> }
+    const body = response.json<{ submissions: Array<{ version: number; data: unknown }> }>()
     expect(body.submissions.length).toBeGreaterThanOrEqual(2)
     expect(body.submissions[0]!.version).toBeGreaterThanOrEqual(1)
   })
@@ -375,7 +373,7 @@ describe('listing and export', () => {
   // the in-memory storage only imitates. A page at a time, the list is the full list, in its order.
   test('a page at a time lists every submission the full list does, in its order, and says when it ends', async () => {
     const full = await app.inject({ method: 'GET', url: '/f/contact-us/submissions', headers: asAdmin() })
-    const all = (full.json() as { submissions: Array<{ id: string }> }).submissions.map((s) => s.id)
+    const all = full.json<{ submissions: Array<{ id: string }> }>().submissions.map((s) => s.id)
     expect(all.length).toBeGreaterThanOrEqual(2)
 
     const paged: string[] = []
@@ -384,7 +382,7 @@ describe('listing and export', () => {
       const after: string = next === null ? '' : `&after=${encodeURIComponent(next)}`
       const page = await app.inject({ method: 'GET', url: `/f/contact-us/submissions?limit=1${after}`, headers: asAdmin() })
       expect(page.statusCode).toBe(200)
-      const body = page.json() as { submissions: Array<{ id: string }>; next: string | null }
+      const body = page.json<{ submissions: Array<{ id: string }>; next: string | null }>()
       expect(body.submissions.length).toBeLessThanOrEqual(1)
       paged.push(...body.submissions.map((s) => s.id))
       next = body.next
@@ -405,12 +403,12 @@ describe('listing and export', () => {
   // listing has.
   test('the summary counts every response, a version at a time, newest first', async () => {
     const listed = await app.inject({ method: 'GET', url: '/f/contact-us/submissions', headers: asAdmin() })
-    const all = (listed.json() as { submissions: unknown[] }).submissions.length
+    const all = listed.json<{ submissions: unknown[] }>().submissions.length
 
     const response = await app.inject({ method: 'GET', url: '/f/contact-us/summary', headers: asAdmin() })
 
     expect(response.statusCode).toBe(200)
-    const versions = (response.json() as { versions: Array<{ version: number; responses: number; questions: unknown[] }> }).versions
+    const versions = response.json<{ versions: Array<{ version: number; responses: number; questions: unknown[] }> }>().versions
     expect(versions.map((version) => version.version)).toEqual([...versions.map((version) => version.version)].sort((a, b) => b - a))
     expect(versions.reduce((total, version) => total + version.responses, 0)).toBe(all)
     expect(versions.every((version) => version.questions.length > 0)).toBe(true)
@@ -428,7 +426,7 @@ describe('drafts over HTTP', () => {
   const start = async (): Promise<{ draftId: string; token: string }> => {
     const created = await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })
     expect(created.statusCode).toBe(201)
-    return created.json() as { draftId: string; token: string }
+    return created.json<{ draftId: string; token: string }>()
   }
 
   test('without the token, a draft can be neither read nor written', async () => {
@@ -459,7 +457,7 @@ describe('drafts over HTTP', () => {
       url: `/f/contact-us/drafts/${draftId}`,
       headers: { 'x-formancy-draft-token': token },
     })
-    expect((mine.json() as { data: Record<string, unknown> }).data['email']).toBe('private@b.ch')
+    expect(mine.json<{ data: Record<string, unknown> }>().data['email']).toBe('private@b.ch')
   })
 
   test('a wrong token is answered like a draft that is not there', async () => {
@@ -517,11 +515,11 @@ describe('drafts over HTTP', () => {
       headers: { 'x-formancy-draft-token': token },
     })
     expect(resumed.statusCode).toBe(200)
-    const body = resumed.json() as {
+    const body = resumed.json<{
       outcome: string
       data: Record<string, unknown>
       migration?: { severity: string }
-    }
+    }>()
     expect(body.outcome).toBe('resumed')
     expect(body.migration?.severity).toBe('lossy')
     expect(body.data['email']).toBe('wip@b.ch')
@@ -550,12 +548,10 @@ describe('drafts over HTTP', () => {
  * insert. Only the insert can say which of them is stored, and only Postgres can show it does.
  */
 describe('a response is stored once', () => {
-  const count = async (): Promise<number> =>
-    Number((await sql`SELECT count(*)::int AS n FROM submissions`)[0]!['n'])
+  const count = async (): Promise<number> => Number((await sql`SELECT count(*)::int AS n FROM submissions`)[0]!['n'])
 
   /** contact-us's hash now: the draft cases above republish it. */
-  const currentHash = async (): Promise<string> =>
-    ((await app.inject({ method: 'GET', url: '/f/contact-us' })).json() as { schemaHash: string }).schemaHash
+  const currentHash = async (): Promise<string> => (await app.inject({ method: 'GET', url: '/f/contact-us' })).json<{ schemaHash: string }>().schemaHash
 
   const send = async (token: Record<string, string>, payload: object = { email: 'once@b.ch' }) =>
     app.inject({
@@ -573,7 +569,7 @@ describe('a response is stored once', () => {
     const second = await app.inject({ method: 'GET', url: '/f/contact-us' })
 
     expect(first.headers['cache-control']).toBe('no-store')
-    const tokens = [first, second].map((reply) => (reply.json() as { submissionToken: string }).submissionToken)
+    const tokens = [first, second].map((reply) => reply.json<{ submissionToken: string }>().submissionToken)
     expect(tokens[0]).toMatch(/^[0-9a-f-]{36}\.[0-9a-f]{64}$/)
     expect(tokens[0]).not.toBe(tokens[1])
   })
@@ -614,7 +610,7 @@ describe('a response is stored once', () => {
 
     expect(first.statusCode).toBe(201)
     expect(second.statusCode).toBe(409)
-    const id = (first.json() as { id: string }).id
+    const id = first.json<{ id: string }>().id
     expect(second.json()).toMatchObject({ error: 'submission_token_spent', id })
     expect(await count()).toBe(before + 1)
     const audited = await sql`SELECT 1 FROM audit_log WHERE action = 'submission.created' AND detail->>'submissionId' = ${id}`
@@ -673,11 +669,11 @@ describe('a response is stored once', () => {
     // resumed draft. Resuming hands back the token the draft started with, so the second send
     // is the same response.
     const started = await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })
-    const { draftId, token, submissionToken } = started.json() as {
+    const { draftId, token, submissionToken } = started.json<{
       draftId: string
       token: string
       submissionToken: string
-    }
+    }>()
     await app.inject({
       method: 'PUT',
       url: `/f/contact-us/drafts/${draftId}`,
@@ -691,13 +687,13 @@ describe('a response is stored once', () => {
           url: `/f/contact-us/drafts/${draftId}`,
           headers: { 'x-formancy-draft-token': token },
         })
-      ).json() as { submissionToken: string; data: object }
+      ).json<{ submissionToken: string; data: object }>()
 
     const resumed = await resume()
     expect(resumed.submissionToken).toBe(submissionToken)
     const sent = await send({ [SUBMISSION_TOKEN_HEADER]: resumed.submissionToken }, resumed.data)
     expect(sent.statusCode).toBe(201)
-    expect((sent.json() as { id: string }).id).toBe(draftId)
+    expect(sent.json<{ id: string }>().id).toBe(draftId)
 
     const again = await resume()
     const resent = await send({ [SUBMISSION_TOKEN_HEADER]: again.submissionToken }, again.data)
@@ -709,13 +705,11 @@ describe('catalog reads over HTTP', () => {
   test('forms and version history are listable', async () => {
     const forms = await app.inject({ method: 'GET', url: '/forms', headers: asAdmin() })
     expect(forms.statusCode).toBe(200)
-    expect((forms.json() as { forms: Array<{ path: string }> }).forms.map((f) => f.path)).toContain(
-      'contact-us',
-    )
+    expect(forms.json<{ forms: Array<{ path: string }> }>().forms.map((f) => f.path)).toContain('contact-us')
 
     const versions = await app.inject({ method: 'GET', url: '/f/contact-us/versions', headers: asAdmin() })
     expect(versions.statusCode).toBe(200)
-    const listed = (versions.json() as { versions: Array<{ version: number }> }).versions
+    const listed = versions.json<{ versions: Array<{ version: number }> }>().versions
     expect(listed.length).toBeGreaterThanOrEqual(2)
     expect(listed[0]!.version).toBeGreaterThan(listed[listed.length - 1]!.version)
   })
@@ -737,7 +731,7 @@ describe('the two planes', () => {
       url: '/auth/login',
       payload: { email: 'viewer@test.ch', password: 'viewer-password-1' },
     })
-    const viewerToken = (login.json() as { token: string }).token
+    const viewerToken = login.json<{ token: string }>().token
 
     const publishAttempt = await app.inject({
       method: 'POST',
@@ -764,7 +758,7 @@ describe('the two planes', () => {
       payload: { name: 'ci', role: 'editor' },
     })
     expect(created.statusCode).toBe(201)
-    const { secret } = created.json() as { secret: string }
+    const { secret } = created.json<{ secret: string }>()
     expect(secret.startsWith('fmc_')).toBe(true)
 
     const publish = await app.inject({
@@ -847,7 +841,7 @@ describe('rate limiting the public plane', () => {
 
     try {
       const started = await throttled.inject({ method: 'POST', url: '/f/contact-us/drafts' })
-      const { draftId, token } = started.json() as { draftId: string; token: string }
+      const { draftId, token } = started.json<{ draftId: string; token: string }>()
 
       const save = async (): Promise<number> =>
         (
@@ -880,7 +874,7 @@ describe('rate limiting the public plane', () => {
 
     try {
       const started = await throttled.inject({ method: 'POST', url: '/f/contact-us/drafts' })
-      const { draftId } = started.json() as { draftId: string }
+      const { draftId } = started.json<{ draftId: string }>()
 
       const guess = async (): Promise<number> =>
         (
@@ -913,8 +907,7 @@ describe('rate limiting the public plane', () => {
     })
 
     try {
-      const mint = async (): Promise<number> =>
-        (await throttled.inject({ method: 'GET', url: '/f/contact-us/challenge' })).statusCode
+      const mint = async (): Promise<number> => (await throttled.inject({ method: 'GET', url: '/f/contact-us/challenge' })).statusCode
 
       await mint()
       await mint()
@@ -993,7 +986,7 @@ describe('the webhook outbox', () => {
       headers: asAdmin(),
       payload: { path: 'hooked', schema: { ...schema, id: 'hooked' } },
     })
-    const hash = (published.json() as { schemaHash: string }).schemaHash
+    const hash = published.json<{ schemaHash: string }>().schemaHash
 
     const form = await sql`SELECT id FROM forms WHERE path = 'hooked'`
     await sql`
@@ -1030,7 +1023,7 @@ describe('the webhook outbox', () => {
       headers: asAdmin(),
       payload: { path: 'unhooked', schema: { ...schema, id: 'unhooked' } },
     })
-    const hash = (published.json() as { schemaHash: string }).schemaHash
+    const hash = published.json<{ schemaHash: string }>().schemaHash
     await app.inject({
       method: 'PUT',
       url: '/f/unhooked/access',
@@ -1061,12 +1054,9 @@ describe('the webhook outbox', () => {
     // ON DELETE RESTRICT: the delivery is the record that something was sent
     // about this submission, and deleting the submission must not quietly
     // erase it.
-    await expect(
-      sql`DELETE FROM submissions WHERE id = ${submission[0]!['id'] as string}`,
-    ).rejects.toThrow()
+    await expect(sql`DELETE FROM submissions WHERE id = ${submission[0]!['id'] as string}`).rejects.toThrow()
   })
 })
-
 
 /**
  * The file lifecycle against real SQL.
@@ -1098,7 +1088,7 @@ describe('uploaded files', () => {
       headers: asAdmin(),
       payload: { path: 'claim', schema: withFiles },
     })
-    hash = (published.json() as { schemaHash: string }).schemaHash
+    hash = published.json<{ schemaHash: string }>().schemaHash
     const opened = await app.inject({
       method: 'PUT',
       url: '/f/claim/access',
@@ -1109,17 +1099,14 @@ describe('uploaded files', () => {
   })
 
   /** Offer, then upload. Returns what a submission would reference. */
-  async function upload(
-    name = 'report.pdf',
-    body = Buffer.from('%PDF-1.4 pretend'),
-  ): Promise<Record<string, unknown>> {
+  async function upload(name = 'report.pdf', body = Buffer.from('%PDF-1.4 pretend')): Promise<Record<string, unknown>> {
     const offered = await app.inject({
       method: 'POST',
       url: '/f/claim/files',
       payload: { field: 'evidence', name, size: body.byteLength, contentType: 'application/pdf' },
     })
     expect(offered.statusCode).toBe(201)
-    const file = offered.json() as { id: string; uploadUrl: string }
+    const file = offered.json<{ id: string; uploadUrl: string }>()
 
     const put = await app.inject({
       method: 'PUT',
@@ -1128,7 +1115,7 @@ describe('uploaded files', () => {
       payload: body,
     })
     expect(put.statusCode).toBe(204)
-    return file as unknown as Record<string, unknown>
+    return file
   }
 
   test('a file is offered, uploaded and then claimed by a submission', async () => {
@@ -1145,7 +1132,7 @@ describe('uploaded files', () => {
     const id = file['id'] as string
     const rows = await sql`SELECT state, submission_id FROM files WHERE id = ${id}`
     expect(rows[0]?.['state']).toBe('claimed')
-    expect(rows[0]?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+    expect(rows[0]?.['submission_id']).toBe(submitted.json<{ id: string }>().id)
   })
 
   test('a submission naming a file nobody uploaded is refused, and stores nothing', async () => {
@@ -1219,7 +1206,7 @@ describe('uploaded files', () => {
 
     const id = file['id'] as string
     const rows = await sql`SELECT submission_id FROM files WHERE id = ${id}`
-    expect(rows[0]?.['submission_id']).toBe((accepted[0]!.json() as { id: string }).id)
+    expect(rows[0]?.['submission_id']).toBe(accepted[0]!.json<{ id: string }>().id)
   })
 
   test('a response with a file, sent again, is told it was sent rather than that its file is unknown', async () => {
@@ -1279,7 +1266,7 @@ describe('uploaded files', () => {
       url: '/f/claim/files',
       payload: { field: 'evidence', name: 'a.pdf', size: 10, contentType: 'application/pdf' },
     })
-    const file = offered.json() as { uploadUrl: string }
+    const file = offered.json<{ uploadUrl: string }>()
 
     const put = await app.inject({
       method: 'PUT',
@@ -1307,7 +1294,7 @@ describe('uploaded files', () => {
     })
 
     expect(offered.statusCode).toBe(400)
-    expect((offered.json() as { error: string }).error).toBe('not_accepted')
+    expect(offered.json<{ error: string }>().error).toBe('not_accepted')
   })
 })
 
@@ -1350,7 +1337,7 @@ describe('a file of any type arrives as bytes', () => {
       payload: { field: 'notes', name, size: body.byteLength, contentType },
     })
     expect(offered.statusCode).toBe(201)
-    const file = offered.json() as { id: string; uploadUrl: string; storageKey: string }
+    const file = offered.json<{ id: string; uploadUrl: string; storageKey: string }>()
     const put = await app.inject({
       method: 'PUT',
       url: file.uploadUrl,
@@ -1439,7 +1426,7 @@ describe('a file of any type arrives as bytes', () => {
     })
 
     expect(offered.statusCode, offered.body).toBe(400)
-    expect((offered.json() as { error: string }).error).toBe('invalid_request')
+    expect(offered.json<{ error: string }>().error).toBe('invalid_request')
     const after = await sql`SELECT count(*)::int AS n FROM files`
     expect(after[0]?.['n']).toBe(before[0]?.['n'])
   })
@@ -1455,7 +1442,7 @@ describe('a file of any type arrives as bytes', () => {
     })
 
     expect(offered.statusCode, offered.body).toBe(413)
-    expect((offered.json() as { error: string }).error).toBe('too_large')
+    expect(offered.json<{ error: string }>().error).toBe('too_large')
   })
 
   test('an empty file is offered and kept: zero is a whole number of bytes', async () => {
@@ -1480,7 +1467,6 @@ describe('a file of any type arrives as bytes', () => {
     expect(LARGEST_MAX_FILE_BYTES).toBe(largest)
   })
 })
-
 
 /**
  * An upload the deployment scans (0131), on an app of its own so the scanner's verdict
@@ -1521,7 +1507,7 @@ describe('an upload the deployment scans', () => {
       headers: asAdmin(),
       payload: { path: 'scanned', schema: scanned },
     })
-    hash = (published.json() as { schemaHash: string }).schemaHash
+    hash = published.json<{ schemaHash: string }>().schemaHash
     await app.inject({ method: 'PUT', url: '/f/scanned/access', headers: asAdmin(), payload: { submit: 'public' } })
   })
 
@@ -1536,7 +1522,7 @@ describe('an upload the deployment scans', () => {
       url: '/f/scanned/files',
       payload: { field: 'evidence', name: 'a.pdf', size: body.byteLength, contentType: 'application/pdf' },
     })
-    const file = offered.json() as { id: string; uploadUrl: string; storageKey: string }
+    const file = offered.json<{ id: string; uploadUrl: string; storageKey: string }>()
     const put = await scanning.inject({
       method: 'PUT',
       url: file.uploadUrl,
@@ -1564,7 +1550,7 @@ describe('an upload the deployment scans', () => {
 
     expect(put.statusCode).toBe(422)
     expect(put.json()).toMatchObject({ error: 'refused_by_scanner' })
-    expect((put.json() as { message: string }).message).toContain('Eicar-Test-Signature')
+    expect(put.json<{ message: string }>().message).toContain('Eicar-Test-Signature')
     // The operator is told a file was refused; which finding is the answer's to say.
     expect(said('upload.refused')).toEqual([expect.objectContaining({ level: 'warn' })])
     // Never in the store, not even until the collector runs.
@@ -1587,7 +1573,7 @@ describe('an upload the deployment scans', () => {
     const { put, file } = await send(Buffer.from('%PDF-1.4 unscanned'))
 
     expect(put.statusCode).toBe(503)
-    expect((put.json() as { message: string }).message).toMatch(/Try again/)
+    expect(put.json<{ message: string }>().message).toMatch(/Try again/)
     // The client is not told an address, and nor is the log: it says the scanner could not
     // be asked, and the cause's words go nowhere (0168).
     expect(JSON.stringify(put.json())).not.toContain('10.0.0.5')
@@ -1672,7 +1658,7 @@ describe('an upload the deployment scans', () => {
         url: '/f/scanned/files',
         payload: { field: 'evidence', name: 'a.pdf', size, contentType: 'application/pdf' },
       })
-      return offered.json() as { id: string; uploadUrl: string; storageKey: string }
+      return offered.json<{ id: string; uploadUrl: string; storageKey: string }>()
     }
 
     const put = (file: { uploadUrl: string }, body: Buffer, on: FastifyInstance = scanning) =>
@@ -1764,7 +1750,7 @@ describe('an upload the deployment scans', () => {
       // later — and the store held the slow request's bytes.
       const [row] = await sql`SELECT state, submission_id FROM files WHERE id = ${file.id}`
       expect(row?.['state']).toBe('claimed')
-      expect(row?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+      expect(row?.['submission_id']).toBe(submitted.json<{ id: string }>().id)
       expect(bytes.get(file.storageKey)).toEqual(second)
       expect(late.statusCode).toBe(409)
     })
@@ -1789,7 +1775,7 @@ describe('an upload the deployment scans', () => {
       // The settle is refused, so the row is still the submission's.
       const [row] = await sql`SELECT state, submission_id FROM files WHERE id = ${file.id}`
       expect(row?.['state']).toBe('claimed')
-      expect(row?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+      expect(row?.['submission_id']).toBe(submitted.json<{ id: string }>().id)
       expect(late.statusCode).toBe(409)
       // What 0153 accepts, pinned so that closing it is deliberate: the slow write landed
       // after the fast one under the same key, and the store holds bytes the submission was
@@ -1845,7 +1831,7 @@ describe('an upload the deployment scans', () => {
         await releasing?.close()
       })
 
-      test('a write that throws is answered with its own error, not the release\'s', async () => {
+      test("a write that throws is answered with its own error, not the release's", async () => {
         verdict = async () => ({ clean: true })
         const file = await offer(first.byteLength)
         const write = holdTheNextWrite()
@@ -1900,9 +1886,7 @@ describe('an upload the deployment scans', () => {
       const storage = createPostgresStorage(sql)
       expect((await storage.getFile(file.id))?.receivingUntil).toBeNull()
       const now = new Date()
-      expect(
-        await storage.leaseFile(file.id, now.toISOString(), new Date(now.getTime() + 1000).toISOString()),
-      ).toBe(true)
+      expect(await storage.leaseFile(file.id, now.toISOString(), new Date(now.getTime() + 1000).toISOString())).toBe(true)
     })
 
     test('two leases taken at once on real SQL: exactly one wins', async () => {
@@ -1915,10 +1899,7 @@ describe('an upload the deployment scans', () => {
 
       const outcomes = await Promise.all(
         files.map((file) =>
-          Promise.all([
-            storage.leaseFile(file.id, now.toISOString(), until(60_000)),
-            storage.leaseFile(file.id, now.toISOString(), until(60_001)),
-          ]),
+          Promise.all([storage.leaseFile(file.id, now.toISOString(), until(60_000)), storage.leaseFile(file.id, now.toISOString(), until(60_001))]),
         ),
       )
 
@@ -1963,7 +1944,7 @@ describe('an upload the deployment scans', () => {
       expect(await storage.settleFile(file.id, at(5))).toBe(false)
       const [row] = await sql`SELECT state, submission_id FROM files WHERE id = ${file.id}`
       expect(row?.['state']).toBe('claimed')
-      expect(row?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+      expect(row?.['submission_id']).toBe(submitted.json<{ id: string }>().id)
     })
   })
 })
@@ -1992,7 +1973,7 @@ describe('the audit log', () => {
       headers: asAdmin(),
       payload: { path: 'audited', schema: audited },
     })
-    hash = (published.json() as { schemaHash: string }).schemaHash
+    hash = published.json<{ schemaHash: string }>().schemaHash
     await app.inject({
       method: 'PUT',
       url: '/f/audited/access',
@@ -2020,7 +2001,7 @@ describe('the audit log', () => {
       payload: { note: 'hello' },
     })
     expect(submitted.statusCode).toBe(201)
-    const id = (submitted.json() as { id: string }).id
+    const id = submitted.json<{ id: string }>().id
 
     const rows = await sql`
       SELECT detail FROM audit_log WHERE action = 'submission.created'
@@ -2127,9 +2108,7 @@ describe('the audit log', () => {
     // Append-only in the database rather than by application discipline, for
     // the same reason version rows are immutable there: the one moment it
     // matters is the moment somebody has a reason to edit it.
-    await expect(
-      sql`UPDATE audit_log SET action = 'auth.login' WHERE action = 'form.published'`,
-    ).rejects.toThrow(/append-only/)
+    await expect(sql`UPDATE audit_log SET action = 'auth.login' WHERE action = 'form.published'`).rejects.toThrow(/append-only/)
 
     await expect(sql`DELETE FROM audit_log`).rejects.toThrow(/append-only/)
   })
@@ -2139,7 +2118,6 @@ describe('the audit log', () => {
     expect(rows[0]?.['n']).toBeGreaterThan(0)
   })
 })
-
 
 /**
  * Webhook health and dead letters, over HTTP.
@@ -2164,9 +2142,9 @@ describe('webhook health', () => {
     const response = await app.inject({ method: 'GET', url: '/webhooks', headers: asAdmin() })
 
     expect(response.statusCode).toBe(200)
-    const { webhooks } = response.json() as {
+    const { webhooks } = response.json<{
       webhooks: { id: string; state: string; consecutiveFailures: number; failingSince: string | null }[]
-    }
+    }>()
     const failing = webhooks.find((hook) => hook.id === webhookId)
     expect(failing).toMatchObject({ consecutiveFailures: 4 })
     expect(failing?.failingSince).toBeTruthy()
@@ -2209,7 +2187,7 @@ describe('dead letters', () => {
       headers: asAdmin(),
     })
 
-    const { deliveries } = response.json() as { deliveries: { id: string; lastError: string }[] }
+    const { deliveries } = response.json<{ deliveries: { id: string; lastError: string }[] }>()
     const found = deliveries.find((delivery) => delivery.id === deadId)
     expect(found?.lastError).toContain('502')
   })
@@ -2253,7 +2231,7 @@ describe('dead letters', () => {
 
     // Replaying a pending delivery would duplicate it.
     expect(again.statusCode).toBe(409)
-    expect((again.json() as { error: string }).error).toBe('not_dead')
+    expect(again.json<{ error: string }>().error).toBe('not_dead')
   })
 
   test('a delivery that does not exist is a 404, not a 409', async () => {
@@ -2273,7 +2251,6 @@ describe('dead letters', () => {
     expect({ status: missing.statusCode, body: missing.json() }).toEqual({ status: 404, body: { error: 'unknown_delivery' } })
   })
 })
-
 
 /**
  * The proof-of-work challenge, over HTTP and against real SQL.
@@ -2312,7 +2289,7 @@ describe('the proof-of-work challenge', () => {
         },
       },
     })
-    hash = (published.json() as { schemaHash: string }).schemaHash
+    hash = published.json<{ schemaHash: string }>().schemaHash
     await app.inject({
       method: 'PUT',
       url: '/f/challenged/access',
@@ -2329,12 +2306,12 @@ describe('the proof-of-work challenge', () => {
   async function solved(): Promise<string> {
     const minted = await guarded.inject({ method: 'GET', url: '/f/challenged/challenge' })
     expect(minted.statusCode).toBe(200)
-    const challenge = minted.json() as {
+    const challenge = minted.json<{
       salt: string
       challenge: string
       maxNumber: number
       signature: string
-    }
+    }>()
     const number = await solveChallenge(challenge)
     expect(number).toBeTypeOf('number')
     return Buffer.from(JSON.stringify({ ...challenge, number })).toString('base64')
@@ -2358,7 +2335,7 @@ describe('the proof-of-work challenge', () => {
     const response = await submit()
 
     expect(response.statusCode).toBe(400)
-    const body = response.json() as { error: string; message: string }
+    const body = response.json<{ error: string; message: string }>()
     expect(body.error).toBe('challenge_required')
     // A refusal that does not say what to do next is a dead end.
     expect(body.message).toContain('/challenge')
@@ -2379,7 +2356,7 @@ describe('the proof-of-work challenge', () => {
     // A correct solution stays correct, so nothing stateless can refuse this.
     // Only the record of what has been spent can.
     expect(again.statusCode).toBe(400)
-    expect((again.json() as { error: string }).error).toBe('challenge_spent')
+    expect(again.json<{ error: string }>().error).toBe('challenge_spent')
   })
 
   test('two requests racing one solution: exactly one wins', async () => {
@@ -2411,7 +2388,7 @@ describe('the proof-of-work challenge', () => {
     const again = await submit(await solved(), token)
 
     expect(again.statusCode).toBe(409)
-    expect((again.json() as { error: string }).error).toBe('submission_token_spent')
+    expect(again.json<{ error: string }>().error).toBe('submission_token_spent')
   })
 
   test('a solution nobody minted is refused as forged', async () => {
@@ -2428,14 +2405,14 @@ describe('the proof-of-work challenge', () => {
 
     expect(response.statusCode).toBe(400)
     // Refused for the arithmetic before the key is consulted.
-    expect((response.json() as { error: string }).error).toMatch(/challenge_(wrong|forged)/)
+    expect(response.json<{ error: string }>().error).toMatch(/challenge_(wrong|forged)/)
   })
 
   test('a header that is not base64 JSON is refused rather than crashing', async () => {
     const response = await submit('not base64 at all !!')
 
     expect(response.statusCode).toBe(400)
-    expect((response.json() as { error: string }).error).toBe('challenge_malformed')
+    expect(response.json<{ error: string }>().error).toBe('challenge_malformed')
   })
 
   test('a signed-in submitter is not asked to solve anything', async () => {
@@ -2456,7 +2433,7 @@ describe('the proof-of-work challenge', () => {
     // broken one, and the route says 404 rather than failing.
     const minted = await app.inject({ method: 'GET', url: '/f/challenged/challenge' })
     expect(minted.statusCode).toBe(404)
-    expect((minted.json() as { error: string }).error).toBe('challenge_not_enabled')
+    expect(minted.json<{ error: string }>().error).toBe('challenge_not_enabled')
   })
 })
 
@@ -2514,16 +2491,14 @@ describe('a sourced answer, checked against the deployment’s own list', () => 
                 key: 'people',
                 type: 'repeater',
                 label: 'People',
-                fields: [
-                  { key: 'home', type: 'select', label: 'Home canton', optionsSource: 'cantons' },
-                ],
+                fields: [{ key: 'home', type: 'select', label: 'Home canton', optionsSource: 'cantons' }],
               },
             ],
           },
         },
       },
     })
-    hash = (published.json() as { schemaHash: string }).schemaHash
+    hash = published.json<{ schemaHash: string }>().schemaHash
     await sourced.inject({
       method: 'PUT',
       url: '/f/sourced/access',
@@ -2702,8 +2677,8 @@ describe('what reaches the log', () => {
     }
     let sent = 0
     const send = async (options: InjectOptions): Promise<LightMyRequestResponse> => {
-      const url = new URL(String(options.url), 'http://sweep.invalid')
-      const route = swept.findRoute({ method: String(options.method) as HTTPMethods, url: url.pathname })
+      const url = new URL(typeof options.url === 'string' ? options.url : (options.url?.pathname ?? ''), 'http://sweep.invalid')
+      const route = swept.findRoute({ method: String(options.method), url: url.pathname })
       if (route === null) carry(url.pathname)
       else Object.values(route.params).forEach((value) => carry(String(value)))
       url.searchParams.forEach((value) => carry(value))
@@ -2726,16 +2701,13 @@ describe('what reaches the log', () => {
     const path = plant('path')
 
     try {
-      const admin = (
-        await send({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })
-      ).json() as { token: string }
+      const admin = (await send({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })).json<{
+        token: string
+      }>()
       carry(admin.token)
       const asRoot = { authorization: `Bearer ${admin.token}` }
 
-      expect(
-        (await send({ method: 'POST', url: '/auth/login', payload: { email: planted.email, password: planted.password } }))
-          .statusCode,
-      ).toBe(401)
+      expect((await send({ method: 'POST', url: '/auth/login', payload: { email: planted.email, password: planted.password } })).statusCode).toBe(401)
       expect(
         (
           await send({
@@ -2747,9 +2719,9 @@ describe('what reaches the log', () => {
         ).statusCode,
       ).toBe(201)
 
-      const key = (
-        await send({ method: 'POST', url: '/api-keys', headers: asRoot, payload: { name: plant('key-name'), role: 'admin' } })
-      ).json() as { secret: string }
+      const key = (await send({ method: 'POST', url: '/api-keys', headers: asRoot, payload: { name: plant('key-name'), role: 'admin' } })).json<{
+        secret: string
+      }>()
       carry(key.secret)
       const withKey = { 'x-formancy-api-key': key.secret }
 
@@ -2774,21 +2746,19 @@ describe('what reaches the log', () => {
         },
       })
       expect(published.statusCode).toBe(201)
-      const { schemaHash } = published.json() as { schemaHash: string }
-      expect(
-        (await send({ method: 'PUT', url: `/f/${path}/access`, headers: withKey, payload: { submit: 'public' } })).statusCode,
-      ).toBe(204)
+      const { schemaHash } = published.json<{ schemaHash: string }>()
+      expect((await send({ method: 'PUT', url: `/f/${path}/access`, headers: withKey, payload: { submit: 'public' } })).statusCode).toBe(204)
       expect((await send({ method: 'GET', url: `/forms?cursor=${planted.query}`, headers: withKey })).statusCode).toBe(200)
       const read = await send({ method: 'GET', url: `/f/${path}` })
       expect(read.statusCode).toBe(200)
       // What the form is handed out with (0169) is a secret the server hands back, like a draft's key.
-      carry((read.json() as { submissionToken: string }).submissionToken)
+      carry(read.json<{ submissionToken: string }>().submissionToken)
 
-      const draft = (await send({ method: 'POST', url: `/f/${path}/drafts` })).json() as {
+      const draft = (await send({ method: 'POST', url: `/f/${path}/drafts` })).json<{
         draftId: string
         token: string
         submissionToken: string
-      }
+      }>()
       carry(draft.draftId)
       carry(draft.token)
       carry(draft.submissionToken)
@@ -2803,9 +2773,7 @@ describe('what reaches the log', () => {
           })
         ).statusCode,
       ).toBe(200)
-      expect(
-        (await send({ method: 'GET', url: `/f/${path}/drafts/${draft.draftId}`, headers: draftKey })).statusCode,
-      ).toBe(200)
+      expect((await send({ method: 'GET', url: `/f/${path}/drafts/${draft.draftId}`, headers: draftKey })).statusCode).toBe(200)
 
       const bytes = Buffer.from(planted.fileBytes)
       const offered = await send({
@@ -2814,18 +2782,13 @@ describe('what reaches the log', () => {
         payload: { field: 'evidence', name: planted.fileName, size: bytes.byteLength, contentType: 'application/pdf' },
       })
       expect(offered.statusCode).toBe(201)
-      const file = offered.json() as { id: string; storageKey: string; uploadUrl: string }
+      const file = offered.json<{ id: string; storageKey: string; uploadUrl: string }>()
       leaves(file)
-      expect(
-        (await send({ method: 'PUT', url: file.uploadUrl, headers: { 'content-type': 'application/pdf' }, payload: bytes }))
-          .statusCode,
-      ).toBe(204)
+      expect((await send({ method: 'PUT', url: file.uploadUrl, headers: { 'content-type': 'application/pdf' }, payload: bytes })).statusCode).toBe(204)
 
       const minted = await send({ method: 'GET', url: `/f/${path}/challenge` })
-      const challenge = minted.json() as { salt: string; challenge: string; maxNumber: number; signature: string }
-      const solution = Buffer.from(JSON.stringify({ ...challenge, number: await solveChallenge(challenge) })).toString(
-        'base64',
-      )
+      const challenge = minted.json<{ salt: string; challenge: string; maxNumber: number; signature: string }>()
+      const solution = Buffer.from(JSON.stringify({ ...challenge, number: await solveChallenge(challenge) })).toString('base64')
       const submitted = await send({
         method: 'POST',
         url: `/f/${path}/submissions`,
@@ -2838,7 +2801,7 @@ describe('what reaches the log', () => {
         payload: { email: planted.email, note: planted.answer, evidence: [file] },
       })
       expect(submitted.statusCode).toBe(201)
-      carry((submitted.json() as { id: string }).id)
+      carry(submitted.json<{ id: string }>().id)
 
       // What a form is checked against: an example's answers are fictional, and still the
       // shape of an answer.
@@ -2894,9 +2857,7 @@ describe('what reaches the log', () => {
       ).toBe(400)
       // An id PostgreSQL cannot read as a uuid, asked of it by the storage above: its error's
       // message quotes the id.
-      expect(
-        (await send({ method: 'GET', url: `/f/${path}/files/${plant('file-id')}`, headers: asRoot })).statusCode,
-      ).toBe(500)
+      expect((await send({ method: 'GET', url: `/f/${path}/files/${plant('file-id')}`, headers: asRoot })).statusCode).toBe(500)
       // A path no route has, which Fastify's own line names in full.
       expect((await send({ method: 'GET', url: `/nowhere/${plant('segment')}?q=${planted.query}` })).statusCode).toBe(404)
       // A URL the router cannot decode, and a parameter longer than it takes: both refused by
@@ -2910,9 +2871,7 @@ describe('what reaches the log', () => {
     const lines = written.map((line) => JSON.parse(line) as Record<string, unknown>)
     // Not vacuous: one line for every request, and the failures written as failures.
     expect(lines.filter((line) => line['event'] === 'request')).toHaveLength(sent)
-    expect(lines.map((line) => line['event'])).toEqual(
-      expect.arrayContaining(['request.refused', 'request.failed', 'model.unreachable']),
-    )
+    expect(lines.map((line) => line['event'])).toEqual(expect.arrayContaining(['request.refused', 'request.failed', 'model.unreachable']))
     for (const line of lines) for (const field of Object.keys(line)) expect(LOG_FIELDS).toContain(field)
 
     // Every audit row of the swept form names a request the log has a line for — the three a
@@ -2961,7 +2920,7 @@ describe('two editors publishing one form', () => {
       headers: asAdmin(),
       payload: { path: 'collide-accepted', schema },
     })
-    const opened = (first.json() as { schemaHash: string }).schemaHash
+    const opened = first.json<{ schemaHash: string }>().schemaHash
 
     const second = await app.inject({
       method: 'POST',
@@ -2971,7 +2930,7 @@ describe('two editors publishing one form', () => {
     })
 
     expect(second.statusCode).toBe(201)
-    expect((second.json() as { version: number }).version).toBe(2)
+    expect(second.json<{ version: number }>().version).toBe(2)
   })
 
   test('and one overtaken by somebody else is refused with the current schema', async () => {
@@ -2981,7 +2940,7 @@ describe('two editors publishing one form', () => {
       headers: asAdmin(),
       payload: { path: 'collide-overtaken', schema },
     })
-    const opened = (first.json() as { schemaHash: string }).schemaHash
+    const opened = first.json<{ schemaHash: string }>().schemaHash
 
     // Somebody else publishes while the first editor is still editing.
     await app.inject({
@@ -2999,7 +2958,7 @@ describe('two editors publishing one form', () => {
     })
 
     expect(late.statusCode).toBe(409)
-    const body = late.json() as { error: string; current: { version: number; schema: { title: string } } }
+    const body = late.json<{ error: string; current: { version: number; schema: { title: string } } }>()
     expect(body.error).toBe('FORM_VERSION_CHANGED')
     // The current version travels with the refusal, so the editor can show what
     // changed rather than fetching and diffing to find out why it was refused.
@@ -3014,7 +2973,7 @@ describe('two editors publishing one form', () => {
       headers: asAdmin(),
       payload: { path: 'collide-kept', schema },
     })
-    const opened = (first.json() as { schemaHash: string }).schemaHash
+    const opened = first.json<{ schemaHash: string }>().schemaHash
     await app.inject({
       method: 'POST',
       url: '/forms',
@@ -3030,7 +2989,7 @@ describe('two editors publishing one form', () => {
     })
 
     const resolved = await app.inject({ method: 'GET', url: '/f/collide-kept' })
-    expect((resolved.json() as { schema: { title: string } }).schema.title).toBe('Theirs')
+    expect(resolved.json<{ schema: { title: string } }>().schema.title).toBe('Theirs')
   })
 
   test('a publish that declares nothing still publishes, as every other one here does', async () => {
@@ -3091,7 +3050,7 @@ describe('republishing a document this form has had before', () => {
     })
 
     expect(revert.statusCode).toBe(409)
-    const body = revert.json() as { error: string; version: number }
+    const body = revert.json<{ error: string; version: number }>()
     expect(body.error).toBe('already_published')
     // The version it already is, so the caller knows what to point at rather
     // than being told no.
@@ -3135,7 +3094,7 @@ describe('republishing a document this form has had before', () => {
     })
 
     expect(published.statusCode).toBe(201)
-    const body = published.json() as { version: number; warnings?: string[] }
+    const body = published.json<{ version: number; warnings?: string[] }>()
     expect(body.version).toBe(1)
     expect(body.warnings?.[0]).toContain('"address.nope"')
 
@@ -3177,7 +3136,7 @@ describe('republishing a document this form has had before', () => {
     })
 
     expect(again.statusCode).toBe(201)
-    expect((again.json() as { version: number }).version).toBe(1)
+    expect(again.json<{ version: number }>().version).toBe(1)
   })
 })
 
@@ -3283,7 +3242,7 @@ describe('a form’s examples, kept in PostgreSQL', () => {
     })
 
     expect(published.statusCode).toBe(201)
-    const body = published.json() as { version: number; warnings?: string[] }
+    const body = published.json<{ version: number; warnings?: string[] }>()
     expect(body.version).toBe(2)
     expect(body.warnings).toEqual([
       'The example "Switzerland asks for a canton" held against version 1 and does not hold against version 2: "canton": expected to be visible, and it is hidden.',

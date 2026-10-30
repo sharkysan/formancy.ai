@@ -26,8 +26,7 @@ export const DRAFT_MESSAGES = {
   'drafts.stop': 'Stop drafting',
   'drafts.list': 'Drafted examples',
   'drafts.holds': 'Holds against the form as it is.',
-  'drafts.fails':
-    'Does not hold against the form as it is. Keep it if the example is right and the form is wrong; discard it if the example is wrong.',
+  'drafts.fails': 'Does not hold against the form as it is. Keep it if the example is right and the form is wrong; discard it if the example is wrong.',
   'drafts.keep': 'Keep {name}',
   'drafts.discard': 'Discard {name}',
   'drafts.lastAnswer': 'What the model last answered',
@@ -44,13 +43,11 @@ export const DRAFT_MESSAGES = {
   'drafts.status.kept': 'Kept {name}. It is in the list of scenarios now.',
   'drafts.status.discarded': 'Discarded {name}.',
   'drafts.status.taken': 'Not kept: there is already a scenario called {name}.',
-  'drafts.status.unknownPath':
-    'Not kept: {name} names something that is not one of this form’s fields, so it would check nothing.',
+  'drafts.status.unknownPath': 'Not kept: {name} names something that is not one of this form’s fields, so it would check nothing.',
   'drafts.status.stopped': 'Stopped. Nothing was drafted.',
   'drafts.status.unreachable': 'Nothing was drafted. The model could not be reached: {reason}',
   'drafts.status.unreachableNoReason': 'Nothing was drafted. The model could not be reached.',
-  'drafts.status.busy':
-    'Nothing was drafted. Another request is still waiting for the model’s answer: finish or stop that one first.',
+  'drafts.status.busy': 'Nothing was drafted. Another request is still waiting for the model’s answer: finish or stop that one first.',
   'drafts.status.declined': 'Nothing was drafted. The model declined this request.',
   'drafts.status.failed': {
     one: 'Nothing was drafted. {count} attempt, and the answer held no example that could be used.',
@@ -63,8 +60,7 @@ export const DRAFT_MESSAGES = {
   'drafts.problem.empty': 'The last answer’s list of examples was empty.',
   'drafts.item': 'Item {position}',
   'drafts.reason.notAnObject': '{item} is not an example at all.',
-  'drafts.reason.unknownKey':
-    '{item} has “{part}”, which an example does not have, so it would check less than it says.',
+  'drafts.reason.unknownKey': '{item} has “{part}”, which an example does not have, so it would check less than it says.',
   'drafts.reason.noName': '{item} has no name.',
   'drafts.reason.nameTaken': '{item}: a scenario with this name already exists.',
   'drafts.reason.nameRepeated': '{item}: an example before it in the answer has the same name.',

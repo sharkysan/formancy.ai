@@ -17,9 +17,7 @@ export function focusRow(repeater: Element, target: RowFocus, add: HTMLElement |
   const rows = repeater.querySelectorAll<HTMLElement>('[data-formancy-part="row"], [data-formancy-part="datagrid-row"]')
   const row = rows[target.row]
   if (row === undefined) return
-  const part = target.parts
-    .map((name) => row.querySelector<HTMLElement>(`[data-formancy-part="${name}"]`))
-    .find((found) => found !== null)
+  const part = target.parts.map((name) => row.querySelector<HTMLElement>(`[data-formancy-part="${name}"]`)).find((found) => found !== null)
   // Else what a person can operate first in the row: a field a rule disables is passed over.
   const first = row.querySelector<HTMLElement>(
     'input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled), [contenteditable="true"], [tabindex="0"]',

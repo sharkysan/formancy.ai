@@ -57,9 +57,7 @@ describe('sourcedAnswers', () => {
   test('walks the SCHEMA over the value, not the value on its own', () => {
     // A walk driven by what arrived would let a client dodge the check by sending a
     // shape nobody expects. Anything the schema does not describe is not an answer.
-    expect(
-      sourcedAnswers(schema, { canton: 'ZH', invented: 'XX', people: 'not a list' }),
-    ).toEqual([{ path: 'canton', source: 'cantons', value: 'ZH' }])
+    expect(sourcedAnswers(schema, { canton: 'ZH', invented: 'XX', people: 'not a list' })).toEqual([{ path: 'canton', source: 'cantons', value: 'ZH' }])
   })
 
   test('says nothing about an empty answer, which is required’s business', () => {
@@ -72,14 +70,18 @@ describe('checkMembership', () => {
 
   test('passes when the source offers everything submitted', async () => {
     const asked: Array<readonly string[]> = []
-    const outcome = await checkMembership(schema, { canton: 'ZH' }, {
-      cantons: {
-        members: (values) => {
-          asked.push(values)
-          return Promise.resolve([])
+    const outcome = await checkMembership(
+      schema,
+      { canton: 'ZH' },
+      {
+        cantons: {
+          members: (values) => {
+            asked.push(values)
+            return Promise.resolve([])
+          },
         },
       },
-    })
+    )
 
     expect(outcome).toEqual({ ok: true })
     expect(asked).toEqual([['ZH']])
@@ -92,7 +94,14 @@ describe('checkMembership', () => {
     await checkMembership(
       schema,
       { canton: 'ZH', people: [{ canton: 'BE' }, { canton: 'VD' }] },
-      { cantons: { members: (values) => { asked.push(values); return Promise.resolve([]) } } },
+      {
+        cantons: {
+          members: (values) => {
+            asked.push(values)
+            return Promise.resolve([])
+          },
+        },
+      },
     )
 
     expect(asked).toEqual([['ZH', 'BE', 'VD']])
@@ -124,9 +133,13 @@ describe('checkMembership', () => {
     // the draft still holds the answers. The same rule the engine applies to a
     // validation rule it cannot evaluate.
     expect(
-      await checkMembership(schema, { canton: 'ZH' }, {
-        cantons: { members: () => Promise.reject(new Error('down')) },
-      }),
+      await checkMembership(
+        schema,
+        { canton: 'ZH' },
+        {
+          cantons: { members: () => Promise.reject(new Error('down')) },
+        },
+      ),
     ).toEqual({ ok: false, kind: 'source_unavailable', source: 'cantons' })
   })
 
@@ -150,9 +163,18 @@ describe('checkMembership', () => {
     const plain = { ...schema, model: { fields: [{ key: 'note', type: 'text' }] } } as FormSchema
     let asked = false
     expect(
-      await checkMembership(plain, { note: 'x' }, {
-        cantons: { members: () => { asked = true; return Promise.resolve([]) } },
-      }),
+      await checkMembership(
+        plain,
+        { note: 'x' },
+        {
+          cantons: {
+            members: () => {
+              asked = true
+              return Promise.resolve([])
+            },
+          },
+        },
+      ),
     ).toEqual({ ok: true })
     expect(asked).toBe(false)
   })
@@ -164,9 +186,7 @@ describe('sourceNamesIn', () => {
   })
 
   test('a document naming none lists none', () => {
-    expect(
-      sourceNamesIn({ ...schema, model: { fields: [{ key: 'note', type: 'text' }] } } as FormSchema),
-    ).toEqual([])
+    expect(sourceNamesIn({ ...schema, model: { fields: [{ key: 'note', type: 'text' }] } })).toEqual([])
   })
 })
 
@@ -186,9 +206,7 @@ describe('a list answer from a source', () => {
     id: 'tags',
     title: 'Tags',
     model: {
-      fields: [
-        { key: 'topics', type: 'selectboxes', label: 'Topics', optionsSource: 'topics' },
-      ],
+      fields: [{ key: 'topics', type: 'selectboxes', label: 'Topics', optionsSource: 'topics' }],
     },
   } as unknown as FormSchema
 

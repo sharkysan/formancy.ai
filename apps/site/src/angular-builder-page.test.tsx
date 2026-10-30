@@ -16,9 +16,7 @@ describe('the Angular form builder page', () => {
     render(<AngularBuilderPage />)
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
-    expect(screen.getByRole('link', { name: 'Skip to the demo' }).getAttribute('href')).toBe(
-      '#demo',
-    )
+    expect(screen.getByRole('link', { name: 'Skip to the demo' }).getAttribute('href')).toBe('#demo')
   })
 
   test('shows the starter itself, live, rather than a picture of it', () => {

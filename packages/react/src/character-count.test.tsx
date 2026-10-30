@@ -47,12 +47,16 @@ describe('a character count', () => {
     vi.useFakeTimers()
     mount(note)
     const status = screen.getByRole('status')
-    act(() => vi.advanceTimersByTime(2000))
+    act(() => {
+      vi.advanceTimersByTime(2000)
+    })
     expect(status.textContent).toBe('')
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Note' }), { target: { value: 'Hi' } })
     expect(status.textContent).toBe('')
-    act(() => vi.advanceTimersByTime(1000))
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
     expect(status.textContent).toBe('You have 8 characters remaining.')
   })
 

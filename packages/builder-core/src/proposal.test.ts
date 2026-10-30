@@ -249,10 +249,7 @@ describe('what the form’s examples make of a proposal', () => {
      */
     const proposal = proposeEdit(RIGHT, BACKWARDS, EXAMPLES)
 
-    expect(proposal.examples?.regressions).toEqual([
-      'Switzerland asks for a canton',
-      'Germany does not',
-    ])
+    expect(proposal.examples?.regressions).toEqual(['Switzerland asks for a canton', 'Germany does not'])
     expect(proposal.examples?.repaired).toEqual([])
   })
 
@@ -261,10 +258,7 @@ describe('what the form’s examples make of a proposal', () => {
     // to fix a rule sees, before applying, that the fix is a fix.
     const proposal = proposeEdit(BACKWARDS, RIGHT, EXAMPLES)
 
-    expect(proposal.examples?.repaired).toEqual([
-      'Switzerland asks for a canton',
-      'Germany does not',
-    ])
+    expect(proposal.examples?.repaired).toEqual(['Switzerland asks for a canton', 'Germany does not'])
     expect(proposal.examples?.regressions).toEqual([])
   })
 
@@ -293,9 +287,7 @@ describe('what the form’s examples make of a proposal', () => {
      * holding" — the verdict the case above refuses, reached through the other door.
      */
     expect(proposeEdit(RIGHT, BACKWARDS, { scenarios: [] }).examples).toBeUndefined()
-    expect(
-      proposeEdit(RIGHT, BACKWARDS, { scenarios: [], initialValue: SAMPLE }).examples,
-    ).toBeUndefined()
+    expect(proposeEdit(RIGHT, BACKWARDS, { scenarios: [], initialValue: SAMPLE }).examples).toBeUndefined()
   })
 
   test('is the scenario panel’s own verdict: runScenarios, then comparedToLastRun', () => {
@@ -309,10 +301,7 @@ describe('what the form’s examples make of a proposal', () => {
     const options = { initialValue: SAMPLE }
 
     expect(proposeEdit(RIGHT, BACKWARDS, EXAMPLES).examples).toEqual(
-      comparedToLastRun(
-        runScenarios(RIGHT, SCENARIOS, options),
-        runScenarios(BACKWARDS, SCENARIOS, options),
-      ),
+      comparedToLastRun(runScenarios(RIGHT, SCENARIOS, options), runScenarios(BACKWARDS, SCENARIOS, options)),
     )
   })
 
@@ -347,9 +336,7 @@ describe('what the form’s examples make of a proposal', () => {
     })
 
     expect(proposeEdit(RIGHT, strict, EXAMPLES).examples?.regressions).toEqual([])
-    expect(proposeEdit(RIGHT, strict, { ...EXAMPLES, mode: 'server' }).examples?.regressions).toEqual(
-      SCENARIOS.map(({ name }) => name),
-    )
+    expect(proposeEdit(RIGHT, strict, { ...EXAMPLES, mode: 'server' }).examples?.regressions).toEqual(SCENARIOS.map(({ name }) => name))
   })
 })
 
@@ -362,11 +349,7 @@ describe('what the prompt pane says', () => {
     refusal: undefined,
   }
   /** A run's ending, as `authorForm` reports it. */
-  const ended = (
-    how: Extract<AuthoringResult, { ok: false }>['ended'],
-    attempts: number,
-    reason?: string,
-  ): AuthoringResult => ({
+  const ended = (how: Extract<AuthoringResult, { ok: false }>['ended'], attempts: number, reason?: string): AuthoringResult => ({
     ok: false,
     attempts,
     problems: [],
@@ -383,32 +366,24 @@ describe('what the prompt pane says', () => {
   test('a refusal outranks a proposal, because it is about the button just pressed', () => {
     const proposal = proposeEdit(base, withPhone(base))
 
-    expect(proposalStatus({ ...idle, proposal, refusal: 'The form changed.' }, english)).toBe(
-      'Not applied. The form changed.',
-    )
+    expect(proposalStatus({ ...idle, proposal, refusal: 'The form changed.' }, english)).toBe('Not applied. The form changed.')
   })
 
   test('counts changes in the language’s plural, which "1 changes, none of which" did not', () => {
     const one = proposeEdit(base, withPhone(base))
 
-    expect(proposalStatus({ ...idle, proposal: one, result: written(1) }, english)).toBe(
-      english('prompt.status.ready', { count: 1 }),
-    )
+    expect(proposalStatus({ ...idle, proposal: one, result: written(1) }, english)).toBe(english('prompt.status.ready', { count: 1 }))
     expect(english('prompt.status.ready', { count: 1 })).toContain('1 change, which does not')
   })
 
   test('says how many goes the model took when it took more than one', () => {
     const proposal = proposeEdit(base, withPhone(base))
 
-    expect(proposalStatus({ ...idle, proposal, result: written(3) }, english)).toContain(
-      'after 3 attempts',
-    )
+    expect(proposalStatus({ ...idle, proposal, result: written(3) }, english)).toContain('after 3 attempts')
   })
 
   test('and says nothing was applied when every attempt failed', () => {
-    expect(proposalStatus({ ...idle, result: ended('gave-up', 2) }, english)).toBe(
-      english('prompt.status.failed', { count: 2 }),
-    )
+    expect(proposalStatus({ ...idle, result: ended('gave-up', 2) }, english)).toBe(english('prompt.status.failed', { count: 2 }))
     expect(proposalStatus(idle, english)).toBe('')
   })
 
@@ -453,15 +428,9 @@ describe('what the prompt pane says', () => {
     const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
     const french = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
 
-    expect(proposalStatus(unsaid, english)).toBe(
-      'Nothing was applied. The model could not be reached.',
-    )
-    expect(proposalStatus(unsaid, german)).toBe(
-      'Nichts wurde übernommen. Das Modell war nicht erreichbar.',
-    )
-    expect(proposalStatus(unsaid, french)).toBe(
-      'Rien n’a été appliqué. Le modèle n’a pas pu être joint.',
-    )
+    expect(proposalStatus(unsaid, english)).toBe('Nothing was applied. The model could not be reached.')
+    expect(proposalStatus(unsaid, german)).toBe('Nichts wurde übernommen. Das Modell war nicht erreichbar.')
+    expect(proposalStatus(unsaid, french)).toBe('Rien n’a été appliqué. Le modèle n’a pas pu être joint.')
   })
 
   test('and both are said in the author’s language', () => {
@@ -471,13 +440,9 @@ describe('what the prompt pane says', () => {
     const unreachable = { ...idle, result: ended('unreachable', 1, 'fetch failed') }
     const stopped = { ...idle, result: ended('stopped', 1) }
 
-    expect(proposalStatus(unreachable, german)).toBe(
-      german('prompt.status.unreachable', { reason: 'fetch failed' }),
-    )
+    expect(proposalStatus(unreachable, german)).toBe(german('prompt.status.unreachable', { reason: 'fetch failed' }))
     expect(proposalStatus(stopped, german)).toBe(german('prompt.status.stopped'))
-    expect(proposalStatus(unreachable, french)).toBe(
-      french('prompt.status.unreachable', { reason: 'fetch failed' }),
-    )
+    expect(proposalStatus(unreachable, french)).toBe(french('prompt.status.unreachable', { reason: 'fetch failed' }))
     expect(proposalStatus(stopped, french)).toBe(french('prompt.status.stopped'))
     expect(german('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
     expect(french('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
@@ -501,9 +466,7 @@ describe('what the prompt pane says', () => {
       `${ready} Would hold again if applied: Switzerland asks for a canton and Germany does not.`,
     )
     // And nothing extra when the examples have nothing to say about it.
-    expect(
-      proposalStatus({ ...idle, proposal: proposeEdit(RIGHT, withPhone(RIGHT), EXAMPLES) }, english),
-    ).toBe(english('prompt.status.ready', { count: 1 }))
+    expect(proposalStatus({ ...idle, proposal: proposeEdit(RIGHT, withPhone(RIGHT), EXAMPLES) }, english)).toBe(english('prompt.status.ready', { count: 1 }))
   })
 
   test('the review’s heading names what would stop holding, since it names the region', () => {
@@ -515,17 +478,11 @@ describe('what the prompt pane says', () => {
     const stops = proposeEdit(RIGHT, nameOptional(RIGHT), EXAMPLES)
 
     expect(stops.costsAnswers).toBe(false)
-    expect(proposalHeading(stops, english)).toBe(
-      'Review these changes — 1 scenario would stop holding: a name is needed',
-    )
-    expect(proposalHeading(proposeEdit(RIGHT, nameOptional(RIGHT)), english)).toBe(
-      'Review these changes',
-    )
+    expect(proposalHeading(stops, english)).toBe('Review these changes — 1 scenario would stop holding: a name is needed')
+    expect(proposalHeading(proposeEdit(RIGHT, nameOptional(RIGHT)), english)).toBe('Review these changes')
     // A repair is good news, said in the status; the heading is what to decide on. (Making
     // the name required again is a tightening, so this one costs answers.)
-    expect(proposalHeading(proposeEdit(nameOptional(RIGHT), RIGHT, EXAMPLES), english)).toBe(
-      english('prompt.review.costs'),
-    )
+    expect(proposalHeading(proposeEdit(nameOptional(RIGHT), RIGHT, EXAMPLES), english)).toBe(english('prompt.review.costs'))
   })
 
   test('and says both when an edit costs answers and stops an example holding', () => {
@@ -540,9 +497,7 @@ describe('what the prompt pane says', () => {
     expect(proposalHeading(proposal, english)).toBe(
       'Review these changes — some affect answers already collected, and 2 scenarios would stop holding: Switzerland asks for a canton and Germany does not',
     )
-    expect(proposalHeading(proposeEdit(RIGHT, BACKWARDS), english)).toBe(
-      english('prompt.review.costs'),
-    )
+    expect(proposalHeading(proposeEdit(RIGHT, BACKWARDS), english)).toBe(english('prompt.review.costs'))
   })
 
   test('and all of it in the author’s language', () => {
@@ -554,12 +509,8 @@ describe('what the prompt pane says', () => {
     const both = proposeEdit(RIGHT, BACKWARDS, EXAMPLES)
     const mends = proposeEdit(BACKWARDS, RIGHT, EXAMPLES)
 
-    expect(proposalHeading(one, german)).toBe(
-      'Diese Änderungen prüfen – 1 Szenario würde nicht mehr gelten: a name is needed',
-    )
-    expect(proposalHeading(one, french)).toBe(
-      'Examiner ces modifications — 1 scénario ne tiendrait plus\u00a0: a name is needed',
-    )
+    expect(proposalHeading(one, german)).toBe('Diese Änderungen prüfen – 1 Szenario würde nicht mehr gelten: a name is needed')
+    expect(proposalHeading(one, french)).toBe('Examiner ces modifications — 1 scénario ne tiendrait plus\u00a0: a name is needed')
     expect(proposalHeading(both, german)).toBe(
       'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und 2 Szenarien würden nicht mehr gelten: Switzerland asks for a canton und Germany does not',
     )

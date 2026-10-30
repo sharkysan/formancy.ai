@@ -19,20 +19,14 @@ const BASE = {
 
 describe('refusing before a connection is opened', () => {
   test('a name that resolves to loopback', async () => {
-    const result = await deliver(
-      { ...BASE, url: 'https://totally-legitimate.example/hook' },
-      { resolve: async () => ['127.0.0.1'] },
-    )
+    const result = await deliver({ ...BASE, url: 'https://totally-legitimate.example/hook' }, { resolve: async () => ['127.0.0.1'] })
 
     expect(result.ok).toBe(false)
     expect(result.error).toContain('127.0.0.1')
   })
 
   test('a name that resolves to the cloud metadata service', async () => {
-    const result = await deliver(
-      { ...BASE, url: 'https://example.ch/hook' },
-      { resolve: async () => ['169.254.169.254'] },
-    )
+    const result = await deliver({ ...BASE, url: 'https://example.ch/hook' }, { resolve: async () => ['169.254.169.254'] })
 
     expect(result.ok).toBe(false)
     expect(result.error).toContain('169.254.169.254')
@@ -42,29 +36,20 @@ describe('refusing before a connection is opened', () => {
     // The rebinding attack spelled out. Validating "the" address and picking
     // the public one, while the stack might use either, is no check at all —
     // so every returned address has to pass.
-    const result = await deliver(
-      { ...BASE, url: 'https://example.ch/hook' },
-      { resolve: async () => ['93.184.216.34', '10.0.0.5'] },
-    )
+    const result = await deliver({ ...BASE, url: 'https://example.ch/hook' }, { resolve: async () => ['93.184.216.34', '10.0.0.5'] })
 
     expect(result.ok).toBe(false)
     expect(result.error).toContain('10.0.0.5')
   })
 
   test('an IPv4-mapped private address, which looks public to a naive check', async () => {
-    const result = await deliver(
-      { ...BASE, url: 'https://example.ch/hook' },
-      { resolve: async () => ['::ffff:10.0.0.5'] },
-    )
+    const result = await deliver({ ...BASE, url: 'https://example.ch/hook' }, { resolve: async () => ['::ffff:10.0.0.5'] })
 
     expect(result.ok).toBe(false)
   })
 
   test('a name that resolves to nothing', async () => {
-    const result = await deliver(
-      { ...BASE, url: 'https://example.ch/hook' },
-      { resolve: async () => [] },
-    )
+    const result = await deliver({ ...BASE, url: 'https://example.ch/hook' }, { resolve: async () => [] })
 
     expect(result.ok).toBe(false)
     expect(result.error).toContain('nothing')
@@ -90,27 +75,15 @@ describe('refusing without resolving at all', () => {
   })
 
   test('plain http, unless a deployment opts in', async () => {
-    expect(
-      (await deliver({ ...BASE, url: 'http://example.ch/hook' }, { resolve: async () => ['93.184.216.34'] }))
-        .ok,
-    ).toBe(false)
+    expect((await deliver({ ...BASE, url: 'http://example.ch/hook' }, { resolve: async () => ['93.184.216.34'] })).ok).toBe(false)
   })
 
   test('a scheme that is not http or https', async () => {
-    expect(
-      (await deliver({ ...BASE, url: 'file:///etc/passwd' }, { resolve: async () => [] })).ok,
-    ).toBe(false)
+    expect((await deliver({ ...BASE, url: 'file:///etc/passwd' }, { resolve: async () => [] })).ok).toBe(false)
   })
 
   test('credentials in the URL', async () => {
-    expect(
-      (
-        await deliver(
-          { ...BASE, url: 'https://user:pass@example.ch/hook' },
-          { resolve: async () => ['93.184.216.34'] },
-        )
-      ).ok,
-    ).toBe(false)
+    expect((await deliver({ ...BASE, url: 'https://user:pass@example.ch/hook' }, { resolve: async () => ['93.184.216.34'] })).ok).toBe(false)
   })
 })
 
@@ -140,10 +113,7 @@ describe('a resolver that fails', () => {
  */
 describe('allowPrivateAddresses', () => {
   test('is off by default, so the guard is the default', async () => {
-    const result = await deliver(
-      { ...BASE, url: 'https://sidecar.internal/hook' },
-      { resolve: async () => ['10.0.0.5'] },
-    )
+    const result = await deliver({ ...BASE, url: 'https://sidecar.internal/hook' }, { resolve: async () => ['10.0.0.5'] })
 
     expect(result.ok).toBe(false)
   })
@@ -270,10 +240,7 @@ describe('delivering to something that answers', () => {
   })
 
   test('nothing listening is a failed delivery carrying the cause', async () => {
-    const result = await deliver(
-      { ...BASE, url: 'http://127.0.0.1:1/hook' },
-      { ...local, timeoutMs: 500 },
-    )
+    const result = await deliver({ ...BASE, url: 'http://127.0.0.1:1/hook' }, { ...local, timeoutMs: 500 })
 
     expect(result.ok).toBe(false)
     // `fetch failed` on its own tells an operator nothing.

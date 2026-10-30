@@ -134,9 +134,7 @@ describe('what a drag over the rendered form would do', () => {
 
   test('and in a row read right to left, the right half is before', () => {
     // The sibling before a field in a right-to-left row is the one to its right.
-    expect(drop({ direction: 'rtl', sideBySide: true, pointer: { x: 196, y: 20 } })).toMatchObject(
-      { kind: 'move', edge: 'before', axis: 'inline' },
-    )
+    expect(drop({ direction: 'rtl', sideBySide: true, pointer: { x: 196, y: 20 } })).toMatchObject({ kind: 'move', edge: 'before', axis: 'inline' })
     expect(drop({ direction: 'rtl', sideBySide: true, pointer: { x: 4, y: 20 } })).toMatchObject({
       kind: 'move',
       edge: 'after',
@@ -174,16 +172,18 @@ describe('what a drag over the rendered form would do', () => {
 
     // The row is [0]; the field inside it is [0, 0]. Either direction is a
     // container swallowing itself.
-    expect(arrangeDrop({
-      document: nested,
-      layout: 'default',
-      dragged: [0],
-      over: [0, 0],
-      box: wide,
-      pointer: { x: 4, y: 20 },
-      sideBySide: false,
-      direction: 'ltr',
-    })).toBeUndefined()
+    expect(
+      arrangeDrop({
+        document: nested,
+        layout: 'default',
+        dragged: [0],
+        over: [0, 0],
+        box: wide,
+        pointer: { x: 4, y: 20 },
+        sideBySide: false,
+        direction: 'ltr',
+      }),
+    ).toBeUndefined()
   })
 })
 

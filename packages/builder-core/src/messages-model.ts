@@ -16,8 +16,7 @@ import type { Message } from './messages.js'
  */
 export const MODEL_MESSAGES = {
   'prompt.label': 'Describe the form, or the change you want',
-  'prompt.example':
-    'A contact form with an email address and a message, and a phone number only if they ask to be called back',
+  'prompt.example': 'A contact form with an email address and a message, and a phone number only if they ask to be called back',
   'prompt.write': 'Write it',
   'prompt.writing': 'Writing…',
   'prompt.stop': 'Stop',
@@ -31,8 +30,7 @@ export const MODEL_MESSAGES = {
   },
   'prompt.review.costsStops': {
     one: 'Review these changes — some affect answers already collected, and {count} scenario would stop holding: {list}',
-    other:
-      'Review these changes — some affect answers already collected, and {count} scenarios would stop holding: {list}',
+    other: 'Review these changes — some affect answers already collected, and {count} scenarios would stop holding: {list}',
   },
   // In the review, under its heading: the words the run was asked with, which the box beside
   // it may no longer say once the person has typed something else (0163).
@@ -44,24 +42,20 @@ export const MODEL_MESSAGES = {
   'prompt.status.refused': 'Not applied. {reason}',
   'prompt.status.ready': {
     one: 'Ready to review: {count} change, which does not affect answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review: {count} changes, none of which affect answers already collected. Nothing has been applied.',
+    other: 'Ready to review: {count} changes, none of which affect answers already collected. Nothing has been applied.',
   },
   'prompt.status.readyCosts': {
     one: 'Ready to review: {count} change, and it affects answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
+    other: 'Ready to review: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
   },
   // Said when the model needed correcting: one to read more carefully.
   'prompt.status.readyAfter': {
     one: 'Ready to review after {attempts} attempts: {count} change, which does not affect answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review after {attempts} attempts: {count} changes, none of which affect answers already collected. Nothing has been applied.',
+    other: 'Ready to review after {attempts} attempts: {count} changes, none of which affect answers already collected. Nothing has been applied.',
   },
   'prompt.status.readyAfterCosts': {
     one: 'Ready to review after {attempts} attempts: {count} change, and it affects answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review after {attempts} attempts: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
+    other: 'Ready to review after {attempts} attempts: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
   },
   // After the ready sentence, in the scenario pane's order: what stops before what holds.
   'prompt.status.wouldStop': 'Would stop holding if applied: {list}.',
@@ -79,8 +73,7 @@ export const MODEL_MESSAGES = {
   // Nothing was asked: the host's model is answering another request — through the
   // playground's one relay, a draft of examples waiting (0162). The translations pane's
   // sentence too, since nothing was applied there either.
-  'prompt.status.busy':
-    'Nothing was applied. Another request is still waiting for the model’s answer: finish or stop that one first.',
+  'prompt.status.busy': 'Nothing was applied. Another request is still waiting for the model’s answer: finish or stop that one first.',
   // The model said the format cannot express the request. Its reason is shown beneath,
   // as it wrote it, rather than set into this sentence.
   'prompt.status.declined': 'Nothing was applied. The model declined this request.',
@@ -92,8 +85,7 @@ export const MODEL_MESSAGES = {
   'relay.title': 'Take this request to a model',
   'relay.turn': 'Turn {attempt} of at most {limit}',
   'relay.first': 'Copy the request into a chat with a model, then paste its whole answer below.',
-  'relay.retry':
-    'That answer did not work. Copy what was wrong into the same chat, then paste the new answer below.',
+  'relay.retry': 'That answer did not work. Copy what was wrong into the same chat, then paste the new answer below.',
   // What THIS request carries, one sentence for each kind, chosen by `relayLeaves` (0167):
   // the requests carry different things, and one sentence for all three overstated two of
   // them. `relay.test.ts` checks each run's request against a list of what its sentence
@@ -116,10 +108,8 @@ export const MODEL_MESSAGES = {
   'relay.check': 'Check this answer',
   'relay.anyway': 'Use it anyway',
   'relay.copied': 'Copied. Paste it into the chat.',
-  'relay.copyRefused':
-    'This browser did not let the page copy. The text is selected in the request box: copy it from there.',
-  'relay.noObject':
-    'There is no JSON object in that answer. Copy the whole answer, code block included, or use it anyway and the model is told.',
+  'relay.copyRefused': 'This browser did not let the page copy. The text is selected in the request box: copy it from there.',
+  'relay.noObject': 'There is no JSON object in that answer. Copy the whole answer, code block included, or use it anyway and the model is told.',
 
   // A model asked for the messages a language is missing, and its answer reviewed message by
   // message (0161). The source column is headed by the language's tag, as the translations
@@ -139,14 +129,12 @@ export const MODEL_MESSAGES = {
   'translate.apply': 'Apply these translations',
   'translate.rest': 'Translate the rest',
   'translate.preview': 'Preview in {locale}, as proposed',
-  'translate.dropped':
-    'Not written, because nobody asked for them or a person has translated them since: {list}',
+  'translate.dropped': 'Not written, because nobody asked for them or a person has translated them since: {list}',
   'translate.status.asking': 'Asking for the missing translations, and checking the answer.',
   // Said by a part drawn on another language than a held run's, and nothing else of it is
   // drawn there (0164).
   'translate.status.elsewhereAsking': 'A model is translating into {locale}. Choose {locale} to follow it, or to stop it.',
-  'translate.status.elsewhereHeld':
-    'A model’s translation into {locale} is waiting for review. Choose {locale} to review it. Nothing has been applied.',
+  'translate.status.elsewhereHeld': 'A model’s translation into {locale} is waiting for review. Choose {locale} to review it. Nothing has been applied.',
   // Said, with Stop or Discard beside it, by a part on any language once the run's own has
   // left the form — undone, or removed — and cannot be chosen (0164).
   'translate.status.goneAsking':
@@ -173,7 +161,6 @@ export const MODEL_MESSAGES = {
   },
   'translate.status.failed': {
     one: 'Nothing was applied. {count} attempt, and the answer was still not a catalogue for this language.',
-    other:
-      'Nothing was applied. {count} attempts, and the answer was still not a catalogue for this language.',
+    other: 'Nothing was applied. {count} attempts, and the answer was still not a catalogue for this language.',
   },
 } as const satisfies Record<string, Message>

@@ -38,12 +38,7 @@ describe('afterAttempt', () => {
   })
 
   test('the last attempt is dead, not deleted', () => {
-    const next = afterAttempt(
-      delivery({ attempt: MAX_ATTEMPTS - 1 }),
-      { ok: false, error: 'connect ETIMEDOUT' },
-      NOW,
-      () => 0.5,
-    )
+    const next = afterAttempt(delivery({ attempt: MAX_ATTEMPTS - 1 }), { ok: false, error: 'connect ETIMEDOUT' }, NOW, () => 0.5)
 
     // The row is the evidence that something was supposed to be sent and never
     // arrived. A self-hoster with no operations team has to be able to find it.
@@ -52,12 +47,7 @@ describe('afterAttempt', () => {
   })
 
   test('a dead delivery keeps the reason it died of', () => {
-    const next = afterAttempt(
-      delivery({ attempt: MAX_ATTEMPTS - 1 }),
-      { ok: false, status: 404 },
-      NOW,
-      () => 0.5,
-    )
+    const next = afterAttempt(delivery({ attempt: MAX_ATTEMPTS - 1 }), { ok: false, status: 404 }, NOW, () => 0.5)
 
     expect(next.lastError).toContain('404')
   })
@@ -98,10 +88,7 @@ describe('drainOutbox', () => {
   })
 
   const queue = async (over: Partial<DeliveryRecord> = {}): Promise<void> => {
-    await storage.insertSubmission(
-      { id: 's1', formId: 'f1', formVersionId: 'v1', data: {}, submittedAt: NOW.toISOString() },
-      [delivery(over)],
-    )
+    await storage.insertSubmission({ id: 's1', formId: 'f1', formVersionId: 'v1', data: {}, submittedAt: NOW.toISOString() }, [delivery(over)])
   }
 
   test('sends what is due and marks it delivered', async () => {

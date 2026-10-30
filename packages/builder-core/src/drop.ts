@@ -16,12 +16,7 @@ import type { FieldDef, FormSchema } from '@formancy/spec'
  * rather than letting the session refuse afterwards is what stops a field
  * snapping back with no explanation.
  */
-export function dropLocation(
-  schema: FormSchema,
-  dragged: readonly string[],
-  over: readonly string[],
-  edge: 'before' | 'after',
-): Location | undefined {
+export function dropLocation(schema: FormSchema, dragged: readonly string[], over: readonly string[], edge: 'before' | 'after'): Location | undefined {
   if (samePath(dragged, over)) return undefined
   // A container cannot be moved inside itself or its own descendants.
   if (isPrefix(dragged, over)) return undefined
@@ -34,9 +29,7 @@ export function dropLocation(
 
   const draggedKey = dragged[dragged.length - 1]
   const fromSameContainer = samePath(dragged.slice(0, -1), parent)
-  const draggedIndex = fromSameContainer
-    ? siblings.findIndex((field) => field.key === draggedKey)
-    : -1
+  const draggedIndex = fromSameContainer ? siblings.findIndex((field) => field.key === draggedKey) : -1
 
   let index = edge === 'before' ? overIndex : overIndex + 1
 

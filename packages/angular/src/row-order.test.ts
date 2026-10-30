@@ -85,7 +85,7 @@ describe('the move buttons', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Move Item 1 of 2 down' }))
     await view.fixture.whenStable()
 
-    const inputs = screen.getAllByLabelText('Name') as HTMLInputElement[]
+    const inputs = screen.getAllByLabelText<HTMLInputElement>('Name')
     expect(inputs.map((input) => input.value)).toEqual(['second', 'first'])
     expect(namesIn(engine)).toEqual(['second', 'first'])
   })
@@ -101,7 +101,7 @@ describe('the move buttons', () => {
     // after a row removal it would show the previous row's answer, which a conformance
     // fixture caught. Reactive path binding has to come first, in both renderers at once.
     const { engine, view } = await mount(['first', 'second'])
-    const inputs = screen.getAllByLabelText('Name') as HTMLInputElement[]
+    const inputs = screen.getAllByLabelText<HTMLInputElement>('Name')
     inputs[0]!.focus()
     expect((document.activeElement as HTMLInputElement).value).toBe('first')
 
@@ -118,7 +118,7 @@ describe('the move buttons', () => {
     const { engine, view } = await mount(['x', 'y'])
     engine.moveRow(['items'], 0, 1)
     await view.fixture.whenStable()
-    const inputs = screen.getAllByLabelText('Name') as HTMLInputElement[]
+    const inputs = screen.getAllByLabelText<HTMLInputElement>('Name')
     expect(inputs.map((input) => input.value)).toEqual(['y', 'x'])
   })
 })

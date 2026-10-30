@@ -11,11 +11,9 @@ import type { FormText, FormWordId, FormWordValues, OptionsStatusState } from '.
  * closed, and under a field a rule had disabled. Read through a FormText that records the
  * id and its values, so each case holds the decision and not the wording.
  */
-const recorded: FormText = Object.assign(
-  (id: FormWordId, values?: FormWordValues): string =>
-    values === undefined ? id : `${id} ${JSON.stringify(values)}`,
-  { locale: 'en-GB' },
-)
+const recorded: FormText = Object.assign((id: FormWordId, values?: FormWordValues): string => (values === undefined ? id : `${id} ${JSON.stringify(values)}`), {
+  locale: 'en-GB',
+})
 
 const settled: OptionsStatusState = {
   control: 'typeahead',
@@ -27,8 +25,7 @@ const settled: OptionsStatusState = {
   query: '',
   completeness: { kind: 'complete' },
 }
-const status = (change: Partial<OptionsStatusState>): string =>
-  optionsStatus(recorded, { ...settled, ...change })
+const status = (change: Partial<OptionsStatusState>): string => optionsStatus(recorded, { ...settled, ...change })
 
 const more = { kind: 'more', shown: 6 } as const
 const capped = { kind: 'capped', shown: 50, total: 120 } as const
@@ -89,9 +86,7 @@ describe('what a sourced control says', () => {
   test('and a plain select says what its list leaves out while it is enabled', () => {
     // A native select has no "list opened" a renderer could listen for, so its sentence
     // stands while it can be used; `open` is the typeahead's alone.
-    expect(status({ control: 'select', open: false, completeness: capped })).toBe(
-      'options.cappedListed {"count":50,"total":120}',
-    )
+    expect(status({ control: 'select', open: false, completeness: capped })).toBe('options.cappedListed {"count":50,"total":120}')
   })
 
   test('what the list leaves out, in the words of the control, and "more" with no number that matches', () => {
@@ -100,9 +95,7 @@ describe('what a sourced control says', () => {
     expect(status({ completeness: more })).toBe('options.more {"count":6}')
     expect(status({ control: 'select', completeness: more })).toBe('options.moreListed {"count":6}')
     expect(status({ completeness: capped })).toBe('options.capped {"shown":50,"total":120}')
-    expect(status({ control: 'select', completeness: capped })).toBe(
-      'options.cappedListed {"count":50,"total":120}',
-    )
+    expect(status({ control: 'select', completeness: capped })).toBe('options.cappedListed {"count":50,"total":120}')
     expect(status({ completeness: withheld })).toBe('options.withheld {"count":2}')
     expect(status({ control: 'select', completeness: withheld })).toBe('options.withheld {"count":2}')
   })
@@ -183,9 +176,7 @@ describe('what a sourced control says', () => {
   test('and each new sentence is the catalogue’s, not the typeahead’s said again', () => {
     // A select whose words were the typeahead's would tell its reader to type.
     const english = createFormText({ locale: '' })
-    expect(optionsStatus(english, { ...settled, control: 'select', completeness: capped })).toBe(
-      'Showing the first 50 of 120.',
-    )
+    expect(optionsStatus(english, { ...settled, control: 'select', completeness: capped })).toBe('Showing the first 50 of 120.')
     expect(optionsStatus(english, { ...settled, control: 'select', completeness: capped })).not.toBe(
       optionsStatus(english, { ...settled, completeness: capped }),
     )

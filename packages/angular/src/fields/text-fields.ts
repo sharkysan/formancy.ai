@@ -1,11 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
-import type { Type } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core'
 import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { injectScanner } from '../scanning.js'
 import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FormancyCharacterCount } from './character-count.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
-
 
 /**
  * The controls that take typed text, and the widgets over them.
@@ -117,17 +115,13 @@ export class FormancyTextField extends FieldComponentBase {
    * widget can arrive with a new document, and a plain method call is not a
    * dependency an OnPush component re-runs for.
    */
-  protected readonly scannable = computed(
-    () => this.scan !== null && this.field.snapshot().def.widget === 'scanner',
-  )
+  protected readonly scannable = computed(() => this.scan !== null && this.field.snapshot().def.widget === 'scanner')
 
   protected readonly status = computed(() => {
     if (this.scanning()) return this.words('scanner.scanning')
     const trouble = this.trouble()
     if (trouble === undefined) return ''
-    return trouble.reason === undefined
-      ? this.words('scanner.noText')
-      : this.words('scanner.failed', { reason: trouble.reason })
+    return trouble.reason === undefined ? this.words('scanner.noText') : this.words('scanner.failed', { reason: trouble.reason })
   })
 
   protected onInput(event: Event): void {

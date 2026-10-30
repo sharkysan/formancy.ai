@@ -29,23 +29,15 @@ export function pseudoLanguage(): BuilderLanguage {
   const mark = (message: Message): Message =>
     typeof message === 'string'
       ? `${OPEN}${message}${CLOSE}`
-      : (Object.fromEntries(
-          Object.entries(message).map(([form, text]) => [form, `${OPEN}${String(text)}${CLOSE}`]),
-        ) as unknown as Message)
+      : (Object.fromEntries(Object.entries(message).map(([form, text]) => [form, `${OPEN}${String(text)}${CLOSE}`])) as unknown as Message)
 
   const ids = Object.keys(BUILDER_MESSAGES) as BuilderMessageId[]
-  const messages = Object.fromEntries(
-    ids.map((id) => [id, mark(BUILDER_MESSAGES[id])]),
-  ) as BuilderCatalogue
+  const messages = Object.fromEntries(ids.map((id) => [id, mark(BUILDER_MESSAGES[id])])) as BuilderCatalogue
   // The spec's own words too: a property's title is the builder's to show in the
   // author's language, so a walk has to be able to see one that was not (0121).
-  const schema = Object.fromEntries(
-    schemaTexts().map((english) => [english, `${OPEN}${english}${CLOSE}`]),
-  )
+  const schema = Object.fromEntries(schemaTexts().map((english) => [english, `${OPEN}${english}${CLOSE}`]))
   // And the validator's sentences, by code, so a refusal shown in English is seen (0122).
-  const errors = Object.fromEntries(
-    Object.entries(SCHEMA_ERRORS).map(([code, sentence]) => [code, `${OPEN}${sentence}${CLOSE}`]),
-  )
+  const errors = Object.fromEntries(Object.entries(SCHEMA_ERRORS).map(([code, sentence]) => [code, `${OPEN}${sentence}${CLOSE}`]))
   // English plural and list rules: the marks are what is under test, not the grammar.
   return { locale: 'en-GB', messages, schema, errors }
 }

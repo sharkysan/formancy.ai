@@ -38,9 +38,7 @@ function scaleOf(min: number, max: number, step: number): number[] {
 }
 
 /** Both ends, or nothing: the condition for drawing a scale at all. */
-function boundsOf(def: { min?: number; max?: number; step?: number }):
-  | { min: number; max: number; step: number }
-  | undefined {
+function boundsOf(def: { min?: number; max?: number; step?: number }): { min: number; max: number; step: number } | undefined {
   if (def.min === undefined || def.max === undefined || def.max <= def.min) return undefined
   // One, because that is what `<input type="range">` steps by with no attribute:
   // leaving it out and writing it are the same control. The opposite reading —
@@ -86,12 +84,7 @@ export function RatingField({ path, label }: FieldComponentProps) {
         group" with no indication of the question. The shell already gives the
         label the id the engine minted; this points at it.
       */}
-      <div
-        {...controlProps}
-        role="radiogroup"
-        aria-labelledby={field.ids.label}
-        data-formancy-part="rating"
-      >
+      <div {...controlProps} role="radiogroup" aria-labelledby={field.ids.label} data-formancy-part="rating">
         {scaleOf(bounds.min, bounds.max, bounds.step).map((value) => (
           <label key={value} data-formancy-part="rating-step" data-chosen={value === chosen ? 'true' : undefined}>
             <input
@@ -189,9 +182,7 @@ function NumberFallback({ path, label }: FieldComponentProps) {
         // As `NumberField` does: a computed number is read, not typed (0181).
         readOnly={field.readOnly}
         value={typeof field.value === 'number' ? field.value : ''}
-        onChange={(event) =>
-          field.setValue(event.target.value === '' ? null : event.target.valueAsNumber)
-        }
+        onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.valueAsNumber)}
         onBlur={() => field.touch()}
       />
     </FieldShell>

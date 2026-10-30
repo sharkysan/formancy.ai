@@ -15,7 +15,7 @@
 import { ruleKindLabel } from './logic.js'
 import type { BuilderText } from './messages.js'
 import { rulePathOf } from './navigate.js'
-import type { FieldDef, FormSchema, LayoutNode, LogicRule } from '@formancy/spec'
+import type { FormSchema, LayoutNode, LogicRule } from '@formancy/spec'
 import { PAGE_TARGETED_RULE_KINDS, layoutChildren } from '@formancy/spec'
 import { rewritePath } from '@formancy/expressions'
 
@@ -59,11 +59,10 @@ function pruned(nodes: readonly LayoutNode[], goes: (path: string) => boolean): 
     }
     // The container stays even when it empties. Removing one field should not
     // silently take a row with it and rearrange everything beside it.
-    kept.push({ ...node, children: pruned(layoutChildren(node) as LayoutNode[], goes) })
+    kept.push({ ...node, children: pruned(layoutChildren(node), goes) })
   }
   return kept
 }
-
 
 /**
  * Drop every rule that could only ever have been about this page.
@@ -78,12 +77,9 @@ export function unskipEverywhere(draft: FormSchema, pageKey: string): void {
   if (rules === undefined) return
   draft.logic = {
     ...draft.logic,
-    rules: rules.filter(
-      (rule) => !(PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && rule.target === pageKey),
-    ),
+    rules: rules.filter((rule) => !(PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && rule.target === pageKey)),
   }
 }
-
 
 /**
  * Point every rule at the new path: its target, its condition, and the metadata
@@ -100,12 +96,7 @@ export function unskipEverywhere(draft: FormSchema, pageKey: string): void {
  * deployment answers, never a data path
  * ([0086](../../../docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)).
  */
-export function repathRules(
-  draft: FormSchema,
-  before: string,
-  after: string,
-  text: BuilderText,
-): string | undefined {
+export function repathRules(draft: FormSchema, before: string, after: string, text: BuilderText): string | undefined {
   const rules = draft.logic?.rules ?? []
   // Every rule is rewritten into a copy first, so a refusal on rule 4 does not
   // leave rules 1 to 3 changed. `attempt` discards the draft on a refusal, but

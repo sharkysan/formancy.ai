@@ -55,27 +55,17 @@ export function ResumeNotice({ migration, labels }: ResumeNoticeProps): ReactEle
   // gets missed.
   if (migration === undefined) return null
 
-  const setAside = migration.changes
-    .map((change) => change.path)
-    .filter((path): path is string => path !== undefined)
+  const setAside = migration.changes.map((change) => change.path).filter((path): path is string => path !== undefined)
 
   return (
-    <div
-      role="region"
-      aria-label={text('resume.heading')}
-      data-formancy-part="resume-notice"
-      data-state={migration.severity}
-      tabIndex={-1}
-      ref={region}
-    >
+    <div role="region" aria-label={text('resume.heading')} data-formancy-part="resume-notice" data-state={migration.severity} tabIndex={-1} ref={region}>
       <h2 data-formancy-part="resume-notice-heading">{text('resume.heading')}</h2>
 
       {migration.severity === 'breaking' ? (
         // Three whole sentences rather than one with a hole in it: a translator cannot
         // move an emphasised phrase that is spliced into the middle of somebody else's.
         <p>
-          {text('resume.breaking.kept')} <strong>{text('resume.breaking.cannotSubmit')}</strong>{' '}
-          {text('resume.breaking.restart')}
+          {text('resume.breaking.kept')} <strong>{text('resume.breaking.cannotSubmit')}</strong> {text('resume.breaking.restart')}
         </p>
       ) : (
         <>

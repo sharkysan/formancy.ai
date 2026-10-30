@@ -13,8 +13,7 @@ import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage.ts'
  * `import.meta.url` is not a file URL — so resolving it eagerly threw *"The URL
  * must be of scheme file"* and took a test about one string with it.
  */
-const TSCONFIG = (): string =>
-  fileURLToPath(new URL('./tsconfig.angular.json', import.meta.url))
+const TSCONFIG = (): string => fileURLToPath(new URL('./tsconfig.angular.json', import.meta.url))
 
 export default defineConfig({
   /*
@@ -34,13 +33,9 @@ export default defineConfig({
     angular({
       tsconfig: TSCONFIG,
       transformFilter: (_code, id) =>
-        [
-          'angular-preview',
-          'angular-builder-host',
-          'angular-suggestions-list',
-          '@formancy/angular',
-          '@formancy/builder-angular',
-        ].some((part) => id.includes(part)),
+        ['angular-preview', 'angular-builder-host', 'angular-suggestions-list', '@formancy/angular', '@formancy/builder-angular'].some((part) =>
+          id.includes(part),
+        ),
     }),
   ],
   test: {

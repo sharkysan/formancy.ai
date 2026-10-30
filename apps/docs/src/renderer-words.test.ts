@@ -41,16 +41,7 @@ const repo = join(here, '..', '..', '..')
 const ROOTS = ['packages/react/src', 'packages/angular/src', 'packages/angular/material/src']
 
 /** The attributes whose value a person reads or hears. */
-const TEXT_ATTRIBUTES = new Set([
-  'aria-label',
-  'aria-valuetext',
-  'aria-roledescription',
-  'aria-placeholder',
-  'aria-description',
-  'title',
-  'alt',
-  'placeholder',
-])
+const TEXT_ATTRIBUTES = new Set(['aria-label', 'aria-valuetext', 'aria-roledescription', 'aria-placeholder', 'aria-description', 'title', 'alt', 'placeholder'])
 
 /** DOM calls whose string argument is a CSS selector rather than a word. */
 const SELECTOR_CALLS = new Set(['querySelector', 'querySelectorAll', 'closest', 'matches'])
@@ -117,11 +108,7 @@ function wordsIn(root: ts.Node, source: ts.SourceFile, offset = 0): Found[] {
     // Not anybody's words: a module's name, a type, a broken invariant's message.
     if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) return
     if (ts.isTypeNode(node) && !ts.isExpressionWithTypeArguments(node)) return
-    if (
-      ts.isNewExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      /Error$/.test(node.expression.text)
-    ) {
+    if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && /Error$/.test(node.expression.text)) {
       return
     }
 
@@ -187,9 +174,7 @@ function wordsIn(root: ts.Node, source: ts.SourceFile, offset = 0): Found[] {
     }
     if (ts.isCallExpression(node)) {
       visit(node.expression, 'code')
-      const callee = ts.isPropertyAccessExpression(node.expression)
-        ? node.expression.name.text
-        : undefined
+      const callee = ts.isPropertyAccessExpression(node.expression) ? node.expression.name.text : undefined
       // What a function is handed is its argument, not the screen — `text('form.next')`.
       // A CSS selector handed to the DOM is not a word at all.
       for (const argument of node.arguments) {
@@ -271,16 +256,14 @@ function expressionWords(expression: string, place: Place, line: number): Found[
     ...rest.flatMap((pipe) =>
       splitTopLevel(pipe, ':')
         .slice(1)
-        .map((argument) => ({ text: argument, place: 'code' as Place })),
+        .map((argument): { text: string; place: Place } => ({ text: argument, place: 'code' })),
     ),
   ]
   return pieces.flatMap((piece) => {
     const parsed = ts.createSourceFile('expression.ts', `(${piece.text});`, ts.ScriptTarget.Latest, true)
     const statement = parsed.statements[0]
     if (statement === undefined || !ts.isExpressionStatement(statement)) return []
-    const root = ts.isParenthesizedExpression(statement.expression)
-      ? statement.expression.expression
-      : statement.expression
+    const root = ts.isParenthesizedExpression(statement.expression) ? statement.expression.expression : statement.expression
     return wordsInExpression(root, parsed, piece.place, line - 1)
   })
 }
@@ -302,10 +285,7 @@ function wordsInExpression(root: ts.Node, source: ts.SourceFile, place: Place, o
     ]
   }
   if (ts.isBinaryExpression(root) && !isComparison(root.operatorToken.kind)) {
-    return [
-      ...wordsInExpression(root.left, source, 'screen', offset),
-      ...wordsInExpression(root.right, source, 'screen', offset),
-    ]
+    return [...wordsInExpression(root.left, source, 'screen', offset), ...wordsInExpression(root.right, source, 'screen', offset)]
   }
   if (ts.isParenthesizedExpression(root)) return wordsInExpression(root.expression, source, place, offset)
   return wordsIn(root, source, offset)
@@ -460,11 +440,7 @@ function withoutControlFlow(text: string): string {
 function templatesIn(source: ts.SourceFile): Array<{ text: string; line: number }> {
   const templates: Array<{ text: string; line: number }> = []
   const visit = (node: ts.Node): void => {
-    if (
-      ts.isPropertyAssignment(node) &&
-      propertyName(node.name) === 'template' &&
-      ts.isDecorator(node.parent.parent.parent)
-    ) {
+    if (ts.isPropertyAssignment(node) && propertyName(node.name) === 'template' && ts.isDecorator(node.parent.parent.parent)) {
       const text = literalText(node.initializer)
       if (text !== undefined) {
         const line = source.getLineAndCharacterOfPosition(node.initializer.getStart(source)).line + 1
@@ -488,35 +464,21 @@ function sourceFiles(directory: string): string[] {
 }
 
 function parse(path: string): ts.SourceFile {
-  return ts.createSourceFile(
-    path,
-    readFileSync(path, 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-    path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  )
+  return ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true, path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
 }
 
 /** Every word written into one file, as `file:line "text"`. */
 function literalWordsIn(path: string): string[] {
   const source = parse(path)
   const name = relative(repo, path)
-  const found = [
-    ...wordsIn(source, source),
-    ...templatesIn(source).flatMap(({ text, line }) => templateWords(text, line)),
-  ]
-  return found
-    .sort((a, b) => a.line - b.line)
-    .map(({ line, text }) => `${name}:${String(line)} ${JSON.stringify(text.slice(0, 60))}`)
+  const found = [...wordsIn(source, source), ...templatesIn(source).flatMap(({ text, line }) => templateWords(text, line))]
+  return found.sort((a, b) => a.line - b.line).map(({ line, text }) => `${name}:${String(line)} ${JSON.stringify(text.slice(0, 60))}`)
 }
 
 /** What the guard finds in a snippet, so its rules can be held to cases of their own. */
 function inSnippet(code: string, kind: ts.ScriptKind = ts.ScriptKind.TSX): string[] {
   const source = ts.createSourceFile('snippet.tsx', code, ts.ScriptTarget.Latest, true, kind)
-  return [
-    ...wordsIn(source, source),
-    ...templatesIn(source).flatMap(({ text, line }) => templateWords(text, line)),
-  ].map(({ text }) => text)
+  return [...wordsIn(source, source), ...templatesIn(source).flatMap(({ text, line }) => templateWords(text, line))].map(({ text }) => text)
 }
 
 const files = ROOTS.flatMap((root) => sourceFiles(join(repo, root)))
@@ -531,11 +493,7 @@ describe('a word a renderer shows', () => {
     // Back and Submit are drawn in each binding, and Material's group draws its own hint.
     const names = files.map((path) => relative(repo, path))
     expect(names).toEqual(
-      expect.arrayContaining([
-        'packages/react/src/form.tsx',
-        'packages/angular/src/form.ts',
-        'packages/angular/material/src/choice-fields.ts',
-      ]),
+      expect.arrayContaining(['packages/react/src/form.tsx', 'packages/angular/src/form.ts', 'packages/angular/material/src/choice-fields.ts']),
     )
     // Every Angular component's template is read, not only the first in a file.
     const templates = files.flatMap((path) => templatesIn(parse(path)))
@@ -548,9 +506,7 @@ describe('the rules the guard reads by', () => {
   // finding it would pass the bindings while they said it again.
   test('finds a word on a button, in an attribute, in a child expression and in code', () => {
     expect(inSnippet('const a = <button type="button">Next</button>')).toEqual(['Next'])
-    expect(inSnippet('const a = <nav aria-label="Progress" data-formancy-part="stepper" />')).toEqual([
-      'Progress',
-    ])
+    expect(inSnippet('const a = <nav aria-label="Progress" data-formancy-part="stepper" />')).toEqual(['Progress'])
     expect(inSnippet("const a = <button>{label ?? 'Submit'}</button>")).toEqual(['Submit'])
     expect(inSnippet('const a = <ul aria-label={`${label} suggestions`} />')).toEqual(['{} suggestions'])
     expect(inSnippet("const status = () => (busy ? 'Searching…' : '')")).toEqual(['Searching…'])
@@ -560,15 +516,12 @@ describe('the rules the guard reads by', () => {
   })
 
   test('and a word in an Angular template, static, bound or interpolated', () => {
-    const template = (body: string): string =>
-      `@Component({ selector: 'x-y', template: \`${body}\` }) class X {}`
+    const template = (body: string): string => `@Component({ selector: 'x-y', template: \`${body}\` }) class X {}`
     expect(inSnippet(template('<button (click)="next()">Next</button>'))).toEqual(['Next'])
     expect(inSnippet(template('<nav aria-label="Progress"></nav>'))).toEqual(['Progress'])
     expect(inSnippet(template('<li [attr.aria-label]="\'Move \' + name"></li>'))).toEqual(['Move '])
     expect(inSnippet(template('<span>{{ index }} of {{ count }}</span>'))).toEqual(['of'])
-    expect(inSnippet(template("@if (busy) {<p>{{ busy ? 'Searching…' : '' }}</p>}"))).toEqual([
-      'Searching…',
-    ])
+    expect(inSnippet(template("@if (busy) {<p>{{ busy ? 'Searching…' : '' }}</p>}"))).toEqual(['Searching…'])
     // A value declared to be shown later is read where it is declared.
     expect(inSnippet(template("@let word = busy ? 'Searching…' : ''; <p>{{ word }}</p>"))).toEqual(['Searching…'])
   })
@@ -615,22 +568,19 @@ describe('every word in the catalogue', () => {
     return found
   }
 
-  test.each(['packages/react/src/words.test.tsx', 'packages/angular/src/words.test.ts'])(
-    'is asked for by name in %s',
-    (path) => {
-      // The safety analysis says each binding's words test finds every surface of a German
-      // form by its German words. Three were in no case — a queued file's "Waiting" and two
-      // of the three sentences of the resume notice — so a literal written back there was
-      // caught by the source guard above and by nothing that looks at a German form.
-      const named = literalsIn(join(repo, path))
-      // `answer.*` say an answer read back — afterwards, by `answersInWords` (0193), or in a
-      // review before sending (0204), where only the answers given draw any of them — so no one
-      // form's test is sure to find each; `answers-in-words.test.ts` in core reads them in German
-      // instead.
-      const ids = (Object.keys(FORM_WORDS) as FormWordId[]).filter((id) => !id.startsWith('answer.'))
-      expect(ids.filter((id) => !named.has(id) && NOT_BY_NAME[id] === undefined)).toEqual([])
-    },
-  )
+  test.each(['packages/react/src/words.test.tsx', 'packages/angular/src/words.test.ts'])('is asked for by name in %s', (path) => {
+    // The safety analysis says each binding's words test finds every surface of a German
+    // form by its German words. Three were in no case — a queued file's "Waiting" and two
+    // of the three sentences of the resume notice — so a literal written back there was
+    // caught by the source guard above and by nothing that looks at a German form.
+    const named = literalsIn(join(repo, path))
+    // `answer.*` say an answer read back — afterwards, by `answersInWords` (0193), or in a
+    // review before sending (0204), where only the answers given draw any of them — so no one
+    // form's test is sure to find each; `answers-in-words.test.ts` in core reads them in German
+    // instead.
+    const ids = (Object.keys(FORM_WORDS) as FormWordId[]).filter((id) => !id.startsWith('answer.'))
+    expect(ids.filter((id) => !named.has(id) && NOT_BY_NAME[id] === undefined)).toEqual([])
+  })
 
   test('and a word excused from that is one German says as English does', () => {
     // An excuse that outlived its reason would hide a word nobody checks.

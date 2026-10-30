@@ -26,7 +26,9 @@ const engineFor = (required: boolean): ReturnType<typeof createFormEngine> => {
 
 const errorsAfterSubmit = (engine: ReturnType<typeof createFormEngine>): string[] => {
   const outcome = engine.submit()
-  return Object.values(outcome.errors ?? {}).flat().map(String)
+  return Object.values(outcome.errors ?? {})
+    .flat()
+    .map(String)
 }
 
 describe('a required signature', () => {
@@ -58,7 +60,14 @@ describe('a required signature', () => {
 
   test('is satisfied by a mark, and by a name', () => {
     const drawn = engineFor(true)
-    drawn.setValue(['mark'], { drawn: [[[1, 1], [2, 2]]] })
+    drawn.setValue(['mark'], {
+      drawn: [
+        [
+          [1, 1],
+          [2, 2],
+        ],
+      ],
+    })
     expect(errorsAfterSubmit(drawn)).toEqual([])
 
     const typed = engineFor(true)

@@ -44,25 +44,13 @@ describe('reading an example', () => {
 
   test.each([
     ['not an object', ['x'], { reason: 'not-an-object' }],
-    [
-      'a key the runner does not read',
-      { ...ASKS_FOR_A_CANTON, expected: {} },
-      { name: ASKS_FOR_A_CANTON.name, reason: 'unknown-key', part: 'expected' },
-    ],
+    ['a key the runner does not read', { ...ASKS_FOR_A_CANTON, expected: {} }, { name: ASKS_FOR_A_CANTON.name, reason: 'unknown-key', part: 'expected' }],
     ['no name', { changes: {}, valid: true }, { reason: 'no-name' }],
     ['no changes', { name: 'a', valid: true }, { name: 'a', reason: 'no-changes' }],
     ['changes that are not a map', { name: 'a', changes: null, valid: true }, { name: 'a', reason: 'no-changes' }],
     ['no verdict', { name: 'a', changes: {}, valid: 'yes' }, { name: 'a', reason: 'no-verdict' }],
-    [
-      'errors not lists of codes',
-      { name: 'a', changes: {}, valid: false, errors: { canton: 'required' } },
-      { name: 'a', reason: 'malformed', part: 'errors' },
-    ],
-    [
-      'visibility not true or false',
-      { name: 'a', changes: {}, valid: true, visible: { canton: 'no' } },
-      { name: 'a', reason: 'malformed', part: 'visible' },
-    ],
+    ['errors not lists of codes', { name: 'a', changes: {}, valid: false, errors: { canton: 'required' } }, { name: 'a', reason: 'malformed', part: 'errors' }],
+    ['visibility not true or false', { name: 'a', changes: {}, valid: true, visible: { canton: 'no' } }, { name: 'a', reason: 'malformed', part: 'visible' }],
     ['values not a map', { name: 'a', changes: {}, valid: true, values: ['x'] }, { name: 'a', reason: 'malformed', part: 'values' }],
     ['absent not a list of paths', { name: 'a', changes: {}, valid: true, absent: 'note' }, { name: 'a', reason: 'malformed', part: 'absent' }],
     ['a reason that is not text', { name: 'a', changes: {}, valid: true, because: 42 }, { name: 'a', reason: 'malformed', part: 'because' }],
@@ -87,15 +75,18 @@ describe('reading an example', () => {
       specVersion: '4',
       id: 'f',
       title: 'F',
-      model: { fields: [{ key: 'country', type: 'text' }, { key: 'canton', type: 'text' }] },
+      model: {
+        fields: [
+          { key: 'country', type: 'text' },
+          { key: 'canton', type: 'text' },
+        ],
+      },
     } as const
 
     const drafted = await draftScenarios(ask, form as never, 'anything')
 
     const read = items.map(readScenario)
     expect(drafted.ok && drafted.drafts).toEqual(read.flatMap((one) => (one.ok ? [one.scenario] : [])))
-    expect(drafted.ok && drafted.unusable).toEqual(
-      read.flatMap((one, index) => (one.ok ? [] : [{ position: index + 1, ...one.problem }])),
-    )
+    expect(drafted.ok && drafted.unusable).toEqual(read.flatMap((one, index) => (one.ok ? [] : [{ position: index + 1, ...one.problem }])))
   })
 })

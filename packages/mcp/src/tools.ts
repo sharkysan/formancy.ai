@@ -292,11 +292,7 @@ export function checkScenarios(document: unknown, scenarios: readonly Scenario[]
  * edit cannot land on a version it was never written against
  * ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
  */
-export async function proposeFormEdit(
-  access: ServerAccess,
-  path: string,
-  document: unknown,
-): Promise<ToolResult> {
+export async function proposeFormEdit(access: ServerAccess, path: string, document: unknown): Promise<ToolResult> {
   const checked = validateForm(document)
   if (!checked.ok) {
     // A change list for a document that cannot be published is a list of
@@ -326,12 +322,7 @@ export async function proposeFormEdit(
 }
 
 /** What the server currently has for a path, and its hash. */
-async function currentSchema(
-  access: ServerAccess,
-  path: string,
-): Promise<
-  { ok: true; schema: FormSchema; hash: string } | { ok: false; problem: ToolResult }
-> {
+async function currentSchema(access: ServerAccess, path: string): Promise<{ ok: true; schema: FormSchema; hash: string } | { ok: false; problem: ToolResult }> {
   const fetched = await getForm(access, path)
   if (!fetched.ok) return { ok: false, problem: fetched }
 
@@ -352,7 +343,7 @@ async function currentSchema(
     }
   }
 
-  return { ok: true, schema: schema as FormSchema, hash: schemaHash(schema as FormSchema) }
+  return { ok: true, schema: schema as FormSchema, hash: schemaHash(schema) }
 }
 
 export async function listForms(access: ServerAccess): Promise<ToolResult> {
@@ -374,11 +365,7 @@ export async function listSubmissions(access: ServerAccess, path: string): Promi
  * than as a thrown exception, because a thrown exception reaches a model as a
  * stack trace and tells it nothing it can act on.
  */
-async function request(
-  access: ServerAccess,
-  route: string,
-  init: RequestInit = {},
-): Promise<ToolResult> {
+async function request(access: ServerAccess, route: string, init: RequestInit = {}): Promise<ToolResult> {
   const send = access.fetch ?? globalThis.fetch
   const url = `${access.baseUrl.replace(/\/$/, '')}${route}`
 

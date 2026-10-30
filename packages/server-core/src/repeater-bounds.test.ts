@@ -35,7 +35,7 @@ const schema = {
       {
         target: 'fees',
         kind: 'validate',
-        cel: "fees.all(f, !has(f.amount) || f.amount == null || f.amount <= 500.0)",
+        cel: 'fees.all(f, !has(f.amount) || f.amount == null || f.amount <= 500.0)',
         code: 'feeOverLimit',
       },
     ],

@@ -49,9 +49,7 @@ describe('what the builder core may import', () => {
 
   test('is not React, in any file, however it is spelled', () => {
     const offenders = sourcesOf('builder-core')
-      .filter(({ text }) =>
-        importsOf(text).some((specifier) => /^react(-dom)?($|\/)|^@formancy\/(react|builder-react)$/.test(specifier)),
-      )
+      .filter(({ text }) => importsOf(text).some((specifier) => /^react(-dom)?($|\/)|^@formancy\/(react|builder-react)$/.test(specifier)))
       .map(({ name }) => name)
 
     expect(offenders).toEqual([])
@@ -63,22 +61,18 @@ describe('what the builder core may import', () => {
     // rule written only against the one that happened to be there first is a rule
     // that permits the second.
     const offenders = sourcesOf('builder-core')
-      .filter(({ text }) =>
-        importsOf(text).some((specifier) => /^@angular\/|^@formancy\/(angular|builder-angular)$/.test(specifier)),
-      )
+      .filter(({ text }) => importsOf(text).some((specifier) => /^@angular\/|^@formancy\/(angular|builder-angular)$/.test(specifier)))
       .map(({ name }) => name)
 
     expect(offenders).toEqual([])
   })
 
   test('and the manifest agrees, so a dependency cannot arrive ahead of an import', () => {
-    const manifest = JSON.parse(
-      readFileSync(join(repo, 'packages', 'builder-core', 'package.json'), 'utf8'),
-    ) as { dependencies?: Record<string, string>; peerDependencies?: Record<string, string> }
-    const declared = [
-      ...Object.keys(manifest.dependencies ?? {}),
-      ...Object.keys(manifest.peerDependencies ?? {}),
-    ]
+    const manifest = JSON.parse(readFileSync(join(repo, 'packages', 'builder-core', 'package.json'), 'utf8')) as {
+      dependencies?: Record<string, string>
+      peerDependencies?: Record<string, string>
+    }
+    const declared = [...Object.keys(manifest.dependencies ?? {}), ...Object.keys(manifest.peerDependencies ?? {})]
 
     expect(declared.filter((name) => /react|angular/.test(name))).toEqual([])
   })
@@ -87,15 +81,7 @@ describe('what the builder core may import', () => {
     // The other half. Moved and not exported, they would be unreachable from a
     // second builder — which is the entire reason they moved.
     const barrel = readFileSync(join(repo, 'packages', 'builder-core', 'src', 'index.ts'), 'utf8')
-    for (const name of [
-      'compileCondition',
-      'dropLocation',
-      'layoutDropLocation',
-      'flatten',
-      'flattenLayout',
-      'paletteEntries',
-      'editablePropertiesFor',
-    ]) {
+    for (const name of ['compileCondition', 'dropLocation', 'layoutDropLocation', 'flatten', 'flattenLayout', 'paletteEntries', 'editablePropertiesFor']) {
       expect(barrel, `${name} is not exported`).toContain(name)
     }
   })
@@ -121,7 +107,10 @@ describe('what the two builders each offer', () => {
     const names = new Set<string>()
     for (const match of barrel.matchAll(/^export \{ ([^}]+) \}/gm)) {
       for (const name of match[1]!.split(',')) {
-        const clean = name.trim().split(/\s+as\s+/)[0]!.trim()
+        const clean = name
+          .trim()
+          .split(/\s+as\s+/)[0]!
+          .trim()
         // Components only: a hook, a helper and a type are not panes.
         if (/^(Formancy|[A-Z])/.test(clean) && !/^(use|inject)/.test(clean)) names.add(clean)
       }
@@ -250,9 +239,7 @@ describe('what the two builders each offer', () => {
     const paired = new Set(PANES.flatMap(({ react: a, angular: b }) => [a, b]))
     const excused = new Set(ONE_SIDED.map(({ name }) => name))
     const unaccounted = (['react', 'angular'] as const).flatMap((side) =>
-      [...componentsOf(`builder-${side}`)].filter(
-        (name) => !paired.has(name) && !excused.has(name),
-      ),
+      [...componentsOf(`builder-${side}`)].filter((name) => !paired.has(name) && !excused.has(name)),
     )
 
     // Anything added to one builder shows up here until it is either paired or
@@ -289,10 +276,7 @@ describe('what the two builders each offer', () => {
     const reactOnly = ONE_SIDED.filter(({ side }) => side === 'react')
 
     if (reactOnly.length === 0) {
-      expect(
-        singledOut?.[1],
-        'the README calls a pane React-only and the barrels say none is',
-      ).toBeUndefined()
+      expect(singledOut?.[1], 'the README calls a pane React-only and the barrels say none is').toBeUndefined()
       return
     }
 

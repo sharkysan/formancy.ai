@@ -49,8 +49,7 @@ export function fitsSlot(slot: MaskSlot, character: string): boolean {
   return /^[\p{L}0-9]$/u.test(character)
 }
 
-const slotsOf = (positions: readonly MaskPosition[]): MaskSlot[] =>
-  positions.flatMap((position) => ('slot' in position ? [position.slot] : []))
+const slotsOf = (positions: readonly MaskPosition[]): MaskSlot[] => positions.flatMap((position) => ('slot' in position ? [position.slot] : []))
 
 /** Whether a mask has anywhere to type. One without is a label, not a mask. */
 export function maskHasPositions(mask: string): boolean {
@@ -64,10 +63,7 @@ export function maskHasPositions(mask: string): boolean {
 export function fitsMask(mask: string, answer: string): boolean {
   const slots = slotsOf(maskPositions(mask))
   const characters = [...answer]
-  return (
-    characters.length === slots.length &&
-    characters.every((character, at) => fitsSlot(slots[at]!, character))
-  )
+  return characters.length === slots.length && characters.every((character, at) => fitsSlot(slots[at]!, character))
 }
 
 /**
@@ -128,10 +124,7 @@ export function editMasked(
   mask: string,
   answer: string,
   next: string,
-  {
-    caret,
-    direction = 'backward',
-  }: { caret?: number | null; direction?: 'backward' | 'forward' } = {},
+  { caret, direction = 'backward' }: { caret?: number | null; direction?: 'backward' | 'forward' } = {},
 ): { answer: string; caret: number } {
   const positions = maskPositions(mask)
   const slots = slotsOf(positions)
@@ -144,8 +137,7 @@ export function editMasked(
   // "(555" with the caret after the second 5, the new 5 is the middle one. Without it,
   // the longest common start, then the longest common end that leaves room for it.
   const caretAt = caret == null ? undefined : [...next.slice(0, caret)].length
-  const sameFromEnd = (offset: number): boolean =>
-    before[before.length - 1 - offset] === after[after.length - 1 - offset]
+  const sameFromEnd = (offset: number): boolean => before[before.length - 1 - offset] === after[after.length - 1 - offset]
   let start = 0
   let end = 0
   if (caretAt === undefined) {
@@ -160,8 +152,7 @@ export function editMasked(
     }
   }
 
-  const slotsBefore = (index: number): number =>
-    positions.slice(0, index).filter((position) => 'slot' in position).length
+  const slotsBefore = (index: number): number => positions.slice(0, index).filter((position) => 'slot' in position).length
   let from = slotsBefore(start)
   let to = slotsBefore(before.length - end)
   const inserted = after.slice(start, after.length - end)
@@ -205,10 +196,7 @@ export function editMasked(
 }
 
 /** The answer in `text` when it lines up with the mask from its first position. */
-function linedUp(
-  positions: readonly MaskPosition[],
-  text: readonly string[],
-): string[] | undefined {
+function linedUp(positions: readonly MaskPosition[], text: readonly string[]): string[] | undefined {
   if (text.length > positions.length) return undefined
   const answer: string[] = []
   for (let at = 0; at < text.length; at += 1) {

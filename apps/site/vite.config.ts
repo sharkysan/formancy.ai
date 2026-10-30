@@ -15,11 +15,13 @@ export default defineConfig({
     // Not Vite's default, which rewrites `:dir(rtl)` as a list of languages (0123).
     cssTarget: CSS_TARGET,
     assetsInlineLimit: 0,
-    rolldownOptions: { input: {
-      main: fileURLToPath(new URL('./index.html', import.meta.url)),
-      templates: fileURLToPath(new URL('./templates/index.html', import.meta.url)),
-      angular: fileURLToPath(new URL('./angular-form-builder/index.html', import.meta.url)),
-    } },
+    rolldownOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        templates: fileURLToPath(new URL('./templates/index.html', import.meta.url)),
+        angular: fileURLToPath(new URL('./angular-form-builder/index.html', import.meta.url)),
+      },
+    },
   },
   server: {
     port: 4384,

@@ -20,9 +20,7 @@ async function pickable(pane) {
 
 /** The order the preview draws the given fields in, read from the page. */
 async function fieldOrder(pane) {
-  return pane
-    .locator('[data-formancy-field-path]')
-    .evaluateAll((elements) => elements.map((element) => element.dataset.formancyFieldPath))
+  return pane.locator('[data-formancy-field-path]').evaluateAll((elements) => elements.map((element) => element.dataset.formancyFieldPath))
 }
 
 /**
@@ -110,9 +108,7 @@ export async function checkArrangeGaps(browser, url, check) {
 
       check(
         `${renderer}: two stacked nodes in a section have space between them, and it is the section's`,
-        gap.gap > 0 && gap.under === '1'
-          ? null
-          : `${String(gap.gap)}px between them, and under the middle of it: ${String(gap.under)}`,
+        gap.gap > 0 && gap.under === '1' ? null : `${String(gap.gap)}px between them, and under the middle of it: ${String(gap.under)}`,
       )
 
       await dragInto(page, country.locator('label').first(), gap.point)
@@ -122,9 +118,7 @@ export async function checkArrangeGaps(browser, url, check) {
       )
       check(
         `${renderer}: a field dropped there lands between them, not above or below the section`,
-        drawn.join() === 'firstName,lastName,email,country,phone'
-          ? null
-          : `the section draws ${drawn.join(', ')}`,
+        drawn.join() === 'firstName,lastName,email,country,phone' ? null : `the section draws ${drawn.join(', ')}`,
       )
 
       // A drop redraws the preview — React's in the surface's own render, Angular's after
@@ -157,10 +151,7 @@ export async function checkArrangeGaps(browser, url, check) {
           .first()
           .getAttribute('data-arrangeable', { timeout: 5000 })
           .catch(() => 'nothing names it')
-        check(
-          `${renderer}: ${what} can be picked up`,
-          mark === 'true' ? null : `it carries no mark (${String(mark)})`,
-        )
+        check(`${renderer}: ${what} can be picked up`, mark === 'true' ? null : `it carries no mark (${String(mark)})`)
       }
     } finally {
       await unnamed.page.close()
@@ -179,10 +170,7 @@ export async function checkArrangeGaps(browser, url, check) {
         () => canton.getAttribute('data-arrangeable'),
         (mark) => mark === 'true',
       )
-      check(
-        `${renderer}: a field a rule shows while arranging can be picked up`,
-        marked === 'true' ? null : 'the canton appeared with no mark on it',
-      )
+      check(`${renderer}: a field a rule shows while arranging can be picked up`, marked === 'true' ? null : 'the canton appeared with no mark on it')
     } finally {
       await shown.page.close()
     }
@@ -200,9 +188,7 @@ export async function checkArrangeGaps(browser, url, check) {
 
       check(
         `${renderer}: between two top-level sections there is space, and no node is under it`,
-        gap.gap > 0 && gap.under === null
-          ? null
-          : `${String(gap.gap)}px between them, and under the middle of it: ${String(gap.under)}`,
+        gap.gap > 0 && gap.under === null ? null : `${String(gap.gap)}px between them, and under the middle of it: ${String(gap.under)}`,
       )
 
       await dragInto(page, order, gap.point)
@@ -213,9 +199,7 @@ export async function checkArrangeGaps(browser, url, check) {
       const at = (key) => drawn.indexOf(key)
       check(
         `${renderer}: a section dropped there lands between the two`,
-        at('phone') < at('delivery') && at('delivery') < at('country')
-          ? null
-          : `the form draws ${drawn.slice(0, 12).join(', ')}…`,
+        at('phone') < at('delivery') && at('delivery') < at('country') ? null : `the form draws ${drawn.slice(0, 12).join(', ')}…`,
       )
     } finally {
       await atTop.page.close()

@@ -81,19 +81,16 @@ export const FORM_WORDS_FR = {
 
   'tabs.unnamed': 'Onglet {position}',
 
-  'options.unavailable':
-    'Les réponses de ce champ proviennent de « {source} », que cette application ne fournit pas.',
+  'options.unavailable': 'Les réponses de ce champ proviennent de « {source} », que cette application ne fournit pas.',
   'options.failed': 'Les options n’ont pas pu être chargées. Tapez pour réessayer.',
-  'options.failedListed':
-    'Les options n’ont pas pu être chargées. Elles sont redemandées chaque fois que vous revenez à ce champ.',
+  'options.failedListed': 'Les options n’ont pas pu être chargées. Elles sont redemandées chaque fois que vous revenez à ce champ.',
   'options.failedTicks': 'Les options n’ont pas pu être chargées.',
   'options.retry': 'Réessayer',
   'options.tooShort': {
     one: 'Tapez au moins {count} caractère pour rechercher.',
     other: 'Tapez au moins {count} caractères pour rechercher.',
   },
-  'options.searchOnly':
-    'Les réponses de ce champ se trouvent par une recherche, que cette liste ne permet pas.',
+  'options.searchOnly': 'Les réponses de ce champ se trouvent par une recherche, que cette liste ne permet pas.',
   'options.searching': 'Recherche…',
   'options.capped': 'Affichage des {shown} premiers sur {total} — continuez à taper pour affiner.',
   'options.cappedListed': {
@@ -126,8 +123,7 @@ export const FORM_WORDS_FR = {
   'ranking.remove': 'Retirer {option} du classement',
   'ranking.rank': 'Classer {option}',
 
-  'file.unavailable':
-    'Ce formulaire ne peut pas accepter de fichiers ici, car aucune destination de téléversement n’a été configurée.',
+  'file.unavailable': 'Ce formulaire ne peut pas accepter de fichiers ici, car aucune destination de téléversement n’a été configurée.',
   'file.up': 'Monter {name}, {position} sur {count}',
   'file.down': 'Descendre {name}, {position} sur {count}',
   'file.remove': 'Retirer {name}',
@@ -147,8 +143,7 @@ export const FORM_WORDS_FR = {
 
   'scanner.scan': 'Scanner',
   'scanner.scanning': 'Scan en cours…',
-  'scanner.noText':
-    'Le scan n’a pas fonctionné : le scanner n’a pas renvoyé de texte. Saisissez plutôt la valeur.',
+  'scanner.noText': 'Le scan n’a pas fonctionné : le scanner n’a pas renvoyé de texte. Saisissez plutôt la valeur.',
   'scanner.failed': 'Le scan n’a pas fonctionné : {reason}. Saisissez plutôt la valeur.',
 
   'richtext.toolbar': 'Mise en forme de {label}',
@@ -163,8 +158,7 @@ export const FORM_WORDS_FR = {
   'signature.clear': 'Effacer',
 
   'resume.heading': 'Ce formulaire a changé pendant votre absence',
-  'resume.breaking.kept':
-    'Il a trop changé pour que vos réponses soient reprises ; il est donc affiché tel que vous l’avez laissé.',
+  'resume.breaking.kept': 'Il a trop changé pour que vos réponses soient reprises ; il est donc affiché tel que vous l’avez laissé.',
   'resume.breaking.cannotSubmit': 'Il ne peut pas être envoyé.',
   'resume.breaking.restart': 'Recommencer vous donnera le formulaire actuel.',
   'resume.setAside': {

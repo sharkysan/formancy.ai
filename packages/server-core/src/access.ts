@@ -8,11 +8,7 @@ import type { FormRecord } from './ports.js'
  * absent refuses, because absent is not the same as allowed; an empty
  * allowlist refuses everything, because a list of no origins is a list.
  */
-export function maySubmit(
-  form: FormRecord,
-  actor: 'anonymous' | 'authenticated',
-  origin: string | undefined,
-): boolean {
+export function maySubmit(form: FormRecord, actor: 'anonymous' | 'authenticated', origin: string | undefined): boolean {
   if (actor === 'authenticated') return true
   if (form.accessSubmit !== 'public') return false
 

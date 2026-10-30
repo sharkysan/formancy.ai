@@ -14,16 +14,23 @@
     "build:web": "node scripts/build-web.mjs",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
-    "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck && tsc --noEmit -p tsconfig.tools.json",
+    "lint": "eslint .",
     "check:pkg": "turbo run check:pkg",
     "test:e2e:install": "node scripts/install-test.mjs",
     "test:browser": "node scripts/browser-test.mjs",
-    "test:e2e:angular": "node scripts/angular-install-test.mjs"
+    "test:e2e:angular": "node scripts/angular-install-test.mjs",
+    "format": "prettier --write --log-level warn --ignore-path .gitignore --ignore-path .prettierignore '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'",
+    "format:check": "prettier --check --log-level warn --ignore-path .gitignore --ignore-path .prettierignore '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'"
   },
   "devDependencies": {
+    "@formancy/code-style": "workspace:*",
+    "@types/node": "^22.10.0",
+    "eslint": "catalog:",
     "playwright": "catalog:",
+    "prettier": "catalog:",
     "turbo": "^2.11.2",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -27,6 +27,6 @@ export function useBuilder(session: BuilderSession): BuilderView {
   )
 
   // revision is the dependency that matters; session is stable for its life.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- revision is how the memo learns the session changed; the rule sees it unread
   return useMemo(() => builderView(session), [session, revision])
 }

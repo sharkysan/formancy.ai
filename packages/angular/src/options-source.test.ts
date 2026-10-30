@@ -4,11 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/angular'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import axe from 'axe-core'
-import {
-  ACCESSIBILITY_EXCLUSIONS,
-  ACCESSIBILITY_TAGS,
-  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
-} from '@formancy/conformance'
+import { ACCESSIBILITY_EXCLUSIONS, ACCESSIBILITY_TAGS, ACCESSIBILITY_UNMEASURABLE_IN_JSDOM } from '@formancy/conformance'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { createFormText } from '@formancy/core/words'
@@ -36,10 +32,7 @@ const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
  * be two forms from one source (0177). These cases hold the binding to them: that it
  * asks, holds and resets as they assume, and passes them what is true of the control.
  */
-function schema(
-  widget?: 'typeahead',
-  { before = [], rules }: { before?: unknown[]; rules?: unknown[] } = {},
-): FormSchema {
+function schema(widget?: 'typeahead', { before = [], rules }: { before?: unknown[]; rules?: unknown[] } = {}): FormSchema {
   return {
     specVersion: '2',
     id: 'sourced',
@@ -75,11 +68,7 @@ const answering = (rows = CANTONS): { sources: OptionsSources; asked: OptionsReq
         debounceMs: 0,
         resolve: (request) => {
           asked.push(request)
-          return Promise.resolve(
-            request.kind === 'labels'
-              ? rows.filter((row) => request.values.includes(row.value))
-              : rows,
-          )
+          return Promise.resolve(request.kind === 'labels' ? rows.filter((row) => request.values.includes(row.value)) : rows)
         },
       },
     },
@@ -109,11 +98,7 @@ async function mount({
     ...(locale === undefined ? {} : { locale }),
   })
   const view = await render(FormancyForm, {
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine),
-      ...(sources === undefined ? [] : [provideFormancyOptionsSources(sources)]),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(sources === undefined ? [] : [provideFormancyOptionsSources(sources)])],
   })
   await view.fixture.whenStable()
   return { engine, settle: () => view.fixture.whenStable() }
@@ -158,12 +143,8 @@ describe('a select whose options come from a source', () => {
     const { sources } = answering()
     const { settle } = await mount({ sources })
 
-    await until(settle, () => {expect(screen.getAllByRole('option').map((option) => option.textContent?.trim())).toEqual([
-        '',
-        'Zürich',
-        'Bern',
-        'Vaud',
-      ])
+    await until(settle, () => {
+      expect(screen.getAllByRole('option').map((option) => option.textContent?.trim())).toEqual(['', 'Zürich', 'Bern', 'Vaud'])
     })
   })
 
@@ -181,7 +162,8 @@ describe('a select whose options come from a source', () => {
     const { sources } = answering()
     const { engine, settle } = await mount({ sources })
 
-    await until(settle, () => {expect(screen.getAllByRole('option')).toHaveLength(4)
+    await until(settle, () => {
+      expect(screen.getAllByRole('option')).toHaveLength(4)
     })
     fireEvent.change(screen.getByRole('combobox', { name: 'Canton' }), { target: { value: 'BE' } })
     await settle()
@@ -193,7 +175,8 @@ describe('a select whose options come from a source', () => {
     const { sources } = answering([{ value: 'ZH', label: 'Zürich' }, { value: 'BE' }] as never)
     const { settle } = await mount({ sources })
 
-    await until(settle, () => {expect(screen.getByText(/could not be loaded/)).toBeDefined()
+    await until(settle, () => {
+      expect(screen.getByText(/could not be loaded/)).toBeDefined()
     })
     expect(screen.getAllByRole('option')).toHaveLength(1)
   })
@@ -203,11 +186,10 @@ describe('a select whose options come from a source', () => {
       sources: { cantons: { debounceMs: 0, resolve: () => Promise.reject(new Error('down')) } },
     })
 
-    await until(settle, () => {expect(screen.getByText(/The options could not be loaded/)).toBeDefined()
+    await until(settle, () => {
+      expect(screen.getByText(/The options could not be loaded/)).toBeDefined()
     })
-    const field = screen
-      .getByRole('combobox', { name: 'Canton' })
-      .closest('[data-formancy-part="field"]')
+    const field = screen.getByRole('combobox', { name: 'Canton' }).closest('[data-formancy-part="field"]')
     expect(field?.querySelector('[data-formancy-part="error"]')).toBeNull()
   })
 
@@ -235,7 +217,8 @@ describe('a typeahead whose options come from a source', () => {
     await waitFor(() => {
       expect(asked.some((request) => request.query === 'ber')).toBe(true)
     })
-    await until(settle, () => {expect(screen.getAllByRole('option')).toHaveLength(3)
+    await until(settle, () => {
+      expect(screen.getAllByRole('option')).toHaveLength(3)
     })
   })
 
@@ -249,7 +232,8 @@ describe('a typeahead whose options come from a source', () => {
     fireEvent.input(box, { target: { value: 'z' } })
     await settle()
 
-    await until(settle, () => {expect(box.getAttribute('aria-busy')).toBe('true')
+    await until(settle, () => {
+      expect(box.getAttribute('aria-busy')).toBe('true')
     })
     expect(box).toHaveProperty('disabled', false)
   })
@@ -267,7 +251,8 @@ describe('a typeahead whose options come from a source', () => {
     fireEvent.input(screen.getByRole('combobox', { name: 'Canton' }), { target: { value: 'r' } })
     await settle()
 
-    await until(settle, () => {expect(screen.getByText(/Showing the first 5 of 12/)).toBeDefined()
+    await until(settle, () => {
+      expect(screen.getByText(/Showing the first 5 of 12/)).toBeDefined()
     })
   })
 
@@ -279,7 +264,8 @@ describe('a typeahead whose options come from a source', () => {
     fireEvent.input(screen.getByRole('combobox', { name: 'Canton' }), { target: { value: 'be' } })
     await settle()
 
-    await until(settle, () => {expect(screen.getByText(/Type at least 3 characters/)).toBeDefined()
+    await until(settle, () => {
+      expect(screen.getByText(/Type at least 3 characters/)).toBeDefined()
     })
     expect(asked.filter((request) => request.kind === 'search')).toHaveLength(0)
   })
@@ -415,10 +401,7 @@ function deferred(extra: { maxRows?: number; minQueryLength?: number } = {}) {
 }
 
 /** Each answer by what was asked, so a case reads as the conversation it is. */
-const by = (
-  answers: (request: OptionsRequest) => unknown,
-  extra: { maxRows?: number; minQueryLength?: number } = {},
-) => {
+const by = (answers: (request: OptionsRequest) => unknown, extra: { maxRows?: number; minQueryLength?: number } = {}) => {
   const asked: OptionsRequest[] = []
   const sources: OptionsSources = {
     cantons: {
@@ -437,7 +420,7 @@ const by = (
 const en = createFormText({ locale: '' })
 
 const status = (): string => screen.getByRole('status').textContent?.trim() ?? ''
-const box = (): HTMLInputElement => screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement
+const box = (): HTMLInputElement => screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' })
 const pause = (ms = 50): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
 const ZUG = { value: 'ZG', label: 'Zug' }
@@ -549,9 +532,7 @@ describe('a typeahead over a source that pages', () => {
     // row the source does not have. While more rows match, the withheld count covers one
     // page and is a lower bound, which nobody should be told as a number.
     const { sources } = by((request) =>
-      request.query === 'zu'
-        ? { options: [ZUG], more: false, withheld: 1 }
-        : { options: CANTONS.slice(0, 2), more: true, withheld: 3 },
+      request.query === 'zu' ? { options: [ZUG], more: false, withheld: 1 } : { options: CANTONS.slice(0, 2), more: true, withheld: 3 },
     )
     const { settle } = await mount({ widget: 'typeahead', sources })
 
@@ -572,11 +553,7 @@ describe('a typeahead over a source that pages', () => {
     // The failure this prevents: a misspelt `moer: true`, or a `total` read as nothing,
     // would show a cut list as complete. The same page without the key is a list, so the
     // refusal is the key's and not every page's.
-    const { sources } = by((request) =>
-      request.query === 'zu'
-        ? { options: [ZUG], more: false, total: 40 }
-        : { options: [ZUG], more: false },
-    )
+    const { sources } = by((request) => (request.query === 'zu' ? { options: [ZUG], more: false, total: 40 } : { options: [ZUG], more: false }))
     const { settle } = await mount({ widget: 'typeahead', sources })
 
     fireEvent.input(box(), { target: { value: 'zu' } })

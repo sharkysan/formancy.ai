@@ -36,17 +36,14 @@ describe('the Codecov configuration', () => {
      * thing that has happened here: prose written into the generated spec
      * reference was overwritten by the next build and the change looked merged.
      */
-    expect(
-      committed(),
-      'codecov.yml is not what the generator produces; run `node scripts/codecov-config.mjs --write`',
-    ).toBe(codecovConfig())
+    expect(committed(), 'codecov.yml is not what the generator produces; run `node scripts/codecov-config.mjs --write`').toBe(codecovConfig())
   })
 
   test('declares a component for every package that measures coverage, and for no others', () => {
     // Stated directly rather than left to the case above, because the message is
     // the point: this one names the package. The two sides are independent — the
     // manifests on disk against the file on disk.
-    const declared = [...committed().matchAll(/^      name: (\S+)$/gm)].map((match) => match[1])
+    const declared = [...committed().matchAll(/^ {6}name: (\S+)$/gm)].map((match) => match[1])
 
     expect(declared).toEqual(coveredPackages().map((pkg) => pkg.path))
     expect(declared.length).toBeGreaterThan(10)

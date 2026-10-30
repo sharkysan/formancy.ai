@@ -35,20 +35,21 @@ describeConformance(() => createReactDriver(), {
 describe('the React driver', () => {
   test('mounts in the locale it is given, not the document default', async () => {
     const driver = createReactDriver()
-    await driver.mount({
-      specVersion: '1',
-      id: 'mounted',
-      title: 'Mounted',
-      model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
-      i18n: { defaultLocale: 'en', messages: { en: { email: 'Email address' }, de: { email: 'E-Mail-Adresse' } } },
-    } as never, { locale: 'de' })
+    await driver.mount(
+      {
+        specVersion: '1',
+        id: 'mounted',
+        title: 'Mounted',
+        model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
+        i18n: { defaultLocale: 'en', messages: { en: { email: 'Email address' }, de: { email: 'E-Mail-Adresse' } } },
+      } as never,
+      { locale: 'de' },
+    )
 
     // Read off the document, not through the driver: the driver resolving the
     // name is exactly the thing that cannot be trusted to report on itself.
     const text = document.body.textContent ?? ''
-    expect(text, 'the page is in the document default, so the locale was dropped').toContain(
-      'E-Mail-Adresse',
-    )
+    expect(text, 'the page is in the document default, so the locale was dropped').toContain('E-Mail-Adresse')
     expect(text).not.toContain('Email address')
 
     await driver.unmount?.()

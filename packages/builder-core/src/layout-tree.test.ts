@@ -70,7 +70,13 @@ describe('flattenLayout', () => {
             {
               kind: 'section',
               children: [
-                { kind: 'row', children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'last' }] },
+                {
+                  kind: 'row',
+                  children: [
+                    { kind: 'field', path: 'first' },
+                    { kind: 'field', path: 'last' },
+                  ],
+                },
                 { kind: 'field', path: 'contact.email' },
               ],
             },
@@ -121,9 +127,7 @@ describe('describeLayoutTarget', () => {
   })
 
   test('the end of a container says after, not between', () => {
-    expect(describeLayoutTarget(schema(), { layout: 'web', parent: [0, 0], index: 2 })).toContain(
-      'after Last name',
-    )
+    expect(describeLayoutTarget(schema(), { layout: 'web', parent: [0, 0], index: 2 })).toContain('after Last name')
   })
 
   test('an empty container says so', () => {
@@ -132,9 +136,7 @@ describe('describeLayoutTarget', () => {
       layouts: [{ name: 'web', nodes: [{ kind: 'row', children: [] }] }],
     }
 
-    expect(describeLayoutTarget(empty, { layout: 'web', parent: [0], index: 0 })).toBe(
-      'Empty row, as its first item',
-    )
+    expect(describeLayoutTarget(empty, { layout: 'web', parent: [0], index: 0 })).toBe('Empty row, as its first item')
   })
 
   test('a move excludes the traveller, so it does not name itself as a neighbour', () => {

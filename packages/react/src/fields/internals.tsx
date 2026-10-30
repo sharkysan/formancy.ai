@@ -8,7 +8,6 @@ import { useFormEngine, useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import type { FieldBinding } from '../use-field.js'
 
-
 /**
  * The pieces every control shares: the shell it renders inside, the prop shapes, and the few helpers more than one of them needs.
  *
@@ -91,17 +90,7 @@ export function ErrorText({ field }: { field: FieldBinding }) {
 
 /** Shared unstyled shell: real label, control, error text as the describedby
  *  target. Zero CSS; `data-formancy-part` is the styling hook. */
-export function FieldShell({
-  path,
-  field,
-  label,
-  children,
-}: {
-  path: string
-  field: FieldBinding
-  label: string
-  children: ReactNode
-}) {
+export function FieldShell({ path, field, label, children }: { path: string; field: FieldBinding; label: string; children: ReactNode }) {
   return (
     <div
       data-formancy-part="field"
@@ -243,13 +232,14 @@ export interface ResolvedOption {
 export function useResolvedOptions(field: { def: FieldDef; optionOrder?: readonly string[] | undefined }): ResolvedOption[] {
   const engine = useFormEngine()
   // In the order the engine chose for a shuffled field, and as written otherwise (0200).
-  return inOptionOrder((field.def.options ?? []).map((option) => ({
-    value: option.value,
-    label: engine.text(option.label) ?? option.value,
-    ...(option.image !== undefined && isImageSource(option.image.src)
-      ? { image: { src: option.image.src, alt: engine.text(option.image.alt) ?? '' } }
-      : {}),
-  })), field.optionOrder)
+  return inOptionOrder(
+    (field.def.options ?? []).map((option) => ({
+      value: option.value,
+      label: engine.text(option.label) ?? option.value,
+      ...(option.image !== undefined && isImageSource(option.image.src) ? { image: { src: option.image.src, alt: engine.text(option.image.alt) ?? '' } } : {}),
+    })),
+    field.optionOrder,
+  )
 }
 
 /**
@@ -264,13 +254,7 @@ export function OptionPicture({ option }: { option: ResolvedOption }) {
   // reader would say.
   return (
     <>
-      <img
-        data-formancy-part="option-image"
-        src={option.image.src}
-        alt={option.image.alt}
-        loading="lazy"
-        decoding="async"
-      />{' '}
+      <img data-formancy-part="option-image" src={option.image.src} alt={option.image.alt} loading="lazy" decoding="async" />{' '}
     </>
   )
 }

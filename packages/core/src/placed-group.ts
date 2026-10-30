@@ -31,9 +31,7 @@ export function placedGroup(engine: FormEngine, path: string): PlacedGroup | und
   const repeaters = engine.repeaterPaths().filter(inside)
   return {
     def,
-    fields: engine
-      .fieldPaths()
-      .filter((wire) => inside(wire) && !repeaters.some((repeater) => wire.startsWith(`${repeater}[`))),
+    fields: engine.fieldPaths().filter((wire) => inside(wire) && !repeaters.some((repeater) => wire.startsWith(`${repeater}[`))),
     repeaters,
   }
 }

@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
-import {
-  fetchDeadDeliveries,
-  fetchWebhookHealth,
-  replayDelivery,
-} from './api.js'
+import { fetchDeadDeliveries, fetchWebhookHealth, replayDelivery } from './api.js'
 import type { DeadDeliveryEntry, WebhookHealthEntry } from './api.js'
 
 /**
@@ -139,13 +135,11 @@ export function WebhooksPane(): ReactElement {
                   {replayed.has(delivery.id) ? (
                     // Marked rather than removed: a list that shrinks as you
                     // work leaves you unsure which one you pressed.
-                    <span className="wb-state" data-state="closed">Queued again</span>
+                    <span className="wb-state" data-state="closed">
+                      Queued again
+                    </span>
                   ) : (
-                    <button
-                      type="button"
-                      disabled={busy === delivery.id}
-                      onClick={() => void replay(delivery.id)}
-                    >
+                    <button type="button" disabled={busy === delivery.id} onClick={() => void replay(delivery.id)}>
                       {busy === delivery.id ? 'Sending…' : `Replay ${delivery.submissionId.slice(0, 8)}`}
                     </button>
                   )}
@@ -165,4 +159,3 @@ const LABELS: Readonly<Record<WebhookHealthEntry['state'], string>> = {
   'half-open': 'Trying again',
   open: 'Not delivering',
 }
-

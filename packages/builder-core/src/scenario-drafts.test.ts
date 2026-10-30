@@ -4,15 +4,7 @@ import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import type { AskModel, AuthoringPrompt } from './answers.js'
 import { createBuilderText } from './messages.js'
-import {
-  draftExpectations,
-  draftProblems,
-  draftQuotes,
-  draftScenarios,
-  draftStatus,
-  draftVerdict,
-  keepDraft,
-} from './scenario-drafts.js'
+import { draftExpectations, draftProblems, draftQuotes, draftScenarios, draftStatus, draftVerdict, keepDraft } from './scenario-drafts.js'
 import type { DraftProblem, Drafted, UnusableDraft, UnusableReason } from './scenario-drafts.js'
 import { scenarioComplaint, scenarioPrompt } from './scenario-prompt.js'
 
@@ -95,12 +87,12 @@ describe('drafting examples', () => {
     // A model that wrote two good examples and two it got wrong has written two good
     // examples. Reading the answer as one document threw all four away and asked again.
     const { ask, asked } = model(
-      answer(
-        ASKS_FOR_A_CANTON,
-        { changes: {}, valid: true },
-        GERMANY_DOES_NOT,
-        { name: 'With a stranger', changes: {}, valid: true, expected: { canton: 'Bern' } },
-      ),
+      answer(ASKS_FOR_A_CANTON, { changes: {}, valid: true }, GERMANY_DOES_NOT, {
+        name: 'With a stranger',
+        changes: {},
+        valid: true,
+        expected: { canton: 'Bern' },
+      }),
     )
 
     const drafted = await draftScenarios(ask, FORM, 'Only Switzerland asks for a canton.')
@@ -154,12 +146,7 @@ describe('drafting examples', () => {
   test('an answer with no list, an empty one, or a decline with no reason is asked again, and told which', async () => {
     // Each is an answer with nothing to keep, and each needs its own complaint: told only
     // "nothing was usable", a model that wrote `{"examples": […]}` writes it again.
-    const { ask, asked } = model(
-      JSON.stringify({ examples: [GERMANY_DOES_NOT] }),
-      answer(),
-      JSON.stringify({ declined: '' }),
-      answer(GERMANY_DOES_NOT),
-    )
+    const { ask, asked } = model(JSON.stringify({ examples: [GERMANY_DOES_NOT] }), answer(), JSON.stringify({ declined: '' }), answer(GERMANY_DOES_NOT))
 
     const drafted = await draftScenarios(ask, FORM, 'anything', { attempts: 4 })
 
@@ -183,9 +170,7 @@ describe('drafting examples', () => {
   test('a name already taken, or repeated in the answer, is not an example', async () => {
     // Kept, the second of two examples with one name would make the panel's results
     // ambiguous: a scenario's name is how its result is found.
-    const { ask } = model(
-      answer({ ...GERMANY_DOES_NOT, name: ASKS_FOR_A_CANTON.name }, GERMANY_DOES_NOT, GERMANY_DOES_NOT),
-    )
+    const { ask } = model(answer({ ...GERMANY_DOES_NOT, name: ASKS_FOR_A_CANTON.name }, GERMANY_DOES_NOT, GERMANY_DOES_NOT))
 
     const drafted = await draftScenarios(ask, FORM, 'anything', { existing: [ASKS_FOR_A_CANTON] })
 
@@ -283,7 +268,10 @@ describe('what may be kept', () => {
     ]
 
     for (const draft of stillThere) {
-      expect(draftVerdict(nested, draft).failures.map((failure) => failure.about), draft.name).toEqual(['absent'])
+      expect(
+        draftVerdict(nested, draft).failures.map((failure) => failure.about),
+        draft.name,
+      ).toEqual(['absent'])
     }
   })
 
@@ -383,18 +371,13 @@ describe('what the drafting part says', () => {
       ended: how,
       ...(reason === undefined ? {} : { reason }),
     })
-    const say = (result: Drafted | undefined, note?: Parameters<typeof draftStatus>[0]['note']) =>
-      draftStatus({ busy: false, result, note }, text)
+    const say = (result: Drafted | undefined, note?: Parameters<typeof draftStatus>[0]['note']) => draftStatus({ busy: false, result, note }, text)
 
-    expect(draftStatus({ busy: true, result: undefined, note: undefined }, text)).toBe(
-      'Drafting examples, and reading them.',
-    )
+    expect(draftStatus({ busy: true, result: undefined, note: undefined }, text)).toBe('Drafting examples, and reading them.')
     expect(say(undefined)).toBe('')
     expect(say(ended('stopped'))).toBe('Stopped. Nothing was drafted.')
     expect(say(ended('declined', 'No.'))).toBe('Nothing was drafted. The model declined this request.')
-    expect(say(ended('unreachable', 'offline'))).toBe(
-      'Nothing was drafted. The model could not be reached: offline',
-    )
+    expect(say(ended('unreachable', 'offline'))).toBe('Nothing was drafted. The model could not be reached: offline')
     expect(say(ended('unreachable'))).toBe('Nothing was drafted. The model could not be reached.')
     // Not unreachable: nothing was asked, because another request is waiting for the
     // model — through the playground's one relay, a model's edit.
@@ -403,9 +386,7 @@ describe('what the drafting part says', () => {
     expect(say(ended('gave-up'))).toContain('3 attempts')
     expect(say(ready, { kind: 'kept', name: 'a' })).toBe('Kept a. It is in the list of scenarios now.')
     expect(say(ready, { kind: 'discarded', name: 'a' })).toBe('Discarded a.')
-    expect(say(ready, { kind: 'refused', why: 'name-taken', name: 'a' })).toBe(
-      'Not kept: there is already a scenario called a.',
-    )
+    expect(say(ready, { kind: 'refused', why: 'name-taken', name: 'a' })).toBe('Not kept: there is already a scenario called a.')
   })
 
   test('words every problem a last answer can have, and lists nothing for a run that did not give up', () => {
@@ -420,15 +401,9 @@ describe('what the drafting part says', () => {
     })
 
     expect(draftProblems(gaveUp({ kind: 'not-json' }), text)).toEqual(['The last answer held no JSON object.'])
-    expect(draftProblems(gaveUp({ kind: 'unexplained-decline' }), text)).toEqual([
-      'The last answer declined without saying why.',
-    ])
-    expect(draftProblems(gaveUp({ kind: 'none-usable', unusable: [] }), text)).toEqual([
-      'The last answer’s list of examples was empty.',
-    ])
-    expect(
-      draftProblems(gaveUp({ kind: 'none-usable', unusable: [{ position: 1, name: 'x', reason: 'no-changes' }] }), text),
-    ).toEqual(['x sets no answers.'])
+    expect(draftProblems(gaveUp({ kind: 'unexplained-decline' }), text)).toEqual(['The last answer declined without saying why.'])
+    expect(draftProblems(gaveUp({ kind: 'none-usable', unusable: [] }), text)).toEqual(['The last answer’s list of examples was empty.'])
+    expect(draftProblems(gaveUp({ kind: 'none-usable', unusable: [{ position: 1, name: 'x', reason: 'no-changes' }] }), text)).toEqual(['x sets no answers.'])
     const stopped: Drafted = {
       ok: false,
       attempts: 1,

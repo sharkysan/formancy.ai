@@ -124,8 +124,7 @@ describe('a group holds an object', () => {
       fields: [{ key: 'where', type: 'group', fields: [{ key: 'room', type: 'text' }] }],
     },
   ])
-  const errorsOf = (initialValue: Record<string, unknown>): Record<string, string[]> =>
-    createFormEngine({ schema, initialValue }).validate().errors
+  const errorsOf = (initialValue: Record<string, unknown>): Record<string, string[]> => createFormEngine({ schema, initialValue }).validate().errors
 
   // A group is not a field the engine visits, so its own value was checked by nothing: a
   // string posted where the object belongs was stored, and every reader of `address.street`
@@ -188,15 +187,17 @@ describe('a field a rule hides and keeps still has its shape', () => {
   })
 
   test('so is a repeater that keeps something other than rows', () => {
-    expect(
-      kept([{ key: 'items', type: 'repeater', clearOnHide: false, fields: [{ key: 'qty', type: 'number' }] }], { items: 'rows' }),
-    ).toEqual({ ok: false, errors: { items: ['type'] } })
+    expect(kept([{ key: 'items', type: 'repeater', clearOnHide: false, fields: [{ key: 'qty', type: 'number' }] }], { items: 'rows' })).toEqual({
+      ok: false,
+      errors: { items: ['type'] },
+    })
   })
 
   test('and a field inside a group a rule hid', () => {
-    expect(
-      kept([{ key: 'address', type: 'group', clearOnHide: false, fields: [{ key: 'zip', type: 'number' }] }], { address: { zip: '8000' } }),
-    ).toEqual({ ok: false, errors: { 'address.zip': ['type'] } })
+    expect(kept([{ key: 'address', type: 'group', clearOnHide: false, fields: [{ key: 'zip', type: 'number' }] }], { address: { zip: '8000' } })).toEqual({
+      ok: false,
+      errors: { 'address.zip': ['type'] },
+    })
   })
 })
 
@@ -233,10 +234,7 @@ describe('a computed value is stored only in the shape of the field it fills', (
   // `JSON.stringify` on the form's value threw "Do not know how to serialize a BigInt" — a
   // documented money calculation that could not be submitted.
   test('a decimal into a number field is stored as the number it writes', () => {
-    const schema = schemaOf(
-      [{ key: 'total', type: 'number' }],
-      [{ kind: 'computed', target: 'total', cel: 'dec("19.90") * dec("2")' }],
-    )
+    const schema = schemaOf([{ key: 'total', type: 'number' }], [{ kind: 'computed', target: 'total', cel: 'dec("19.90") * dec("2")' }])
     const engine = createFormEngine({ schema, capabilities })
     expect(engine.value()).toEqual({ total: 39.8 })
     expect(JSON.stringify(engine.value())).toBe('{"total":39.8}')
@@ -246,17 +244,23 @@ describe('a computed value is stored only in the shape of the field it fills', (
   // than rounded, because a money total that is off by a cent is the reason the decimal
   // type exists.
   test('a decimal no number holds exactly is not written', () => {
-    const schema = schemaOf(
-      [{ key: 'total', type: 'number' }],
-      [{ kind: 'computed', target: 'total', cel: 'dec("1234567890.123456789")' }],
-    )
+    const schema = schemaOf([{ key: 'total', type: 'number' }], [{ kind: 'computed', target: 'total', cel: 'dec("1234567890.123456789")' }])
     const engine = createFormEngine({ schema, capabilities })
     expect(engine.value()).toEqual({})
   })
 
   test('the same holds in every row', () => {
     const schema = schemaOf(
-      [{ key: 'items', type: 'repeater', fields: [{ key: 'note', type: 'text' }, { key: 'total', type: 'number' }] }],
+      [
+        {
+          key: 'items',
+          type: 'repeater',
+          fields: [
+            { key: 'note', type: 'text' },
+            { key: 'total', type: 'number' },
+          ],
+        },
+      ],
       [
         { kind: 'computed', target: 'items[].note', cel: '1.0' },
         { kind: 'computed', target: 'items[].total', cel: 'dec("2.50")' },

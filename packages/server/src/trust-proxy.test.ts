@@ -26,12 +26,7 @@ describe('FORMANCY_TRUST_PROXY', () => {
     // a range is the ordinary case rather than an exotic one; the spaces are
     // what a person types after a comma.
     expect(trustProxyFrom('10.0.0.2')).toEqual(['10.0.0.2'])
-    expect(trustProxyFrom('10.0.0.2, 172.18.0.0/16,::1 , fd00::/8')).toEqual([
-      '10.0.0.2',
-      '172.18.0.0/16',
-      '::1',
-      'fd00::/8',
-    ])
+    expect(trustProxyFrom('10.0.0.2, 172.18.0.0/16,::1 , fd00::/8')).toEqual(['10.0.0.2', '172.18.0.0/16', '::1', 'fd00::/8'])
   })
 
   test('accepts nothing Fastify would then refuse to start with', () => {

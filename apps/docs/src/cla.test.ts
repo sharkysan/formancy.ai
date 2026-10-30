@@ -101,9 +101,7 @@ describe('who the gate stops', () => {
   const record = readRecord(repo, oneSignatory())
 
   test('an author nobody has a signature for', () => {
-    expect(unsigned({ authors: ['stranger@example.com'], record, hash: current })).toEqual([
-      { email: 'stranger@example.com', reason: 'unsigned' },
-    ])
+    expect(unsigned({ authors: ['stranger@example.com'], record, hash: current })).toEqual([{ email: 'stranger@example.com', reason: 'unsigned' }])
   })
 
   test('and not one who signed, which is the half that makes it usable', () => {
@@ -119,9 +117,7 @@ describe('who the gate stops', () => {
      * terms moved under you, read them again". Collapsing them into one message
      * would tell somebody who has already signed that they have not.
      */
-    expect(unsigned({ authors: ['a@example.com'], record, hash: 'sha256:0000' })).toEqual([
-      { email: 'a@example.com', reason: 'stale' },
-    ])
+    expect(unsigned({ authors: ['a@example.com'], record, hash: 'sha256:0000' })).toEqual([{ email: 'a@example.com', reason: 'stale' }])
   })
 
   test('the same address in different case, because git addresses are not case-sensitive', () => {
@@ -142,9 +138,7 @@ describe('who the gate stops', () => {
     // check is gone; this stays, because the property belongs to the function
     // rather than to the data structure that currently provides it, and
     // collecting into a list instead does fail here.
-    expect(unsigned({ authors: ['x@example.com', 'x@example.com'], record, hash: current })).toEqual([
-      { email: 'x@example.com', reason: 'unsigned' },
-    ])
+    expect(unsigned({ authors: ['x@example.com', 'x@example.com'], record, hash: current })).toEqual([{ email: 'x@example.com', reason: 'unsigned' }])
   })
 })
 

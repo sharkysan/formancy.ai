@@ -49,15 +49,10 @@ export interface ConditionField {
  * "Quantity is at least 3" under a field in the row does not say whose quantity
  * ([0129](../../../docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
  */
-export function conditionFields(
-  document: FormSchema,
-  about?: { target: string; text: BuilderText },
-): ConditionField[] {
+export function conditionFields(document: FormSchema, about?: { target: string; text: BuilderText }): ConditionField[] {
   const locale = document.i18n?.defaultLocale ?? ''
   // `items` for a rule on `items[].note`: the one repeater whose row is in scope.
-  const row = about?.target.includes('[]')
-    ? about.target.slice(0, about.target.indexOf('[]'))
-    : undefined
+  const row = about?.target.includes('[]') ? about.target.slice(0, about.target.indexOf('[]')) : undefined
   const found: ConditionField[] = []
   const walk = (fields: readonly FieldDef[], scope: string, inRow: boolean): void => {
     for (const field of fields) {
@@ -77,8 +72,7 @@ export function conditionFields(
       const name = nameOf(document, field)
       found.push({
         path: `${scope}${field.key}`,
-        label:
-          inRow && about !== undefined ? about.text('logic.field.inRow', { field: name }) : name,
+        label: inRow && about !== undefined ? about.text('logic.field.inRow', { field: name }) : name,
         kind: answerKindOf(field),
         options: (field.options ?? []).map((option) => ({
           value: option.value,
@@ -124,8 +118,7 @@ export interface DraftPlace {
   group?: number
 }
 
-const kindOf = (fields: readonly ConditionField[], path: string): AnswerKind =>
-  fields.find((field) => field.path === path)?.kind ?? 'other'
+const kindOf = (fields: readonly ConditionField[], path: string): AnswerKind => fields.find((field) => field.path === path)?.kind ?? 'other'
 
 /**
  * What a value starts as for a kind of field. Yes, for a checkbox: its control can
@@ -146,11 +139,7 @@ export function emptyDraft(fields: readonly ConditionField[]): ConditionDraft {
 }
 
 /** Another comparison, at the end of the condition or of one of its groups. */
-export function addRow(
-  draft: ConditionDraft,
-  fields: readonly ConditionField[],
-  group?: number,
-): ConditionDraft {
+export function addRow(draft: ConditionDraft, fields: readonly ConditionField[], group?: number): ConditionDraft {
   if (group === undefined) return { ...draft, items: [...draft.items, emptyRow(fields)] }
   return mapGroup(draft, group, (inner) => ({ ...inner, rows: [...inner.rows, emptyRow(fields)] }))
 }
@@ -190,12 +179,7 @@ export function removeFromDraft(draft: ConditionDraft, place: DraftPlace): Condi
  * And it clears the value when the two fields take different kinds of value: a
  * choice's value typed against a number field would be refused at save.
  */
-export function updateRow(
-  draft: ConditionDraft,
-  place: DraftPlace,
-  change: Partial<ConditionRow>,
-  fields: readonly ConditionField[],
-): ConditionDraft {
+export function updateRow(draft: ConditionDraft, place: DraftPlace, change: Partial<ConditionRow>, fields: readonly ConditionField[]): ConditionDraft {
   const next = (row: ConditionRow): ConditionRow => {
     const merged = { ...row, ...change }
     if (change.field === undefined || change.field === row.field) return merged
@@ -216,32 +200,20 @@ export function updateRow(
   }
   return {
     ...draft,
-    items: draft.items.map((item, index) =>
-      index === place.at && !isRowGroup(item) ? next(item) : item,
-    ),
+    items: draft.items.map((item, index) => (index === place.at && !isRowGroup(item) ? next(item) : item)),
   }
 }
 
 /** How the condition, or one of its groups, joins what it holds. */
-export function setJoin(
-  draft: ConditionDraft,
-  join: ConditionGroup['join'],
-  group?: number,
-): ConditionDraft {
+export function setJoin(draft: ConditionDraft, join: ConditionGroup['join'], group?: number): ConditionDraft {
   if (group === undefined) return { ...draft, join }
   return mapGroup(draft, group, (inner) => ({ ...inner, join }))
 }
 
-function mapGroup(
-  draft: ConditionDraft,
-  at: number,
-  change: (group: RowGroup) => RowGroup,
-): ConditionDraft {
+function mapGroup(draft: ConditionDraft, at: number, change: (group: RowGroup) => RowGroup): ConditionDraft {
   return {
     ...draft,
-    items: draft.items.map((item, index) =>
-      index === at && isRowGroup(item) ? change(item) : item,
-    ),
+    items: draft.items.map((item, index) => (index === at && isRowGroup(item) ? change(item) : item)),
   }
 }
 
@@ -258,11 +230,7 @@ export function conditionOf(row: ConditionRow, fields: readonly ConditionField[]
   const answer = kindOf(fields, row.field)
   if (!operatorTakesValue(row.operator)) return { field: row.field, operator: row.operator, answer }
   const value: Condition['value'] =
-    answer === 'number' && row.text.trim() !== '' && !Number.isNaN(Number(row.text))
-      ? Number(row.text)
-      : answer === 'boolean'
-        ? row.text === 'true'
-        : row.text
+    answer === 'number' && row.text.trim() !== '' && !Number.isNaN(Number(row.text)) ? Number(row.text) : answer === 'boolean' ? row.text === 'true' : row.text
   return { field: row.field, operator: row.operator, value, answer }
 }
 
@@ -271,9 +239,7 @@ export function groupOf(draft: ConditionDraft, fields: readonly ConditionField[]
   return {
     join: draft.join,
     conditions: draft.items.map((item) =>
-      isRowGroup(item)
-        ? { join: item.join, conditions: item.rows.map((row) => conditionOf(row, fields)) }
-        : conditionOf(item, fields),
+      isRowGroup(item) ? { join: item.join, conditions: item.rows.map((row) => conditionOf(row, fields)) } : conditionOf(item, fields),
     ),
   }
 }

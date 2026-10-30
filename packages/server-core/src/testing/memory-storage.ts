@@ -1,7 +1,17 @@
 import type { AuditEntry } from '../audit.js'
 import type {
   DeliveryRecord,
-  WebhookRecord, ApiKeyRecord, DraftRecord, ExamplesRecord, FileRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
+  WebhookRecord,
+  ApiKeyRecord,
+  DraftRecord,
+  ExamplesRecord,
+  FileRecord,
+  FormRecord,
+  FormVersionRecord,
+  Storage,
+  SubmissionRecord,
+  UserRecord,
+} from '../ports.js'
 
 /**
  * The in-memory Storage — the second implementation that keeps the port
@@ -72,22 +82,12 @@ export function createMemoryStorage(): Storage {
       if (audit !== undefined) audits.push({ ...audit })
     },
 
-
-    findVersionByHash: async (formId, hash) =>
-      [...versions.values()].find(
-        (version) => version.formId === formId && version.schemaHash === hash,
-      ),
+    findVersionByHash: async (formId, hash) => [...versions.values()].find((version) => version.formId === formId && version.schemaHash === hash),
 
     latestVersionNumber: async (formId) =>
-      Math.max(
-        0,
-        ...[...versions.values()]
-          .filter((version) => version.formId === formId)
-          .map((version) => version.version),
-      ),
+      Math.max(0, ...[...versions.values()].filter((version) => version.formId === formId).map((version) => version.version)),
 
-    webhooksForForm: async (formId) =>
-      [...webhooks.values()].filter((hook) => hook.formId === formId).map((hook) => ({ ...hook })),
+    webhooksForForm: async (formId) => [...webhooks.values()].filter((hook) => hook.formId === formId).map((hook) => ({ ...hook })),
 
     insertWebhook: async (record) => {
       webhooks.set(record.id, { ...record })
@@ -159,9 +159,7 @@ export function createMemoryStorage(): Storage {
     // A claimed file belongs to a submission and is never rubbish, however
     // old. Age is a reason to collect an unclaimed one, never a claimed one.
     abandonedFiles: async (beforeIso) =>
-      [...files.values()]
-        .filter((file) => file.state !== 'claimed' && file.createdAt < beforeIso)
-        .map((file) => ({ ...file })),
+      [...files.values()].filter((file) => file.state !== 'claimed' && file.createdAt < beforeIso).map((file) => ({ ...file })),
 
     deleteFiles: async (ids) => {
       for (const id of ids) files.delete(id)
@@ -218,8 +216,7 @@ export function createMemoryStorage(): Storage {
 
     listSubmissions: async () => [...submissions],
 
-    listSubmissionsByForm: async (formId) =>
-      submissions.filter((record) => record.formId === formId).reverse(),
+    listSubmissionsByForm: async (formId) => submissions.filter((record) => record.formId === formId).reverse(),
 
     // Compared as PostgreSQL compares the columns, a time and then an id, so the two storages page
     // one list the same way.
@@ -232,10 +229,7 @@ export function createMemoryStorage(): Storage {
         .slice(0, limit)
     },
 
-    listVersionsByForm: async (formId) =>
-      [...versions.values()]
-        .filter((version) => version.formId === formId)
-        .sort((a, b) => b.version - a.version),
+    listVersionsByForm: async (formId) => [...versions.values()].filter((version) => version.formId === formId).sort((a, b) => b.version - a.version),
 
     upsertDraft: async (record) => {
       drafts.set(record.formId + ':' + record.id, { ...record })
@@ -247,8 +241,7 @@ export function createMemoryStorage(): Storage {
       users.set(record.id, { ...record })
     },
 
-    getUserByEmail: async (email) =>
-      [...users.values()].find((user) => user.email === email),
+    getUserByEmail: async (email) => [...users.values()].find((user) => user.email === email),
 
     insertApiKey: async (record) => {
       apiKeys.set(record.id, { ...record })
@@ -256,8 +249,7 @@ export function createMemoryStorage(): Storage {
 
     listApiKeys: async () => [...apiKeys.values()].map((key) => ({ ...key })),
 
-    findApiKeysByPrefix: async (prefix) =>
-      [...apiKeys.values()].filter((key) => key.prefix === prefix),
+    findApiKeysByPrefix: async (prefix) => [...apiKeys.values()].filter((key) => key.prefix === prefix),
 
     revokeApiKey: async (id, atIso) => {
       const key = apiKeys.get(id)

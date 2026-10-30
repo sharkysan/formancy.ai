@@ -21,10 +21,7 @@ import { asRecord, describeValue } from './values.js'
  * because the renderers accept both — and insists the reference resolves,
  * because a driver searching for an unresolved id finds nothing.
  */
-export function accessibleNameProblem(
-  label: unknown,
-  messages: ReadonlySet<string> | undefined,
-): string | undefined {
+export function accessibleNameProblem(label: unknown, messages: ReadonlySet<string> | undefined): string | undefined {
   if (typeof label === 'string') {
     return label === '' ? 'needs a non-empty label' : undefined
   }

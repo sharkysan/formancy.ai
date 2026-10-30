@@ -51,10 +51,9 @@ const schema: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
-const engine = () =>
-  createFormEngine({ schema, initialValue: { address: { stops: [{ town: 'Bern' }] } } })
+const engine = () => createFormEngine({ schema, initialValue: { address: { stops: [{ town: 'Bern' }] } } })
 
 describe('a group an arrangement places whole', () => {
   test('draws its fields in the order a form with no arrangement does, then its repeaters', () => {

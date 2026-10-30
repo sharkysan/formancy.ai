@@ -76,9 +76,7 @@ export function optionsStatus(text: FormText, state: OptionsStatusState): string
     case 'more':
       return text(listed ? 'options.moreListed' : 'options.more', { count: left.shown })
     case 'capped':
-      return listed
-        ? text('options.cappedListed', { count: left.shown, total: left.total })
-        : text('options.capped', { shown: left.shown, total: left.total })
+      return listed ? text('options.cappedListed', { count: left.shown, total: left.total }) : text('options.capped', { shown: left.shown, total: left.total })
     case 'withheld':
       return text('options.withheld', { count: left.withheld })
     case 'complete':

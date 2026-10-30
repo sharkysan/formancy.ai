@@ -126,9 +126,7 @@ describe('keeping a form’s examples', () => {
     // The memory storage stands in for the table, whose foreign key refuses a list for no
     // form (`server.integration.test.ts`). A double that accepted it would let a use-case
     // that forgot to look the form up pass every test here.
-    await expect(
-      deps.storage.keepExamples({ formId: 'no-such-form', scenarios: [], sample: null, updatedAt: '2026-10-10T12:00:00Z' }),
-    ).rejects.toThrow()
+    await expect(deps.storage.keepExamples({ formId: 'no-such-form', scenarios: [], sample: null, updatedAt: '2026-10-10T12:00:00Z' })).rejects.toThrow()
     expect(await deps.storage.getExamples('no-such-form')).toBeUndefined()
   })
 

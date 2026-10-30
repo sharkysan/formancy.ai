@@ -33,22 +33,13 @@ export type EvaluationOutcome =
  * half filled in produces evaluation errors constantly, and they are part of
  * the engine's normal control flow rather than an exceptional condition.
  */
-export function evaluate(
-  program: Program,
-  values: Record<string, unknown>,
-  options: EvaluateOptions,
-): EvaluationOutcome {
+export function evaluate(program: Program, values: Record<string, unknown>, options: EvaluateOptions): EvaluationOutcome {
   const compiled = program as CompiledProgram
   const meter = createMeter(resolveBudget(options.budget))
   const pass = { capabilities: options.capabilities, meter }
 
   try {
-    const bound = bindValues(
-      compiled.variables,
-      values,
-      compiled.source,
-      resolveValueLimits(options.valueLimits),
-    )
+    const bound = bindValues(compiled.variables, values, compiled.source, resolveValueLimits(options.valueLimits))
     const raw = compiled.parsed.program.run(meter.measure(bound) as Record<string, unknown>, pass)
     const value = toExpressionValue(raw, compiled.source)
 
@@ -64,7 +55,7 @@ export function evaluate(
   }
 }
 
-function resolveBudget(overrides?: Partial<EvaluationBudget> | undefined): EvaluationBudget {
+function resolveBudget(overrides?: Partial<EvaluationBudget>): EvaluationBudget {
   if (overrides === undefined) return DEFAULT_BUDGET
   return {
     maxSteps: overrides.maxSteps ?? DEFAULT_BUDGET.maxSteps,

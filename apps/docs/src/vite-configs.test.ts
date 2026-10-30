@@ -70,6 +70,7 @@ const configs = packageDirectories()
 async function saidWhileLoading(config: string): Promise<string[]> {
   const said: string[] = []
   const record = (message: string): void => {
+    // eslint-disable-next-line no-control-regex -- the escape character is what is being matched
     said.push(message.replace(/\u001b\[[0-9;]*m/g, ''))
   }
   const quiet = createLogger('warn')
@@ -101,7 +102,11 @@ describe('every Vite and Vitest config', () => {
 
   // Each loads in well under a second here; the bound is for a load that hangs, on a busy
   // runner, not a budget.
-  test.each(configs)('%s loads with nothing for Vite to say', async (config) => {
-    expect(await saidWhileLoading(config)).toEqual([])
-  }, 30_000)
+  test.each(configs)(
+    '%s loads with nothing for Vite to say',
+    async (config) => {
+      expect(await saidWhileLoading(config)).toEqual([])
+    },
+    30_000,
+  )
 })

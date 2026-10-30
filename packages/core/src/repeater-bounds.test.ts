@@ -124,9 +124,7 @@ describe('a required repeater needs a row', () => {
 
   test('a required rule aimed at the repeater requires a row while it holds', () => {
     // The rule was evaluated, set the repeater's wire required, and nothing read it.
-    const schema = feeForm({}, [{ target: 'fees', kind: 'required', cel: 'charged == true' }], {}, [
-      { key: 'charged', type: 'checkbox', label: 'Charged' },
-    ])
+    const schema = feeForm({}, [{ target: 'fees', kind: 'required', cel: 'charged == true' }], {}, [{ key: 'charged', type: 'checkbox', label: 'Charged' }])
     expect(replay(schema, { charged: true })).toEqual({ ok: false, errors: { fees: ['required'] } })
     expect(replay(schema, { charged: false })).toEqual({ ok: true, errors: {} })
   })

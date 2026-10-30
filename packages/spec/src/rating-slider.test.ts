@@ -1,11 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { CURRENT_SPEC_VERSION, SPEC_VERSIONS } from './types.js'
-import {
-  FIELD_WIDGETS,
-  SPEC_3_WIDGETS,
-  SPEC_4_WIDGETS,
-  WIDGETS_BY_FIELD_TYPE,
-} from './widgets.js'
+import { FIELD_WIDGETS, SPEC_3_WIDGETS, SPEC_4_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 
@@ -74,9 +69,7 @@ describe('where the two widgets may go', () => {
     // The same reasoning `datagrid` on a text field gets: a document that
     // validates is a document nobody warns, and the author believes they
     // configured a rating.
-    const errors = errorsOf(
-      document_({ model: { fields: [{ key: 'name', type: 'text', widget: 'rating' }] } }),
-    )
+    const errors = errorsOf(document_({ model: { fields: [{ key: 'name', type: 'text', widget: 'rating' }] } }))
 
     expect(errors.length, 'a rating on a text field validated').toBeGreaterThan(0)
   })
@@ -104,9 +97,7 @@ describe('what the version line does with them', () => {
      */
     const errors = errorsOf(document_({ specVersion: '3' }))
 
-    expect(errors.join(' '), 'the gate still answers with the previous version').not.toContain(
-      'needs specVersion "3"',
-    )
+    expect(errors.join(' '), 'the gate still answers with the previous version').not.toContain('needs specVersion "3"')
   })
 
   test('while a version 3 widget in a version 3 document is still fine', () => {
@@ -142,9 +133,13 @@ describe('the step a slider moves in', () => {
      * client accepted and the server did not is the drift this project exists to
      * prevent.
      */
-    expect(errorsOf(document_({
-      model: { fields: [{ key: 'score', type: 'number', min: 0, max: 10, step: 0.5 }] },
-    }))).toEqual([])
+    expect(
+      errorsOf(
+        document_({
+          model: { fields: [{ key: 'score', type: 'number', min: 0, max: 10, step: 0.5 }] },
+        }),
+      ),
+    ).toEqual([])
   })
 
   test('and needs version 4, because a version 3 reader refuses an unknown property', () => {
@@ -163,18 +158,13 @@ describe('the step a slider moves in', () => {
     // direction. Refused at authoring time, where somebody can fix it, rather
     // than at answering time, where they cannot.
     for (const step of [0, -1]) {
-      expect(
-        errorsOf(document_({ model: { fields: [{ key: 'n', type: 'number', step }] } })).length,
-        `step ${String(step)} validated`,
-      ).toBeGreaterThan(0)
+      expect(errorsOf(document_({ model: { fields: [{ key: 'n', type: 'number', step }] } })).length, `step ${String(step)} validated`).toBeGreaterThan(0)
     }
   })
 
   test('and is refused on a field whose answer is not a number', () => {
     // Gated the way `min` and `max` are. A `step` on a text field is an author
     // who expected something to happen.
-    expect(
-      errorsOf(document_({ model: { fields: [{ key: 't', type: 'text', step: 1 }] } })).length,
-    ).toBeGreaterThan(0)
+    expect(errorsOf(document_({ model: { fields: [{ key: 't', type: 'text', step: 1 }] } })).length).toBeGreaterThan(0)
   })
 })

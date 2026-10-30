@@ -22,7 +22,7 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   'What the person filling the form in reads next to this field, or a reference to it in the message catalogue.':
     'Was die Person, die das Formular ausfüllt, neben diesem Feld liest – oder ein Verweis darauf im Meldungskatalog.',
   Autofill: 'Automatisches Ausfüllen',
-  'What the answer is, in the words browsers and assistive technology share — `email`, `given-name`, `postal-code` — so a browser can fill it in and a person\'s own tools can mark it, as WCAG 1.3.5 asks of a field that collects information about the person filling the form in. One of the input purposes the standard names, except the password and payment-card ones: a form platform keeps its answers, and storing a card number or a password in a submission is not something to invite. On text, long text, number, date and choice fields. Needs spec version 5.':
+  "What the answer is, in the words browsers and assistive technology share — `email`, `given-name`, `postal-code` — so a browser can fill it in and a person's own tools can mark it, as WCAG 1.3.5 asks of a field that collects information about the person filling the form in. One of the input purposes the standard names, except the password and payment-card ones: a form platform keeps its answers, and storing a card number or a password in a submission is not something to invite. On text, long text, number, date and choice fields. Needs spec version 5.":
     'Was die Antwort ist, in den Worten, die Browser und Hilfstechnologien teilen – `email`, `given-name`, `postal-code` –, damit ein Browser sie ausfüllen und die eigenen Werkzeuge einer Person sie kennzeichnen können, wie es WCAG 1.3.5 von einem Feld verlangt, das Angaben zur ausfüllenden Person erfragt. Einer der Eingabezwecke, die der Standard nennt, außer denen für Passwörter und Zahlungskarten: Eine Formularplattform bewahrt ihre Antworten auf, und eine Kartennummer oder ein Passwort in einer Einsendung soll nicht eingeladen werden. Auf Text-, langen Text-, Zahl-, Datums- und Auswahlfeldern. Braucht Spec-Version 5.',
   Placeholder: 'Platzhalter',
   'An example of the answer, shown in the empty box until somebody types — "079 123 45 67". Never instead of a label: it disappears as soon as there is an answer, and many readers never announce it, so what the question asks belongs in the label and how to answer it in the description. On a masked field it replaces the shape the control would show. Text, or a reference to it in the message catalogue. On text, long text and number fields. Needs spec version 5.':
@@ -64,8 +64,7 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   'How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show the tick-box as a switch. The answer is unchanged: still true, false, or untouched.':
     'Wie dieses Feld aussehen soll. Nur Darstellung: Es ändert nie, was das Feld erfasst oder was gespeichert wird. Weglassen ergibt das Standard-Bedienelement. Zeigt das Ankreuzfeld als Schalter. Die Antwort bleibt unverändert: wahr, falsch oder unberührt.',
   Options: 'Auswahlmöglichkeiten',
-  'The answers this field offers, in the order they appear.':
-    'Die Antworten, die dieses Feld anbietet, in der Reihenfolge, in der sie erscheinen.',
+  'The answers this field offers, in the order they appear.': 'Die Antworten, die dieses Feld anbietet, in der Reihenfolge, in der sie erscheinen.',
   'How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Let somebody type to narrow the options instead of scrolling them. The answer is still one of the options offered.':
     'Wie dieses Feld aussehen soll. Nur Darstellung: Es ändert nie, was das Feld erfasst oder was gespeichert wird. Weglassen ergibt das Standard-Bedienelement. Lässt jemanden tippen, um die Auswahl einzugrenzen, statt durch sie zu blättern. Die Antwort bleibt eine der angebotenen Möglichkeiten.',
   'Options source': 'Quelle der Auswahl',
@@ -118,8 +117,7 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   'How many rows the repeater may hold. No add button is offered past it, and a submission with more rows is refused.':
     'Wie viele Zeilen die Wiederholung haben darf. Darüber hinaus wird kein Hinzufügen-Knopf angeboten, und eine Einsendung mit mehr Zeilen wird abgewiesen.',
   'Add button label': 'Beschriftung des Hinzufügen-Knopfs',
-  'The accessible name of the control that adds a row.':
-    'Der zugängliche Name des Bedienelements, das eine Zeile hinzufügt.',
+  'The accessible name of the control that adds a row.': 'Der zugängliche Name des Bedienelements, das eine Zeile hinzufügt.',
   'Remove button label': 'Beschriftung des Entfernen-Knopfs',
   "The accessible name of the control that removes a row. The renderer appends the row's position, so a screen reader user hears which row a button kills.":
     'Der zugängliche Name des Bedienelements, das eine Zeile entfernt. Der Renderer hängt die Position der Zeile an, sodass jemand mit Screenreader hört, welche Zeile ein Knopf löscht.',
@@ -142,17 +140,14 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   "What a reader is told this code IS. Required, because it is the code's accessible content: the picture is decoration a screen reader cannot use, and the value beneath it is a bare string — a booking reference announced with nothing to say what it is. Not the field's own label, which names the control somewhere else on the page.":
     'Was einer Person gesagt wird, was dieser Code IST. Pflicht, weil es der zugängliche Inhalt des Codes ist: Das Bild ist Dekoration, mit der ein Screenreader nichts anfangen kann, und der Wert darunter ist eine nackte Zeichenkette – eine Buchungsnummer, angesagt ohne einen Hinweis, was sie ist. Nicht die Beschriftung des Felds selbst, die das Bedienelement an anderer Stelle der Seite benennt.',
   'Single-line text': 'Einzeiliger Text',
-  'One line of free text: a name, a reference, a short answer.':
-    'Eine Zeile freier Text: ein Name, eine Referenz, eine kurze Antwort.',
+  'One line of free text: a name, a reference, a short answer.': 'Eine Zeile freier Text: ein Name, eine Referenz, eine kurze Antwort.',
   'Multi-line text': 'Mehrzeiliger Text',
-  'A box several lines tall, for a message or a description.':
-    'Ein mehrere Zeilen hohes Feld für eine Nachricht oder eine Beschreibung.',
+  'A box several lines tall, for a message or a description.': 'Ein mehrere Zeilen hohes Feld für eine Nachricht oder eine Beschreibung.',
   Number: 'Zahl',
   'A numeric answer, for amounts and counts. Do not use it for phone numbers, postcodes or account numbers: those lose their leading zeros.':
     'Eine Zahlenantwort für Beträge und Anzahlen. Nicht für Telefonnummern, Postleitzahlen oder Kontonummern verwenden: Die verlieren ihre führenden Nullen.',
   Checkbox: 'Ankreuzfeld',
-  'A single yes-or-no answer, such as accepting the terms.':
-    'Eine einzelne Ja-oder-nein-Antwort, etwa die Zustimmung zu den Bedingungen.',
+  'A single yes-or-no answer, such as accepting the terms.': 'Eine einzelne Ja-oder-nein-Antwort, etwa die Zustimmung zu den Bedingungen.',
   Dropdown: 'Auswahlliste',
   'One answer picked from a list, shown collapsed. Best when the list is long.':
     'Eine Antwort aus einer Liste, zugeklappt angezeigt. Am besten bei langen Listen.',
@@ -198,7 +193,7 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   'How many options must be put in order. Set it to the number of options to ask for a complete order; leave it unset and any number may be ranked — use `required` rather than a minimum of 1, so the reader is told before they start.':
     'Wie viele Optionen in eine Reihenfolge gebracht werden müssen. Setze es auf die Zahl der Optionen, um eine vollständige Reihenfolge zu verlangen; ohne Wert darf beliebig viel eingereiht werden – verwende `required` statt eines Minimums von 1, damit die ausfüllende Person es vor dem Beginn erfährt.',
   'Most ranked': 'Höchstens eingereiht',
-  'How many options may be put in order, which is how \"your top three\" is asked.':
+  'How many options may be put in order, which is how "your top three" is asked.':
     'Wie viele Optionen in eine Reihenfolge gebracht werden dürfen – so fragt man nach den «ersten drei».',
   Rows: 'Zeilen',
   'The things the question is asked of, one answer each. The options are the columns every row shares.':

@@ -69,11 +69,7 @@ describe('a page of submissions', () => {
   test('holds at most the limit, newest first, and the next is asked for from where it ended', async () => {
     for (let n = 1; n <= 5; n++) await store(n, `2026-09-19T12:00:0${String(n)}.000Z`)
 
-    expect(await pages(2)).toEqual([
-      ['5@example.ch', '4@example.ch'],
-      ['3@example.ch', '2@example.ch'],
-      ['1@example.ch'],
-    ])
+    expect(await pages(2)).toEqual([['5@example.ch', '4@example.ch'], ['3@example.ch', '2@example.ch'], ['1@example.ch']])
   })
 
   // Two responses stored in the same millisecond are ordered by their ids, so neither is lost at
@@ -94,10 +90,7 @@ describe('a page of submissions', () => {
     await store(9, '2026-09-19T12:00:09.000Z')
     const second = await listSubmissionPage(deps, 'contact-us', { limit: 2, after: first.next })
 
-    expect(second?.kind === 'page' ? second.submissions.map((s) => (s.data as { email: string }).email) : second).toEqual([
-      '2@example.ch',
-      '1@example.ch',
-    ])
+    expect(second?.kind === 'page' ? second.submissions.map((s) => (s.data as { email: string }).email) : second).toEqual(['2@example.ch', '1@example.ch'])
   })
 
   test('says which version each response answered', async () => {
@@ -123,12 +116,9 @@ describe('a page of submissions', () => {
     '2026-09-19T12:00:00.000Z_nope',
     'yesterday_10000000-0000-4000-8000-000000000001',
     '2026-09-19T12:00:00.000Z10000000-0000-4000-8000-000000000001',
-  ])(
-    'refuses a cursor that names no place in the list: %j',
-    async (after) => {
-      expect(await listSubmissionPage(deps, 'contact-us', { limit: 10, after })).toEqual({ kind: 'bad_cursor' })
-    },
-  )
+  ])('refuses a cursor that names no place in the list: %j', async (after) => {
+    expect(await listSubmissionPage(deps, 'contact-us', { limit: 10, after })).toEqual({ kind: 'bad_cursor' })
+  })
 
   // The point of a page is that it is bounded: a limit asked of a million is a thousand.
   test('holds between 1 and 1000, whatever is asked', async () => {

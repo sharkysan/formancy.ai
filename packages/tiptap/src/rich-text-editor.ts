@@ -122,8 +122,7 @@ const TIPTAP_NAME_OF: Readonly<Record<RichCommand, string>> = {
 }
 
 export function createRichTextEditor(options: RichTextEditorOptions): RichTextEditor {
-  const contentOf = (value: string): JSONContent =>
-    toEditorDoc(parseRichText(value)) as JSONContent
+  const contentOf = (value: string): JSONContent => toEditorDoc(parseRichText(value)) as JSONContent
 
   const editor = new Editor({
     ...(options.element === undefined ? {} : { element: options.element }),

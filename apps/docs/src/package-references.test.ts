@@ -58,12 +58,7 @@ function workspacePackages(): Map<string, WorkspacePackage> {
         continue
       }
       if (manifest.name === undefined) continue
-      const bins =
-        manifest.bin === undefined
-          ? []
-          : typeof manifest.bin === 'string'
-            ? [manifest.name.replace(/^@[^/]+\//, '')]
-            : Object.keys(manifest.bin)
+      const bins = manifest.bin === undefined ? [] : typeof manifest.bin === 'string' ? [manifest.name.replace(/^@[^/]+\//, '')] : Object.keys(manifest.bin)
       found.set(manifest.name, { name: manifest.name, published: manifest.private !== true, bins })
     }
   }
@@ -137,23 +132,17 @@ const packageOf = (spec: string): string => {
  * capital that npm would refuse is reported rather than folded away.
  */
 function scopedNames(text: string): string[] {
-  return [...decoded(text).matchAll(/@formancy\/[a-z0-9][a-z0-9._~-]*/gi)].map((match) =>
-    match[0].replace(/\.+$/, ''),
-  )
+  return [...decoded(text).matchAll(/@formancy\/[a-z0-9][a-z0-9._~-]*/gi)].map((match) => match[0].replace(/\.+$/, ''))
 }
 
 /** The rest of a shell command after a word: up to a quote, a pipe, a comment or the line's end. */
 const REST = String.raw`([^\n\x60'"<>|;&(){}#\\]*)`
 
 /** A runner that fetches the package it is given, then runs it. */
-const RUNNER = new RegExp(
-  String.raw`(?<![\w./-])(?:npx|pnpx|bunx|npm\s+(?:exec|x)|pnpm\s+dlx|yarn\s+dlx)(?![\w-])` + REST,
-  'g',
-)
+const RUNNER = new RegExp(String.raw`(?<![\w./-])(?:npx|pnpx|bunx|npm\s+(?:exec|x)|pnpm\s+dlx|yarn\s+dlx)(?![\w-])` + REST, 'g')
 
 /** The same thing configured rather than typed: an MCP client's `command` and `args`. */
-const CONFIGURED =
-  /\bcommand["']?\s*[:=]\s*["'](?:npx|pnpx|bunx)["'][^}]*?\bargs["']?\s*[:=]\s*\[([^\]]*)\]/g
+const CONFIGURED = /\bcommand["']?\s*[:=]\s*["'](?:npx|pnpx|bunx)["'][^}]*?\bargs["']?\s*[:=]\s*\[([^\]]*)\]/g
 
 interface Run {
   /** The packages fetched, without versions. */
@@ -192,17 +181,14 @@ function parseRun(words: readonly string[]): Run | undefined {
 function runs(text: string): Run[] {
   const words = (rest: string): string[] => rest.split(/\s+/).filter((word) => word !== '')
   const typed = [...text.matchAll(RUNNER)].map((match) => parseRun(words(match[1]!)))
-  const configured = [...text.matchAll(CONFIGURED)].map((match) =>
-    parseRun([...match[1]!.matchAll(/["']([^"']*)["']/g)].map((arg) => arg[1]!)),
-  )
+  const configured = [...text.matchAll(CONFIGURED)].map((match) => parseRun([...match[1]!.matchAll(/["']([^"']*)["']/g)].map((arg) => arg[1]!)))
   return [...typed, ...configured].filter((run): run is Run => run !== undefined)
 }
 
 /** Our packages an install command asks npm for. */
 function installed(text: string): string[] {
   const INSTALL = new RegExp(
-    String.raw`(?<![\w./-])(?:npm\s+(?:i|install|add)|pnpm\s+(?:add|i|install)|yarn\s+add|bun\s+(?:add|i|install))(?![\w-])` +
-      REST,
+    String.raw`(?<![\w./-])(?:npm\s+(?:i|install|add)|pnpm\s+(?:add|i|install)|yarn\s+add|bun\s+(?:add|i|install))(?![\w-])` + REST,
     'g',
   )
   return [...decoded(text).matchAll(INSTALL)].flatMap((match) =>
@@ -230,7 +216,10 @@ function bareCommands(text: string, markdown: boolean): string[] {
   for (const fence of text.matchAll(fences)) {
     for (const line of fence[1]!.split('\n')) {
       for (const segment of line.replace(/^\s*(?:\$|>|PS>)\s+/, '').split(/&&|\|\||;|\|/)) {
-        const first = segment.trim().replace(/^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/, '').split(/\s+/)[0]
+        const first = segment
+          .trim()
+          .replace(/^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/, '')
+          .split(/\s+/)[0]
         if (first !== undefined && COMMAND.test(first)) found.push(first)
       }
     }
@@ -279,14 +268,7 @@ describe('the packages and commands the documentation names', () => {
           '```bash\nnpm install @formancy/builder-core@0.4.0\n```',
         ].join('\n'),
       ),
-    ).toEqual([
-      '@formancy/spec',
-      '@formancy/core',
-      '@formancy/themes',
-      '@formancy/react',
-      '@formancy/angular',
-      '@formancy/builder-core',
-    ])
+    ).toEqual(['@formancy/spec', '@formancy/core', '@formancy/themes', '@formancy/react', '@formancy/angular', '@formancy/builder-core'])
 
     expect(
       runs(
@@ -311,9 +293,11 @@ describe('the packages and commands the documentation names', () => {
       { packages: ['@formancy/mcp'] },
     ])
 
-    expect(
-      installed("npm install @formancy/react @formancy/spec   # React 19\n'pnpm add @formancy/tiptap'\npnpm install --frozen-lockfile"),
-    ).toEqual(['@formancy/react', '@formancy/spec', '@formancy/tiptap'])
+    expect(installed("npm install @formancy/react @formancy/spec   # React 19\n'pnpm add @formancy/tiptap'\npnpm install --frozen-lockfile")).toEqual([
+      '@formancy/react',
+      '@formancy/spec',
+      '@formancy/tiptap',
+    ])
 
     expect(
       bareCommands(
@@ -335,9 +319,7 @@ describe('the packages and commands the documentation names', () => {
       scopedNames(text)
         .filter((reference) => !packages.has(reference))
         .map(
-          (reference) =>
-            `${name} names ${reference}, and no package in packages/ or apps/ is called that — ` +
-            'a reader who installs it gets a 404 from npm',
+          (reference) => `${name} names ${reference}, and no package in packages/ or apps/ is called that — ` + 'a reader who installs it gets a 404 from npm',
         ),
     )
 
@@ -355,8 +337,7 @@ describe('the packages and commands the documentation names', () => {
         problems.push(
           owner === undefined
             ? `fetch ${spec}, which is not ours and not named in FETCHED_FROM_ELSEWHERE`
-            : `fetch ${spec}, which is a command in ${owner.name} and not a package — ` +
-                `npx would ask npm for a package called ${spec}`,
+            : `fetch ${spec}, which is a command in ${owner.name} and not a package — ` + `npx would ask npm for a package called ${spec}`,
         )
         continue
       }
@@ -390,9 +371,7 @@ describe('the packages and commands the documentation names', () => {
     // The roadmap's `npx @formancy/cli types`, and the near misses of the line that does
     // work: `npx formancy-mcp` asks npm for somebody else's package, and a package made
     // private or stripped of its `bin` leaves every page's `npx -y @formancy/mcp` dead.
-    const wrong = docs.flatMap(({ name, text }) =>
-      runs(text).flatMap((run) => problemsWith(run).map((problem) => `${name} tells a runner to ${problem}`)),
-    )
+    const wrong = docs.flatMap(({ name, text }) => runs(text).flatMap((run) => problemsWith(run).map((problem) => `${name} tells a runner to ${problem}`)))
 
     expect([...new Set(wrong)]).toEqual([])
   })
@@ -403,11 +382,7 @@ describe('the packages and commands the documentation names', () => {
     const wrong = docs.flatMap(({ name, text }) =>
       installed(text)
         .filter((spec) => packages.get(spec)?.published !== true)
-        .map(
-          (spec) =>
-            `${name} installs ${spec}, which ` +
-            (packages.has(spec) ? 'is private and never published' : 'is not a package in this workspace'),
-        ),
+        .map((spec) => `${name} installs ${spec}, which ` + (packages.has(spec) ? 'is private and never published' : 'is not a package in this workspace')),
     )
 
     expect([...new Set(wrong)]).toEqual([])

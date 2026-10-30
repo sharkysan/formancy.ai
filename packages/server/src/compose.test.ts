@@ -134,10 +134,7 @@ function interpolate(value: string, env: Readonly<Record<string, string>>): stri
  * only when `.env` sets it, and every other value interpolated. Compose reads the
  * shell's environment as well; this is the `.env`-only case the example describes.
  */
-function containerEnvironment(
-  file: string,
-  env: Readonly<Record<string, string>>,
-): Record<string, string> {
+function containerEnvironment(file: string, env: Readonly<Record<string, string>>): Record<string, string> {
   const resolved: Record<string, string> = {}
   for (const [key, value] of Object.entries(serverService(file).environment)) {
     if (value === null) {
@@ -161,10 +158,7 @@ function containerEnvironment(
 function following(block = ''): Record<string, string> {
   const assignment = /^(#\s*)?([A-Z_][A-Z0-9_]*)=(.*)$/
   const env: Record<string, string> = {}
-  const lines = [
-    ...example.split('\n').filter((line) => !line.startsWith('#')),
-    ...block.split('\n').filter((line) => line.startsWith('#')),
-  ]
+  const lines = [...example.split('\n').filter((line) => !line.startsWith('#')), ...block.split('\n').filter((line) => line.startsWith('#'))]
   for (const line of lines) {
     const match = assignment.exec(line.trim())
     if (match?.[2] === undefined || match[3] === undefined) continue
@@ -215,9 +209,7 @@ describe('.env.example and the compose files', () => {
     // run` in an alpine container printed ABSENT rather than an empty value.
     for (const file of composeFiles) {
       expect(serverService(file).environment['FORMANCY_CHALLENGE_SECRET'], file).toBeNull()
-      expect(containerEnvironment(file, following()), file).not.toHaveProperty(
-        'FORMANCY_CHALLENGE_SECRET',
-      )
+      expect(containerEnvironment(file, following()), file).not.toHaveProperty('FORMANCY_CHALLENGE_SECRET')
     }
   })
 

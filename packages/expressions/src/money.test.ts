@@ -178,11 +178,7 @@ describe('decimal equality never answers a silent false', () => {
     const compiled = compile('a == b', { kind: 'visible', variables: { a: 'dyn', b: 'dyn' } })
     if (!compiled.ok) throw compiled.error
 
-    const result = evaluate(
-      compiled.program,
-      { a: new Decimal(1990n, 2), b: '19.90' },
-      { capabilities },
-    )
+    const result = evaluate(compiled.program, { a: new Decimal(1990n, 2), b: '19.90' }, { capabilities })
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -194,9 +190,11 @@ describe('decimal equality never answers a silent false', () => {
     const compiled = compile('a == b', { kind: 'visible', variables: { a: 'dyn', b: 'dyn' } })
     if (!compiled.ok) throw compiled.error
 
-    expect(
-      evaluate(compiled.program, { a: new Decimal(1990n, 2), b: new Decimal(199n, 1) }, { capabilities }),
-    ).toEqual({ ok: true, value: true, steps: expect.any(Number) })
+    expect(evaluate(compiled.program, { a: new Decimal(1990n, 2), b: new Decimal(199n, 1) }, { capabilities })).toEqual({
+      ok: true,
+      value: true,
+      steps: expect.any(Number),
+    })
   })
 })
 

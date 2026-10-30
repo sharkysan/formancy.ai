@@ -46,7 +46,10 @@ const answer = (url: string, status = 200): Response => {
 }
 
 const serving = (status = 200): void => {
-  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve(answer(url, status))))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) => Promise.resolve(answer(url, status))),
+  )
 }
 
 beforeEach(() => {

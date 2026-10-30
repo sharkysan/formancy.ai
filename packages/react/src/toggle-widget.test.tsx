@@ -55,7 +55,7 @@ function schemaWith(widget?: 'toggle'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
 function mount(widget?: 'toggle'): void {

@@ -60,9 +60,7 @@ export function retypeTargets(session: BuilderSession, keyPath: readonly string[
   const found = locate(document, keyPath)
   const field = found?.siblings[found.index]
   if (field === undefined || !holdsOneAnswer(field.type)) return []
-  return paletteEntries(document.specVersion, session.text).filter(
-    (entry) => entry.type !== field.type && holdsOneAnswer(entry.type as FieldType),
-  )
+  return paletteEntries(document.specVersion, session.text).filter((entry) => entry.type !== field.type && holdsOneAnswer(entry.type as FieldType))
 }
 
 /** Change a field's type and say so, in the builder's language — the same words in both builders. */
@@ -86,9 +84,7 @@ function retyped(field: FieldDef, type: FieldType, session: BuilderSession): Fie
   const widgets: readonly string[] = (WIDGETS_BY_FIELD_TYPE as Partial<Record<FieldType, readonly string[]>>)[type] ?? []
   const widget = field.widget !== undefined && widgets.includes(field.widget) ? field.widget : undefined
   const offered = new Set(editablePropertiesFor(type, widget, session.text).map((property) => property.name))
-  const kept = Object.fromEntries(
-    Object.entries(field).filter(([name]) => name === 'key' || name === 'renamedFrom' || offered.has(name)),
-  )
+  const kept = Object.fromEntries(Object.entries(field).filter(([name]) => name === 'key' || name === 'renamedFrom' || offered.has(name)))
   // What a new field of this type starts with, under what the field already had.
   const { key: _key, label: _label, ...starting } = newFieldOfType(type, new Set(), session.text)
   const next = { ...starting, ...kept, type } as FieldDef

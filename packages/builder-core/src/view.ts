@@ -66,22 +66,12 @@ export function builderView(session: BuilderSession): BuilderView {
       // legal destination, which is true and useless: a list whose first entry
       // does nothing makes the person read it to find that out.
       const parent = keyPath.slice(0, -1)
-      const siblings = flatten(document).filter(
-        (node) => node.keyPath.length === keyPath.length && sameParent(node.keyPath, keyPath),
-      )
-      const currentIndex = siblings.findIndex(
-        (node) => node.keyPath[node.keyPath.length - 1] === keyPath[keyPath.length - 1],
-      )
+      const siblings = flatten(document).filter((node) => node.keyPath.length === keyPath.length && sameParent(node.keyPath, keyPath))
+      const currentIndex = siblings.findIndex((node) => node.keyPath[node.keyPath.length - 1] === keyPath[keyPath.length - 1])
 
       return session
         .validTargets(keyPath)
-        .filter(
-          (location) =>
-            !(
-              sameParent([...location.parent, 'x'], [...parent, 'x']) &&
-              location.index === currentIndex
-            ),
-        )
+        .filter((location) => !(sameParent([...location.parent, 'x'], [...parent, 'x']) && location.index === currentIndex))
         .map((location) => ({
           location,
           label: describeTarget(document, location, keyPath, session.text),

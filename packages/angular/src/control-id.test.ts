@@ -123,7 +123,7 @@ describe('the element a field’s control id names', () => {
     const { engine } = await mount(visit('mark'))
 
     expect(document.getElementById(controlId(engine, 'mark'))).toBe(LANDING.mark())
-    expect((screen.getByText('Signature', { selector: 'label' }) as HTMLLabelElement).control).toBe(LANDING.mark())
+    expect(screen.getByText<HTMLLabelElement>('Signature', { selector: 'label' }).control).toBe(LANDING.mark())
   })
 })
 
@@ -235,11 +235,7 @@ describe('every field drawn with no control', () => {
       } as unknown as FormSchema,
     })
     const view = await render(FormancyForm, {
-      providers: [
-        provideZonelessChangeDetection(),
-        provideFormancy(engine),
-        ...(uploads ? [provideFormancyUploader(upload)] : []),
-      ],
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(uploads ? [provideFormancyUploader(upload)] : [])],
     })
     await view.fixture.whenStable()
     const id = engine.getFieldSnapshot(['f']).ids.control

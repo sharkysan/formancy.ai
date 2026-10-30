@@ -63,9 +63,7 @@ describe('adding a page', () => {
     }
     const session = createBuilderSession(one)
 
-    expect(addPageAndSay(session)).toBe(
-      'Added Page 1, holding the 1 field that was at the top level. The form is a wizard now.',
-    )
+    expect(addPageAndSay(session)).toBe('Added Page 1, holding the 1 field that was at the top level. The form is a wizard now.')
   })
 
   test('to a form that has pages names the new one by its number', () => {
@@ -89,9 +87,7 @@ describe('unwrapping', () => {
   test('a page says which page its questions are on now, because they do not stay at the top', () => {
     const session = createBuilderSession(base)
 
-    expect(unwrapAndSay(session, ['details'])).toBe(
-      english('said.unwrappedPage', { name: 'details', count: 2, host: 'intro' }),
-    )
+    expect(unwrapAndSay(session, ['details'])).toBe(english('said.unwrappedPage', { name: 'details', count: 2, host: 'intro' }))
   })
 
   test('the last page says the form is not a wizard any more, the least visible thing it does', () => {
@@ -123,9 +119,7 @@ describe('unwrapping', () => {
     // address" for a group.
     const session = createBuilderSession(base)
 
-    expect(unwrapAndSay(session, ['details', 'address'])).toBe(
-      english('said.unwrapped', { name: 'address', count: 1 }),
-    )
+    expect(unwrapAndSay(session, ['details', 'address'])).toBe(english('said.unwrapped', { name: 'address', count: 1 }))
   })
 
   test('a refusal carries the session’s reason, in its language', () => {
@@ -144,9 +138,7 @@ describe('removing', () => {
   test('names what was removed, read before it is gone', () => {
     const session = createBuilderSession(base)
 
-    expect(removeAndSay(session, ['details', 'passengers', 'seat'])).toBe(
-      english('said.removed', { name: 'seat' }),
-    )
+    expect(removeAndSay(session, ['details', 'passengers', 'seat'])).toBe(english('said.removed', { name: 'seat' }))
   })
 })
 
@@ -155,9 +147,7 @@ describe('moving', () => {
     const session = createBuilderSession(base)
     const target = builderView(session).moveTargetsFor(['intro', 'email'])[0]!
 
-    expect(moveAndSay(session, ['intro', 'email'], target)).toBe(
-      english('said.moved', { name: 'email', where: target.label }),
-    )
+    expect(moveAndSay(session, ['intro', 'email'], target)).toBe(english('said.moved', { name: 'email', where: target.label }))
   })
 
   test('by dragging names the field that MOVED, not the row it was dropped on', () => {
@@ -168,10 +158,7 @@ describe('moving', () => {
     const said = dropAndSay(session, ['intro', 'email'], { parent: ['intro'], index: 1 })
 
     expect(said).toBe(english('said.dropped', { name: 'email' }))
-    expect(session.document().model.fields[0]?.fields?.map((field) => field.key)).toEqual([
-      'summary',
-      'email',
-    ])
+    expect(session.document().model.fields[0]?.fields?.map((field) => field.key)).toEqual(['summary', 'email'])
   })
 })
 
@@ -182,9 +169,7 @@ describe('inserting', () => {
     const target = builderView(session).insertTargetsFor(def)[0]!
 
     expect(insertAndSay(session, def, target)).toMatch(/^Added .+ to .+\.$/)
-    expect(session.document().model.fields[0]?.fields?.some((field) => field.key === def.key)).toBe(
-      true,
-    )
+    expect(session.document().model.fields[0]?.fields?.some((field) => field.key === def.key)).toBe(true)
   })
 })
 
@@ -200,9 +185,7 @@ describe('upgrading the spec version', () => {
     const newest = { ...clone(base), specVersion: CURRENT_SPEC_VERSION }
     const session = createBuilderSession(newest)
 
-    expect(upgradeAndSay(session)).toBe(
-      english('said.cannotUpgrade', { reason: english('said.alreadyNewest') }),
-    )
+    expect(upgradeAndSay(session)).toBe(english('said.cannotUpgrade', { reason: english('said.alreadyNewest') }))
   })
 })
 

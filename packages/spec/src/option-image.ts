@@ -29,10 +29,7 @@ export function optionImageRefusal(
 
 /** Whether a field's own options can carry a picture: radio buttons and checkboxes. */
 export function showsOptionImages(field: Pick<FieldDef, 'type' | 'widget'>): boolean {
-  return (
-    (field.type === 'radio' || field.type === 'selectboxes') &&
-    optionImageRefusal(field) === undefined
-  )
+  return (field.type === 'radio' || field.type === 'selectboxes') && optionImageRefusal(field) === undefined
 }
 
 /**
@@ -49,8 +46,7 @@ export function showsOptionImages(field: Pick<FieldDef, 'type' | 'widget'>): boo
  * the format's, means one set of pictures in both
  * ([0126](../../../docs/decisions/0126-an-option-may-carry-a-picture.md)).
  */
-export const IMAGE_SOURCE =
-  /^(https:\/\/[^\s]+|\/[^/\s][^\s]*|data:image\/(png|jpeg|gif|webp|avif|svg\+xml)[;,].+)$/u
+export const IMAGE_SOURCE = /^(https:\/\/[^\s]+|\/[^/\s][^\s]*|data:image\/(png|jpeg|gif|webp|avif|svg\+xml)[;,].+)$/u
 
 export function isImageSource(source: string): boolean {
   return IMAGE_SOURCE.test(source)

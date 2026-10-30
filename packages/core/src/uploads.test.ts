@@ -31,10 +31,7 @@ function controlled() {
     resolve: (stored: Stored) => void
     reject: (error: unknown) => void
   }> = []
-  const upload = vi.fn(
-    (file: Picked, attempt: UploadAttempt) =>
-      new Promise<Stored>((resolve, reject) => calls.push({ file, attempt, resolve, reject })),
-  )
+  const upload = vi.fn((file: Picked, attempt: UploadAttempt) => new Promise<Stored>((resolve, reject) => calls.push({ file, attempt, resolve, reject })))
   return { calls, upload }
 }
 
@@ -162,9 +159,7 @@ describe('an upload queue', () => {
     queue.cancel(queue.pending()[0]!.key)
 
     expect(stop).toHaveBeenCalledTimes(1)
-    expect(queue.pending().map(({ name, state }) => [name, state])).toEqual([
-      ['b.pdf', 'uploading'],
-    ])
+    expect(queue.pending().map(({ name, state }) => [name, state])).toEqual([['b.pdf', 'uploading']])
     calls[0]!.resolve({ id: 'a', name: 'a.pdf' })
     calls[1]!.resolve({ id: 'b', name: 'b.pdf' })
     await settle()
@@ -371,7 +366,7 @@ describe('the uploads of a file field', () => {
     uploads.queue.add([picked('taxi.pdf')])
 
     engine.moveRow(['items'], 0, 1)
-    calls[0]!.resolve(receipt('taxi') as never)
+    calls[0]!.resolve(receipt('taxi'))
     await settle()
 
     const rows = (engine.value() as { items: Array<Record<string, unknown>> }).items
@@ -400,7 +395,7 @@ describe('the uploads of a file field', () => {
     uploads.queue.add([picked('taxi.pdf')])
 
     expect(engine.getFieldSnapshot(['items', 0, 'receipt']).touched).toBe(false)
-    calls[0]!.resolve(receipt('taxi') as never)
+    calls[0]!.resolve(receipt('taxi'))
     await settle()
 
     expect(engine.getFieldSnapshot(['items', 0, 'receipt']).touched).toBe(true)
@@ -416,7 +411,7 @@ describe('the uploads of a file field', () => {
     // A third row first: the repeater opens at its `minItems` of two and goes no lower.
     engine.addRow(['items'])
     engine.removeRow(['items'], 0)
-    calls[0]!.resolve(receipt('taxi') as never)
+    calls[0]!.resolve(receipt('taxi'))
     await settle()
 
     const rows = (engine.value() as { items: Array<Record<string, unknown>> }).items

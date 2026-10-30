@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  input,
-  viewChild,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, effect, input, viewChild } from '@angular/core'
 import type { ElementRef } from '@angular/core'
 import { thumbnailSize } from '@formancy/core'
 
@@ -44,11 +37,7 @@ export class FormancyFileThumbnail {
 
   protected readonly drawable = computed(() => {
     const source = this.source()
-    return (
-      source !== undefined &&
-      source.type.startsWith('image/') &&
-      typeof createImageBitmap === 'function'
-    )
+    return source !== undefined && source.type.startsWith('image/') && typeof createImageBitmap === 'function'
   })
 
   constructor() {

@@ -35,8 +35,7 @@ export function duplicateField(session: BuilderSession, keyPath: readonly string
   }
   if (field.type === 'page') return { ok: false, path: keyPath.join('.'), message: text('refuse.blockIsPage') }
 
-  const about = (rule: LogicRule): boolean =>
-    !PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && underPath(rule.target, root)
+  const about = (rule: LogicRule): boolean => !PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && underPath(rule.target, root)
   const copy: BuilderBlock = {
     id: '',
     name: nameOf(document, field),

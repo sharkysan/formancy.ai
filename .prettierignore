@@ -1,0 +1,13 @@
+# Prettier resolves the patterns of every file it is handed against the
+# working directory, so a nested .gitignore cannot be passed to it: its
+# patterns are written here with their directory in front, and
+# apps/docs/src/lint.test.ts derives them from the .gitignore files git holds.
+
+# apps/docs/.gitignore
+apps/docs/**/.astro/
+apps/docs/**/dist/
+
+# Written by packages/spec/scripts/generate-validator.mjs, in one line a
+# function that Prettier would spread over ten thousand: neither formatted
+# nor linted (eslint.config.mjs).
+packages/spec/src/generated/document-validator.js

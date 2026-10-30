@@ -1,10 +1,4 @@
-import type {
-  AccessibilityViolation,
-  ConformanceMessage,
-  DriverFactory,
-  RendererDriver,
-  SubmitResult,
-} from './driver.js'
+import type { AccessibilityViolation, DriverFactory, RendererDriver, SubmitResult } from './driver.js'
 import { ROW_ID } from '@formancy/spec'
 import { BACK_COMMAND, NEXT_COMMAND, addItemCommand, removeItemCommand } from './paths.js'
 import type { Fixture, FixtureStep, StepKind } from './types.js'
@@ -219,12 +213,7 @@ export async function runFixture(fixture: Fixture, driver: RendererDriver): Prom
 
   return {
     fixture: fixture.name,
-    status:
-      crash !== undefined
-        ? 'crashed'
-        : failure !== undefined || accessibility !== undefined
-          ? 'failed'
-          : 'passed',
+    status: crash !== undefined ? 'crashed' : failure !== undefined || accessibility !== undefined ? 'failed' : 'passed',
     steps: outcomes,
     ...(failure === undefined ? {} : { failure }),
     ...(accessibility === undefined ? {} : { accessibility }),
@@ -235,10 +224,7 @@ export async function runFixture(fixture: Fixture, driver: RendererDriver): Prom
 
 /** Run every fixture. One broken case never stops the rest: the value of a
  *  conformance run is the whole picture, not the first thing that went wrong. */
-export async function runSuite(
-  fixtures: readonly Fixture[],
-  driver: RendererDriver | DriverFactory,
-): Promise<SuiteResult> {
+export async function runSuite(fixtures: readonly Fixture[], driver: RendererDriver | DriverFactory): Promise<SuiteResult> {
   const results: FixtureResult[] = []
 
   for (const [index, fixture] of fixtures.entries()) {
@@ -276,9 +262,7 @@ export async function runSuite(
  * renderer needs a container of its own for each case, and a case that
  * inherited the previous one's DOM would pass or fail for the wrong reason.
  */
-export async function resolveDriver(
-  driver: RendererDriver | DriverFactory,
-): Promise<RendererDriver> {
+export async function resolveDriver(driver: RendererDriver | DriverFactory): Promise<RendererDriver> {
   return typeof driver === 'function' ? await driver() : driver
 }
 
@@ -437,8 +421,7 @@ async function performStep(step: FixtureStep, context: RunContext): Promise<Mism
   if ('expectNoErrors' in step) {
     const scope = step.expectNoErrors
     const messages = await driver.errorsFor()
-    const offending =
-      scope === true ? messages : messages.filter((message) => scope.includes(message.path))
+    const offending = scope === true ? messages : messages.filter((message) => scope.includes(message.path))
     if (offending.length === 0) return undefined
     return { detail: 'there should be no messages', expected: [], actual: offending.map(summarize) }
   }
@@ -475,13 +458,7 @@ async function performStep(step: FixtureStep, context: RunContext): Promise<Mism
   return assertNever(step)
 }
 
-async function describeFailure(
-  fixture: Fixture,
-  index: number,
-  kind: StepKind,
-  mismatch: Mismatch,
-  driver: RendererDriver,
-): Promise<StepFailure> {
+async function describeFailure(fixture: Fixture, index: number, kind: StepKind, mismatch: Mismatch, driver: RendererDriver): Promise<StepFailure> {
   const snapshot = await snapshotQuietly(driver)
   const lines = [
     `${fixture.name} - step ${index} (${kind}) failed: ${mismatch.detail}`,
@@ -540,23 +517,15 @@ const MUTATES: Record<StepKind, boolean> = {
  * revalidation endpoint) has nothing to audit, and demanding a stub from it
  * would be asking for a lie.
  */
-async function auditNow(
-  fixture: Fixture,
-  driver: RendererDriver,
-  afterStep: number | undefined,
-): Promise<AccessibilityFailure | undefined> {
+async function auditNow(fixture: Fixture, driver: RendererDriver, afterStep: number | undefined): Promise<AccessibilityFailure | undefined> {
   if (driver.audit === undefined) return undefined
 
   const violations = await driver.audit()
   if (violations.length === 0) return undefined
 
   const snapshot = await snapshotQuietly(driver)
-  const where =
-    afterStep === undefined ? 'as first rendered' : `after step ${String(afterStep)}`
-  const lines = [
-    `${fixture.name} - ${violations.length} accessibility violation(s) ${where}:`,
-    ...violations.map(describeViolation),
-  ]
+  const where = afterStep === undefined ? 'as first rendered' : `after step ${String(afterStep)}`
+  const lines = [`${fixture.name} - ${violations.length} accessibility violation(s) ${where}:`, ...violations.map(describeViolation)]
   if (snapshot !== undefined && snapshot !== '') {
     lines.push('  accessible tree:', indent(snapshot))
   }
@@ -650,12 +619,7 @@ function fixtureName(fixture: Fixture, index: number): string {
   return typeof name === 'string' && name !== '' ? name : `fixtures[${index}]`
 }
 
-function formatSuite(
-  results: readonly FixtureResult[],
-  passed: number,
-  failed: number,
-  crashed: number,
-): string {
+function formatSuite(results: readonly FixtureResult[], passed: number, failed: number, crashed: number): string {
   const lines = [`${passed} passed, ${failed} failed, ${crashed} crashed`]
   for (const result of results) {
     if (result.failure !== undefined) lines.push('', result.failure.message)

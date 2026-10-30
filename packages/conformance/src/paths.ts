@@ -62,10 +62,7 @@ function parsePath(path: string): readonly PathSegment[] | undefined {
  * Exported because a driver needs it: to find a control by accessible name it
  * must first map the path a fixture names to the field that carries the label.
  */
-export function fieldAtPath(
-  schema: ConformanceSchema,
-  path: string,
-): ConformanceFieldDef | undefined {
+export function fieldAtPath(schema: ConformanceSchema, path: string): ConformanceFieldDef | undefined {
   const segments = parsePath(path)
   if (segments === undefined) return undefined
 
@@ -90,10 +87,7 @@ export function fieldAtPath(
 }
 
 /** Sees through pages, which own no data, but not through groups, which do. */
-function childNamed(
-  fields: readonly ConformanceFieldDef[],
-  key: string,
-): ConformanceFieldDef | undefined {
+function childNamed(fields: readonly ConformanceFieldDef[], key: string): ConformanceFieldDef | undefined {
   for (const field of fields) {
     if (field.type === 'page') {
       const found = childNamed(field.fields ?? [], key)

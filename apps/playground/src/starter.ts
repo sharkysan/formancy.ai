@@ -87,9 +87,7 @@ export const STARTER_SCHEMA = {
             value: 'express',
             label: { $t: 'delivery.express' },
             image: {
-              src: picture(
-                '<rect x="18" y="10" width="24" height="18" rx="2"/><path d="M18 16h24M4 14h9M7 20h7M4 26h9"/>',
-              ),
+              src: picture('<rect x="18" y="10" width="24" height="18" rx="2"/><path d="M18 16h24M4 14h9M7 20h7M4 26h9"/>'),
             },
           },
         ],
@@ -435,7 +433,7 @@ export const STARTER_SCHEMA = {
               ],
             },
             { kind: 'field', path: 'items' },
-        { kind: 'field', path: 'recipients' },
+            { kind: 'field', path: 'recipients' },
             { kind: 'field', path: 'voucher' },
             { kind: 'field', path: 'recommend' },
             { kind: 'field', path: 'portions' },
@@ -543,9 +541,7 @@ export const STARTER_SCHEMA = {
         cel: 'item.amount != null && item.amount >= 1000.0',
         editor: {
           join: 'all',
-          conditions: [
-            { field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' },
-          ],
+          conditions: [{ field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' }],
         },
       },
       // Express delivery needs a date; standard does not.

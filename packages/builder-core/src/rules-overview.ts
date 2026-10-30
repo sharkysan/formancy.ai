@@ -1,4 +1,5 @@
 import { getAt } from '@formancy/core'
+import { answerAsStored } from '@formancy/core/words'
 import { compile, evaluate } from '@formancy/expressions'
 import type { Capabilities, Program, VariableDeclarations } from '@formancy/expressions'
 import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
@@ -74,11 +75,7 @@ export function rulesOverview(document: FormSchema, text: BuilderText): RulesOn[
       ...(editor === undefined
         ? {}
         : {
-            sentence: describeCondition(
-              editor,
-              conditionFields(document, { target: rule.target, text }),
-              text,
-            ),
+            sentence: describeCondition(editor, conditionFields(document, { target: rule.target, text }), text),
           }),
       written: rule.check ?? rule.cel ?? '',
     })
@@ -89,9 +86,7 @@ export function rulesOverview(document: FormSchema, text: BuilderText): RulesOn[
 /** The editor metadata as a condition, or nothing when it is not the shape the editor writes. */
 function asGroup(editor: unknown): ConditionGroup | undefined {
   if (typeof editor !== 'object' || editor === null) return undefined
-  return Array.isArray((editor as { conditions?: unknown }).conditions)
-    ? (editor as ConditionGroup)
-    : undefined
+  return Array.isArray((editor as { conditions?: unknown }).conditions) ? (editor as ConditionGroup) : undefined
 }
 
 /**
@@ -100,11 +95,7 @@ function asGroup(editor: unknown): ConditionGroup | undefined {
  * author's words — and a choice's value is shown by its label, a checkbox's by yes
  * or no, because that is how the editor offered them.
  */
-export function describeCondition(
-  group: ConditionGroup,
-  fields: readonly ConditionField[],
-  text: BuilderText,
-): string {
+export function describeCondition(group: ConditionGroup, fields: readonly ConditionField[], text: BuilderText): string {
   const parts = group.conditions.map((item) =>
     isGroup(item)
       ? item.conditions.length > 1
@@ -115,11 +106,7 @@ export function describeCondition(
   return group.join === 'all' ? text.list(parts) : text.alternatives(parts)
 }
 
-function describeComparison(
-  condition: Condition,
-  fields: readonly ConditionField[],
-  text: BuilderText,
-): string {
+function describeComparison(condition: Condition, fields: readonly ConditionField[], text: BuilderText): string {
   const field = fields.find((candidate) => candidate.path === condition.field)
   const name = field?.label ?? condition.field
   const operator = operatorLabel(condition.operator, text)
@@ -131,16 +118,13 @@ function describeComparison(
   })
 }
 
-function valueInWords(
-  value: unknown,
-  field: ConditionField | undefined,
-  text: BuilderText,
-): string {
+function valueInWords(value: unknown, field: ConditionField | undefined, text: BuilderText): string {
   if (value === null || value === undefined || value === '') return text('overview.notAnswered')
   if (typeof value === 'boolean') return text(value ? 'logic.value.yes' : 'logic.value.no')
   if (Array.isArray(value)) return text.list(value.map((item) => valueInWords(item, field, text)))
   const option = field?.options.find((candidate) => candidate.value === value)
-  return option?.label ?? String(value)
+  if (option !== undefined) return option.label
+  return answerAsStored(value)
 }
 
 /** What a rule does with the answers given, and why. */
@@ -237,16 +221,7 @@ export function explainRows(
     return {
       row: index + 1,
       label: text('overview.row', { number: index + 1 }),
-      ...verdictOn(
-        kind,
-        compiled,
-        { ...form, item: scope.item, index },
-        answers,
-        scope,
-        fields,
-        text,
-        capabilities,
-      ),
+      ...verdictOn(kind, compiled, { ...form, item: scope.item, index }, answers, scope, fields, text, capabilities),
     }
   })
 }
@@ -369,18 +344,11 @@ function compiledFor(cel: string, document: FormSchema, inRow: boolean): Program
 
 /** Every top-level answer, null where there is none, as the engine binds them: its own, so
  *  a field keyed `constructor` is not `function Object` (0185). */
-function valuesOf(
-  keys: readonly string[],
-  answers: Readonly<Record<string, unknown>>,
-): Record<string, unknown> {
+function valuesOf(keys: readonly string[], answers: Readonly<Record<string, unknown>>): Record<string, unknown> {
   return Object.fromEntries(keys.map((key) => [key, getAt(answers, [key]) ?? null]))
 }
 
-function decide(
-  program: Program | undefined,
-  values: Readonly<Record<string, unknown>>,
-  capabilities: Capabilities,
-): RuleVerdict['outcome'] {
+function decide(program: Program | undefined, values: Readonly<Record<string, unknown>>, capabilities: Capabilities): RuleVerdict['outcome'] {
   if (program === undefined) return 'undecided'
   const outcome = evaluate(program, values, { capabilities })
   if (!outcome.ok) return 'undecided'
@@ -423,10 +391,7 @@ function repeaterFieldsAt(fields: readonly FieldDef[], wire: string, scope = '')
  * row: reading a missing key throws in CEL, and a row nobody has touched yet has none.
  */
 function withEveryField(fields: readonly FieldDef[], row: unknown): Record<string, unknown> {
-  const item: Record<string, unknown> =
-    typeof row === 'object' && row !== null && !Array.isArray(row)
-      ? { ...(row as Record<string, unknown>) }
-      : {}
+  const item: Record<string, unknown> = typeof row === 'object' && row !== null && !Array.isArray(row) ? { ...(row as Record<string, unknown>) } : {}
   for (const field of fields) {
     if (field.type === 'page') Object.assign(item, withEveryField(field.fields ?? [], item))
     else if (field.type === 'group') item[field.key] = withEveryField(field.fields ?? [], getAt(item, [field.key]))
@@ -436,15 +401,9 @@ function withEveryField(fields: readonly FieldDef[], row: unknown): Record<strin
 }
 
 /** An answer a comparison read: in the row for a field of the row, in the form otherwise. */
-function answerTo(
-  path: string,
-  answers: Readonly<Record<string, unknown>>,
-  row: RowScope | undefined,
-): unknown {
+function answerTo(path: string, answers: Readonly<Record<string, unknown>>, row: RowScope | undefined): unknown {
   const inRow = row === undefined ? undefined : `${row.wire}[].`
-  return inRow !== undefined && path.startsWith(inRow)
-    ? read(row?.item ?? {}, path.slice(inRow.length))
-    : read(answers, path)
+  return inRow !== undefined && path.startsWith(inRow) ? read(row?.item ?? {}, path.slice(inRow.length)) : read(answers, path)
 }
 
 function read(answers: Readonly<Record<string, unknown>>, path: string): unknown {

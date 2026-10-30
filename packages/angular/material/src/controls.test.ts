@@ -23,8 +23,7 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-const form = (fields: unknown[]): FormSchema =>
-  ({ specVersion: '4', id: 'm', title: 'M', model: { fields } }) as unknown as FormSchema
+const form = (fields: unknown[]): FormSchema => ({ specVersion: '4', id: 'm', title: 'M', model: { fields } }) as unknown as FormSchema
 
 async function mount(document: FormSchema): Promise<FormEngine> {
   const engine = createFormEngine({
@@ -32,11 +31,7 @@ async function mount(document: FormSchema): Promise<FormEngine> {
     capabilities: { now: () => 0, today: () => '2026-10-09', random: () => 0.5 },
   })
   const view = await render(FormancyForm, {
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine),
-      ...provideFormancyMaterial(),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...provideFormancyMaterial()],
     inputs: { submitLabel: 'Submit' },
   })
   await view.fixture.whenStable()
@@ -73,7 +68,7 @@ describe('a field Material draws', () => {
       logic: { rules: [{ target: 'a', kind: 'computed', cel }] },
     })
 
-    const control = screen.getByLabelText('A') as HTMLInputElement
+    const control = screen.getByLabelText<HTMLInputElement>('A')
     expect(control.readOnly).toBe(true)
     expect(control.disabled).toBe(false)
   })
@@ -148,16 +143,25 @@ describe('a field Material draws', () => {
 
     const group = screen.getByRole('group', { name: 'Channel' })
     expect(within(group).getByLabelText('A friend').closest('mat-radio-group')).not.toBeNull()
-    expect(within(group).getAllByRole('radio').map((radio) => (radio as HTMLInputElement).value)).toEqual(['press', 'search', 'friend', 'none'])
+    expect(
+      within(group)
+        .getAllByRole('radio')
+        .map((radio) => (radio as HTMLInputElement).value),
+    ).toEqual(['press', 'search', 'friend', 'none'])
   })
 
   // The default control's count, outside Material's form field, named by the box (0203).
   test('a text and a long text with a limit show the character count the default control shows', async () => {
-    await mount(form([
-      { key: 'a', type: 'text', label: 'A', maxLength: 5 },
-      { key: 'b', type: 'textarea', label: 'B', maxLength: 7 },
-    ]))
-    for (const [label, limit] of [['A', 5], ['B', 7]] as const) {
+    await mount(
+      form([
+        { key: 'a', type: 'text', label: 'A', maxLength: 5 },
+        { key: 'b', type: 'textarea', label: 'B', maxLength: 7 },
+      ]),
+    )
+    for (const [label, limit] of [
+      ['A', 5],
+      ['B', 7],
+    ] as const) {
       const count = screen.getByText(`You can enter up to ${String(limit)} characters.`)
       expect(screen.getByLabelText(label).getAttribute('aria-describedby')?.split(' ')).toContain(count.id)
     }
@@ -179,7 +183,7 @@ describe('a field Material draws', () => {
         },
       ]),
       specVersion: '5',
-    } as FormSchema)
+    })
     const extras = screen.getByRole('group', { name: 'Extras' })
 
     fireEvent.click(within(extras).getByLabelText('Wrap'))
@@ -265,18 +269,14 @@ describe('where Material and the engine both have an opinion', () => {
   })
 
   test('an error is shown under the engine’s id, and read out once', async () => {
-    const engine = await mount(
-      form([{ key: 'email', type: 'text', label: 'Email', required: true }]),
-    )
+    const engine = await mount(form([{ key: 'email', type: 'text', label: 'Email', required: true }]))
     const control = screen.getByLabelText('Email')
 
     // Submitted, which is when the engine says an empty required field is wrong — for
     // the default controls too; leaving it untouched-then-blurred says nothing yet.
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
 
-    await waitFor(() =>
-      expect(control.getAttribute('aria-describedby') ?? '').toContain('f:m:email:error'),
-    )
+    await waitFor(() => expect(control.getAttribute('aria-describedby') ?? '').toContain('f:m:email:error'))
     // Material adds the ids of the mat-error it shows; handed the engine's list whole,
     // the error would be described twice.
     const ids = (control.getAttribute('aria-describedby') ?? '').split(/\s+/)
@@ -313,11 +313,7 @@ describe('where Material and the engine both have an opinion', () => {
       schema: form([{ key: 'ok', type: 'checkbox', label: 'Agree', required: true }]),
     })
     const view = await render(SummaryHost, {
-      providers: [
-        provideZonelessChangeDetection(),
-        provideFormancy(engine),
-        ...provideFormancyMaterial(),
-      ],
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...provideFormancyMaterial()],
     })
     await view.fixture.whenStable()
 
@@ -405,9 +401,7 @@ describe('a group of radios and a group of ticks, under the engine’s control i
     expect(document.getElementById(sizeId)).toBe(screen.getByRole('group', { name: 'Size' }))
     expect(document.getElementById(extrasId)).toBe(screen.getByRole('group', { name: 'Extras' }))
     expect(document.getElementById(`${sizeId}:s`)?.contains(screen.getByRole('radio', { name: 'Small' }))).toBe(true)
-    expect(document.getElementById(`${extrasId}:wrap`)?.contains(screen.getByRole('checkbox', { name: 'Wrap' }))).toBe(
-      true,
-    )
+    expect(document.getElementById(`${extrasId}:wrap`)?.contains(screen.getByRole('checkbox', { name: 'Wrap' }))).toBe(true)
   })
 
   test.each(CASES)('the error summary’s link to required $kind left empty lands on $where', async ({ fields, link, first }) => {
@@ -420,17 +414,14 @@ describe('a group of radios and a group of ticks, under the engine’s control i
     expect(document.activeElement).toBe(first())
   })
 
-  test.each(CASES)(
-    'a failed submit without a summary, whose first invalid field is required $kind, lands on $where',
-    async ({ fields, first }) => {
-      // Focus stayed where it was, so nothing said where the problem was.
-      await mountGroups(fields, false)
+  test.each(CASES)('a failed submit without a summary, whose first invalid field is required $kind, lands on $where', async ({ fields, first }) => {
+    // Focus stayed where it was, so nothing said where the problem was.
+    await mountGroups(fields, false)
 
-      fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
 
-      expect(document.activeElement).toBe(first())
-    },
-  )
+    expect(document.activeElement).toBe(first())
+  })
 })
 
 describe('every field, under Material, under the engine’s control id (0186)', () => {
@@ -487,12 +478,7 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     // carried none; a control Material draws later is held here without a case of its own.
     const engine = createFormEngine({ schema: form([field]) })
     const view = await render(FormancyForm, {
-      providers: [
-        provideZonelessChangeDetection(),
-        provideFormancy(engine),
-        provideFormancyUploader(upload),
-        ...provideFormancyMaterial(),
-      ],
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), provideFormancyUploader(upload), ...provideFormancyMaterial()],
     })
     await view.fixture.whenStable()
     const id = engine.getFieldSnapshot(['f']).ids.control
@@ -510,7 +496,11 @@ describe('every field, under Material, under the engine’s control id (0186)', 
   test.each([
     { name: 'a file field where the host takes no uploads', field: { key: 'f', type: 'file', label: 'F' }, uploads: false },
     { name: 'a select whose source the deployment lacks', field: { key: 'f', type: 'select', label: 'F', optionsSource: 'nowhere' }, uploads: true },
-    { name: 'a list of ticks whose source the deployment lacks', field: { key: 'f', type: 'selectboxes', label: 'F', optionsSource: 'nowhere' }, uploads: true },
+    {
+      name: 'a list of ticks whose source the deployment lacks',
+      field: { key: 'f', type: 'selectboxes', label: 'F', optionsSource: 'nowhere' },
+      uploads: true,
+    },
   ])('$name is reached by its control id, and focus moved by it lands on the sentence it draws', async ({ field, uploads }) => {
     const engine = createFormEngine({ schema: form([field]) })
     const view = await render(FormancyForm, {
@@ -543,12 +533,7 @@ describe('every field, under Material, under the engine’s control id (0186)', 
         capabilities: { now: () => 0, today: () => '2026-10-28', random: () => 0.5 },
       })
       const view = await render(FormancyForm, {
-        providers: [
-          provideZonelessChangeDetection(),
-          provideFormancy(engine),
-          provideFormancyUploader(upload),
-          ...provideFormancyMaterial(),
-        ],
+        providers: [provideZonelessChangeDetection(), provideFormancy(engine), provideFormancyUploader(upload), ...provideFormancyMaterial()],
       })
       await view.fixture.whenStable()
       const drawn = document.querySelector('[data-formancy-field-path="f"]')
@@ -570,16 +555,11 @@ describe('every field, under Material, under the engine’s control id (0186)', 
     // the engine refused. A repeater is written two rows, as in the two renderers' rule (0218).
     const drawnWith = async (rule: { kind: 'disabled' | 'computed'; cel: string }): Promise<Element> => {
       const engine = createFormEngine({
-        schema: { ...form([field]), logic: { rules: [{ target: 'f', ...rule }] } } as unknown as FormSchema,
+        schema: { ...form([field]), logic: { rules: [{ target: 'f', ...rule }] } },
         capabilities: { now: () => 0, today: () => '2026-10-29', random: () => 0.5 },
       })
       const view = await render(FormancyForm, {
-        providers: [
-          provideZonelessChangeDetection(),
-          provideFormancy(engine),
-          provideFormancyUploader(upload),
-          ...provideFormancyMaterial(),
-        ],
+        providers: [provideZonelessChangeDetection(), provideFormancy(engine), provideFormancyUploader(upload), ...provideFormancyMaterial()],
       })
       await view.fixture.whenStable()
       const drawn = document.querySelector('[data-formancy-field-path="f"]')
@@ -607,12 +587,7 @@ describe('every field, under Material, under the engine’s control id (0186)', 
       } as unknown as FormSchema,
     })
     const view = await render(FormancyForm, {
-      providers: [
-        provideZonelessChangeDetection(),
-        provideFormancy(engine),
-        provideFormancyUploader(upload),
-        ...provideFormancyMaterial(),
-      ],
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), provideFormancyUploader(upload), ...provideFormancyMaterial()],
       inputs: { submitLabel: 'Submit' },
     })
     await view.fixture.whenStable()

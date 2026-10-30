@@ -37,12 +37,7 @@ interface Manifest {
 function manifests(): Manifest[] {
   return readdirSync(join(repo, 'packages'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map(
-      (entry) =>
-        JSON.parse(
-          readFileSync(join(repo, 'packages', entry.name, 'package.json'), 'utf8'),
-        ) as Manifest,
-    )
+    .map((entry) => JSON.parse(readFileSync(join(repo, 'packages', entry.name, 'package.json'), 'utf8')) as Manifest)
     .filter((manifest) => manifest.private !== true)
 }
 
@@ -84,9 +79,7 @@ function claimed(cell: string): string[] {
   const withoutAside = cell.replace(/\([^)]*\)/g, '').trim()
   if (withoutAside === 'none' || withoutAside === '') return []
 
-  return [...withoutAside.matchAll(/`([^`]+)`/g)]
-    .map((match) => match[1]!)
-    .sort()
+  return [...withoutAside.matchAll(/`([^`]+)`/g)].map((match) => match[1]!).sort()
 }
 
 describe('the SOUP composition table', () => {
@@ -109,6 +102,7 @@ describe('the SOUP composition table', () => {
       14: 'Fourteen',
       15: 'Fifteen',
       16: 'Sixteen',
+      17: 'Seventeen',
     }
     const count = manifests().length
     const word = WORDS[count]
@@ -196,9 +190,7 @@ describe('what the declaration says is not implemented', () => {
       for (const match of (found?.[1] ?? '').matchAll(/'([^']+)'/g)) names.add(match[1] ?? '')
     }
 
-    const schema = JSON.parse(
-      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
-    ) as {
+    const schema = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8')) as {
       $defs: Record<
         string,
         {

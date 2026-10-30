@@ -46,10 +46,7 @@ describe('formatPath', () => {
   })
 
   test('round-trips every path parsePath accepts', () => {
-    const arbSegment = fc.oneof(
-      fc.stringMatching(/^[A-Za-z_][A-Za-z0-9_]{0,10}$/),
-      fc.nat({ max: 999 }),
-    )
+    const arbSegment = fc.oneof(fc.stringMatching(/^[A-Za-z_][A-Za-z0-9_]{0,10}$/), fc.nat({ max: 999 }))
     fc.assert(
       fc.property(fc.array(arbSegment, { maxLength: 6 }), (segments) => {
         // An index cannot be the first segment in the wire form we emit; skip those.

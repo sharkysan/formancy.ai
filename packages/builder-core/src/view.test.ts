@@ -39,12 +39,7 @@ describe('the view a builder renders', () => {
   test('flattens the document in the order a person reads the form', () => {
     const view = builderView(createBuilderSession(schema))
 
-    expect(view.nodes.map((node) => node.keyPath.join('.'))).toEqual([
-      'customer',
-      'billing',
-      'billing.street',
-      'billing.city',
-    ])
+    expect(view.nodes.map((node) => node.keyPath.join('.'))).toEqual(['customer', 'billing', 'billing.street', 'billing.city'])
   })
 
   test('never offers the position a field is already in', () => {
@@ -87,10 +82,6 @@ describe('the view a builder renders', () => {
     const session = createBuilderSession(schema)
     session.removeField(['customer'])
 
-    expect(builderView(session).nodes.map((node) => node.keyPath.join('.'))).toEqual([
-      'billing',
-      'billing.street',
-      'billing.city',
-    ])
+    expect(builderView(session).nodes.map((node) => node.keyPath.join('.'))).toEqual(['billing', 'billing.street', 'billing.city'])
   })
 })

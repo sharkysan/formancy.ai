@@ -67,10 +67,7 @@ const CLOCK_INTERVAL = 256
 
 export function createMeter(budget: EvaluationBudget): Meter {
   const { maxSteps, maxDurationMs, monotonicMs } = budget
-  const deadline =
-    maxDurationMs !== undefined && monotonicMs !== undefined
-      ? monotonicMs() + maxDurationMs
-      : undefined
+  const deadline = maxDurationMs !== undefined && monotonicMs !== undefined ? monotonicMs() + maxDurationMs : undefined
 
   let steps = 0
   let sinceClock = 0

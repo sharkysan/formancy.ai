@@ -143,18 +143,14 @@ describe('diffSchemas severity', () => {
     // keeps its path and nothing has to be rebound.
     const after = { ...clone(base), specVersion: '2' as const }
 
-    expect(diffSchemas(base, after)).toContainEqual(
-      expect.objectContaining({ kind: 'specVersion.changed', severity: 'compatible' }),
-    )
+    expect(diffSchemas(base, after)).toContainEqual(expect.objectContaining({ kind: 'specVersion.changed', severity: 'compatible' }))
   })
 
   test('moving down one is breaking, because what the newer version added cannot be expressed', () => {
     const before = { ...clone(base), specVersion: '2' as const }
     const after = { ...clone(base), specVersion: '1' as const }
 
-    expect(diffSchemas(before, after)).toContainEqual(
-      expect.objectContaining({ kind: 'specVersion.changed', severity: 'breaking' }),
-    )
+    expect(diffSchemas(before, after)).toContainEqual(expect.objectContaining({ kind: 'specVersion.changed', severity: 'breaking' }))
   })
 
   test('reordering fields is not a change, because keys carry identity', () => {
@@ -238,18 +234,14 @@ describe('diffSchemas inside containers', () => {
 
     const changes = diffSchemas(nested, after)
 
-    expect(changes).toContainEqual(
-      expect.objectContaining({ kind: 'field.removed', severity: 'lossy', path: 'model.fields.g.child' }),
-    )
+    expect(changes).toContainEqual(expect.objectContaining({ kind: 'field.removed', severity: 'lossy', path: 'model.fields.g.child' }))
   })
 
   test('changing a nested field type is lossy', () => {
     const after = clone(nested)
     after.model.fields[0]!.fields![0] = { key: 'child', type: 'number', required: true }
 
-    expect(diffSchemas(nested, after)).toContainEqual(
-      expect.objectContaining({ kind: 'field.typeChanged', severity: 'lossy', path: 'model.fields.g.child' }),
-    )
+    expect(diffSchemas(nested, after)).toContainEqual(expect.objectContaining({ kind: 'field.typeChanged', severity: 'lossy', path: 'model.fields.g.child' }))
   })
 
   test('tightening a repeater template field is lossy, reported at the row-scoped path', () => {
@@ -271,9 +263,7 @@ describe('diffSchemas inside containers', () => {
 
     const changes = diffSchemas(nested, after)
 
-    expect(changes).toContainEqual(
-      expect.objectContaining({ kind: 'field.renamed', severity: 'compatible', path: 'model.fields.g.kid' }),
-    )
+    expect(changes).toContainEqual(expect.objectContaining({ kind: 'field.renamed', severity: 'compatible', path: 'model.fields.g.kid' }))
     expect(changes.some((c) => c.kind === 'field.removed')).toBe(false)
   })
 
@@ -283,9 +273,7 @@ describe('diffSchemas inside containers', () => {
 
     const changes = diffSchemas(nested, after)
 
-    expect(changes).toContainEqual(
-      expect.objectContaining({ kind: 'field.renamed', severity: 'compatible', path: 'model.fields.g2' }),
-    )
+    expect(changes).toContainEqual(expect.objectContaining({ kind: 'field.renamed', severity: 'compatible', path: 'model.fields.g2' }))
     expect(changes.filter((c) => c.kind === 'field.removed')).toEqual([])
     expect(changes.filter((c) => c.kind === 'field.added')).toEqual([])
   })
@@ -296,9 +284,7 @@ describe('diffSchemas inside containers', () => {
 
     const changes = diffSchemas(nested, after)
 
-    expect(changes).toContainEqual(
-      expect.objectContaining({ kind: 'field.typeChanged', severity: 'lossy', path: 'model.fields.g' }),
-    )
+    expect(changes).toContainEqual(expect.objectContaining({ kind: 'field.typeChanged', severity: 'lossy', path: 'model.fields.g' }))
     // Children move from g.child to g[].child — a different data shape.
     expect(changes.some((c) => c.kind === 'field.removed' && c.path === 'model.fields.g.child')).toBe(true)
   })
@@ -320,7 +306,10 @@ describe('diffSchemas and pages', () => {
   test('moving a field to another page is NO change: pages scope presentation, not data', () => {
     const after = clone(paged)
     after.model.fields[0]!.fields = []
-    after.model.fields[1]!.fields = [{ key: 'email', type: 'text' }, { key: 'message', type: 'text' }]
+    after.model.fields[1]!.fields = [
+      { key: 'email', type: 'text' },
+      { key: 'message', type: 'text' },
+    ]
 
     expect(diffSchemas(paged, after)).toEqual([])
   })
@@ -329,7 +318,9 @@ describe('diffSchemas and pages', () => {
     const after = clone(paged)
     after.model.fields[0]!.fields = [{ key: 'wrap', type: 'group', fields: [{ key: 'email', type: 'text' }] }]
 
-    const kinds = diffSchemas(paged, after).map((c) => c.kind).sort()
+    const kinds = diffSchemas(paged, after)
+      .map((c) => c.kind)
+      .sort()
     expect(kinds).toContain('field.removed')
     expect(kinds).toContain('field.added')
   })
@@ -375,7 +366,13 @@ const choice: FormSchema = {
   },
   logic: { rules: [{ target: 'note', kind: 'visible', cel: "contactBy == 'post'" }] },
   layouts: [
-    { name: 'web', nodes: [{ kind: 'field', path: 'contactBy' }, { kind: 'field', path: 'note' }] },
+    {
+      name: 'web',
+      nodes: [
+        { kind: 'field', path: 'contactBy' },
+        { kind: 'field', path: 'note' },
+      ],
+    },
   ],
   i18n: { defaultLocale: 'en', messages: { en: { greeting: 'Hello' } } },
 }
@@ -542,7 +539,7 @@ describe('every kind of change a document can carry', () => {
     expect(constraint?.severity).toBe('lossy')
   })
 
-  test("a property of a field nobody wrote a comparator for is reported too", () => {
+  test('a property of a field nobody wrote a comparator for is reported too', () => {
     /*
      * The backstop one level down. `clearOnHide` is the example that matters:
      * it decides whether a hidden field's answer survives at all, and nothing

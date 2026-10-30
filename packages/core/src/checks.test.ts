@@ -26,23 +26,18 @@ const schema: FormSchema = {
   title: 'Sign up',
   model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
   logic: {
-    rules: [
-      { target: 'email', kind: 'check', check: 'email-not-taken', code: 'taken', runsOn: 'both' },
-    ],
+    rules: [{ target: 'email', kind: 'check', check: 'email-not-taken', code: 'taken', runsOn: 'both' }],
   },
 }
 
-const engineWith = (
-  checks: Record<string, (request: { value: unknown }) => Promise<string | undefined>>,
-): ReturnType<typeof createFormEngine> =>
+const engineWith = (checks: Record<string, (request: { value: unknown }) => Promise<string | undefined>>): ReturnType<typeof createFormEngine> =>
   createFormEngine({
     schema,
     capabilities: { now: () => 0, today: () => '2026-09-29', random: () => 0.5 },
     checks,
   })
 
-const errorsOn = (engine: ReturnType<typeof createFormEngine>, path: string): readonly string[] =>
-  engine.getFieldSnapshot([path]).errors
+const errorsOn = (engine: ReturnType<typeof createFormEngine>, path: string): readonly string[] => engine.getFieldSnapshot([path]).errors
 
 describe('a check', () => {
   test('is asked when the answer changes, and its verdict becomes the error', async () => {

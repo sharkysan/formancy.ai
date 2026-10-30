@@ -9,10 +9,7 @@ import type { LogicRule, Text } from '@formancy/spec'
  * document's validator has already refused two rules on one field sharing a code with a
  * message, so each code here has one sentence.
  */
-export function ruleMessages(
-  rules: readonly LogicRule[],
-  say: (text: Text) => string | undefined,
-): (target: string) => Readonly<Record<string, string>> {
+export function ruleMessages(rules: readonly LogicRule[], say: (text: Text) => string | undefined): (target: string) => Readonly<Record<string, string>> {
   const byTarget = new Map<string, Array<[string, string]>>()
   for (const rule of rules) {
     if (rule.kind !== 'validate' || rule.code === undefined || rule.message === undefined) continue

@@ -4,11 +4,7 @@ import { userEvent } from '@testing-library/user-event'
 import axe from 'axe-core'
 import { computeAccessibleName } from 'dom-accessibility-api'
 
-import {
-  ACCESSIBILITY_EXCLUSIONS,
-  ACCESSIBILITY_TAGS,
-  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
-} from '@formancy/conformance'
+import { ACCESSIBILITY_EXCLUSIONS, ACCESSIBILITY_TAGS, ACCESSIBILITY_UNMEASURABLE_IN_JSDOM } from '@formancy/conformance'
 
 import { missingMessages } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
@@ -38,9 +34,7 @@ import { STARTER_SUGGESTIONS } from './starter-suggestions.js'
 vi.mock('@monaco-editor/react', () => ({
   // Monaco loads a worker and measures a DOM jsdom does not have. Replaced with a
   // real labelled textarea, so the editor still answers to a name here.
-  default: ({ value }: { value?: string }) => (
-    <textarea readOnly aria-label="Schema" value={value ?? ''} />
-  ),
+  default: ({ value }: { value?: string }) => <textarea readOnly aria-label="Schema" value={value ?? ''} />,
   useMonaco: () => null,
 }))
 
@@ -220,26 +214,18 @@ describe('the playground itself is operable by name', () => {
     expect(unnamed()).toEqual([])
   })
 
-  test.each(PANES)(
-    'axe finds nothing in the %s pane, in the configuration the renderers are held to',
-    async (pane) => {
-      await showing(pane)
+  test.each(PANES)('axe finds nothing in the %s pane, in the configuration the renderers are held to', async (pane) => {
+    await showing(pane)
 
-      const results = await axe.run(document.body, {
-        runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
-        // Both are `Record<rule, why>`: the reason is the point of them, so the exclusion
-        // cannot be a bare list somebody adds to without saying why.
-        rules: Object.fromEntries(
-          [
-            ...Object.keys(ACCESSIBILITY_EXCLUSIONS),
-            ...Object.keys(ACCESSIBILITY_UNMEASURABLE_IN_JSDOM),
-          ].map((rule) => [rule, { enabled: false }]),
-        ),
-      })
+    const results = await axe.run(document.body, {
+      runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
+      // Both are `Record<rule, why>`: the reason is the point of them, so the exclusion
+      // cannot be a bare list somebody adds to without saying why.
+      rules: Object.fromEntries(
+        [...Object.keys(ACCESSIBILITY_EXCLUSIONS), ...Object.keys(ACCESSIBILITY_UNMEASURABLE_IN_JSDOM)].map((rule) => [rule, { enabled: false }]),
+      ),
+    })
 
-      expect(
-        results.violations.map((violation) => `${violation.id}: ${violation.nodes[0]?.html ?? ''}`),
-      ).toEqual([])
-    },
-  )
+    expect(results.violations.map((violation) => `${violation.id}: ${violation.nodes[0]?.html ?? ''}`)).toEqual([])
+  })
 })

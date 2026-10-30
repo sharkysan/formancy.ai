@@ -78,20 +78,16 @@ describe('removing', () => {
 })
 
 describe('keys that try to leave', () => {
-  test.each([
-    '../escaped',
-    'form1/../../escaped',
-    './../../escaped',
-    '..\\escaped',
-    'form1\\..\\..\\escaped',
-    'form1/..\\../escaped',
-  ])('refuses %s', async (key) => {
-    const store = createLocalFileStore(root)
+  test.each(['../escaped', 'form1/../../escaped', './../../escaped', '..\\escaped', 'form1\\..\\..\\escaped', 'form1/..\\../escaped'])(
+    'refuses %s',
+    async (key) => {
+      const store = createLocalFileStore(root)
 
-    await expect(store.put(key, Buffer.from('x'))).rejects.toThrow(/outside the store/)
-    await expect(store.open(key)).rejects.toThrow(/outside the store/)
-    await expect(store.remove(key)).rejects.toThrow(/outside the store/)
-  })
+      await expect(store.put(key, Buffer.from('x'))).rejects.toThrow(/outside the store/)
+      await expect(store.open(key)).rejects.toThrow(/outside the store/)
+      await expect(store.remove(key)).rejects.toThrow(/outside the store/)
+    },
+  )
 
   test('refuses reading outside as well as writing', async () => {
     const store = createLocalFileStore(root)
@@ -114,8 +110,6 @@ describe('sha256', () => {
   test('is the checksum of the bytes', () => {
     // Pinned against a known value rather than against another call to the
     // same function, which would agree with itself however wrong it was.
-    expect(sha256(Buffer.from('abc'))).toBe(
-      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
-    )
+    expect(sha256(Buffer.from('abc'))).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
   })
 })

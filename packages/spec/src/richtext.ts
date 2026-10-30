@@ -32,9 +32,7 @@ export type RichInline =
   | { kind: 'emphasis'; children: RichInline[] }
   | { kind: 'link'; href: string; children: RichInline[] }
 
-export type RichBlock =
-  | { kind: 'paragraph'; children: RichInline[] }
-  | { kind: 'list'; ordered: boolean; items: RichInline[][] }
+export type RichBlock = { kind: 'paragraph'; children: RichInline[] } | { kind: 'list'; ordered: boolean; items: RichInline[][] }
 
 /**
  * Schemes a link may use.
@@ -97,7 +95,7 @@ export function parseRichText(source: string): RichBlock[] {
 
     if (bullet !== null || numbered !== null) {
       const ordered = bullet === null
-      const text = (bullet?.[1] ?? numbered?.[1]) ?? ''
+      const text = bullet?.[1] ?? numbered?.[1] ?? ''
       flushParagraph()
       // A list that changes marker starts a new list rather than mixing two
       // kinds of item under one, which no renderer can show coherently.
@@ -194,10 +192,7 @@ function parseInline(source: string, depth = 0): RichInline[] {
 }
 
 /** `[text](href)` starting at `at`, or undefined if it is not one. */
-function readLink(
-  source: string,
-  at: number,
-): { text: string; href: string; next: number } | undefined {
+function readLink(source: string, at: number): { text: string; href: string; next: number } | undefined {
   const closeText = source.indexOf(']', at + 1)
   if (closeText === -1) return undefined
   if (source[closeText + 1] !== '(') return undefined
@@ -218,16 +213,9 @@ function readLink(
  * of them writing it with a regular expression over the source.
  */
 export function richTextToPlain(source: string): string {
-  const fromInline = (nodes: readonly RichInline[]): string =>
-    nodes
-      .map((node) => (node.kind === 'text' ? node.text : fromInline(node.children)))
-      .join('')
+  const fromInline = (nodes: readonly RichInline[]): string => nodes.map((node) => (node.kind === 'text' ? node.text : fromInline(node.children))).join('')
 
   return parseRichText(source)
-    .map((block) =>
-      block.kind === 'paragraph'
-        ? fromInline(block.children)
-        : block.items.map((item) => fromInline(item)).join('\n'),
-    )
+    .map((block) => (block.kind === 'paragraph' ? fromInline(block.children) : block.items.map((item) => fromInline(item)).join('\n')))
     .join('\n\n')
 }

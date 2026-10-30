@@ -31,10 +31,7 @@ describe('the pseudo-language', () => {
     // The refusal an author meets most comes from the validator; a walk that met
     // one unmarked could not tell it from a sentence written into a component.
     const text = createBuilderText(pseudoLanguage())
-    const refusal = createBuilderSession(contact, { text }).insertField(
-      { parent: [], index: 0 },
-      { key: 'email', type: 'text' },
-    )
+    const refusal = createBuilderSession(contact, { text }).insertField({ parent: [], index: 0 }, { key: 'email', type: 'text' })
 
     expect(refusal.ok ? '' : untranslated([refusal.message], [])).toEqual([])
   })
@@ -50,9 +47,7 @@ describe('what is untranslated', () => {
   })
 
   test('is not the document’s own words, which are not the builder’s to translate', () => {
-    expect(
-      untranslated(['Billing address', '⟦Move Billing address⟧'], ['Billing address']),
-    ).toEqual([])
+    expect(untranslated(['Billing address', '⟦Move Billing address⟧'], ['Billing address'])).toEqual([])
   })
 
   test('sees English beside a marked message in the same text, not only on its own', () => {

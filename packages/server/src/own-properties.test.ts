@@ -24,16 +24,14 @@ afterEach(async () => {
 
 const ROOT = { email: 'root@test.ch', password: 'root-password-1' }
 
-async function serve(
-  storage: Storage = createMemoryStorage(),
-): Promise<{ app: FastifyInstance; asRoot: Record<string, string> }> {
+async function serve(storage: Storage = createMemoryStorage()): Promise<{ app: FastifyInstance; asRoot: Record<string, string> }> {
   app = await createApp(storage, {
     authSecret: 'a-test-secret-that-is-long-enough-to-sign',
     bootstrapAdmin: ROOT,
   })
-  const { token } = (await app.inject({ method: 'POST', url: '/auth/login', payload: ROOT })).json() as {
+  const { token } = (await app.inject({ method: 'POST', url: '/auth/login', payload: ROOT })).json<{
     token: string
-  }
+  }>()
   return { app, asRoot: { authorization: `Bearer ${token}` } }
 }
 
@@ -42,11 +40,7 @@ function form(id: string, fields: readonly unknown[], rules?: readonly unknown[]
 }
 
 /** Publish a form open to anyone, through the API, as an operator would. */
-async function publishPublic(
-  app: FastifyInstance,
-  asRoot: Record<string, string>,
-  schema: Record<string, unknown>,
-): Promise<void> {
+async function publishPublic(app: FastifyInstance, asRoot: Record<string, string>, schema: Record<string, unknown>): Promise<void> {
   const path = schema['id'] as string
   const published = await app.inject({ method: 'POST', url: '/forms', headers: asRoot, payload: { path, schema } })
   expect(published.statusCode).toBe(201)
@@ -55,10 +49,10 @@ async function publishPublic(
 
 /** An anonymous submission, sent as raw JSON, so a list or a key the parser refuses arrives as sent. */
 async function submit(app: FastifyInstance, path: string, body: string) {
-  const { schemaHash: hash, submissionToken } = (await app.inject({ method: 'GET', url: `/f/${path}` })).json() as {
+  const { schemaHash: hash, submissionToken } = (await app.inject({ method: 'GET', url: `/f/${path}` })).json<{
     schemaHash: string
     submissionToken: string
-  }
+  }>()
   return app.inject({
     method: 'POST',
     url: `/f/${path}/submissions`,
@@ -97,10 +91,10 @@ describe('a form with a required field keyed constructor', () => {
     })
     expect(published.statusCode).toBe(201)
     await app.inject({ method: 'PUT', url: '/f/works/access', headers: asRoot, payload: { submit: 'public' } })
-    const { schemaHash, submissionToken } = (await app.inject({ method: 'GET', url: '/f/works' })).json() as {
+    const { schemaHash, submissionToken } = (await app.inject({ method: 'GET', url: '/f/works' })).json<{
       schemaHash: string
       submissionToken: string
-    }
+    }>()
 
     const posted = await app.inject({
       method: 'POST',
@@ -127,9 +121,7 @@ describe('a form with a field keyed __proto__', () => {
       headers: asRoot,
       payload: {
         path: 'remarks',
-        schema: form('remarks', [
-          { key: 'outer', type: 'group', label: 'Outer', fields: [{ key: '__proto__', type: 'text', label: 'Remarks' }] },
-        ]),
+        schema: form('remarks', [{ key: 'outer', type: 'group', label: 'Outer', fields: [{ key: '__proto__', type: 'text', label: 'Remarks' }] }]),
       },
     })
 

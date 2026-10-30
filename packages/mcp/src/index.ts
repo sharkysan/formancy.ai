@@ -14,15 +14,7 @@
  * first and act second.
  */
 
-export {
-  describeSpec,
-  diffForms,
-  getForm,
-  listForms,
-  listSubmissions,
-  publishForm,
-  validateForm,
-} from './tools.js'
+export { describeSpec, diffForms, getForm, listForms, listSubmissions, publishForm, validateForm } from './tools.js'
 export type { ServerAccess, ToolResult } from './tools.js'
 
 export { TOOL_DEFINITIONS, createFormancyMcpServer } from './server.js'

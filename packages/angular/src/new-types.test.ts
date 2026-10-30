@@ -32,11 +32,7 @@ const base = (over: Partial<FormSchema>): FormSchema => ({
 async function renderForm(engine: FormEngine, providers: unknown[] = []) {
   const view = await render(FormancyForm, {
     componentInputs: { layout: 'web' },
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine),
-      ...(providers as never[]),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(providers as never[])],
   })
   await view.fixture.whenStable()
   return view
@@ -112,9 +108,7 @@ describe('selectboxes', () => {
     // that attribute, so assistive technology ignores it and an auditor calls
     // it invalid ARIA. The conformance run's axe pass is what found this.
     const group = screen.getByRole('group', { name: 'Topics' })
-    const described = (group.getAttribute('aria-describedby') ?? '')
-      .split(/\s+/)
-      .map((id) => document.getElementById(id)?.textContent?.trim())
+    const described = (group.getAttribute('aria-describedby') ?? '').split(/\s+/).map((id) => document.getElementById(id)?.textContent?.trim())
 
     expect(described).toContain('required')
     expect(group.getAttribute('aria-required')).toBeNull()
@@ -143,20 +137,14 @@ describe('richtext', () => {
     // something else there — this asserts the row agrees as well.
     const toolbar = screen.getByRole('toolbar', { name: 'Formatting for Notes' })
     const buttons = within(toolbar).getAllByRole('button')
-    expect(buttons.map((button) => button.textContent?.trim())).toEqual([
-      'BBold',
-      'IItalic',
-      '↗Link',
-      '•Bulleted list',
-      '1.Numbered list',
-    ])
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['BBold', 'IItalic', '↗Link', '•Bulleted list', '1.Numbered list'])
     expect(buttons.filter((button) => button.getAttribute('tabindex') === '0')).toHaveLength(1)
   })
 
   test('Bold wraps the selection in the grammar', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: 'hello there' } })
     box.setSelectionRange(0, 5)
     fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
@@ -167,7 +155,7 @@ describe('richtext', () => {
   test('pressing Bold again takes it off', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: '**hello**' } })
     box.setSelectionRange(2, 7)
     fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
@@ -178,7 +166,7 @@ describe('richtext', () => {
   test('Ctrl+B does the same thing as the button', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: 'hello' } })
     box.setSelectionRange(0, 5)
     fireEvent.keyDown(box, { key: 'b', ctrlKey: true })
@@ -199,7 +187,7 @@ describe('richtext', () => {
   test('a list button marks every line the selection touches', async () => {
     await renderForm(engineFor(schema))
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.input(box, { target: { value: 'one\ntwo' } })
     box.setSelectionRange(0, 7)
     fireEvent.click(screen.getByRole('button', { name: 'Bulleted list' }))
@@ -218,9 +206,7 @@ describe('richtext', () => {
 
     // No [innerHTML] anywhere on this path, so there is no element to find.
     expect(document.querySelector('img')).toBeNull()
-    expect(document.querySelector('[data-formancy-part="richtext"]')?.textContent?.trim()).toBe(
-      typed,
-    )
+    expect(document.querySelector('[data-formancy-part="richtext"]')?.textContent?.trim()).toBe(typed)
   })
 
   test('a javascript: link renders as text, an https one as a link', async () => {
@@ -234,18 +220,14 @@ describe('richtext', () => {
 
     fireEvent.input(area, { target: { value: '[docs](https://example.ch)' } })
     await view.fixture.whenStable()
-    expect(screen.getByRole('link', { name: 'docs' }).getAttribute('href')).toBe(
-      'https://example.ch',
-    )
+    expect(screen.getByRole('link', { name: 'docs' }).getAttribute('href')).toBe('https://example.ch')
   })
 })
 
 describe('file', () => {
   const schema = base({
     model: {
-      fields: [
-        { key: 'evidence', type: 'file', label: 'Evidence', accept: ['application/pdf'] },
-      ],
+      fields: [{ key: 'evidence', type: 'file', label: 'Evidence', accept: ['application/pdf'] }],
     },
   })
 
@@ -282,10 +264,7 @@ describe('file', () => {
     const input = screen.getByLabelText<HTMLInputElement>('Evidence')
     fireEvent.change(input, {
       target: {
-        files: [
-          new File(['x'], 'first.pdf', { type: 'application/pdf' }),
-          new File(['x'], 'second.pdf', { type: 'application/pdf' }),
-        ],
+        files: [new File(['x'], 'first.pdf', { type: 'application/pdf' }), new File(['x'], 'second.pdf', { type: 'application/pdf' })],
       },
     })
     await view.fixture.whenStable()
@@ -304,9 +283,7 @@ describe('file', () => {
 
   test('a file dropped on the field is uploaded, the same as one picked', async () => {
     const engine = engineFor(schema)
-    const view = await renderForm(engine, [
-      provideFormancyUploader(async (file) => ({ ...stored, id: `id-${file.name}`, name: file.name })),
-    ])
+    const view = await renderForm(engine, [provideFormancyUploader(async (file) => ({ ...stored, id: `id-${file.name}`, name: file.name }))])
 
     const zone = document.querySelector('[data-formancy-part="file-dropzone"]')!
     fireEvent.drop(zone, {
@@ -332,9 +309,7 @@ describe('file', () => {
   })
 
   test('dragging over says so, and says it again when the file leaves', async () => {
-    const view = await renderForm(engineFor(schema), [
-      provideFormancyUploader(async () => stored),
-    ])
+    const view = await renderForm(engineFor(schema), [provideFormancyUploader(async () => stored)])
     const zone = document.querySelector('[data-formancy-part="file-dropzone"]')!
 
     fireEvent.dragOver(zone)
@@ -389,7 +364,7 @@ describe('time', () => {
     model: {
       fields: [{ key: 'slot', type: 'time', label: 'Slot', earliest: '09:00', latest: '17:00' }],
     },
-  } as Partial<FormSchema>)
+  })
 
   test('is a control a person can find and fill in', async () => {
     const engine = engineFor(schema)
@@ -421,7 +396,7 @@ describe('time', () => {
 describe('datetime', () => {
   const schema = base({
     model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
-  } as Partial<FormSchema>)
+  })
 
   test('converts the local wall clock the control shows into a stored instant', async () => {
     const engine = engineFor(schema)
@@ -442,9 +417,8 @@ describe('datetime', () => {
     await view.fixture.whenStable()
     const pad = (part: number): string => String(part).padStart(2, '0')
     const expected =
-      `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` +
-      `T${pad(local.getHours())}:${pad(local.getMinutes())}`
-    expect((screen.getByLabelText('Starts') as HTMLInputElement).value).toBe(expected)
+      `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` + `T${pad(local.getHours())}:${pad(local.getMinutes())}`
+    expect(screen.getByLabelText<HTMLInputElement>('Starts').value).toBe(expected)
   })
 
   test('never stores a malformed string, whatever the control hands back', async () => {
@@ -475,7 +449,7 @@ describe('qrcode', () => {
         ],
       },
     ],
-  } as Partial<FormSchema>)
+  })
 
   test('says what the code IS, with a name attached rather than a label beside it', async () => {
     // The bug this exists for, reported against the running playground: the label was a
@@ -491,9 +465,7 @@ describe('qrcode', () => {
 
     const value = document.querySelector('[data-formancy-part="code-value"]')!
     expect(computeAccessibleName(value)).toBe('Your pass')
-    expect(document.querySelector('[data-formancy-part="code-label"]')?.textContent?.trim()).toBe(
-      'Your pass',
-    )
+    expect(document.querySelector('[data-formancy-part="code-label"]')?.textContent?.trim()).toBe('Your pass')
   })
 
   test('shows the value of the answer it encodes, as text', async () => {
@@ -520,14 +492,10 @@ describe('qrcode', () => {
     // OnPush component re-runs for.
     const engine = engineFor(schema)
     const view = await renderForm(engine)
-    expect(document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state')).toBe(
-      'empty',
-    )
+    expect(document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state')).toBe('empty')
     engine.setValue(['reference'], 'AB-1234')
     await view.fixture.whenStable()
-    expect(document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state')).toBe(
-      'ready',
-    )
+    expect(document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state')).toBe('ready')
   })
 })
 
@@ -560,10 +528,11 @@ describe('tabs', () => {
     await renderForm(engineFor(schema))
 
     const strip = screen.getByRole('tablist', { name: 'Application' })
-    expect(within(strip).getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
-      'About you',
-      'Contact',
-    ])
+    expect(
+      within(strip)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent?.trim()),
+    ).toEqual(['About you', 'Contact'])
   })
 
   test('the strip is one tab stop', async () => {
@@ -653,9 +622,7 @@ describe('table', () => {
   test('declares its column count for the stylesheet', async () => {
     await renderForm(engineFor(schema))
 
-    expect(
-      screen.getByRole('group', { name: 'Measurements' }).getAttribute('data-columns'),
-    ).toBe('2')
+    expect(screen.getByRole('group', { name: 'Measurements' }).getAttribute('data-columns')).toBe('2')
   })
 })
 
@@ -768,9 +735,7 @@ describe('the signature field, which must behave as the React one does', () => {
   test('emits the parts a theme dresses, with the names the React renderer uses', async () => {
     await renderForm(engineFor(signing()))
 
-    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     for (const part of ['signature', 'signature-surface', 'signature-typed', 'signature-clear']) {
       expect(parts, `no ${part}`).toContain(part)
     }
@@ -793,10 +758,7 @@ describe('the signature field, which must behave as the React one does', () => {
     await renderForm(engineFor(signing()))
     const surface = screen.getByRole('img', { name: /sign here/i })
 
-    expect(
-      (surface as HTMLElement).style.touchAction,
-      'the surface lets the browser treat a touch drag as a pan',
-    ).toBe('none')
+    expect(surface.style.touchAction, 'the surface lets the browser treat a touch drag as a pan').toBe('none')
   })
 
   test('and prevents the pan itself, for a browser that did not honour that', async () => {
@@ -882,7 +844,7 @@ describe('the signature field, which must behave as the React one does', () => {
     // read with it and a required signature did not say so on it (D4, 0212).
     const schema = signing()
     const fields = schema.model.fields.map((field) => ({ ...field, required: true }))
-    const engine = engineFor({ ...schema, model: { ...schema.model, fields } } as FormSchema)
+    const engine = engineFor({ ...schema, model: { ...schema.model, fields } })
     const view = await renderForm(engine)
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
     await view.fixture.whenStable()
@@ -902,7 +864,14 @@ describe('the signature field, which must behave as the React one does', () => {
     fireEvent.pointerDown(surface, { clientX: 1, clientY: 1 })
     fireEvent.pointerMove(surface, { clientX: 5, clientY: 5 })
     const kept = (engine.value() as { mark?: unknown }).mark
-    expect(kept).toEqual({ drawn: [[[1, 1], [5, 5]]] })
+    expect(kept).toEqual({
+      drawn: [
+        [
+          [1, 1],
+          [5, 5],
+        ],
+      ],
+    })
 
     engine.setValue(['locked'], true)
     fireEvent.pointerMove(surface, { clientX: 30, clientY: 30 })
@@ -955,10 +924,14 @@ describe('the tag picker, which must behave as the React one does', () => {
     const box = screen.getByRole('combobox', { name: 'Topics' })
 
     fireEvent.input(box, { target: { value: 'trans' } })
-    await waitFor(() => { expect(screen.getAllByRole('option')).toHaveLength(1) })
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(1)
+    })
     fireEvent.click(screen.getByRole('option', { name: 'Translation' }))
     fireEvent.input(box, { target: { value: 'access' } })
-    await waitFor(() => { expect(screen.getAllByRole('option')).toHaveLength(1) })
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(1)
+    })
     fireEvent.click(screen.getByRole('option', { name: 'Accessibility' }))
 
     await waitFor(() => {
@@ -983,9 +956,7 @@ describe('the tag picker, which must behave as the React one does', () => {
     engine.setValue(['topics'], ['a11y'])
     await renderForm(engine)
 
-    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     for (const part of ['tagpicker', 'tagpicker-chips', 'tagpicker-chip', 'tagpicker-remove']) {
       expect(parts, `no ${part}`).toContain(part)
     }
@@ -1052,7 +1023,7 @@ describe('the tag picker, which must behave as the React one does', () => {
     // 0211). It is one combobox, and says it as one, as React's does.
     const schema = tagging()
     const fields = schema.model.fields.map((field) => ({ ...field, required: true }))
-    const engine = engineFor({ ...schema, model: { ...schema.model, fields } } as FormSchema)
+    const engine = engineFor({ ...schema, model: { ...schema.model, fields } })
     const view = await renderForm(engine)
     // Sent empty, so the error is drawn and named too.
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
@@ -1085,10 +1056,11 @@ describe('a skipped page under Angular, which must match the React one', () => {
     const view = await renderForm(engine)
 
     const stepper = screen.getByRole('navigation', { name: /progress/i })
-    expect(within(stepper).getAllByRole('listitem').map((item) => item.textContent?.trim())).toEqual([
-      'About you',
-      'Confirm',
-    ])
+    expect(
+      within(stepper)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent?.trim()),
+    ).toEqual(['About you', 'Confirm'])
 
     engine.setValue(['needsVisa'], true)
     await view.fixture.whenStable()
@@ -1165,7 +1137,7 @@ describe('a rating and a slider, which must behave as the React ones do', () => 
 
   test('a slider carries the field’s bounds and step, and shows its value', async () => {
     await renderForm(engineFor(scaleSchema('slider', { step: 0.5 })))
-    const slider = screen.getByRole('slider', { name: /how likely/i }) as HTMLInputElement
+    const slider = screen.getByRole<HTMLInputElement>('slider', { name: /how likely/i })
 
     expect(slider.min).toBe('0')
     expect(slider.max).toBe('10')
@@ -1184,7 +1156,7 @@ describe('a rating and a slider, which must behave as the React ones do', () => 
     await renderForm(engine)
 
     expect(engine.value()).toEqual({})
-    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('5')
+    expect(screen.getByRole<HTMLInputElement>('slider').value).toBe('5')
 
     fireEvent.input(screen.getByRole('slider'), { target: { value: '8' } })
     expect(engine.value()).toEqual({ score: 8 })
@@ -1217,9 +1189,7 @@ describe('a rating and a slider, which must behave as the React ones do', () => 
 
   test('and the parts a theme dresses carry the names the React renderer uses', async () => {
     await renderForm(engineFor(scaleSchema('rating')))
-    const rating = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const rating = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     for (const part of ['rating', 'rating-step', 'rating-label']) {
       expect(rating, `no ${part}`).toContain(part)
     }
@@ -1228,9 +1198,7 @@ describe('a rating and a slider, which must behave as the React ones do', () => 
     document.body.innerHTML = ''
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] })
     await renderForm(engineFor(scaleSchema('slider')))
-    const slider = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
-      element.getAttribute('data-formancy-part'),
-    )
+    const slider = [...document.querySelectorAll('[data-formancy-part]')].map((element) => element.getAttribute('data-formancy-part'))
     for (const part of ['slider', 'slider-value']) {
       expect(slider, `no ${part}`).toContain(part)
     }

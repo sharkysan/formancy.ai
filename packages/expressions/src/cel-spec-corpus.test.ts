@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { captureCapabilities } from './capabilities.js'
 import { compile } from './compile.js'
 import { evaluate } from './evaluate.js'
-import type { DeclaredType, VariableDeclarations } from './types.js'
+import type { DeclaredType } from './types.js'
 
 /**
  * The OFFICIAL CEL conformance corpus, run through formancy's public facade.
@@ -20,19 +20,7 @@ import type { DeclaredType, VariableDeclarations } from './types.js'
  */
 
 /** Groups whose subject matter formancy actually exposes to form authors. */
-const INCLUDED_GROUPS = new Set([
-  'basic',
-  'comparisons',
-  'conversions',
-  'fp_math',
-  'integer_math',
-  'lists',
-  'logic',
-  'macros',
-  'macros2',
-  'parse',
-  'string',
-])
+const INCLUDED_GROUPS = new Set(['basic', 'comparisons', 'conversions', 'fp_math', 'integer_math', 'lists', 'logic', 'macros', 'macros2', 'parse', 'string'])
 
 const GROUP_EXCLUSIONS: Record<string, string> = {
   proto2: 'protobuf messages — not a formancy value type',
@@ -77,8 +65,6 @@ const CAPABILITIES = captureCapabilities({
   today: () => '2026-01-01',
   random: () => 0.5,
 })
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // This package compiles without DOM or Node libs on purpose, so `console` is
 // not in scope. Declared here rather than widening the lib: the audit prints
@@ -175,22 +161,14 @@ function sameValue(actual: unknown, expected: unknown): boolean {
   if (Array.isArray(actual) && Array.isArray(expected)) {
     return actual.length === expected.length && actual.every((item, i) => sameValue(item, expected[i]))
   }
-  if (
-    actual !== null &&
-    expected !== null &&
-    typeof actual === 'object' &&
-    typeof expected === 'object'
-  ) {
+  if (actual !== null && expected !== null && typeof actual === 'object' && typeof expected === 'object') {
     const a = actual as Record<string, unknown>
     const b = expected as Record<string, unknown>
     const keys = Object.keys(b)
-    return (
-      Object.keys(a).length === keys.length && keys.every((key) => sameValue(a[key], b[key]))
-    )
+    return Object.keys(a).length === keys.length && keys.every((key) => sameValue(a[key], b[key]))
   }
   return Object.is(actual, expected)
 }
-
 
 /** Limit and policy codes mean "formancy refused", not "CEL disagreed". */
 function isPolicyRefusal(code: string): boolean {
@@ -247,7 +225,7 @@ function runCase(entry: CorpusCase): Outcome {
 
   const compiled = compile(entry.expr, {
     kind: 'computed',
-    variables: variables as VariableDeclarations,
+    variables,
   })
 
   if (!compiled.ok && isPolicyRefusal(compiled.error.code)) {
@@ -257,9 +235,7 @@ function runCase(entry: CorpusCase): Outcome {
   if (expectedCase === 'evalError') {
     if (!compiled.ok) return { kind: 'passed' }
     const outcome = evaluate(compiled.program, bag, { capabilities: CAPABILITIES })
-    return outcome.ok
-      ? { kind: 'failed', detail: `expected an error, got ${String(outcome.value)}` }
-      : { kind: 'passed' }
+    return outcome.ok ? { kind: 'failed', detail: `expected an error, got ${JSON.stringify(outcome.value)}` } : { kind: 'passed' }
   }
 
   const expected = toJs((entry.expected as any).value)
@@ -272,10 +248,10 @@ function runCase(entry: CorpusCase): Outcome {
   if (!outcome.ok) return { kind: 'failed', detail: `evaluate: ${outcome.error.code}` }
   return sameValue(outcome.value, expected)
     ? { kind: 'passed' }
-    : { kind: 'failed', detail: `got ${JSON.stringify(String(outcome.value))}, want ${JSON.stringify(String(expected))}` }
+    : { kind: 'failed', detail: `got ${JSON.stringify(outcome.value)}, want ${JSON.stringify(expected)}` }
 }
 
-const corpus = await getConformanceSuite()
+const corpus = getConformanceSuite()
 const cases = collectCases()
 const results = cases.map((entry) => ({ entry, outcome: runCase(entry) }))
 
@@ -313,7 +289,10 @@ describe('the official CEL conformance corpus', () => {
     const codes: Record<string, number> = {}
     for (const f of failed) {
       const detail = (f.outcome as { detail: string }).detail
-      const code = detail.replace(/^(compile|evaluate): /, '').split(',')[0]!.slice(0, 40)
+      const code = detail
+        .replace(/^(compile|evaluate): /, '')
+        .split(',')[0]!
+        .slice(0, 40)
       codes[code] = (codes[code] ?? 0) + 1
     }
     console.log('CEL corpus failure classes:', JSON.stringify(codes, null, 1))
@@ -323,11 +302,7 @@ describe('the official CEL conformance corpus', () => {
     // when a user submits — losing that would be a regression, not a fix.
     expect(codes['unknown_variable']).toBe(50)
     expect(codes['int_out_of_range']).toBe(3)
-    expect(
-      (codes['heterogeneous_list_element'] ?? 0) +
-        (codes['heterogeneous_map_value'] ?? 0) +
-        (codes['heterogeneous_map_key'] ?? 0),
-    ).toBe(19)
+    expect((codes['heterogeneous_list_element'] ?? 0) + (codes['heterogeneous_map_value'] ?? 0) + (codes['heterogeneous_map_key'] ?? 0)).toBe(19)
     console.log(
       'CEL corpus sample failures:',
       JSON.stringify(
@@ -344,12 +319,7 @@ describe('the official CEL conformance corpus', () => {
     console.log(
       'CEL corpus failures by group:',
       JSON.stringify(
-        Object.fromEntries(
-          [...new Set(failed.map((f) => f.entry.group))].map((group) => [
-            group,
-            failed.filter((f) => f.entry.group === group).length,
-          ]),
-        ),
+        Object.fromEntries([...new Set(failed.map((f) => f.entry.group))].map((group) => [group, failed.filter((f) => f.entry.group === group).length])),
       ),
     )
 
@@ -373,9 +343,7 @@ describe('the official CEL conformance corpus', () => {
 
   test('no included group is entirely unrun — that would be a silent hole', () => {
     for (const group of INCLUDED_GROUPS) {
-      const ran = results.filter(
-        (r) => r.entry.group === group && r.outcome.kind !== 'excluded',
-      ).length
+      const ran = results.filter((r) => r.entry.group === group && r.outcome.kind !== 'excluded').length
       expect({ group, ran }).toEqual({ group, ran: expect.any(Number) })
       expect(ran).toBeGreaterThan(0)
     }

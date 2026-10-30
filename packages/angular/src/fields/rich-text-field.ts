@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, viewChild, viewChildren } from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core'
 import type { ElementRef } from '@angular/core'
 import { applyRichCommand } from '@formancy/spec'
 import type { RichCommand } from '@formancy/spec'
@@ -8,7 +8,6 @@ import type { RichTextEditorHandle } from '../rich-text-editor.js'
 import type { FormWordId } from '@formancy/core/words'
 import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
-
 
 /**
  * The rich text control, over a stored grammar rather than HTML.
@@ -285,11 +284,7 @@ export class FormancyRichTextField extends FieldComponentBase {
     const element = this.box()?.nativeElement
     if (element === undefined) return
 
-    const next = applyRichCommand(
-      command,
-      { value: this.text(), start: element.selectionStart, end: element.selectionEnd },
-      href === undefined ? {} : { href },
-    )
+    const next = applyRichCommand(command, { value: this.text(), start: element.selectionStart, end: element.selectionEnd }, href === undefined ? {} : { href })
     this.field.setValue(next.value)
     // After the signal has been written through to the DOM. An editor that
     // drops the caret to the end after every button is one nobody can use for

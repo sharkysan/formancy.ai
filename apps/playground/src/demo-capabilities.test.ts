@@ -60,9 +60,7 @@ describe('the playground’s list from a source', () => {
     // Typing narrows the page to silence: success announces nothing, so a demo that still
     // spoke here would be showing a status at rest.
     const { values, completeness } = await searchFor('zür')
-    expect(values).toEqual(
-      PICKUP_POINTS.filter((point) => point.label.startsWith('Zürich')).map((point) => point.value),
-    )
+    expect(values).toEqual(PICKUP_POINTS.filter((point) => point.label.startsWith('Zürich')).map((point) => point.value))
     expect(completeness).toEqual({ kind: 'complete' })
   })
 

@@ -35,8 +35,7 @@ const mount = (): ReturnType<typeof createBuilderSession> => {
   return session
 }
 
-const keys = (): string[] =>
-  screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
+const keys = (): string[] => screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
 
 describe('the structure tree', () => {
   test('is one tab stop, not one per field', async () => {
@@ -225,10 +224,7 @@ describe('adding a field', () => {
 
     await user.click(screen.getByRole('button', { name: 'Single-line text' }))
     await user.click(
-      within(screen.getByRole('dialog', { name: /Where should the Single-line text go/ })).getByRole(
-        'button',
-        { name: 'Order, before Customer' },
-      ),
+      within(screen.getByRole('dialog', { name: /Where should the Single-line text go/ })).getByRole('button', { name: 'Order, before Customer' }),
     )
 
     expect(keys()).toEqual(['Single-line text', 'Customer', 'Billing address', 'Street', 'City'])
@@ -500,9 +496,7 @@ describe('unmaking a wizard', () => {
    * On the tree rather than in a dialog, because there is nothing to choose:
    * where the questions go is decided by where the container stood.
    */
-  const paged = (
-    ...pages: Array<[string, string, string[]]>
-  ): ReturnType<typeof createBuilderSession> => {
+  const paged = (...pages: Array<[string, string, string[]]>): ReturnType<typeof createBuilderSession> => {
     const session = createBuilderSession({
       specVersion: '3',
       id: 'trip',
@@ -566,10 +560,7 @@ describe('unmaking a wizard', () => {
     // which says unwrapping is not another word for deleting — and the field is
     // still there, which is the half a wrong implementation would get wrong.
     expect(screen.getByRole('status').textContent).toMatch(/nothing inside/i)
-    expect(session.document().model.fields.map((field) => field.key)).toEqual([
-      'customer',
-      'billing',
-    ])
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['customer', 'billing'])
   })
 
   test('the tree keeps the keyboard after it, like every other command', async () => {
@@ -686,8 +677,13 @@ describe('d duplicates the focused field', () => {
       specVersion: '4',
       id: 'contact',
       title: 'Contact',
-      model: { fields: [{ key: 'email', type: 'text', label: 'Email' }, { key: 'phone', type: 'text', label: 'Phone' }] },
-    } as FormSchema)
+      model: {
+        fields: [
+          { key: 'email', type: 'text', label: 'Email' },
+          { key: 'phone', type: 'text', label: 'Phone' },
+        ],
+      },
+    })
     render(<FormancyBuilder session={session} />)
 
     await user.tab()

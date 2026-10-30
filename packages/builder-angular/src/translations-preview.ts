@@ -26,12 +26,7 @@ import type { FormSchema } from './types.js'
  * not the preview's — a translator seeing a compile error about a colleague's expression
  * has been handed somebody else's failure.
  */
-export function previewInjector(
-  document: FormSchema,
-  locale: string,
-  parent: EnvironmentInjector,
-  formId?: string,
-): Injector | undefined {
+export function previewInjector(document: FormSchema, locale: string, parent: EnvironmentInjector, formId?: string): Injector | undefined {
   try {
     const engine = createFormEngine({
       schema: document,

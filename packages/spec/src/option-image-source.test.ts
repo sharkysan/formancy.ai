@@ -6,12 +6,7 @@ describe('where a renderer may load an option’s picture from', () => {
   test('is the pattern the schema states, so a renderer and the validator cannot disagree', () => {
     // Two spellings of one rule are two answers waiting to differ: a picture the
     // validator accepts and a renderer refuses is a broken image nobody was told about.
-    expect(IMAGE_SOURCE.source).toBe(
-      new RegExp(
-        (schema as { $defs: { imageSource: { pattern: string } } }).$defs.imageSource.pattern,
-        'u',
-      ).source,
-    )
+    expect(IMAGE_SOURCE.source).toBe(new RegExp((schema as { $defs: { imageSource: { pattern: string } } }).$defs.imageSource.pattern, 'u').source)
   })
 
   test('and answers the cases the validator does', () => {

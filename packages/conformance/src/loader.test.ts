@@ -26,17 +26,13 @@ function sourceOf(files: Record<string, string>): FixtureSource {
 
 describe('loadFixtures', () => {
   test('parses every JSON file in the directory, in file name order', async () => {
-    const fixtures = await loadFixtures(
-      sourceOf({ 'b-second.json': caseFile('second'), 'a-first.json': caseFile('first') }),
-    )
+    const fixtures = await loadFixtures(sourceOf({ 'b-second.json': caseFile('second'), 'a-first.json': caseFile('first') }))
 
     expect(fixtures.map((fixture) => fixture.name)).toEqual(['first', 'second'])
   })
 
   test('ignores anything that is not a .json file', async () => {
-    const fixtures = await loadFixtures(
-      sourceOf({ 'README.md': 'not a fixture', 'a.json': caseFile('only one') }),
-    )
+    const fixtures = await loadFixtures(sourceOf({ 'README.md': 'not a fixture', 'a.json': caseFile('only one') }))
 
     expect(fixtures).toHaveLength(1)
   })

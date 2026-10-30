@@ -22,8 +22,7 @@ afterEach(() => {
 
 const CAPABILITIES = { now: () => 0, today: () => '2026-10-09', random: () => 0.5 }
 
-const schema = (fields: unknown[]): FormSchema =>
-  ({ specVersion: '4', id: 'claim', title: 'Claim', model: { fields } }) as unknown as FormSchema
+const schema = (fields: unknown[]): FormSchema => ({ specVersion: '4', id: 'claim', title: 'Claim', model: { fields } }) as unknown as FormSchema
 
 const EVIDENCE = { key: 'evidence', type: 'file', label: 'Evidence' }
 
@@ -57,8 +56,7 @@ function controlled() {
     resolve: (file: StoredFile) => void
     reject: (error: unknown) => void
   }> = []
-  const uploader: Uploader = (file, options) =>
-    new Promise<StoredFile>((resolve, reject) => calls.push({ file, options, resolve, reject }))
+  const uploader: Uploader = (file, options) => new Promise<StoredFile>((resolve, reject) => calls.push({ file, options, resolve, reject }))
   return { calls, uploader }
 }
 
@@ -113,10 +111,7 @@ describe('a file on its way', () => {
 
   test('that failed stays, says why, and can be tried again', async () => {
     const user = userEvent.setup()
-    const upload = vi
-      .fn<Uploader>()
-      .mockRejectedValueOnce(new Error('the network went away'))
-      .mockResolvedValueOnce(stored('report.pdf'))
+    const upload = vi.fn<Uploader>().mockRejectedValueOnce(new Error('the network went away')).mockResolvedValueOnce(stored('report.pdf'))
     const { engine } = mount(schema([EVIDENCE]), upload)
     await user.upload(screen.getByLabelText('Evidence'), pdf('report.pdf'))
 
@@ -196,9 +191,7 @@ describe('a file on its way', () => {
         items: [{}, { what: 'taxi', receipt: [stored('taxi.pdf')] }],
       }),
     )
-    expect(
-      (engine.value() as { items: Array<Record<string, unknown>> }).items[0],
-    ).not.toHaveProperty('receipt')
+    expect((engine.value() as { items: Array<Record<string, unknown>> }).items[0]).not.toHaveProperty('receipt')
   })
 
   test('is stopped when the form goes away', async () => {
@@ -229,9 +222,7 @@ describe('the files in the answer', () => {
 
     await user.click(screen.getByRole('button', { name: 'Move a.pdf, 1 of 2, down' }))
 
-    expect(
-      (engine.value() as { evidence: StoredFile[] }).evidence.map((file) => file.name),
-    ).toEqual(['b.pdf', 'a.pdf'])
+    expect((engine.value() as { evidence: StoredFile[] }).evidence.map((file) => file.name)).toEqual(['b.pdf', 'a.pdf'])
   })
 
   test('and a file that cannot move that way has no button for it', async () => {
@@ -265,14 +256,9 @@ describe('a picture of an image', () => {
     // decoded bitmap involves no URL at all, so it needs no CSP change.
     const { bitmap, drawImage, objectUrl } = drawing()
     const user = userEvent.setup()
-    mount(schema([EVIDENCE]), (file) =>
-      Promise.resolve({ ...stored(file.name), contentType: 'image/png' }),
-    )
+    mount(schema([EVIDENCE]), (file) => Promise.resolve({ ...stored(file.name), contentType: 'image/png' }))
 
-    await user.upload(
-      screen.getByLabelText('Evidence'),
-      new File(['png'], 'photo.png', { type: 'image/png' }),
-    )
+    await user.upload(screen.getByLabelText('Evidence'), new File(['png'], 'photo.png', { type: 'image/png' }))
 
     await waitFor(() => expect(drawImage).toHaveBeenCalled())
     expect(drawImage.mock.calls[0]?.[0]).toBe(bitmap)

@@ -1,6 +1,8 @@
 # 0115 — A library writes nothing to its host's console
 
-- **Status:** accepted
+- **Status:** accepted; the gate it found missing for `pnpm lint` added by
+  [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md),
+  which runs no `no-console`, so this record's test still holds the rule
 - **Date:** 2026-10-09
 - **Deciders:** Daniel Bacher
 - **Verified by:** `apps/docs/src/console.test.ts` — no shipped source file in a published
@@ -62,6 +64,11 @@ because it claimed the server wrote nothing at all.
 **A lint rule (`no-console`).** The right shape in principle, and `pnpm lint` exists — but
 no CI gate runs it, and a rule that does not gate is a comment. The test runs where every
 other gate runs.
+
+> **Since [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)**
+> CI runs `pnpm lint`, in `verify` and before a release. `no-console` is not among its rules,
+> and the test still holds this decision: it reads every shipped file of every package that
+> ships script, and a rule file can take an exception in the commit that breaks the rule.
 
 **Allow `console.warn` and `console.error`, forbid `log` and `debug`.** That is a
 judgement about which of the host's channels a library may use, and it is the host's

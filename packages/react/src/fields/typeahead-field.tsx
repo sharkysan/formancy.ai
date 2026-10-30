@@ -8,7 +8,6 @@ import { useSourcedOptions } from '../use-sourced-options.js'
 import { FieldShell, optionDomId, statusState } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
-
 /**
  * A combobox over the same answer a select holds.
  *
@@ -67,14 +66,12 @@ export function TypeaheadSelectField({
   // re-folding its rows here would drop ones it matched on data the person cannot
   // see. A host that wants fetch-once-filter-locally composes `narrowOptionsByLabel`
   // in its own resolver, which is why that function lives in `@formancy/spec`.
-  const matches =
-    sourced.remote === null ? narrowOptionsByLabel(options, query ?? '') : options
+  const matches = sourced.remote === null ? narrowOptionsByLabel(options, query ?? '') : options
   /** Collapsed whenever there is nothing on the screen, so `aria-expanded` never
    *  claims a popup a person cannot see. */
   const expanded = open && matches.length > 0
   const activeIndex = matches.findIndex((option) => option.value === activeValue)
-  const activeId =
-    expanded && activeIndex !== -1 ? optionDomId(field, matches[activeIndex]!.value) : undefined
+  const activeId = expanded && activeIndex !== -1 ? optionDomId(field, matches[activeIndex]!.value) : undefined
   const listboxId = `${field.ids.control}:listbox`
 
   const choose = (value: string): void => {
@@ -209,13 +206,7 @@ export function TypeaheadSelectField({
             Not the field's own name: two elements answering to the same accessible
             name make "the control called X" ambiguous for every query that uses it,
             starting with the conformance driver's own. */}
-        <ul
-          id={listboxId}
-          role="listbox"
-          aria-label={text('options.suggestions', { label })}
-          data-formancy-part="typeahead-listbox"
-          hidden={!expanded}
-        >
+        <ul id={listboxId} role="listbox" aria-label={text('options.suggestions', { label })} data-formancy-part="typeahead-listbox" hidden={!expanded}>
           {matches.map((option) => (
             <li
               key={option.value}
@@ -252,11 +243,7 @@ export function TypeaheadSelectField({
           ? {}
           : { 'data-state': statusState({ sourced, said, open, matches: matches.length }) })}
       >
-        {said !== ''
-          ? said
-          : open && matches.length === 0 && sourced.remote?.busy !== true
-            ? text('options.noMatch')
-            : ''}
+        {said !== '' ? said : open && matches.length === 0 && sourced.remote?.busy !== true ? text('options.noMatch') : ''}
       </p>
     </FieldShell>
   )

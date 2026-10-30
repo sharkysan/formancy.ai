@@ -1,18 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
-import {
-  addGroup,
-  addRow,
-  conditionFields,
-  conditionOf,
-  emptyDraft,
-  emptyRow,
-  groupOf,
-  removeFromDraft,
-  setJoin,
-  updateRow,
-} from './condition-draft.js'
+import { addGroup, addRow, conditionFields, conditionOf, emptyDraft, emptyRow, groupOf, removeFromDraft, setJoin, updateRow } from './condition-draft.js'
 import type { ConditionDraft, ConditionField } from './condition-draft.js'
 import { compileGroup, operatorTakesValue } from './conditions.js'
 
@@ -68,7 +57,7 @@ const form: FormSchema = {
       { key: 'shown', type: 'text', label: 'Shown' },
     ],
   },
-} as FormSchema
+}
 
 const fields = conditionFields(form)
 const field = (path: string): ConditionField => fields.find((candidate) => candidate.path === path)!
@@ -77,15 +66,7 @@ describe('the fields a condition may compare', () => {
   test('are named by the path the engine reads, so a field in a page is not "about.country"', () => {
     // Both panels joined the tree's key path: a condition on any field in a wizard
     // compared a path no field had, evaluated as null, and held its target hidden.
-    expect(fields.map((candidate) => candidate.path)).toEqual([
-      'country',
-      'age',
-      'address.city',
-      'terms',
-      'extras',
-      'leave',
-      'shown',
-    ])
+    expect(fields.map((candidate) => candidate.path)).toEqual(['country', 'age', 'address.city', 'terms', 'extras', 'leave', 'shown'])
   })
 
   test('and leave out what has no answer, and the fields of a repeater row', () => {
@@ -227,16 +208,11 @@ describe('a comparison as a condition', () => {
 
   test('and text that merely starts with digits stays text, even against a number', () => {
     // `Number('5 apples')` is NaN, which is false against everything, itself included.
-    expect(conditionOf({ field: 'age', operator: 'is', text: '8001 Zurich' }, fields).value).toBe(
-      '8001 Zurich',
-    )
+    expect(conditionOf({ field: 'age', operator: 'is', text: '8001 Zurich' }, fields).value).toBe('8001 Zurich')
   })
 
   test('and carries no value for a comparison that takes none', () => {
-    const condition = conditionOf(
-      { field: 'shown', operator: 'isAnswered', text: 'ignored' },
-      fields,
-    )
+    const condition = conditionOf({ field: 'shown', operator: 'isAnswered', text: 'ignored' }, fields)
 
     expect('value' in condition).toBe(false)
   })
@@ -256,7 +232,7 @@ describe('what a draft compiles to, as the engine answers it', () => {
         logic: {
           rules: [{ target: 'shown', kind: 'visible', cel: compileGroup(groupOf(draft, fields)) }],
         },
-      } as FormSchema,
+      },
       initialValue: value,
       capabilities: CLOCK,
     }).getFieldSnapshot(['shown']).visible

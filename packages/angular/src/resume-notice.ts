@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  afterRenderEffect,
-  computed,
-  input,
-  viewChild,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, afterRenderEffect, computed, input, viewChild } from '@angular/core'
 import type { ElementRef } from '@angular/core'
 import { FormancyTextPipe, injectFormText } from './text.js'
 
@@ -80,9 +73,7 @@ export class FormancyResumeNotice {
   readonly labels = input<Readonly<Record<string, string>>>({})
 
   protected readonly setAside = computed(() =>
-    (this.migration()?.changes ?? [])
-      .map((change) => change.path)
-      .filter((path): path is string => path !== undefined),
+    (this.migration()?.changes ?? []).map((change) => change.path).filter((path): path is string => path !== undefined),
   )
 
   private readonly text = injectFormText()

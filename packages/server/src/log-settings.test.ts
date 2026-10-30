@@ -46,8 +46,6 @@ describe('the log level setting', () => {
   ])('%s is refused at startup, naming the variable and what to write', (value) => {
     // Started anyway, the server would pick a level for the operator, or keep no log while
     // they believed it did.
-    expect(() => logLevelFrom({ FORMANCY_LOG_LEVEL: value })).toThrow(
-      new RegExp(`FORMANCY_LOG_LEVEL is "${value}".*off, ${LOG_LEVELS.join(', ')}`),
-    )
+    expect(() => logLevelFrom({ FORMANCY_LOG_LEVEL: value })).toThrow(new RegExp(`FORMANCY_LOG_LEVEL is "${value}".*off, ${LOG_LEVELS.join(', ')}`))
   })
 })

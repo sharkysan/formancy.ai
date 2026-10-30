@@ -11,9 +11,7 @@ import type { S3FileStoreConfig } from './s3-file-store.js'
  * checked. Constructing the store stays in `main.ts`; this only says which.
  */
 export type FileStoreSettings =
-  | { readonly kind: 'none' }
-  | { readonly kind: 'local'; readonly directory: string }
-  | { readonly kind: 's3'; readonly config: S3FileStoreConfig }
+  { readonly kind: 'none' } | { readonly kind: 'local'; readonly directory: string } | { readonly kind: 's3'; readonly config: S3FileStoreConfig }
 
 type Environment = Readonly<Record<string, string | undefined>>
 
@@ -37,10 +35,7 @@ export function fileStoreSettings(env: Environment): FileStoreSettings {
     // nothing records which -- so a later reader gets "no such file" for bytes
     // that exist in the store it did not ask. Refusing at startup is the only
     // point at which this is cheap to fix.
-    throw new Error(
-      'Set FORMANCY_FILES_DIR or FORMANCY_S3_ENDPOINT, not both: two stores means ' +
-        'files land in one and are looked for in the other.',
-    )
+    throw new Error('Set FORMANCY_FILES_DIR or FORMANCY_S3_ENDPOINT, not both: two stores means ' + 'files land in one and are looked for in the other.')
   }
 
   if (endpoint !== undefined) {

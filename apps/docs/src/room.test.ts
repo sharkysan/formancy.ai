@@ -33,16 +33,10 @@ const rules = (css: string): Array<{ selector: string; body: string }> =>
 
 /** A rule body's declarations, by property, each value with its whitespace collapsed. */
 const declarations = (body: string): Map<string, string> =>
-  new Map(
-    [...body.matchAll(/([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [
-      name!,
-      value!.replace(/\s+/g, ' ').trim(),
-    ]),
-  )
+  new Map([...body.matchAll(/([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name!, value!.replace(/\s+/g, ' ').trim()]))
 
 /** The declarations of a stylesheet's first `:root` rule. */
-const root = (css: string): Map<string, string> =>
-  declarations(rules(css).find(({ selector }) => selector === ':root')?.body ?? '')
+const root = (css: string): Map<string, string> => declarations(rules(css).find(({ selector }) => selector === ':root')?.body ?? '')
 
 const room = (): Map<string, string> => root(read('packages', 'themes', 'room.css'))
 
@@ -72,9 +66,7 @@ describe("the room's palette", () => {
 
     expect(rules(css).map(({ selector }) => selector)).toEqual([':root'])
     expect(withoutComments(css), 'an at-rule: an @import, an @font-face or a query').not.toContain('@')
-    expect(
-      [...room().keys()].filter((name) => !name.startsWith('--') && name !== 'color-scheme'),
-    ).toEqual([])
+    expect([...room().keys()].filter((name) => !name.startsWith('--') && name !== 'color-scheme')).toEqual([])
     // A guard on the guard: the cases here are about absence, and a parse that read no
     // declaration would satisfy every one of them.
     expect(palette()).toEqual(expect.arrayContaining(['--ground', '--text', '--client', '--server', '--wb-signal']))
@@ -158,9 +150,7 @@ describe("the room's palette", () => {
     const palettes = palette()
     const again = filesUnder('apps/admin/src', (name) => name.endsWith('.css')).flatMap((path) =>
       rules(read(path)).flatMap(({ selector, body }) =>
-        [...declarations(body).keys()]
-          .filter((name) => palettes.includes(name))
-          .map((name) => `${path}: ${selector} sets ${name}`),
+        [...declarations(body).keys()].filter((name) => palettes.includes(name)).map((name) => `${path}: ${selector} sets ${name}`),
       ),
     )
 
@@ -180,11 +170,7 @@ describe("the room's palette", () => {
       .filter(({ source }) => imported(source, 'room.css') >= 0)
 
     expect(importers.map(({ path }) => path)).toContain('apps/admin/src/app.tsx')
-    expect(
-      importers
-        .filter(({ source }) => imported(source, 'workbench.css') > imported(source, 'room.css'))
-        .map(({ path }) => path),
-    ).toEqual([])
+    expect(importers.filter(({ source }) => imported(source, 'workbench.css') > imported(source, 'room.css')).map(({ path }) => path)).toEqual([])
   })
 
   test('is named in the themes README, every variable and no other', () => {

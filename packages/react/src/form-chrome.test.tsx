@@ -58,7 +58,7 @@ describe('select with options', () => {
   test('renders a real select carrying its options', () => {
     renderForm()
 
-    const select = screen.getByLabelText('Country') as HTMLSelectElement
+    const select = screen.getByLabelText<HTMLSelectElement>('Country')
     expect(select.tagName).toBe('SELECT')
     expect([...select.options].map((option) => option.textContent)).toContain('Switzerland')
   })
@@ -87,7 +87,7 @@ describe('radio group with options', () => {
     fireEvent.click(screen.getByLabelText('More than 10'))
 
     expect(engine.getFieldSnapshot(['size']).value).toBe('large')
-    expect((screen.getByLabelText('More than 10') as HTMLInputElement).checked).toBe(true)
+    expect(screen.getByLabelText<HTMLInputElement>('More than 10').checked).toBe(true)
   })
 })
 
@@ -98,9 +98,7 @@ describe('the submit control', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: true, data: expect.objectContaining({ email: 'a@b.ch' }) }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ ok: true, data: expect.objectContaining({ email: 'a@b.ch' }) }))
   })
 
   test('a failed submit reports errors in the engine shape', () => {
@@ -109,9 +107,7 @@ describe('the submit control', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: false, errors: { email: ['required'] } }),
-    )
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ ok: false, errors: { email: ['required'] } }))
   })
 })
 

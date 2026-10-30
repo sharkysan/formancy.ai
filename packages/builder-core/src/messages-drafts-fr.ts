@@ -18,8 +18,7 @@ export const DRAFT_MESSAGES_FR = {
   'drafts.stop': 'Arrêter la rédaction',
   'drafts.list': 'Exemples rédigés',
   'drafts.holds': 'Tient avec le formulaire tel qu’il est.',
-  'drafts.fails':
-    'Ne tient pas avec le formulaire tel qu’il est. Gardez-le si l’exemple est juste et le formulaire faux ; écartez-le si l’exemple est faux.',
+  'drafts.fails': 'Ne tient pas avec le formulaire tel qu’il est. Gardez-le si l’exemple est juste et le formulaire faux ; écartez-le si l’exemple est faux.',
   'drafts.keep': 'Garder {name}',
   'drafts.discard': 'Écarter {name}',
   'drafts.lastAnswer': 'Ce que le modèle a répondu en dernier',
@@ -36,13 +35,11 @@ export const DRAFT_MESSAGES_FR = {
   'drafts.status.kept': '{name} gardé. Il figure maintenant dans la liste des scénarios.',
   'drafts.status.discarded': '{name} écarté.',
   'drafts.status.taken': 'Pas gardé : il existe déjà un scénario nommé {name}.',
-  'drafts.status.unknownPath':
-    'Pas gardé : {name} nomme autre chose qu’un des champs de ce formulaire, et ne vérifierait rien.',
+  'drafts.status.unknownPath': 'Pas gardé : {name} nomme autre chose qu’un des champs de ce formulaire, et ne vérifierait rien.',
   'drafts.status.stopped': 'Arrêté. Rien n’a été rédigé.',
   'drafts.status.unreachable': 'Rien n’a été rédigé. Le modèle n’a pas pu être joint : {reason}',
   'drafts.status.unreachableNoReason': 'Rien n’a été rédigé. Le modèle n’a pas pu être joint.',
-  'drafts.status.busy':
-    'Rien n’a été rédigé. Une autre demande attend encore la réponse du modèle : terminez-la ou arrêtez-la d’abord.',
+  'drafts.status.busy': 'Rien n’a été rédigé. Une autre demande attend encore la réponse du modèle : terminez-la ou arrêtez-la d’abord.',
   'drafts.status.declined': 'Rien n’a été rédigé. Le modèle a refusé cette demande.',
   'drafts.status.failed': {
     one: 'Rien n’a été rédigé. {count} tentative, et la réponse ne contenait aucun exemple utilisable.',
@@ -55,8 +52,7 @@ export const DRAFT_MESSAGES_FR = {
   'drafts.problem.empty': 'La liste d’exemples de la dernière réponse était vide.',
   'drafts.item': 'Élément {position}',
   'drafts.reason.notAnObject': '{item} n’est pas un exemple du tout.',
-  'drafts.reason.unknownKey':
-    '{item} a « {part} », qu’un exemple n’a pas : il vérifierait moins qu’il ne le dit.',
+  'drafts.reason.unknownKey': '{item} a « {part} », qu’un exemple n’a pas : il vérifierait moins qu’il ne le dit.',
   'drafts.reason.noName': '{item} n’a pas de nom.',
   'drafts.reason.nameTaken': '{item} : un scénario de ce nom existe déjà.',
   'drafts.reason.nameRepeated': '{item} : un exemple qui le précède dans la réponse porte le même nom.',

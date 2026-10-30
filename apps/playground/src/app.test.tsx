@@ -39,9 +39,6 @@ const arrangementTree = (): HTMLElement => screen.getByRole('tree', { name: /Arr
  */
 const form = (): HTMLElement => screen.getByRole('region', { name: 'React' })
 
-/** The same document, under the other renderer. */
-const angularForm = (): HTMLElement => screen.getByRole('region', { name: 'Angular' })
-
 describe('the file field', () => {
   test('can actually accept a file, because the app provides an uploader', async () => {
     // The bug this exists for: the playground provided a rich-text editor and no uploader,
@@ -92,10 +89,7 @@ describe('the file field', () => {
     // something no server would recognise — a plausible-looking key would make the demo
     // read better and make the product look like it silently drops files.
     const { playgroundUploader } = await import('./demo-uploader.js')
-    const stored = await playgroundUploader(
-      new File(['hello'], 'note.txt', { type: 'text/plain' }),
-      sending(),
-    )
+    const stored = await playgroundUploader(new File(['hello'], 'note.txt', { type: 'text/plain' }), sending())
     expect(stored.storageKey).toMatch(/^playground:in-this-tab\//)
     expect(stored.name).toBe('note.txt')
     expect(stored.size).toBe(5)
@@ -178,16 +172,12 @@ describe('the page', () => {
     const switchNav = screen.getByRole('navigation', { name: 'Pane' })
     const panes = container.querySelector('.panes') as HTMLElement
     expect(panes.dataset['shown']).toBe('form')
-    expect(within(switchNav).getByRole('button', { name: 'Form' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    )
+    expect(within(switchNav).getByRole('button', { name: 'Form' }).getAttribute('aria-pressed')).toBe('true')
 
     await user.click(within(switchNav).getByRole('button', { name: 'Engine' }))
 
     expect(panes.dataset['shown']).toBe('engine')
-    expect(
-      within(switchNav).getByRole('button', { name: 'Engine' }).getAttribute('aria-controls'),
-    ).toBe('pane-engine')
+    expect(within(switchNav).getByRole('button', { name: 'Engine' }).getAttribute('aria-controls')).toBe('pane-engine')
     expect(container.querySelector('#pane-engine')).toBeTruthy()
   })
 
@@ -255,12 +245,8 @@ describe('the arrangement', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Move Email' })
     await user.click(within(dialog).getAllByRole('button')[0]!)
 
-    await waitFor(() =>
-      expect(within(arrangementTree()).getAllByRole('treeitem')[0]?.textContent).toBe('Email'),
-    )
-    const fields = [...form().querySelectorAll('[data-formancy-part="label"]')].map(
-      (element) => element.textContent,
-    )
+    await waitFor(() => expect(within(arrangementTree()).getAllByRole('treeitem')[0]?.textContent).toBe('Email'))
+    const fields = [...form().querySelectorAll('[data-formancy-part="label"]')].map((element) => element.textContent)
     expect(fields[0]).toBe('Email')
   })
 
@@ -302,9 +288,7 @@ describe('the switchers', () => {
   test('four themes that do not look related', () => {
     render(<App />)
 
-    const options = [...screen.getByLabelText<HTMLSelectElement>('Theme').options].map(
-      (option) => option.value,
-    )
+    const options = [...screen.getByLabelText<HTMLSelectElement>('Theme').options].map((option) => option.value)
     expect(options).toEqual(['blueprint', 'dusk', 'pop', 'paper'])
   })
 
@@ -444,7 +428,9 @@ describe('the second demo, which is the one with steps', () => {
     // document: the session is opened once and a demo switch has to re-open it,
     // or the form follows the picker and the tree does not.
     const tree = screen.getByRole('tree', { name: /structure/i })
-    const items = within(tree).getAllByRole('treeitem').map((item) => item.textContent)
+    const items = within(tree)
+      .getAllByRole('treeitem')
+      .map((item) => item.textContent)
     expect(items).toContain('About you')
     expect(items).not.toContain('First name')
   })

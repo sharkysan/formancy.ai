@@ -120,7 +120,17 @@ describe('a summary of answers', () => {
             key: 'people',
             type: 'repeater',
             label: 'Travellers',
-            fields: [{ key: 'diet', type: 'radio', label: 'Diet', options: [{ value: 'veg', label: 'Vegetarian' }, { value: 'any', label: 'Anything' }] }],
+            fields: [
+              {
+                key: 'diet',
+                type: 'radio',
+                label: 'Diet',
+                options: [
+                  { value: 'veg', label: 'Vegetarian' },
+                  { value: 'any', label: 'Anything' },
+                ],
+              },
+            ],
           },
         ],
       },
@@ -149,8 +159,14 @@ describe('a summary of answers', () => {
             key: 'rating',
             type: 'matrix',
             label: 'Rating',
-            rows: [{ value: 'taste', label: 'Taste' }, { value: 'price', label: 'Price' }],
-            options: [{ value: 'good', label: 'Good' }, { value: 'bad', label: 'Bad' }],
+            rows: [
+              { value: 'taste', label: 'Taste' },
+              { value: 'price', label: 'Price' },
+            ],
+            options: [
+              { value: 'good', label: 'Good' },
+              { value: 'bad', label: 'Bad' },
+            ],
           },
         ],
       },
@@ -160,7 +176,12 @@ describe('a summary of answers', () => {
       { field: 'rating.taste', label: 'Rating › Taste', answered: 2 },
       { field: 'rating.price', label: 'Rating › Price', answered: 1 },
     ])
-    expect(summary[0]).toMatchObject({ counts: [{ value: 'good', count: 2 }, { value: 'bad', count: 0 }] })
+    expect(summary[0]).toMatchObject({
+      counts: [
+        { value: 'good', count: 2 },
+        { value: 'bad', count: 0 },
+      ],
+    })
   })
 
   // A form nobody has answered yet still lists its questions, each answered by none.
@@ -175,9 +196,7 @@ describe('a summary of answers', () => {
     const many = Array.from({ length: 200_000 }, (_, at) => ({ nights: at % 90 }))
     const mean = many.reduce((total, answer) => total + answer.nights, 0) / many.length
 
-    expect(summariseAnswers(nights, many, english)).toEqual([
-      { field: 'nights', label: 'Nights', answered: 200_000, kind: 'number', min: 0, max: 89, mean },
-    ])
+    expect(summariseAnswers(nights, many, english)).toEqual([{ field: 'nights', label: 'Nights', answered: 200_000, kind: 'number', min: 0, max: 89, mean }])
   })
 
   // So the server can count a page of responses at a time and hold no more than the page (0224).
@@ -199,4 +218,3 @@ describe('a summary of answers', () => {
     ])
   })
 })
-

@@ -45,14 +45,7 @@ const schema = {
 const mount = (over: { source?: string } = {}) => {
   const onChange = vi.fn<(next: string) => void>()
   const onPublish = vi.fn<() => void>()
-  render(
-    <BuildPane
-      source={over.source ?? JSON.stringify(schema)}
-      onChange={onChange}
-      publishState={undefined}
-      onPublish={onPublish}
-    />,
-  )
+  render(<BuildPane source={over.source ?? JSON.stringify(schema)} onChange={onChange} publishState={undefined} onPublish={onPublish} />)
   return { onChange, onPublish }
 }
 
@@ -121,14 +114,7 @@ describe('the arrangement editor', () => {
 
 describe('the preview', () => {
   test('renders through the arrangement, or editing one would change nothing visible', () => {
-    const { container } = render(
-      <BuildPane
-        source={JSON.stringify(schema)}
-        onChange={vi.fn()}
-        publishState={undefined}
-        onPublish={vi.fn()}
-      />,
-    )
+    const { container } = render(<BuildPane source={JSON.stringify(schema)} onChange={vi.fn()} publishState={undefined} onPublish={vi.fn()} />)
 
     expect(container.querySelector('[data-formancy-part="layout-row"]')).toBeTruthy()
   })
@@ -253,8 +239,6 @@ describe('undo and redo', () => {
 
     await user.click(screen.getByRole('button', { name: 'Undo' }))
 
-    await waitFor(() =>
-      expect(within(screen.getByRole('tree', { name: 'Form structure' })).getAllByRole('treeitem')).toHaveLength(2),
-    )
+    await waitFor(() => expect(within(screen.getByRole('tree', { name: 'Form structure' })).getAllByRole('treeitem')).toHaveLength(2))
   })
 })

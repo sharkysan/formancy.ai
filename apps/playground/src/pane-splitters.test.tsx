@@ -28,9 +28,7 @@ import type { PaneId } from './panes.js'
  * - The arithmetic is tested in `panes.test.ts`, with no DOM in the way.
  */
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => (
-    <textarea readOnly aria-label="Schema" value={value ?? ''} />
-  ),
+  default: ({ value }: { value?: string }) => <textarea readOnly aria-label="Schema" value={value ?? ''} />,
   useMonaco: () => null,
 }))
 
@@ -40,12 +38,10 @@ afterEach(() => {
 })
 
 /** The handle between two panes, by role and accessible name. */
-const handle = (between: string): HTMLElement =>
-  screen.getByRole('separator', { name: `Resize the ${between} panes` })
+const handle = (between: string): HTMLElement => screen.getByRole('separator', { name: `Resize the ${between} panes` })
 
 /** The template the row is actually carrying. */
-const template = (): string =>
-  (document.querySelector('.panes') as HTMLElement).style.getPropertyValue('--pane-template')
+const template = (): string => (document.querySelector('.panes') as HTMLElement).style.getPropertyValue('--pane-template')
 
 describe('the handles on the page', () => {
   test('there is one between each adjacent pair, named for both panes', () => {
@@ -137,15 +133,11 @@ describe('moving a handle by keyboard', () => {
 
     editorForm.focus()
     await user.keyboard('{Home}')
-    expect(handle('Editor and Form').getAttribute('aria-valuenow')).toBe(
-      editorForm.getAttribute('aria-valuemin'),
-    )
+    expect(handle('Editor and Form').getAttribute('aria-valuenow')).toBe(editorForm.getAttribute('aria-valuemin'))
 
     handle('Editor and Form').focus()
     await user.keyboard('{End}')
-    expect(handle('Editor and Form').getAttribute('aria-valuenow')).toBe(
-      editorForm.getAttribute('aria-valuemax'),
-    )
+    expect(handle('Editor and Form').getAttribute('aria-valuenow')).toBe(editorForm.getAttribute('aria-valuemax'))
   })
 
   test('and a key it does not use is left alone', async () => {
@@ -197,7 +189,7 @@ describe('moving a handle by pointer', () => {
    * the handle had not moved and a 60ms wait said it had.
    */
   const press = (element: Element | Window, type: 'pointerDown' | 'pointerMove' | 'pointerUp', clientX: number): void => {
-    fireEvent[type](element as Element, { clientX })
+    fireEvent[type](element, { clientX })
   }
 
   test('a press and a move to the right gives the left pane the difference', async () => {

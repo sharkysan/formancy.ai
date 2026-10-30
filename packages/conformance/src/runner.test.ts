@@ -1,13 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { RendererDriver, SubmitResult } from './driver.js'
-import {
-  AccessibilityAssertionError,
-  ConformanceAssertionError,
-  assertFixtureResult,
-  runFixture,
-  runSuite,
-  structuralEqual,
-} from './runner.js'
+import { AccessibilityAssertionError, ConformanceAssertionError, assertFixtureResult, runFixture, runSuite, structuralEqual } from './runner.js'
 import type { ConformanceSchema, Fixture, JsonValue } from './types.js'
 import { createFakeDriver } from './testing/fake-driver.js'
 
@@ -59,11 +52,7 @@ describe('runFixture', () => {
     const wrong: Fixture = {
       name: 'a deliberately wrong case',
       schema: contact,
-      steps: [
-        { set: { country: 'US' } },
-        { expectVisible: ['canton'] },
-        { set: { email: 'ada@example.com' } },
-      ],
+      steps: [{ set: { country: 'US' } }, { expectVisible: ['canton'] }, { set: { email: 'ada@example.com' } }],
     }
 
     const result = await runFixture(wrong, swissDriver())
@@ -81,11 +70,7 @@ describe('runFixture', () => {
     const wrong: Fixture = {
       name: 'a deliberately wrong case',
       schema: contact,
-      steps: [
-        { expectVisible: ['canton'] },
-        { set: { email: 'ada@example.com' } },
-        { expectValue: { email: 'ada@example.com' } },
-      ],
+      steps: [{ expectVisible: ['canton'] }, { set: { email: 'ada@example.com' } }, { expectValue: { email: 'ada@example.com' } }],
     }
 
     const result = await runFixture(wrong, swissDriver())
@@ -139,9 +124,7 @@ describe('runFixture', () => {
   test('throws on a malformed fixture, because that is a bug in the suite, not a failure', async () => {
     const malformed = { name: 'broken', schema: contact, steps: [{ expectVisable: [] }] }
 
-    await expect(runFixture(malformed as unknown as Fixture, swissDriver())).rejects.toThrow(
-      /Invalid fixture/,
-    )
+    await expect(runFixture(malformed as unknown as Fixture, swissDriver())).rejects.toThrow(/Invalid fixture/)
   })
 
   test('unmounts the driver even after a failure, so the next case starts clean', async () => {
@@ -424,24 +407,12 @@ describe('the command grammar', () => {
           ],
         },
       },
-      steps: [
-        { addItem: 'contacts' },
-        { removeItem: { path: 'contacts', index: 1 } },
-        { next: true },
-        { back: true },
-        { activate: 'contacts[0].name' },
-      ],
+      steps: [{ addItem: 'contacts' }, { removeItem: { path: 'contacts', index: 1 } }, { next: true }, { back: true }, { activate: 'contacts[0].name' }],
     }
 
     await runFixture(fixture, driver)
 
-    expect(pressed).toEqual([
-      'contacts#add',
-      'contacts[1]#remove',
-      '#next',
-      '#back',
-      'contacts[0].name',
-    ])
+    expect(pressed).toEqual(['contacts#add', 'contacts[1]#remove', '#next', '#back', 'contacts[0].name'])
   })
 })
 
@@ -449,11 +420,7 @@ describe('message assertions', () => {
   const required: Fixture = {
     name: 'messages',
     schema: contact,
-    steps: [
-      { set: { country: 'CH' } },
-      { submit: true },
-      { expectErrors: { canton: ['required'], country: [] } },
-    ],
+    steps: [{ set: { country: 'CH' } }, { submit: true }, { expectErrors: { canton: ['required'], country: [] } }],
   }
 
   /** The cases below all need `canton` on screen, so every one sets country first. */

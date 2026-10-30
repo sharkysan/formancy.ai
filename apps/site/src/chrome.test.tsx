@@ -31,10 +31,7 @@ const stubObserver = (): void => {
   vi.stubGlobal('IntersectionObserver', FakeObserver)
 }
 
-const navigation = (): string[] =>
-  [...screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('a')].map((link) =>
-    (link.textContent ?? '').trim(),
-  )
+const navigation = (): string[] => [...screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('a')].map((link) => (link.textContent ?? '').trim())
 
 afterEach(cleanup)
 
@@ -63,10 +60,8 @@ describe('the bar', () => {
     // clicked did anything, saying nothing.
     render(<SiteBar current="templates" />)
 
-    const current = navigation().filter((_, at) =>
-      [...screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('a')][at]?.getAttribute(
-        'aria-current',
-      ) === 'page',
+    const current = navigation().filter(
+      (_, at) => [...screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('a')][at]?.getAttribute('aria-current') === 'page',
     )
     expect(current).toEqual(['Templates'])
   })
@@ -79,9 +74,7 @@ describe('the bar', () => {
      */
     render(<SiteBar current="home" />)
 
-    expect(
-      screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('[aria-current]'),
-    ).toHaveLength(0)
+    expect(screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('[aria-current]')).toHaveLength(0)
   })
 })
 
@@ -108,7 +101,7 @@ describe('both pages', () => {
     expect(templates, 'the two pages carry different navigation').toEqual(home)
   })
 
-  test('and the gallery wears the site\'s header rather than one of its own', () => {
+  test("and the gallery wears the site's header rather than one of its own", () => {
     // The specific regression: `.template-header`, `.template-brand` and
     // `.template-footer` were a second set of chrome. Asserted as their absence,
     // because a page can perfectly well render both and look nearly right.
@@ -142,9 +135,7 @@ describe('the footer', () => {
     render(<SiteFooter />)
 
     const text = screen.getByRole('contentinfo').textContent ?? ''
-    expect(text, 'the footer names a version the workspace is not on').toContain(
-      `packages ${__PACKAGE_VERSION__}`,
-    )
+    expect(text, 'the footer names a version the workspace is not on').toContain(`packages ${__PACKAGE_VERSION__}`)
     expect(text).toContain('Apache-2.0')
   })
 
@@ -153,8 +144,6 @@ describe('the footer', () => {
     // line an integrator reads to see which documents these packages produce.
     render(<SiteFooter />)
 
-    expect(screen.getByRole('contentinfo').textContent).toContain(
-      `Spec version ${CURRENT_SPEC_VERSION}`,
-    )
+    expect(screen.getByRole('contentinfo').textContent).toContain(`Spec version ${CURRENT_SPEC_VERSION}`)
   })
 })

@@ -41,13 +41,9 @@ describe('fixedCapabilities', () => {
   })
 
   test('rejects values that would make a replay disagree with the original', () => {
-    expect(() => fixedCapabilities({ nowMs: 1.5, today: '2026-09-19', random: 0 })).toThrow(
-      RangeError,
-    )
+    expect(() => fixedCapabilities({ nowMs: 1.5, today: '2026-09-19', random: 0 })).toThrow(RangeError)
     expect(() => fixedCapabilities({ nowMs: 0, today: '19.09.2026', random: 0 })).toThrow(RangeError)
     expect(() => fixedCapabilities({ nowMs: 0, today: '2026-09-19', random: 1 })).toThrow(RangeError)
-    expect(() => fixedCapabilities({ nowMs: 0, today: '2026-09-19', random: -0.1 })).toThrow(
-      RangeError,
-    )
+    expect(() => fixedCapabilities({ nowMs: 0, today: '2026-09-19', random: -0.1 })).toThrow(RangeError)
   })
 })

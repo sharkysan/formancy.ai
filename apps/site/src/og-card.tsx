@@ -116,10 +116,7 @@ export function OgCard(): ReactElement {
           <br />
           Ship your product.
         </h1>
-        <p className="og-lede">
-          A visual form builder for Angular and React. Conditional fields, validation and
-          your own styling.
-        </p>
+        <p className="og-lede">A visual form builder for Angular and React. Conditional fields, validation and your own styling.</p>
         <p className="og-tags">
           <span>React</span>
           <span>Angular</span>

@@ -25,10 +25,7 @@ export interface SweeperHandle {
   stop: () => void
 }
 
-export function startChallengeSweeper(
-  storage: Storage,
-  options: { intervalMs?: number; log?: WorkerLog } = {},
-): SweeperHandle {
+export function startChallengeSweeper(storage: Storage, options: { intervalMs?: number; log?: WorkerLog } = {}): SweeperHandle {
   const log = workerLog(options.log)
   // Hourly. The rows expire in ten minutes and are a challenge hash each, so
   // an hour's worth of them is nothing; sweeping more often would be work

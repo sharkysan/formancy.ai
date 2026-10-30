@@ -32,7 +32,9 @@ const ORIGIN: DOMRect = {
 const NO_RECTS = Object.assign([ORIGIN], { item: () => ORIGIN }) as unknown as DOMRectList
 
 if (typeof document !== 'undefined') {
-  document.elementFromPoint ??= () => null
+  // jsdom has no `elementFromPoint`; typed as the optional property it is there, not the method it is in a browser.
+  const measured: { elementFromPoint?: (x: number, y: number) => Element | null } = document
+  measured.elementFromPoint ??= () => null
 
   // `Node` rather than `Element`: ProseMirror measures text nodes too.
   for (const prototype of [Node.prototype, Range.prototype]) {

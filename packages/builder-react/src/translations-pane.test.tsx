@@ -242,10 +242,7 @@ describe('taking a catalogue out and bringing it back', () => {
     const file = session.exportCatalogue('fr')
 
     expect(screen.getByRole('button', { name: /download/i })).toBeTruthy()
-    expect(file.messages.map((message) => message.source)).toEqual([
-      'Work email',
-      'Anything else?',
-    ])
+    expect(file.messages.map((message) => message.source)).toEqual(['Work email', 'Anything else?'])
   })
 
   test('a returned file is applied, and what was odd about it is shown', async () => {
@@ -391,9 +388,7 @@ describe('the catalogue leaving and coming back', () => {
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(
-      session.exportCatalogue('fr').messages.find((message) => message.id === id)?.target,
-    ).toBe('Bonjour')
+    expect(session.exportCatalogue('fr').messages.find((message) => message.id === id)?.target).toBe('Bonjour')
   })
 
   test('and a file that is not one of ours is reported rather than swallowed', async () => {
@@ -530,8 +525,7 @@ describe('asking a model for what is missing', () => {
   const french = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'fr')
   }
-  const review = (): Promise<HTMLElement> =>
-    screen.findByRole('region', { name: /^Review these translations into fr/ })
+  const review = (): Promise<HTMLElement> => screen.findByRole('region', { name: /^Review these translations into fr/ })
 
   test('offers nothing without a model, as the prompt pane does', async () => {
     // A button that cannot work is worse than none: without `ask` the pane is the pane it was.
@@ -568,13 +562,16 @@ describe('asking a model for what is missing', () => {
     expect(asked).toHaveLength(1)
     // The name says something in it is marked: "Canton" is the same as its source.
     expect(region.getAttribute('aria-labelledby')).not.toBeNull()
-    expect(within(region).getByRole('heading').textContent).toBe(
-      'Review these translations into fr — some are marked to look at',
-    )
+    expect(within(region).getByRole('heading').textContent).toBe('Review these translations into fr — some are marked to look at')
     const rows = within(within(region).getByRole('table'))
       .getAllByRole('row')
       .filter((row) => within(row).queryByRole('rowheader') !== null)
-      .map((row) => [within(row).getByRole('rowheader').textContent, ...within(row).getAllByRole('cell').map((cell) => cell.textContent)])
+      .map((row) => [
+        within(row).getByRole('rowheader').textContent,
+        ...within(row)
+          .getAllByRole('cell')
+          .map((cell) => cell.textContent),
+      ])
     expect(rows).toEqual([
       ['Germany', 'Not translated', 'Allemagne', ''],
       ['Canton', 'Not translated', 'Canton', 'The same as the source'],
@@ -587,9 +584,7 @@ describe('asking a model for what is missing', () => {
     expect(within(proposed).getByRole('button', { name: FORM_WORDS_FR['form.submit'] })).toBeTruthy()
     // Proposed, not applied.
     expect(session.revision()).toBe(0)
-    expect(screen.getByRole('status').textContent).toBe(
-      'Ready to review: 3 translations. Nothing has been applied.',
-    )
+    expect(screen.getByRole('status').textContent).toBe('Ready to review: 3 translations. Nothing has been applied.')
   })
 
   test('applies it as one undo step, and the language is no longer missing anything', async () => {
@@ -639,9 +634,7 @@ describe('asking a model for what is missing', () => {
 
     await user.click(within(await review()).getByRole('button', { name: 'Translate the rest' }))
 
-    await waitFor(() =>
-      expect(within(screen.getByRole('region', { name: /^Review these translations/ })).getAllByRole('row')).toHaveLength(4),
-    )
+    await waitFor(() => expect(within(screen.getByRole('region', { name: /^Review these translations/ })).getAllByRole('row')).toHaveLength(4))
     // The second request asked for the rest alone.
     expect(asked[1]).toContain('"id": "canton"')
     expect(asked[1]).not.toContain('"id": "email"')
@@ -663,9 +656,7 @@ describe('asking a model for what is missing', () => {
     await user.click(screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' }))
 
     await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe(
-        'The model left every message untranslated. Nothing has been applied. 3 messages are still missing.',
-      ),
+      expect(screen.getByRole('status').textContent).toBe('The model left every message untranslated. Nothing has been applied. 3 messages are still missing.'),
     )
     expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
 

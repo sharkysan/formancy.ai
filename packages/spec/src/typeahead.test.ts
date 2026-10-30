@@ -75,9 +75,7 @@ describe('foldForMatch', () => {
     // `\u0130` DECOMPOSES to `I` plus a combining dot above, the dot is a mark and is
     // dropped, and what is left lowercases to `i` -- which is what Turkish asks for
     // there. The dotted capital is fine; only the dotless one is not.
-    expect(narrowOptionsByLabel([{ label: '\u0130zmir' }], 'izmir')).toEqual([
-      { label: '\u0130zmir' },
-    ])
+    expect(narrowOptionsByLabel([{ label: '\u0130zmir' }], 'izmir')).toEqual([{ label: '\u0130zmir' }])
   })
 })
 
@@ -88,8 +86,7 @@ const OPTIONS = [
   { value: 'DE', label: 'Deutschland' },
 ]
 
-const labelsOf = (options: readonly { label: string }[]): string[] =>
-  options.map((option) => option.label)
+const labelsOf = (options: readonly { label: string }[]): string[] => options.map((option) => option.label)
 
 describe('narrowOptionsByLabel', () => {
   test('an empty query narrows nothing', () => {
@@ -107,10 +104,7 @@ describe('narrowOptionsByLabel', () => {
   test('matches anywhere in the label, not only at the start', () => {
     // The failure this prevents: `land` finding nothing, while both Switzerland
     // and Deutschland are on the screen. A prefix filter reads as a broken one.
-    expect(labelsOf(narrowOptionsByLabel(OPTIONS, 'land'))).toEqual([
-      'Switzerland',
-      'Deutschland',
-    ])
+    expect(labelsOf(narrowOptionsByLabel(OPTIONS, 'land'))).toEqual(['Switzerland', 'Deutschland'])
   })
 
   test('matches with the accents left off', () => {
@@ -137,11 +131,7 @@ describe('narrowOptionsByLabel', () => {
     // Switzerland at index 8 and Österreich at index 2. Ranked, Österreich jumps
     // to the top and the row under the pointer changes on a keystroke. In order,
     // nothing moves that the person was not already moving past.
-    expect(labelsOf(narrowOptionsByLabel(OPTIONS, 'e'))).toEqual([
-      'Switzerland',
-      'Österreich',
-      'Deutschland',
-    ])
+    expect(labelsOf(narrowOptionsByLabel(OPTIONS, 'e'))).toEqual(['Switzerland', 'Österreich', 'Deutschland'])
   })
 
   test('returns the options themselves, so the caller keeps its own value', () => {

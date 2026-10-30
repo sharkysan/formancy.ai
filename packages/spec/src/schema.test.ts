@@ -1,12 +1,7 @@
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, test } from 'vitest'
 import schemaDocument from '../formancy.schema.json' with { type: 'json' }
-import {
-  CONTAINER_FIELD_TYPES,
-  CURRENT_SPEC_VERSION,
-  FIELD_TYPES,
-  SPEC_VERSIONS,
-} from './types.js'
+import { CONTAINER_FIELD_TYPES, CURRENT_SPEC_VERSION, FIELD_TYPES, SPEC_VERSIONS } from './types.js'
 import { WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 
 describe('formancy.schema.json', () => {
@@ -51,11 +46,7 @@ describe('formancy.schema.json', () => {
 
     // A guard on the guard: no branches found would pass forever.
     expect(Object.keys(fromSchema).length).toBeGreaterThan(0)
-    expect(fromSchema).toEqual(
-      Object.fromEntries(
-        Object.entries(WIDGETS_BY_FIELD_TYPE).map(([type, widgets]) => [type, [...widgets]]),
-      ),
-    )
+    expect(fromSchema).toEqual(Object.fromEntries(Object.entries(WIDGETS_BY_FIELD_TYPE).map(([type, widgets]) => [type, [...widgets]])))
   })
 
   test('offers the versions the package speaks, and defaults to the one it writes', () => {
@@ -88,9 +79,7 @@ describe('formancy.schema.json', () => {
       then?: { $ref?: string }
     }
     const branches = schemaDocument.$defs.field.allOf as unknown as readonly TypeBranch[]
-    const containerBranch = branches.find(
-      (branch) => branch.then?.$ref === '#/$defs/containerField',
-    )
+    const containerBranch = branches.find((branch) => branch.then?.$ref === '#/$defs/containerField')
 
     expect(containerBranch, 'no branch routes to containerField').toBeDefined()
     expect(containerBranch?.if?.properties?.type?.enum).toEqual([...CONTAINER_FIELD_TYPES])
@@ -167,12 +156,7 @@ function documentedSubschemas(document: unknown): Array<[string, unknown]> {
 }
 
 function isBareRef(node: unknown): boolean {
-  return (
-    node !== null &&
-    typeof node === 'object' &&
-    Object.keys(node).length === 1 &&
-    Object.hasOwn(node, '$ref')
-  )
+  return node !== null && typeof node === 'object' && Object.keys(node).length === 1 && Object.hasOwn(node, '$ref')
 }
 
 describe('per-type documentation', () => {

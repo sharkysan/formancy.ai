@@ -89,15 +89,11 @@ describe('validateFixture rejects', () => {
   })
 
   test('a missing name', () => {
-    expect(problemsOf(revise((draft) => delete draft['name']))).toEqual([
-      'name: expected a non-empty string',
-    ])
+    expect(problemsOf(revise((draft) => delete draft['name']))).toEqual(['name: expected a non-empty string'])
   })
 
   test('an empty step list, because a fixture that asserts nothing passes for free', () => {
-    expect(problemsOf(revise((draft) => (draft['steps'] = [])))).toEqual([
-      'steps: expected at least one step',
-    ])
+    expect(problemsOf(revise((draft) => (draft['steps'] = [])))).toEqual(['steps: expected at least one step'])
   })
 
   test('a step with no recognised key', () => {
@@ -107,9 +103,7 @@ describe('validateFixture rejects', () => {
   })
 
   test('a step carrying two step keys, because its order of effect is undefined', () => {
-    const problems = problemsOf(
-      revise((draft) => (draft['steps'] = [{ submit: true, expectVisible: ['email'] }])),
-    )
+    const problems = problemsOf(revise((draft) => (draft['steps'] = [{ submit: true, expectVisible: ['email'] }])))
     expect(problems[0]).toContain('steps[0]')
     expect(problems[0]).toContain('exactly one')
   })
@@ -132,16 +126,12 @@ describe('validateFixture rejects', () => {
   })
 
   test('a step referencing a path that no field in the schema has', () => {
-    const problems = problemsOf(
-      revise((draft) => (draft['steps'] = [{ expectVisible: ['emial'] }])),
-    )
+    const problems = problemsOf(revise((draft) => (draft['steps'] = [{ expectVisible: ['emial'] }])))
     expect(problems).toEqual(['steps[0].expectVisible[0]: no field at path "emial"'])
   })
 
   test('an expectErrors key that no field in the schema has', () => {
-    const problems = problemsOf(
-      revise((draft) => (draft['steps'] = [{ expectErrors: { emial: ['required'] } }])),
-    )
+    const problems = problemsOf(revise((draft) => (draft['steps'] = [{ expectErrors: { emial: ['required'] } }])))
     expect(problems[0]).toContain('steps[0].expectErrors.emial')
   })
 
@@ -151,9 +141,7 @@ describe('validateFixture rejects', () => {
   })
 
   test('an expectSubmit with no submit before it, which would assert on nothing', () => {
-    const problems = problemsOf(
-      revise((draft) => (draft['steps'] = [{ expectSubmit: { status: 'accepted' } }])),
-    )
+    const problems = problemsOf(revise((draft) => (draft['steps'] = [{ expectSubmit: { status: 'accepted' } }])))
     expect(problems[0]).toContain('steps[0].expectSubmit')
     expect(problems[0]).toContain('submit')
   })
@@ -175,21 +163,15 @@ describe('validateFixture rejects', () => {
    */
   describe('a vacuous assertion, which would certify nothing', () => {
     test('expectVisible with no paths', () => {
-      expect(problemsOf(revise((draft) => (draft['steps'] = [{ expectVisible: [] }])))).toEqual([
-        'steps[0].expectVisible: expected at least one path',
-      ])
+      expect(problemsOf(revise((draft) => (draft['steps'] = [{ expectVisible: [] }])))).toEqual(['steps[0].expectVisible: expected at least one path'])
     })
 
     test('expectHidden with no paths', () => {
-      expect(problemsOf(revise((draft) => (draft['steps'] = [{ expectHidden: [] }])))).toEqual([
-        'steps[0].expectHidden: expected at least one path',
-      ])
+      expect(problemsOf(revise((draft) => (draft['steps'] = [{ expectHidden: [] }])))).toEqual(['steps[0].expectHidden: expected at least one path'])
     })
 
     test('expectErrors with no paths', () => {
-      expect(problemsOf(revise((draft) => (draft['steps'] = [{ expectErrors: {} }])))).toEqual([
-        'steps[0].expectErrors: expected at least one path',
-      ])
+      expect(problemsOf(revise((draft) => (draft['steps'] = [{ expectErrors: {} }])))).toEqual(['steps[0].expectErrors: expected at least one path'])
     })
 
     test('expectNoErrors with an empty path list', () => {
@@ -326,9 +308,7 @@ describe('validateFixture rejects', () => {
           }
         }),
       )
-      expect(problems.some((problem) => problem.includes('.children') && problem.includes('fields'))).toBe(
-        true,
-      )
+      expect(problems.some((problem) => problem.includes('.children') && problem.includes('fields'))).toBe(true)
     })
 
     test.each(['visibleWhen', 'requiredWhen', 'calculate'])('a field declaring inline %s', (key) => {
@@ -372,25 +352,17 @@ describe('validateFixture rejects', () => {
     })
 
     test('rejects a rule whose target is no data path of the model', () => {
-      const problems = problemsOf(
-        withLogic({ rules: [{ target: 'contacts.email', kind: 'visible', cel: 'true' }] }),
-      )
-      expect(problems).toEqual([
-        'schema.logic.rules[0].target: no field at data path "contacts.email"',
-      ])
+      const problems = problemsOf(withLogic({ rules: [{ target: 'contacts.email', kind: 'visible', cel: 'true' }] }))
+      expect(problems).toEqual(['schema.logic.rules[0].target: no field at data path "contacts.email"'])
     })
 
     test('rejects a row target written with a concrete index, which is a step path, not a rule target', () => {
-      const problems = problemsOf(
-        withLogic({ rules: [{ target: 'contacts[0].email', kind: 'visible', cel: 'true' }] }),
-      )
+      const problems = problemsOf(withLogic({ rules: [{ target: 'contacts[0].email', kind: 'visible', cel: 'true' }] }))
       expect(problems[0]).toContain('schema.logic.rules[0].target')
     })
 
     test('rejects a kind that is not one of the five', () => {
-      const problems = problemsOf(
-        withLogic({ rules: [{ target: 'firstName', kind: 'shown', cel: 'true' }] }),
-      )
+      const problems = problemsOf(withLogic({ rules: [{ target: 'firstName', kind: 'shown', cel: 'true' }] }))
       expect(problems[0]).toContain('schema.logic.rules[0].kind')
       expect(problems[0]).toContain('visible')
     })
@@ -401,9 +373,7 @@ describe('validateFixture rejects', () => {
     })
 
     test('rejects a code that is not a non-empty string', () => {
-      const problems = problemsOf(
-        withLogic({ rules: [{ target: 'firstName', kind: 'validate', cel: 'true', code: 7 }] }),
-      )
+      const problems = problemsOf(withLogic({ rules: [{ target: 'firstName', kind: 'validate', cel: 'true', code: 7 }] }))
       expect(problems).toEqual(['schema.logic.rules[0].code: expected a non-empty string'])
     })
 
@@ -447,8 +417,7 @@ describe('the locale a fixture mounts in', () => {
     expect(validateFixture(translated('fr'))).toEqual([
       {
         path: 'locale',
-        message:
-          'no catalogue for "fr": the fixture would fall back to the default locale and assert nothing',
+        message: 'no catalogue for "fr": the fixture would fall back to the default locale and assert nothing',
       },
     ])
   })
@@ -457,16 +426,13 @@ describe('the locale a fixture mounts in', () => {
     expect(validateFixture(revise((draft) => (draft['locale'] = 'de')))).toEqual([
       {
         path: 'locale',
-        message:
-          'no catalogue for "de": the fixture would fall back to the default locale and assert nothing',
+        message: 'no catalogue for "de": the fixture would fall back to the default locale and assert nothing',
       },
     ])
   })
 
   test('and refused for what it is when it is not a string', () => {
-    expect(validateFixture(translated(7))).toEqual([
-      { path: 'locale', message: 'expected a non-empty string' },
-    ])
+    expect(validateFixture(translated(7))).toEqual([{ path: 'locale', message: 'expected a non-empty string' }])
   })
 
   test('but accepted when the document can actually be read in it', () => {
@@ -495,16 +461,13 @@ describe('the layout a fixture mounts with', () => {
     expect(validateFixture(arranged('print'))).toEqual([
       {
         path: 'layout',
-        message:
-          'no layout called "print": the form would be drawn in model order and assert nothing about the layout',
+        message: 'no layout called "print": the form would be drawn in model order and assert nothing about the layout',
       },
     ])
   })
 
   test('and refused for what it is when it is not a string', () => {
-    expect(validateFixture(arranged(7))).toEqual([
-      { path: 'layout', message: 'expected a non-empty string' },
-    ])
+    expect(validateFixture(arranged(7))).toEqual([{ path: 'layout', message: 'expected a non-empty string' }])
   })
 
   test('but accepted when the document has it', () => {

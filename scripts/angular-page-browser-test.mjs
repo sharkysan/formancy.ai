@@ -26,10 +26,7 @@ export async function checkAngularPage(browser, origin, check) {
         root.scrollLeft = 0
         return moved
       })
-      check(
-        `/angular-form-builder/ at ${width}px cannot be scrolled sideways`,
-        slid === 0 ? null : `it slid ${String(slid)}px`,
-      )
+      check(`/angular-form-builder/ at ${width}px cannot be scrolled sideways`, slid === 0 ? null : `it slid ${String(slid)}px`)
 
       // Lazy, so it loads only near the viewport: brought there as a reader scrolling would.
       const frame = page.locator(`iframe[title="${DEMO}"]`)
@@ -37,9 +34,7 @@ export async function checkAngularPage(browser, origin, check) {
       const demo = page.frameLocator(`iframe[title="${DEMO}"]`)
       let running = null
       try {
-        await demo
-          .getByRole('heading', { level: 1, name: 'Expense claim' })
-          .waitFor({ timeout: 30_000 })
+        await demo.getByRole('heading', { level: 1, name: 'Expense claim' }).waitFor({ timeout: 30_000 })
         await demo.getByRole('tree').first().waitFor({ timeout: 30_000 })
       } catch (error) {
         running = `the embedded starter did not render: ${error instanceof Error ? error.message.split('\n')[0] : String(error)}`

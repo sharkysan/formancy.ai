@@ -68,7 +68,7 @@ const withField = (field: Partial<FieldDef>, rules: LogicRule[] = []): FormSchem
   specVersion: '5',
   id: 'one',
   title: 'One',
-  model: { fields: [{ key: 'answer', type: 'text', label: 'Answer', ...field } as FieldDef] },
+  model: { fields: [{ key: 'answer', type: 'text', label: 'Answer', ...field }] },
   ...(rules.length === 0 ? {} : { logic: { rules } }),
 })
 
@@ -182,9 +182,7 @@ describe('a default the field would refuse', () => {
   // A computed field's value is the engine's (0181): a default would be overwritten before
   // anybody saw it, and an author who wrote one meant something the form would not do.
   test('includes any default on a computed field', () => {
-    const refusal = engineRefusal(
-      withField({ type: 'number', default: 1 }, [{ kind: 'computed', target: 'answer', cel: '2.0' }]),
-    )
+    const refusal = engineRefusal(withField({ type: 'number', default: 1 }, [{ kind: 'computed', target: 'answer', cel: '2.0' }]))
     expect(refusal).toContain('"answer"')
     expect(refusal).toContain('computed')
   })

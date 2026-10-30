@@ -1,10 +1,6 @@
 import type { Type } from '@angular/core'
 import type { FieldType } from '@formancy/spec'
-import {
-  FormancyCheckboxField,
-  FormancyRadioGroupField,
-  FormancySelectField,
-} from './fields/choice-fields.js'
+import { FormancyCheckboxField, FormancyRadioGroupField, FormancySelectField } from './fields/choice-fields.js'
 import { FormancyFileField } from './fields/file-field.js'
 import { FormancyRichTextField } from './fields/rich-text-field.js'
 import { FormancySelectBoxesField } from './fields/selectboxes-field.js'
@@ -12,11 +8,7 @@ import { FormancyRankingField } from './fields/ranking-field.js'
 import { FormancyMatrixField } from './fields/matrix-field.js'
 import { FormancySignatureField } from './fields/signature-field.js'
 import { FormancyStaticField } from './fields/static-field.js'
-import {
-  FormancyDateField,
-  FormancyDateTimeField,
-  FormancyTimeField,
-} from './fields/temporal-fields.js'
+import { FormancyDateField, FormancyDateTimeField, FormancyTimeField } from './fields/temporal-fields.js'
 import { FormancyTextField, FormancyTextareaField } from './fields/text-fields.js'
 import { FormancyNumberField } from './fields/scale-fields.js'
 
@@ -58,11 +50,7 @@ export const DEFAULT_FIELD_COMPONENTS: Record<FieldType, Type<unknown> | null> =
 }
 
 export { FieldComponentBase, FormancyFieldShell } from './fields/field-shell.js'
-export {
-  FormancyCheckboxField,
-  FormancyRadioGroupField,
-  FormancySelectField,
-} from './fields/choice-fields.js'
+export { FormancyCheckboxField, FormancyRadioGroupField, FormancySelectField } from './fields/choice-fields.js'
 export { FormancyFileField } from './fields/file-field.js'
 export { FormancyRichTextField } from './fields/rich-text-field.js'
 export { FormancySelectBoxesField, FormancyTagPickerField } from './fields/selectboxes-field.js'
@@ -71,10 +59,6 @@ export { FormancyMatrixField } from './fields/matrix-field.js'
 export { FormancySignatureField } from './fields/signature-field.js'
 export { FormancyStaticField } from './fields/static-field.js'
 export { FormancyTypeaheadSelect } from './fields/typeahead-field.js'
-export {
-  FormancyDateField,
-  FormancyDateTimeField,
-  FormancyTimeField,
-} from './fields/temporal-fields.js'
+export { FormancyDateField, FormancyDateTimeField, FormancyTimeField } from './fields/temporal-fields.js'
 export { FormancyTextField, FormancyTextareaField } from './fields/text-fields.js'
 export { FormancyNumberField } from './fields/scale-fields.js'

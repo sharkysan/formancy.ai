@@ -75,10 +75,7 @@ describe('comparing a run with the one before it', () => {
     // Deleting a failing scenario is not a repair, and deleting a passing one
     // is not a regression. Both would be the panel claiming credit or blame
     // for somebody pressing delete.
-    const changed = comparedToLastRun(
-      [result('a', true), result('gone', false)],
-      [result('a', true)],
-    )
+    const changed = comparedToLastRun([result('a', true), result('gone', false)], [result('a', true)])
 
     expect(changed).toEqual({ regressions: [], repaired: [] })
   })
@@ -131,9 +128,9 @@ describe('what the scenario panel says', () => {
   const none = { regressions: [], repaired: [] }
 
   test('puts what stopped holding first, because it is about the edit just made', () => {
-    expect(
-      scenarioStatus(3, 1, { regressions: ['Swiss address'], repaired: ['Empty form'] }, english),
-    ).toBe('Stopped holding: Swiss address. Holds again: Empty form. 1 of 3 does not hold.')
+    expect(scenarioStatus(3, 1, { regressions: ['Swiss address'], repaired: ['Empty form'] }, english)).toBe(
+      'Stopped holding: Swiss address. Holds again: Empty form. 1 of 3 does not hold.',
+    )
   })
 
   test('counts in the language’s plural, which "1 of 3 do not hold" did not', () => {

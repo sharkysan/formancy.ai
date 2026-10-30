@@ -82,12 +82,7 @@ const held = () => {
   }
 }
 
-async function mount(
-  session: ReturnType<typeof createBuilderSession>,
-  ask?: AskModel,
-  attempts?: number,
-  run?: PromptRun,
-) {
+async function mount(session: ReturnType<typeof createBuilderSession>, ask?: AskModel, attempts?: number, run?: PromptRun) {
   return render(FormancyPromptPane, {
     // `componentInputs` would be the typed route; this component's inputs are
     // a session, a function and a number, and the helper is what keeps the
@@ -132,9 +127,7 @@ describe('writing a form', () => {
 
     await instruct(user, 'a contact form')
 
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy())
     expect(screen.getByRole('status').textContent).toContain('Nothing has been applied')
     expect(session.document()).toEqual(START)
     expect(session.revision()).toBe(0)
@@ -161,9 +154,7 @@ describe('writing a form', () => {
     await mount(session, say(JSON.stringify(WRITTEN)))
 
     await instruct(user, 'a contact form')
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy())
     await user.click(screen.getByRole('button', { name: 'Apply these changes' }))
 
     await waitFor(() => expect(session.document().id).toBe('contact'))
@@ -196,9 +187,7 @@ describe('writing a form', () => {
     await mount(session, say(JSON.stringify(WRITTEN)))
 
     await instruct(user, 'a contact form')
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy())
 
     session.insertField({ parent: [], index: 0 }, { key: 'reference', type: 'text' })
     await user.click(screen.getByRole('button', { name: 'Apply these changes' }))
@@ -239,11 +228,7 @@ const CANTON: Scenario = {
 }
 
 /** The pane with the form's examples bound, as a host binds the scenario pane's. */
-async function mountWithExamples(
-  session: ReturnType<typeof createBuilderSession>,
-  ask: AskModel,
-  mode?: 'client' | 'server',
-) {
+async function mountWithExamples(session: ReturnType<typeof createBuilderSession>, ask: AskModel, mode?: 'client' | 'server') {
   return render(FormancyPromptPane, {
     inputs: {
       session,
@@ -270,16 +255,10 @@ describe('with the form’s examples', () => {
 
     await instruct(user, 'show the canton outside Switzerland too')
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole('region', { name: /would stop holding: Switzerland asks for a canton/ }),
-      ).toBeTruthy(),
-    )
-    expect(screen.getByRole('status').textContent).toContain(
-      'Would stop holding if applied: Switzerland asks for a canton.',
-    )
+    await waitFor(() => expect(screen.getByRole('region', { name: /would stop holding: Switzerland asks for a canton/ })).toBeTruthy())
+    expect(screen.getByRole('status').textContent).toContain('Would stop holding if applied: Switzerland asks for a canton.')
     expect(session.document()).toEqual(RIGHT)
-    const apply = screen.getByRole('button', { name: 'Apply these changes' }) as HTMLButtonElement
+    const apply = screen.getByRole<HTMLButtonElement>('button', { name: 'Apply these changes' })
     expect(apply.disabled).toBe(false)
     await user.click(apply)
     expect(session.document()).toEqual(BACKWARDS)
@@ -304,11 +283,7 @@ describe('with the form’s examples', () => {
 
     await instruct(user, 'names longer than three letters, checked on the server')
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain(
-        'Would stop holding if applied: Switzerland asks for a canton.',
-      ),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Would stop holding if applied: Switzerland asks for a canton.'))
   })
 
   test('without them the review is what it was', async () => {
@@ -319,9 +294,7 @@ describe('with the form’s examples', () => {
 
     await instruct(user, 'show the canton outside Switzerland too')
 
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy())
     expect(screen.getByRole('status').textContent).not.toMatch(/holding/)
   })
 })
@@ -334,9 +307,7 @@ describe('when it cannot', () => {
 
     await instruct(user, 'a contact form')
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('Nothing was applied'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Nothing was applied'))
     expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
     expect(session.document()).toEqual(START)
   })
@@ -353,11 +324,7 @@ describe('when it cannot', () => {
 
     await instruct(user, 'a contact form')
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe(
-        'Nothing was applied. The model could not be reached: fetch failed',
-      ),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Nothing was applied. The model could not be reached: fetch failed'))
     // Nothing was wrong with an answer, because there was none: no problem list. The
     // list itself, not its items — an empty one is still announced as a list.
     expect(screen.queryByRole('list')).toBeNull()
@@ -367,7 +334,10 @@ describe('when it cannot', () => {
     const user = userEvent.setup()
     const session = createBuilderSession(START)
 
-    await mount(session, vi.fn(() => Promise.reject(new Error('429 rate limited'))))
+    await mount(
+      session,
+      vi.fn(() => Promise.reject(new Error('429 rate limited'))),
+    )
     await instruct(user, 'a contact form')
 
     // A network failure, a rate limit, a missing key. A button that silently
@@ -392,11 +362,7 @@ describe('when the model declines', () => {
 
     await instruct(user, 'email me every submission')
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe(
-        'Nothing was applied. The model declined this request.',
-      ),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Nothing was applied. The model declined this request.'))
     expect(screen.getByText(why)).toBeTruthy()
     expect(document.querySelector('[data-formancy-part="prompt-pane"] b')).toBeNull()
     // In place of the problem list: the first answer's complaint was about a
@@ -424,9 +390,7 @@ describe('while it is working', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
     await user.click(screen.getByRole('button', { name: 'Stop' }))
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'))
     // The host was told, so it can abandon the request rather than pay for it.
     expect(slow.cancelled).toHaveBeenCalledTimes(1)
     // No answer came, so there is nothing wrong with one to list.
@@ -457,9 +421,7 @@ describe('while it is working', () => {
     await instruct(user, 'a contact form')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
     await user.click(screen.getByRole('button', { name: 'Stop' }))
-    await waitFor(() =>
-      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(false),
-    )
+    await waitFor(() => expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(false))
     await user.clear(screen.getByRole('textbox', { name: /Describe the form/ }))
     await instruct(user, 'only a phone number')
     await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(2))
@@ -489,9 +451,7 @@ describe('while it is working', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
     await user.click(screen.getByRole('button', { name: 'Stop' }))
 
-    await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })),
-    )
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })))
   })
 
   test('and when the run ends by itself while Stop has focus', async () => {
@@ -506,9 +466,7 @@ describe('while it is working', () => {
     slow.release(JSON.stringify(WRITTEN))
 
     await screen.findByRole('region', { name: /Review/ })
-    await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })),
-    )
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })))
   })
 
   test('a pane that is destroyed stops its run', async () => {
@@ -560,9 +518,7 @@ describe('when the host holds the run', () => {
     const review = await screen.findByRole('region', { name: /Review/ })
     expect(review.textContent).toContain('phone')
     // Beside the words it answers, which this pane never saw typed.
-    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe(
-      'add a phone number',
-    )
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe('add a phone number')
     await user.click(within(review).getByRole('button', { name: 'Apply these changes' }))
     expect(session.document().model.fields.map((field) => field.key)).toEqual(['name', 'phone'])
   })
@@ -623,9 +579,7 @@ describe('when the host holds the run', () => {
     expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).disabled).toBe(true)
     await user.click(screen.getByRole('button', { name: 'Stop' }))
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'))
     expect(slow.cancelled).toHaveBeenCalledTimes(1)
   })
 
@@ -650,17 +604,11 @@ describe('when the host holds the run', () => {
     const second = within(screen.getByRole('region', { name: 'second' }))
 
     await user.type(first.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
-    await waitFor(() =>
-      expect(second.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe(
-        'add a phone number',
-      ),
-    )
+    await waitFor(() => expect(second.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe('add a phone number'))
     await user.click(first.getByRole('button', { name: 'Write it' }))
     await user.click(await second.findByRole('button', { name: 'Stop' }))
 
-    await waitFor(() =>
-      expect(first.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
-    )
+    await waitFor(() => expect(first.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'))
     expect(second.getByRole('status').textContent).toBe('Stopped. Nothing was applied.')
     expect(slow.model).toHaveBeenCalledTimes(1)
     expect(slow.cancelled).toHaveBeenCalledTimes(1)

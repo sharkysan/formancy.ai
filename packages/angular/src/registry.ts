@@ -13,16 +13,12 @@ export interface FormancyFieldContext {
   readonly label: string
 }
 
-export const FORMANCY_FIELD_CONTEXT = new InjectionToken<FormancyFieldContext>(
-  'formancy.field-context',
-)
+export const FORMANCY_FIELD_CONTEXT = new InjectionToken<FormancyFieldContext>('formancy.field-context')
 
 export function injectFieldContext(): FormancyFieldContext {
   const context = inject(FORMANCY_FIELD_CONTEXT, { optional: true })
   if (context === null) {
-    throw new Error(
-      'formancy field components render inside a formancy-field slot, which provides FORMANCY_FIELD_CONTEXT for the path and label',
-    )
+    throw new Error('formancy field components render inside a formancy-field slot, which provides FORMANCY_FIELD_CONTEXT for the path and label')
   }
   return context
 }

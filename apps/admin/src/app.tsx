@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
-import type { Monaco } from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
 import { useKeptExamples } from './examples-pane.js'
 import { PublishNote } from './publish-note.js'
@@ -101,10 +100,7 @@ export function App() {
         <ul aria-labelledby="wb-forms-heading">
           {forms.map((form) => (
             <li key={form.path}>
-              <button
-                aria-current={form.path === selected}
-                onClick={() => setSelected(form.path)}
-              >
+              <button aria-current={form.path === selected} onClick={() => setSelected(form.path)}>
                 {form.title} <small>v{form.version}</small>
               </button>
             </li>
@@ -120,8 +116,7 @@ export function App() {
           }}
         >
           <label>
-            New form path{' '}
-            <input value={creating} onChange={(event) => setCreating(event.target.value)} placeholder="contact-us" />
+            New form path <input value={creating} onChange={(event) => setCreating(event.target.value)} placeholder="contact-us" />
           </label>
         </form>
       </nav>
@@ -160,18 +155,8 @@ const NEW_FORM_TEMPLATE = (path: string) =>
     2,
   )
 
-function FormWorkspace({
-  path,
-  onPublished,
-  model,
-}: {
-  path: string
-  onPublished: () => Promise<void>
-  model: ServerModel | undefined
-}) {
-  const [tab, setTab] = useState<
-    'build' | 'editor' | 'translations' | 'fill in' | 'versions' | 'submissions' | 'webhooks'
-  >('build')
+function FormWorkspace({ path, onPublished, model }: { path: string; onPublished: () => Promise<void>; model: ServerModel | undefined }) {
+  const [tab, setTab] = useState<'build' | 'editor' | 'translations' | 'fill in' | 'versions' | 'submissions' | 'webhooks'>('build')
   const [source, setSource] = useState<string | undefined>(undefined)
   const [serverHash, setServerHash] = useState<string | undefined>(undefined)
   const [publishState, setPublishState] = useState<PublishResult | undefined>(undefined)
@@ -214,11 +199,11 @@ function FormWorkspace({
       <div className="wb-titlebar">
         <strong>{path}</strong>
         <div className="wb-tabs">
-        {(['build', 'editor', 'translations', 'fill in', 'versions', 'submissions', 'webhooks'] as const).map((candidate) => (
-          <button key={candidate} onClick={() => setTab(candidate)} aria-pressed={tab === candidate}>
-            {candidate}
-          </button>
-        ))}
+          {(['build', 'editor', 'translations', 'fill in', 'versions', 'submissions', 'webhooks'] as const).map((candidate) => (
+            <button key={candidate} onClick={() => setTab(candidate)} aria-pressed={tab === candidate}>
+              {candidate}
+            </button>
+          ))}
         </div>
         <span className="wb-published" data-published={serverHash !== undefined}>
           {serverHash === undefined ? 'never published' : `published ${serverHash.slice(0, 12)}…`}
@@ -229,7 +214,9 @@ function FormWorkspace({
           source={source}
           onChange={setSource}
           publishState={publishState}
-          onPublish={() => { void publishSource() }}
+          onPublish={() => {
+            void publishSource()
+          }}
           formPath={path}
           model={model}
           kept={kept}
@@ -240,7 +227,9 @@ function FormWorkspace({
           source={source}
           onChange={setSource}
           publishState={publishState}
-          onPublish={() => { void publishSource() }}
+          onPublish={() => {
+            void publishSource()
+          }}
         />
       ) : tab === 'translations' ? (
         <TranslationsTab source={source ?? ''} onChange={setSource} model={model} />
@@ -341,7 +330,9 @@ function EditorPane({
 function VersionsPane({ path }: { path: string }) {
   const [versions, setVersions] = useState<VersionEntry[]>([])
   useEffect(() => {
-    fetchVersions(path).then(setVersions).catch(() => setVersions([]))
+    fetchVersions(path)
+      .then(setVersions)
+      .catch(() => setVersions([]))
   }, [path])
   return (
     <div className="wb-page">
@@ -367,9 +358,7 @@ function VersionsPane({ path }: { path: string }) {
           ))}
         </tbody>
       </table>
-      {versions.length === 0 ? (
-        <p className="wb-empty-note">Nothing published yet. The first publish is version 1.</p>
-      ) : null}
+      {versions.length === 0 ? <p className="wb-empty-note">Nothing published yet. The first publish is version 1.</p> : null}
     </div>
   )
 }
@@ -463,9 +452,7 @@ function SubmissionsPane({ path }: { path: string }) {
           ))}
         </tbody>
       </table>
-      {submissions.length === 0 ? (
-        <p className="wb-empty-note">No submissions yet.</p>
-      ) : null}
+      {submissions.length === 0 ? <p className="wb-empty-note">No submissions yet.</p> : null}
       {next === null ? null : (
         <p className="wb-page-actions">
           <button type="button" className="wb-button" onClick={more}>
@@ -478,10 +465,16 @@ function SubmissionsPane({ path }: { path: string }) {
 }
 
 /**
+ * What the theme needs of Monaco. `@monaco-editor/react`'s own `Monaco` is `typeof` a module its
+ * types do not resolve from here, so it reads as `any` and every call on it goes unchecked.
+ */
+type ThemeHost = { editor: { defineTheme: (name: string, theme: object) => void } }
+
+/**
  * The JSON editor, in the admin's colours: Monaco draws its own surface, and
  * a stock light editor inside a dark workbench reads as two products.
  */
-function defineNightTheme(monaco: Monaco): void {
+function defineNightTheme(monaco: ThemeHost): void {
   monaco.editor.defineTheme('formancy-night', {
     base: 'vs-dark',
     inherit: true,

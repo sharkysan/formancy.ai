@@ -41,9 +41,7 @@ beforeAll(async () => {
     seen.push({
       method: request.method ?? '',
       url: request.url ?? '',
-      headers: Object.fromEntries(
-        Object.entries(request.headers).map(([name, value]) => [name, String(value)]),
-      ),
+      headers: Object.fromEntries(Object.entries(request.headers).map(([name, value]) => [name, String(value)])),
     })
     // Drain the body so a PUT completes rather than stalling on backpressure.
     request.resume()
@@ -93,9 +91,7 @@ describe('createS3FileStore', () => {
     const headers = seen[0]?.headers ?? {}
     expect(headers['authorization']).toMatch(/^AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE\//)
     // The hash of "hello", so the header is about the body and not a constant.
-    expect(headers['x-amz-content-sha256']).toBe(
-      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
-    )
+    expect(headers['x-amz-content-sha256']).toBe('2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')
     // The body reached the wire with a length. Asserted at the wire rather than
     // as a header the store sets, because the store deliberately sets neither:
     // undici rejects a manual `content-length` and computes its own.
@@ -306,34 +302,38 @@ describe('how long the store is waited on', () => {
   test.each([
     ['a few bytes', 16],
     ['more than every buffer', 4 * 1024 * 1024],
-  ])('lets go of the connection under a body nobody reads: %s', async (_, sent) => {
-    // A path that throws on the status never reads the error document behind it,
-    // and an unread body holds its connection for as long as the store keeps it
-    // open. The clock starts again when the headers arrive rather than when
-    // somebody first reads, so the store's silence still ends it -- as the old
-    // whole-request timeout did, which is the part of it worth keeping.
-    //
-    // Raced against a few timeouts rather than left to the case's own limit:
-    // without the clock the connection was still closed eventually, by nothing in
-    // the store, about eight seconds later when measured -- inside that limit.
-    let markClosed!: () => void
-    const closed = new Promise<'closed'>((resolve) => {
-      markClosed = () => resolve('closed')
-    })
-    await withStore(
-      (request, response) => {
-        request.resume()
-        response.on('close', markClosed)
-        response.writeHead(500, { 'content-length': String(sent * 2) })
-        response.write(Buffer.alloc(sent))
-      },
-      async (store) => {
-        await expect(store.open('erroring')).rejects.toThrow(/500/)
-        const still = delay(TIMEOUT_MS * 3).then(() => 'still open' as const)
-        expect(await Promise.race([closed, still])).toBe('closed')
-      },
-    )
-  }, 10_000)
+  ])(
+    'lets go of the connection under a body nobody reads: %s',
+    async (_, sent) => {
+      // A path that throws on the status never reads the error document behind it,
+      // and an unread body holds its connection for as long as the store keeps it
+      // open. The clock starts again when the headers arrive rather than when
+      // somebody first reads, so the store's silence still ends it -- as the old
+      // whole-request timeout did, which is the part of it worth keeping.
+      //
+      // Raced against a few timeouts rather than left to the case's own limit:
+      // without the clock the connection was still closed eventually, by nothing in
+      // the store, about eight seconds later when measured -- inside that limit.
+      let markClosed!: () => void
+      const closed = new Promise<'closed'>((resolve) => {
+        markClosed = () => resolve('closed')
+      })
+      await withStore(
+        (request, response) => {
+          request.resume()
+          response.on('close', markClosed)
+          response.writeHead(500, { 'content-length': String(sent * 2) })
+          response.write(Buffer.alloc(sent))
+        },
+        async (store) => {
+          await expect(store.open('erroring')).rejects.toThrow(/500/)
+          const still = delay(TIMEOUT_MS * 3).then(() => 'still open' as const)
+          expect(await Promise.race([closed, still])).toBe('closed')
+        },
+      )
+    },
+    10_000,
+  )
 
   test('leaves no clock behind that keeps the process alive', async () => {
     // A clock is a deadline, not work, and a deadline must not be what keeps a
@@ -343,8 +343,7 @@ describe('how long the store is waited on', () => {
     // which the clock replaced, was unref'd; an ordinary timer holds whatever
     // process the store lives in until it fires. The server's own entry point
     // exits explicitly and would not notice. Anything else would wait.
-    const deadlines = (): number =>
-      process.getActiveResourcesInfo().filter((resource) => resource === 'Timeout').length
+    const deadlines = (): number => process.getActiveResourcesInfo().filter((resource) => resource === 'Timeout').length
     await withStore(
       (request, response) => {
         request.resume()
@@ -378,18 +377,13 @@ describe('how long the store is waited on', () => {
         })
       },
       async (store) => {
-        await expect(store.put('large', Buffer.alloc(8 * 1024 * 1024))).rejects.toThrow(
-          new RegExp(`no answer within ${String(TIMEOUT_MS)} ms`),
-        )
+        await expect(store.put('large', Buffer.alloc(8 * 1024 * 1024))).rejects.toThrow(new RegExp(`no answer within ${String(TIMEOUT_MS)} ms`))
       },
     )
   }, 10_000)
 
   /** Runs `use` against a store served by `answer`, and closes it whatever happens. */
-  async function withStore(
-    answer: RequestListener,
-    use: (store: FileStore) => Promise<void>,
-  ): Promise<void> {
+  async function withStore(answer: RequestListener, use: (store: FileStore) => Promise<void>): Promise<void> {
     const stub = createServer(answer)
     await new Promise<void>((resolve) => stub.listen(0, '127.0.0.1', resolve))
     try {

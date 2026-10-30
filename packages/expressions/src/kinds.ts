@@ -10,13 +10,7 @@
  */
 export type ExpressionKind = 'visible' | 'disabled' | 'required' | 'computed' | 'validate'
 
-export const EXPRESSION_KINDS: readonly ExpressionKind[] = Object.freeze([
-  'visible',
-  'disabled',
-  'required',
-  'computed',
-  'validate',
-])
+export const EXPRESSION_KINDS: readonly ExpressionKind[] = Object.freeze(['visible', 'disabled', 'required', 'computed', 'validate'])
 
 /**
  * Functions every kind may call. All of them are pure, total and bounded by
@@ -93,10 +87,7 @@ export interface KindPolicy {
   readonly resultTypes: ReadonlySet<string> | 'any'
 }
 
-function policy(
-  functions: readonly (readonly string[])[],
-  resultTypes: ReadonlySet<string> | 'any',
-): KindPolicy {
+function policy(functions: readonly (readonly string[])[], resultTypes: ReadonlySet<string> | 'any'): KindPolicy {
   return Object.freeze({
     allowedFunctions: new Set(functions.flat()),
     resultTypes,

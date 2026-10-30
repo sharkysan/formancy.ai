@@ -20,7 +20,10 @@ const form = (fields: FieldDef[], specVersion: '4' | '5' = '5'): FormSchema => (
 describe('adding "Other, please specify"', () => {
   test('adds the option, a text field straight after the choice, and rules showing and requiring it', () => {
     const session = createBuilderSession(
-      form([{ key: 'channel', type: 'radio', label: 'Channel', options }, { key: 'email', type: 'text', label: 'Email' }]),
+      form([
+        { key: 'channel', type: 'radio', label: 'Channel', options },
+        { key: 'email', type: 'text', label: 'Email' },
+      ]),
     )
     expect(addOtherOption(session, ['channel']).ok).toBe(true)
 
@@ -76,7 +79,10 @@ describe('adding "Other, please specify"', () => {
 
   test('takes a key nobody uses', () => {
     const session = createBuilderSession(
-      form([{ key: 'channel', type: 'radio', label: 'Channel', options }, { key: 'channelOther', type: 'text', label: 'Taken' }]),
+      form([
+        { key: 'channel', type: 'radio', label: 'Channel', options },
+        { key: 'channelOther', type: 'text', label: 'Taken' },
+      ]),
     )
     addOtherOption(session, ['channel'])
     expect(session.document().model.fields.map((field) => field.key)).toEqual(['channel', 'channelOther2', 'channelOther'])

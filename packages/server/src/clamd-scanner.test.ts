@@ -24,10 +24,7 @@ const file = { name: 'a.pdf', contentType: 'application/pdf', size: 0 }
  * Starts the stand-in; `answer` sees the bytes it received, and may say nothing at all.
  * `limit` is its stream limit; `paceMs` sends the answer a byte at a time, that far apart.
  */
-async function clamd(
-  answer: (bytes: Buffer) => string | undefined,
-  { limit = Infinity, paceMs }: { limit?: number; paceMs?: number } = {},
-) {
+async function clamd(answer: (bytes: Buffer) => string | undefined, { limit = Infinity, paceMs }: { limit?: number; paceMs?: number } = {}) {
   const received: Buffer[] = []
   const server = createServer((socket) => {
     let pending = Buffer.alloc(0)
@@ -89,10 +86,7 @@ describe('the ClamAV scanner', () => {
     const daemon = await clamd(() => 'stream: OK')
     const bytes = Buffer.from(Array.from({ length: 200_000 }, (_, at) => at % 251))
 
-    const verdict = await createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(
-      file,
-      bytes,
-    )
+    const verdict = await createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(file, bytes)
 
     expect(verdict).toEqual({ clean: true })
     expect(daemon.received[0]?.equals(bytes)).toBe(true)
@@ -101,10 +95,7 @@ describe('the ClamAV scanner', () => {
   test('a finding is refused, by the name clamd gives it', async () => {
     const daemon = await clamd(() => 'stream: Eicar-Test-Signature FOUND')
 
-    const verdict = await createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(
-      file,
-      Buffer.from('anything'),
-    )
+    const verdict = await createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(file, Buffer.from('anything'))
 
     expect(verdict).toEqual({ clean: false, finding: 'Eicar-Test-Signature' })
   })
@@ -133,10 +124,7 @@ describe('the ClamAV scanner', () => {
   test('and clamd saying its limit was exceeded is a refusal too, when the answer arrives', async () => {
     const daemon = await clamd(() => 'INSTREAM size limit exceeded. ERROR')
 
-    const verdict = await createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(
-      file,
-      Buffer.from('x'),
-    )
+    const verdict = await createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(file, Buffer.from('x'))
 
     expect(verdict).toEqual({
       clean: false,
@@ -147,29 +135,22 @@ describe('the ClamAV scanner', () => {
   test('an answer it does not understand is never taken for clean', async () => {
     const daemon = await clamd(() => 'PONG')
 
-    await expect(
-      createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(file, Buffer.from('x')),
-    ).rejects.toThrow(/PONG/)
+    await expect(createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(file, Buffer.from('x'))).rejects.toThrow(/PONG/)
   })
 
   test('no daemon listening is a scanner that cannot be asked', async () => {
     const daemon = await clamd(() => 'stream: OK')
     await closers.splice(0)[0]!()
 
-    await expect(
-      createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(file, Buffer.from('x')),
-    ).rejects.toThrow()
+    await expect(createClamdScanner({ host: '127.0.0.1', port: daemon.port }).scan(file, Buffer.from('x'))).rejects.toThrow()
   })
 
   test('and neither is one that never answers, after the time it is given', async () => {
     const daemon = await clamd(() => undefined)
 
-    await expect(
-      createClamdScanner({ host: '127.0.0.1', port: daemon.port, timeoutMs: 200 }).scan(
-        file,
-        Buffer.from('x'),
-      ),
-    ).rejects.toThrow(/did not answer within 200 ms/)
+    await expect(createClamdScanner({ host: '127.0.0.1', port: daemon.port, timeoutMs: 200 }).scan(file, Buffer.from('x'))).rejects.toThrow(
+      /did not answer within 200 ms/,
+    )
   })
 
   test('its time limit is for silence, not for the whole scan', async () => {

@@ -9,10 +9,9 @@ import type { Fixture } from './types.js'
 export const builtinFixtures: readonly Fixture[] = [
   {
     name: 'a calculated field recomputes from its inputs and is never typed into',
-    description: 'A computed value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. Only its rule writes it: a value handed in for it with the form is not its value, which the first step holds, and a renderer draws it read-only rather than disabled, so a person can reach and read it but is not invited to type into a value the engine will not keep. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.',
-    tags: [
-      'calculation',
-    ],
+    description:
+      'A computed value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. Only its rule writes it: a value handed in for it with the form is not its value, which the first step holds, and a renderer draws it read-only rather than disabled, so a person can reach and read it but is not invited to type into a value the engine will not keep. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.',
+    tags: ['calculation'],
     schema: {
       specVersion: '1',
       id: 'quote',
@@ -79,9 +78,7 @@ export const builtinFixtures: readonly Fixture[] = [
         },
       },
       {
-        expectVisible: [
-          'total',
-        ],
+        expectVisible: ['total'],
       },
       {
         expectNoErrors: true,
@@ -103,11 +100,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a hidden value is dropped only when the field asks for it',
-    description: 'Clearing on hide is the spec\'s default direction: a hidden branch must not smuggle an answer to a withdrawn question into the submission. `clearOnHide: false` is the opt-out for the case where someone who ticks the box back on expects to find what they typed. Both fields declare it explicitly, because a conformance case must not lean on a default it is not testing. A cleared field leaves no key in the payload at all, rather than a null every consumer then has to special-case.',
-    tags: [
-      'visibility',
-      'data',
-    ],
+    description:
+      "Clearing on hide is the spec's default direction: a hidden branch must not smuggle an answer to a withdrawn question into the submission. `clearOnHide: false` is the opt-out for the case where someone who ticks the box back on expects to find what they typed. Both fields declare it explicitly, because a conformance case must not lean on a default it is not testing. A cleared field leaves no key in the payload at all, rather than a null every consumer then has to special-case.",
+    tags: ['visibility', 'data'],
     schema: {
       specVersion: '1',
       id: 'order',
@@ -155,10 +150,7 @@ export const builtinFixtures: readonly Fixture[] = [
         },
       },
       {
-        expectVisible: [
-          'notes',
-          'reference',
-        ],
+        expectVisible: ['notes', 'reference'],
       },
       {
         set: {
@@ -172,10 +164,7 @@ export const builtinFixtures: readonly Fixture[] = [
         },
       },
       {
-        expectHidden: [
-          'notes',
-          'reference',
-        ],
+        expectHidden: ['notes', 'reference'],
       },
       {
         submit: true,
@@ -204,11 +193,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'conditional visibility follows country',
-    description: 'A field nobody can see is a field nobody can fix, so a hidden field is not validated: `state` is required and invisible in Switzerland, and must not block submit. Switching country moves the requirement rather than adding to it.',
-    tags: [
-      'visibility',
-      'validation',
-    ],
+    description:
+      'A field nobody can see is a field nobody can fix, so a hidden field is not validated: `state` is required and invisible in Switzerland, and must not block submit. Switching country moves the requirement rather than adding to it.',
+    tags: ['visibility', 'validation'],
     schema: {
       specVersion: '1',
       id: 'address',
@@ -250,22 +237,19 @@ export const builtinFixtures: readonly Fixture[] = [
           {
             target: 'canton',
             kind: 'visible',
-            cel: 'country == \'CH\'',
+            cel: "country == 'CH'",
           },
           {
             target: 'state',
             kind: 'visible',
-            cel: 'country == \'US\'',
+            cel: "country == 'US'",
           },
         ],
       },
     },
     steps: [
       {
-        expectHidden: [
-          'canton',
-          'state',
-        ],
+        expectHidden: ['canton', 'state'],
       },
       {
         set: {
@@ -273,14 +257,10 @@ export const builtinFixtures: readonly Fixture[] = [
         },
       },
       {
-        expectVisible: [
-          'canton',
-        ],
+        expectVisible: ['canton'],
       },
       {
-        expectHidden: [
-          'state',
-        ],
+        expectHidden: ['state'],
       },
       {
         submit: true,
@@ -292,9 +272,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          canton: [
-            'required',
-          ],
+          canton: ['required'],
           state: [],
         },
       },
@@ -304,14 +282,10 @@ export const builtinFixtures: readonly Fixture[] = [
         },
       },
       {
-        expectVisible: [
-          'state',
-        ],
+        expectVisible: ['state'],
       },
       {
-        expectHidden: [
-          'canton',
-        ],
+        expectHidden: ['canton'],
       },
       {
         expectErrors: {
@@ -335,10 +309,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a masked answer fills every position, and holds only what was typed',
-    description: 'An input mask shapes how an answer is typed — a phone number shown as (555) 123-4567 — while the answer holds only the characters typed into its positions, so what the server stores is the number rather than one spelling of it. An answer that leaves a position empty is refused with its own code, by the engine on both sides, so a payload posted straight at the server is held to the same mask as one typed into either renderer.',
-    tags: [
-      'validation',
-    ],
+    description:
+      'An input mask shapes how an answer is typed — a phone number shown as (555) 123-4567 — while the answer holds only the characters typed into its positions, so what the server stores is the number rather than one spelling of it. An answer that leaves a position empty is refused with its own code, by the engine on both sides, so a payload posted straight at the server is held to the same mask as one typed into either renderer.',
+    tags: ['validation'],
     schema: {
       specVersion: '4',
       id: 'contact',
@@ -371,9 +344,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          phone: [
-            'mask',
-          ],
+          phone: ['mask'],
         },
       },
       {
@@ -401,11 +372,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a matrix answers one question per row, and a required one needs every row',
-    description: 'A matrix asks the same question of several rows, with the same answers for each. It is one group named by its label, holding a group per row named by the row, holding a radio per column named by the column — so every answer is reached by role and name, and arrow keys move within a row as they do in any radio group. Its answer is the column chosen under each row answered. A required matrix half answered has not been answered: it asks one question per row.',
-    tags: [
-      'fields',
-      'spec4',
-    ],
+    description:
+      'A matrix asks the same question of several rows, with the same answers for each. It is one group named by its label, holding a group per row named by the row, holding a radio per column named by the column — so every answer is reached by role and name, and arrow keys move within a row as they do in any radio group. Its answer is the column chosen under each row answered. A required matrix half answered has not been answered: it asks one question per row.',
+    tags: ['fields', 'spec4'],
     schema: {
       specVersion: '4',
       id: 'meal',
@@ -451,9 +420,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          rating: [
-            'required',
-          ],
+          rating: ['required'],
         },
       },
       {
@@ -475,9 +442,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          rating: [
-            'required',
-          ],
+          rating: ['required'],
         },
       },
       {
@@ -514,11 +479,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a group a layout places whole is drawn as its fields, on the page it belongs to',
-    description: 'A layout may place a group\'s path rather than each of its fields, and the validator accepts it. Both renderers asked the engine for a field at that path and threw, so the form did not render at all — in a preview and in production alike. Placed whole, a group is drawn as its fields, in the order a form with no layout draws them; on a paged form it is drawn on the page its fields are on, and on no other.',
-    tags: [
-      'layout',
-      'wizard',
-    ],
+    description:
+      "A layout may place a group's path rather than each of its fields, and the validator accepts it. Both renderers asked the engine for a field at that path and threw, so the form did not render at all — in a preview and in production alike. Placed whole, a group is drawn as its fields, in the order a form with no layout draws them; on a paged form it is drawn on the page its fields are on, and on no other.",
+    tags: ['layout', 'wizard'],
     layout: 'web',
     schema: {
       specVersion: '1',
@@ -587,15 +550,10 @@ export const builtinFixtures: readonly Fixture[] = [
         expectPage: 'you',
       },
       {
-        expectVisible: [
-          'name',
-        ],
+        expectVisible: ['name'],
       },
       {
-        expectHidden: [
-          'address.street',
-          'address.city',
-        ],
+        expectHidden: ['address.street', 'address.city'],
       },
       {
         set: {
@@ -609,15 +567,10 @@ export const builtinFixtures: readonly Fixture[] = [
         expectPage: 'where',
       },
       {
-        expectVisible: [
-          'address.street',
-          'address.city',
-        ],
+        expectVisible: ['address.street', 'address.city'],
       },
       {
-        expectHidden: [
-          'name',
-        ],
+        expectHidden: ['name'],
       },
       {
         set: {
@@ -644,11 +597,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a ranking stores the order chosen, and starts with nothing in it',
-    description: 'A ranking is several controls answering one question, so it is a group with one accessible name. Its answer is the values of the options in the order the person put them, most preferred first — not the order the author wrote them in, which is why an untouched ranking holds nothing and a required one is refused until something is ranked. Moving an option changes the order and nothing else.',
-    tags: [
-      'fields',
-      'spec4',
-    ],
+    description:
+      'A ranking is several controls answering one question, so it is a group with one accessible name. Its answer is the values of the options in the order the person put them, most preferred first — not the order the author wrote them in, which is why an untouched ranking holds nothing and a required one is refused until something is ranked. Moving an option changes the order and nothing else.',
+    tags: ['fields', 'spec4'],
     schema: {
       specVersion: '4',
       id: 'drinks',
@@ -684,25 +635,17 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          drinks: [
-            'required',
-          ],
+          drinks: ['required'],
         },
       },
       {
         set: {
-          drinks: [
-            'tea',
-            'coffee',
-          ],
+          drinks: ['tea', 'coffee'],
         },
       },
       {
         expectValue: {
-          drinks: [
-            'tea',
-            'coffee',
-          ],
+          drinks: ['tea', 'coffee'],
         },
       },
       {
@@ -710,20 +653,12 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         set: {
-          drinks: [
-            'water',
-            'tea',
-            'coffee',
-          ],
+          drinks: ['water', 'tea', 'coffee'],
         },
       },
       {
         expectValue: {
-          drinks: [
-            'water',
-            'tea',
-            'coffee',
-          ],
+          drinks: ['water', 'tea', 'coffee'],
         },
       },
       {
@@ -733,29 +668,22 @@ export const builtinFixtures: readonly Fixture[] = [
         expectSubmit: {
           status: 'accepted',
           data: {
-            drinks: [
-              'water',
-              'tea',
-              'coffee',
-            ],
+            drinks: ['water', 'tea', 'coffee'],
           },
         },
       },
     ],
   },
   {
-    name: 'a form mounted in another locale says the renderer\'s own words in it too',
-    description: 'The form\'s questions are the author\'s, translated in the document; the controls around them — Next, Back, Submit, a row\'s remove button and where the row is, a ranking\'s buttons — are the renderer\'s, and were English literals in every binding, so a German form asked its questions in German around English buttons. A driver presses those controls by the words the renderer draws for them in the locale the form was mounted in, so a renderer drawing English fails at the first control it names itself — the row\'s remove button, after the steps that need only the document\'s words — and goes no further. The repeater\'s add and remove words are the document\'s own, because a fixture names what a driver presses; the row\'s position around them is the renderer\'s.',
-    tags: [
-      'i18n',
-      'wizard',
-      'repeater',
-    ],
+    name: "a form mounted in another locale says the renderer's own words in it too",
+    description:
+      "The form's questions are the author's, translated in the document; the controls around them — Next, Back, Submit, a row's remove button and where the row is, a ranking's buttons — are the renderer's, and were English literals in every binding, so a German form asked its questions in German around English buttons. A driver presses those controls by the words the renderer draws for them in the locale the form was mounted in, so a renderer drawing English fails at the first control it names itself — the row's remove button, after the steps that need only the document's words — and goes no further. The repeater's add and remove words are the document's own, because a fixture names what a driver presses; the row's position around them is the renderer's.",
+    tags: ['i18n', 'wizard', 'repeater'],
     locale: 'de',
     schema: {
       specVersion: '4',
       id: 'renderer-words',
-      title: 'The renderer\'s words, mounted in German',
+      title: "The renderer's words, mounted in German",
       model: {
         fields: [
           {
@@ -893,25 +821,17 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          drinks: [
-            'required',
-          ],
+          drinks: ['required'],
         },
       },
       {
         set: {
-          drinks: [
-            'water',
-            'tea',
-          ],
+          drinks: ['water', 'tea'],
         },
       },
       {
         expectValue: {
-          drinks: [
-            'water',
-            'tea',
-          ],
+          drinks: ['water', 'tea'],
         },
       },
       {
@@ -926,10 +846,7 @@ export const builtinFixtures: readonly Fixture[] = [
                 name: 'Grace',
               },
             ],
-            drinks: [
-              'water',
-              'tea',
-            ],
+            drinks: ['water', 'tea'],
           },
         },
       },
@@ -937,11 +854,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a repeater says when it holds more rows than it allows, or none where one is required',
-    description: 'A repeater\'s maxItems and its required are what the data must be, so the engine checks them as it checks a field and the renderer draws the error on the repeater itself: inside its fieldset, in the group\'s description, where a driver reading the group by its legend finds it. The codes are the ones a selectboxes reports for the same questions — maxItems for too many, required for none — because how many answers a question may have is one question however it is asked. Mounted with three rows where two are allowed, which is what a draft or a host\'s own value can bring, since the renderer offers no add button past the maximum. Removing rows clears the error as the rows go, and removing them all brings back the other one: a required repeater needs a row, not a row with something typed in it.',
-    tags: [
-      'repeater',
-      'validation',
-    ],
+    description:
+      "A repeater's maxItems and its required are what the data must be, so the engine checks them as it checks a field and the renderer draws the error on the repeater itself: inside its fieldset, in the group's description, where a driver reading the group by its legend finds it. The codes are the ones a selectboxes reports for the same questions — maxItems for too many, required for none — because how many answers a question may have is one question however it is asked. Mounted with three rows where two are allowed, which is what a draft or a host's own value can bring, since the renderer offers no add button past the maximum. Removing rows clears the error as the rows go, and removing them all brings back the other one: a required repeater needs a row, not a row with something typed in it.",
+    tags: ['repeater', 'validation'],
     schema: {
       specVersion: '1',
       id: 'party',
@@ -991,9 +906,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          guests: [
-            'maxItems',
-          ],
+          guests: ['maxItems'],
           'guests[0].name': [],
         },
       },
@@ -1020,9 +933,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          guests: [
-            'required',
-          ],
+          guests: ['required'],
         },
       },
       {
@@ -1055,11 +966,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a repeating group validates each item and re-indexes when one is removed',
-    description: 'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard. The email format rule is row-scoped — it runs once per item with `item` bound to that row — so a bad address in one row must flag that row and no other.',
-    tags: [
-      'repeater',
-      'validation',
-    ],
+    description:
+      'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard. The email format rule is row-scoped — it runs once per item with `item` bound to that row — so a bad address in one row must flag that row and no other.',
+    tags: ['repeater', 'validation'],
     schema: {
       specVersion: '1',
       id: 'team',
@@ -1095,7 +1004,7 @@ export const builtinFixtures: readonly Fixture[] = [
           {
             target: 'contacts[].email',
             kind: 'validate',
-            cel: 'item.email == null || item.email == \'\' || item.email.contains(\'@\')',
+            cel: "item.email == null || item.email == '' || item.email.contains('@')",
             code: 'email',
           },
         ],
@@ -1103,19 +1012,13 @@ export const builtinFixtures: readonly Fixture[] = [
     },
     steps: [
       {
-        expectVisible: [
-          'contacts[0].name',
-          'contacts[0].email',
-        ],
+        expectVisible: ['contacts[0].name', 'contacts[0].email'],
       },
       {
         addItem: 'contacts',
       },
       {
-        expectVisible: [
-          'contacts[1].name',
-          'contacts[1].email',
-        ],
+        expectVisible: ['contacts[1].name', 'contacts[1].email'],
       },
       {
         set: {
@@ -1132,16 +1035,10 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          'contacts[0].name': [
-            'required',
-          ],
-          'contacts[0].email': [
-            'required',
-          ],
+          'contacts[0].name': ['required'],
+          'contacts[0].email': ['required'],
           'contacts[1].name': [],
-          'contacts[1].email': [
-            'required',
-          ],
+          'contacts[1].email': ['required'],
         },
       },
       {
@@ -1158,16 +1055,11 @@ export const builtinFixtures: readonly Fixture[] = [
       {
         expectErrors: {
           'contacts[0].name': [],
-          'contacts[0].email': [
-            'required',
-          ],
+          'contacts[0].email': ['required'],
         },
       },
       {
-        expectNoErrors: [
-          'contacts[1].name',
-          'contacts[1].email',
-        ],
+        expectNoErrors: ['contacts[1].name', 'contacts[1].email'],
       },
       {
         set: {
@@ -1176,9 +1068,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          'contacts[0].email': [
-            'email',
-          ],
+          'contacts[0].email': ['email'],
         },
       },
       {
@@ -1206,10 +1096,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a required field blocks submit until it has a value',
-    description: 'Messages appear when the form is submitted, not while someone is still filling it in for the first time. Once a field has been told it is wrong, it re-validates as it is edited, so the message disappears the moment the value is good rather than at the next submit.',
-    tags: [
-      'validation',
-    ],
+    description:
+      'Messages appear when the form is submitted, not while someone is still filling it in for the first time. Once a field has been told it is wrong, it re-validates as it is edited, so the message disappears the moment the value is good rather than at the next submit.',
+    tags: ['validation'],
     schema: {
       specVersion: '1',
       id: 'contact',
@@ -1244,9 +1133,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          email: [
-            'required',
-          ],
+          email: ['required'],
           message: [],
         },
       },
@@ -1269,12 +1156,10 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
-    name: 'several answers from one list, stored in the list\'s own order',
-    description: 'A selectboxes field is several controls answering a single question, which is the radio group\'s relationship with more than one answer allowed — so it is a group with one accessible name, and each box is named by its own option. The answer is the list of values chosen, stored in the order the options are declared rather than the order they were ticked, so two people who choose the same answers produce the same submission and a diff of two submissions means something. Emptiness is required\'s job: an empty list is not an answer, and a bound on how many may be ticked is not a way of making the field required.',
-    tags: [
-      'fields',
-      'spec2',
-    ],
+    name: "several answers from one list, stored in the list's own order",
+    description:
+      "A selectboxes field is several controls answering a single question, which is the radio group's relationship with more than one answer allowed — so it is a group with one accessible name, and each box is named by its own option. The answer is the list of values chosen, stored in the order the options are declared rather than the order they were ticked, so two people who choose the same answers produce the same submission and a diff of two submissions means something. Emptiness is required's job: an empty list is not an answer, and a bound on how many may be ticked is not a way of making the field required.",
+    tags: ['fields', 'spec2'],
     schema: {
       specVersion: '2',
       id: 'newsletter',
@@ -1322,25 +1207,17 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          topics: [
-            'required',
-          ],
+          topics: ['required'],
         },
       },
       {
         set: {
-          topics: [
-            'events',
-            'news',
-          ],
+          topics: ['events', 'news'],
         },
       },
       {
         expectValue: {
-          topics: [
-            'news',
-            'events',
-          ],
+          topics: ['news', 'events'],
         },
       },
       {
@@ -1348,11 +1225,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         set: {
-          topics: [
-            'news',
-            'offers',
-            'events',
-          ],
+          topics: ['news', 'offers', 'events'],
         },
       },
       {
@@ -1360,16 +1233,12 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          topics: [
-            'maxItems',
-          ],
+          topics: ['maxItems'],
         },
       },
       {
         set: {
-          topics: [
-            'offers',
-          ],
+          topics: ['offers'],
         },
       },
       {
@@ -1379,9 +1248,7 @@ export const builtinFixtures: readonly Fixture[] = [
         expectSubmit: {
           status: 'accepted',
           data: {
-            topics: [
-              'offers',
-            ],
+            topics: ['offers'],
             email: 'a@example.ch',
           },
         },
@@ -1390,10 +1257,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a form written in message references renders in the default locale',
-    description: 'Labels may be references into the message catalogue rather than literal strings. Everything a person reads — field labels, radio option labels — must resolve before it reaches the page. THE RULE of this suite is that fields are found by accessible name, so a renderer that leaked a message id, or an object, fails every step below without needing an assertion of its own.',
-    tags: [
-      'i18n',
-    ],
+    description:
+      'Labels may be references into the message catalogue rather than literal strings. Everything a person reads — field labels, radio option labels — must resolve before it reaches the page. THE RULE of this suite is that fields are found by accessible name, so a renderer that leaked a message id, or an object, fails every step below without needing an assertion of its own.',
+    tags: ['i18n'],
     schema: {
       specVersion: '1',
       id: 'translated',
@@ -1461,9 +1327,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          email: [
-            'required',
-          ],
+          email: ['required'],
         },
       },
       {
@@ -1496,10 +1360,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a form mounted in a locale other than the default renders in that locale',
-    description: 'Every lookup in this suite is by accessible name, so a renderer that resolved the message catalogue in the document\'s default locale rather than the one it was mounted in fails every step below without needing an assertion of its own. That is the point: the sibling fixture mounts in the default locale, where a form in which nothing is translated looks exactly like one in which everything is — and both renderers shipped a layout that resolved its own headings in the default locale while the fields around them were correct. The validator refuses a `locale` the document has no catalogue for, because the fallback would make this case pass against the source language.',
-    tags: [
-      'i18n',
-    ],
+    description:
+      "Every lookup in this suite is by accessible name, so a renderer that resolved the message catalogue in the document's default locale rather than the one it was mounted in fails every step below without needing an assertion of its own. That is the point: the sibling fixture mounts in the default locale, where a form in which nothing is translated looks exactly like one in which everything is — and both renderers shipped a layout that resolved its own headings in the default locale while the fields around them were correct. The validator refuses a `locale` the document has no catalogue for, because the fallback would make this case pass against the source language.",
+    tags: ['i18n'],
     locale: 'de',
     schema: {
       specVersion: '1',
@@ -1551,7 +1414,7 @@ export const builtinFixtures: readonly Fixture[] = [
           {
             target: 'phone',
             kind: 'visible',
-            cel: 'contactBy == \'post\'',
+            cel: "contactBy == 'post'",
           },
         ],
       },
@@ -1577,9 +1440,7 @@ export const builtinFixtures: readonly Fixture[] = [
     },
     steps: [
       {
-        expectHidden: [
-          'phone',
-        ],
+        expectHidden: ['phone'],
       },
       {
         submit: true,
@@ -1591,9 +1452,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          email: [
-            'required',
-          ],
+          email: ['required'],
         },
       },
       {
@@ -1607,9 +1466,7 @@ export const builtinFixtures: readonly Fixture[] = [
         },
       },
       {
-        expectVisible: [
-          'phone',
-        ],
+        expectVisible: ['phone'],
       },
       {
         set: {
@@ -1637,11 +1494,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a wizard validates the current page on next and the whole form on submit',
-    description: 'Next may only look at the page a person is on: validating pages they have not reached yet would show them errors for questions nobody has asked them. Submit must look at everything, because an answer on a later page can make a field on an earlier one required, and it must take them to the first page that has a problem rather than leaving them on a clean review page staring at a rejection. Pages are presentation: they own no data, so the payload is flat and moving a field between pages is not a data migration.',
-    tags: [
-      'wizard',
-      'validation',
-    ],
+    description:
+      'Next may only look at the page a person is on: validating pages they have not reached yet would show them errors for questions nobody has asked them. Submit must look at everything, because an answer on a later page can make a field on an earlier one required, and it must take them to the first page that has a problem rather than leaving them on a clean review page staring at a rejection. Pages are presentation: they own no data, so the payload is flat and moving a field between pages is not a data migration.',
+    tags: ['wizard', 'validation'],
     schema: {
       specVersion: '1',
       id: 'signup',
@@ -1726,18 +1581,10 @@ export const builtinFixtures: readonly Fixture[] = [
         expectPage: 'details',
       },
       {
-        expectVisible: [
-          'firstName',
-          'lastName',
-          'company',
-        ],
+        expectVisible: ['firstName', 'lastName', 'company'],
       },
       {
-        expectHidden: [
-          'street',
-          'city',
-          'confirm',
-        ],
+        expectHidden: ['street', 'city', 'confirm'],
       },
       {
         next: true,
@@ -1747,12 +1594,8 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          firstName: [
-            'required',
-          ],
-          lastName: [
-            'required',
-          ],
+          firstName: ['required'],
+          lastName: ['required'],
           street: [],
           city: [],
           confirm: [],
@@ -1798,12 +1641,8 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          street: [
-            'required',
-          ],
-          city: [
-            'required',
-          ],
+          street: ['required'],
+          city: ['required'],
           confirm: [],
         },
       },
@@ -1835,9 +1674,7 @@ export const builtinFixtures: readonly Fixture[] = [
       },
       {
         expectErrors: {
-          company: [
-            'required',
-          ],
+          company: ['required'],
         },
       },
       {
@@ -1878,11 +1715,9 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a paged form drawn with a layout shows the page somebody is on, as the layout arranges it',
-    description: 'A layout arranges a form; pages divide it into steps; a form may have both, and then each step is the layout holding that page\'s fields. Drawing every page\'s fields on every step puts questions in front of somebody that Next does not check, and dropping the layout for a paged form throws away the arrangement its author made — the two renderers did one each. A field the layout leaves out stays out on every page, as it does in a form with no pages.',
-    tags: [
-      'wizard',
-      'layout',
-    ],
+    description:
+      "A layout arranges a form; pages divide it into steps; a form may have both, and then each step is the layout holding that page's fields. Drawing every page's fields on every step puts questions in front of somebody that Next does not check, and dropping the layout for a paged form throws away the arrangement its author made — the two renderers did one each. A field the layout leaves out stays out on every page, as it does in a form with no pages.",
+    tags: ['wizard', 'layout'],
     layout: 'web',
     schema: {
       specVersion: '1',
@@ -1979,17 +1814,10 @@ export const builtinFixtures: readonly Fixture[] = [
         expectPage: 'details',
       },
       {
-        expectVisible: [
-          'firstName',
-          'lastName',
-        ],
+        expectVisible: ['firstName', 'lastName'],
       },
       {
-        expectHidden: [
-          'street',
-          'city',
-          'nickname',
-        ],
+        expectHidden: ['street', 'city', 'nickname'],
       },
       {
         set: {
@@ -2003,17 +1831,10 @@ export const builtinFixtures: readonly Fixture[] = [
         expectPage: 'address',
       },
       {
-        expectVisible: [
-          'street',
-          'city',
-        ],
+        expectVisible: ['street', 'city'],
       },
       {
-        expectHidden: [
-          'firstName',
-          'lastName',
-          'nickname',
-        ],
+        expectHidden: ['firstName', 'lastName', 'nickname'],
       },
       {
         set: {

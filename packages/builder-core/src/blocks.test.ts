@@ -2,14 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
-import {
-  blockFrom,
-  blockTargets,
-  insertBlock,
-  insertBlockAndSay,
-  saveBlockAndSay,
-  withBlock,
-} from './blocks.js'
+import { blockFrom, blockTargets, insertBlock, insertBlockAndSay, saveBlockAndSay, withBlock } from './blocks.js'
 import type { BuilderBlock } from './blocks.js'
 import { compileGroup } from './conditions.js'
 import type { ConditionGroup } from './conditions.js'
@@ -94,11 +87,7 @@ const target = (fields: unknown[] = []): FormSchema =>
     id: 'target',
     title: 'Target',
     model: {
-      fields: [
-        { key: 'address', type: 'text', label: 'Email address' },
-        { key: 'country', type: 'text', label: 'Country of birth' },
-        ...fields,
-      ],
+      fields: [{ key: 'address', type: 'text', label: 'Email address' }, { key: 'country', type: 'text', label: 'Country of birth' }, ...fields],
     },
     i18n: { defaultLocale: 'en', messages: { en: { greeting: 'Hello' } } },
   }) as unknown as FormSchema
@@ -278,9 +267,7 @@ describe('inserting a block', () => {
         ],
       },
       logic: {
-        rules: [
-          { target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty > 3.0' },
-        ],
+        rules: [{ target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty > 3.0' }],
       },
     } as unknown as FormSchema
     const block = blockFrom(rows, ['items'], { id: 'lines', name: 'Lines' }, text)
@@ -328,16 +315,9 @@ describe('inserting a block', () => {
     const outcome = insertBlock(session, { parent: [], index: 2 }, saved())
 
     expect(outcome.ok).toBe(true)
-    expect(session.document().model.fields.map((field) => field.key)).toEqual([
-      'address',
-      'country',
-      'address2',
-    ])
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['address', 'country', 'address2'])
     session.undo()
-    expect(session.document().model.fields.map((field) => field.key)).toEqual([
-      'address',
-      'country',
-    ])
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['address', 'country'])
   })
 })
 
@@ -389,9 +369,7 @@ describe('what a builder says', () => {
     })
 
     expect(block?.name).toBe('Postal address')
-    expect(said).toBe(
-      'Saved “Postal address” as a block, without the 1 rule that reads fields outside it.',
-    )
+    expect(said).toBe('Saved “Postal address” as a block, without the 1 rule that reads fields outside it.')
   })
 
   test('and a refusal is said as the refusal', () => {

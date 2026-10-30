@@ -13,10 +13,7 @@ import type { FormSchema } from '@formancy/spec'
  */
 const CAPABILITIES = { now: () => 0, today: () => '2026-09-25', random: () => 0.5 }
 
-const form = (
-  fields: FormSchema['model']['fields'],
-  rules: NonNullable<FormSchema['logic']>['rules'],
-): FormSchema => ({
+const form = (fields: FormSchema['model']['fields'], rules: NonNullable<FormSchema['logic']>['rules']): FormSchema => ({
   specVersion: '2',
   id: 'booking',
   title: 'Booking',
@@ -32,12 +29,8 @@ const FIELDS: FormSchema['model']['fields'] = [
 ]
 
 const refused = {
-  'a checkbox as a condition on its own': form(FIELDS, [
-    { target: 'diet', kind: 'visible', cel: 'halfBoard' },
-  ]),
-  'a misspelled field name': form(FIELDS, [
-    { target: 'diet', kind: 'visible', cel: 'halfbord == true' },
-  ]),
+  'a checkbox as a condition on its own': form(FIELDS, [{ target: 'diet', kind: 'visible', cel: 'halfBoard' }]),
+  'a misspelled field name': form(FIELDS, [{ target: 'diet', kind: 'visible', cel: 'halfbord == true' }]),
   'a cycle between computed fields': form(FIELDS, [
     { target: 'nights', kind: 'computed', cel: 'total / 65.0' },
     { target: 'total', kind: 'computed', cel: 'nights * 65.0' },
@@ -87,9 +80,7 @@ describe('the engine says what to write instead', () => {
     // The most natural way to write "when the box is ticked", and refused for
     // a real reason — an untouched box is null. "produces dyn" alone means
     // nothing to whoever wrote it; the fix is always the same.
-    expect(engineRefusal(refused['a checkbox as a condition on its own'])).toContain(
-      'write halfBoard == true',
-    )
+    expect(engineRefusal(refused['a checkbox as a condition on its own'])).toContain('write halfBoard == true')
   })
 
   test('only for a checkbox, where the fix is certain', () => {
@@ -104,9 +95,7 @@ describe('the engine says what to write instead', () => {
     // `decimal * double` has a hint attached by the expression package. The
     // engine used to report the message and discard the hint, so the one
     // sentence saying what to write never reached the publish gate.
-    const money = form(FIELDS, [
-      { target: 'total', kind: 'computed', cel: "dec('65.00') * 2.0" },
-    ])
+    const money = form(FIELDS, [{ target: 'total', kind: 'computed', cel: "dec('65.00') * 2.0" }])
 
     expect(engineRefusal(money)).toContain('Write dec("2.0") instead of 2.0')
   })

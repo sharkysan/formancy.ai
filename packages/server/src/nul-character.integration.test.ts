@@ -103,15 +103,15 @@ beforeAll(async () => {
     url: '/auth/login',
     payload: { email: 'root@test.ch', password: 'root-password-1' },
   })
-  const admin = { authorization: `Bearer ${(login.json() as { token: string }).token}` }
+  const admin = { authorization: `Bearer ${login.json<{ token: string }>().token}` }
   const published = await app.inject({ method: 'POST', url: '/forms', headers: admin, payload: { path: 'contact-us', schema } })
   expect(published.statusCode).toBe(201)
   await app.inject({ method: 'PUT', url: '/f/contact-us/access', headers: admin, payload: { submit: 'public' } })
-  draft = (await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })).json() as typeof draft
+  draft = (await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })).json<typeof draft>()
 
   carried = {
     ...admin,
-    [SCHEMA_HASH_HEADER]: (published.json() as { schemaHash: string }).schemaHash,
+    [SCHEMA_HASH_HEADER]: published.json<{ schemaHash: string }>().schemaHash,
     'x-formancy-draft-token': draft.token,
   }
 }, 180_000)
@@ -170,9 +170,7 @@ const NOT_JSON: Record<string, string> = {
 /** The route's address with each parameter filled: the real form, draft and so on, or `value` for `only`. */
 function address(url: string, only?: string, value?: string): string {
   const real: Record<string, string> = { path: 'contact-us', draftId: draft.draftId, id: '00000000-0000-4000-8000-000000000000' }
-  return url.replace(/:([A-Za-z]+)/g, (_, name: string) =>
-    encodeURIComponent(name === only && value !== undefined ? value : (real[name] ?? name)),
-  )
+  return url.replace(/:([A-Za-z]+)/g, (_, name: string) => encodeURIComponent(name === only && value !== undefined ? value : (real[name] ?? name)))
 }
 
 /**
@@ -183,9 +181,7 @@ function withNul(value: unknown, at = ''): Array<{ pointer: string; body: unknow
   const token = (key: string): string => key.replaceAll('~', '~0').replaceAll('/', '~1')
   if (typeof value === 'string') return [{ pointer: at, body: `${value.slice(0, 1)}${NUL}${value.slice(1)}` }]
   if (Array.isArray(value)) {
-    return value.flatMap((item, index) =>
-      withNul(item, `${at}/${String(index)}`).map(({ pointer, body }) => ({ pointer, body: value.with(index, body) })),
-    )
+    return value.flatMap((item, index) => withNul(item, `${at}/${String(index)}`).map(({ pointer, body }) => ({ pointer, body: value.with(index, body) })))
   }
   if (typeof value === 'object' && value !== null) {
     const members = Object.entries(value)
@@ -260,9 +256,7 @@ describe('a NUL in an address', () => {
     }
 
     // Each kind of parameter was reached, so a pattern that stopped matching one is seen.
-    expect(compared).toEqual(
-      expect.arrayContaining(['GET /f/:path :path', 'PUT /f/:path/drafts/:draftId :draftId', 'POST /deliveries/:id/replay :id']),
-    )
+    expect(compared).toEqual(expect.arrayContaining(['GET /f/:path :path', 'PUT /f/:path/drafts/:draftId :draftId', 'POST /deliveries/:id/replay :id']))
     expect(different).toEqual([])
   })
 
@@ -296,7 +290,7 @@ describe('a NUL in a body', () => {
           payload: sent as Record<string, unknown>,
         })
         // A body that is not JSON — a `204`'s, which a refusal never is — points nowhere.
-        const answer = (response.body.startsWith('{') ? response.json() : {}) as { error?: unknown; pointer?: unknown }
+        const answer: { error?: unknown; pointer?: unknown } = response.body.startsWith('{') ? response.json() : {}
         if (response.statusCode !== 400 || answer.error !== 'nul_character' || answer.pointer !== pointer || errors.length > 0) {
           wrong.push(`${route} ${JSON.stringify(pointer)}: ${String(response.statusCode)} ${response.body.slice(0, 80)}`)
         }
@@ -343,7 +337,7 @@ describe('what is not refused', () => {
       headers: carried,
       payload: { field: 'evidence', name: 'a.pdf', size: 4, contentType: 'application/pdf' },
     })
-    const { id } = offer.json() as { id: string }
+    const { id } = offer.json<{ id: string }>()
 
     const { response, errors } = await ask({
       method: 'PUT',
@@ -371,7 +365,7 @@ describe('what is not refused', () => {
 
     expect(response.statusCode).toBe(201)
     expect(errors).toEqual([])
-    const [row] = await sql`SELECT data FROM submissions WHERE id = ${(response.json() as { id: string }).id}`
+    const [row] = await sql`SELECT data FROM submissions WHERE id = ${response.json<{ id: string }>().id}`
     expect((row!['data'] as { email: string }).email).toBe(sent)
   })
 })

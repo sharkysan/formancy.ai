@@ -19,13 +19,7 @@ import type { Scenario } from '@formancy/core/authoring'
  */
 
 /** Why a value is not an example. */
-export type ScenarioShapeReason =
-  | 'not-an-object'
-  | 'unknown-key'
-  | 'no-name'
-  | 'no-changes'
-  | 'no-verdict'
-  | 'malformed'
+export type ScenarioShapeReason = 'not-an-object' | 'unknown-key' | 'no-name' | 'no-changes' | 'no-verdict' | 'malformed'
 
 export interface ScenarioShapeProblem {
   /** Its name, when it has one that is text. */
@@ -35,21 +29,10 @@ export interface ScenarioShapeProblem {
   readonly part?: string
 }
 
-export type ReadScenario =
-  | { readonly ok: true; readonly scenario: Scenario }
-  | { readonly ok: false; readonly problem: ScenarioShapeProblem }
+export type ReadScenario = { readonly ok: true; readonly scenario: Scenario } | { readonly ok: false; readonly problem: ScenarioShapeProblem }
 
 /** The keys an example has: core's `Scenario`, and nothing invented beside it. */
-const KEYS: ReadonlySet<string> = new Set([
-  'name',
-  'because',
-  'changes',
-  'valid',
-  'errors',
-  'visible',
-  'values',
-  'absent',
-])
+const KEYS: ReadonlySet<string> = new Set(['name', 'because', 'changes', 'valid', 'errors', 'visible', 'values', 'absent'])
 
 /**
  * `value` as an example, with its name and its reason trimmed, or why it is not one.

@@ -86,11 +86,9 @@ async function asked(relay: Relay, kind: ModelRequestKind): Promise<HTMLElement>
   return screen.findByRole('region', { name: 'Take this request to a model' })
 }
 
-const mount = (relay: Relay, chat?: { name: string; href: string }) =>
-  render(<RelayPane session={session} relay={relay} chat={chat} />)
+const mount = (relay: Relay, chat?: { name: string; href: string }) => render(<RelayPane session={session} relay={relay} chat={chat} />)
 
-const requestBox = (): HTMLTextAreaElement =>
-  screen.getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+const requestBox = (): HTMLTextAreaElement => screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'The request' })
 
 /**
  * Every way a page sends something, spied: what the pane's sentence says Copy does not do.
@@ -144,26 +142,23 @@ describe('a turn waiting', () => {
     expect(briefing?.open).toBe(false)
   })
 
-  test.each(MODEL_REQUEST_KINDS)(
-    'says what a %s request carries — that kind’s sentence and no other’s — and names no service of its own',
-    async (kind) => {
-      // A person copying a request into a chat is giving it to that chat's operator, and
-      // the requests carry different things: one sentence for all of them said "including
-      // the form" of a translation and of a request for examples, which carry neither the
-      // document nor its rules (0167). The pane draws the sentence builder-core chooses for
-      // the turn's kind; what each claims is checked against its request there, and what
-      // it says about Copy by the case after this one — not by matching words here.
-      const relay = createRelay()
-      mount(relay)
-      const pane = await asked(relay, kind)
+  test.each(MODEL_REQUEST_KINDS)('says what a %s request carries — that kind’s sentence and no other’s — and names no service of its own', async (kind) => {
+    // A person copying a request into a chat is giving it to that chat's operator, and
+    // the requests carry different things: one sentence for all of them said "including
+    // the form" of a translation and of a request for examples, which carry neither the
+    // document nor its rules (0167). The pane draws the sentence builder-core chooses for
+    // the turn's kind; what each claims is checked against its request there, and what
+    // it says about Copy by the case after this one — not by matching words here.
+    const relay = createRelay()
+    mount(relay)
+    const pane = await asked(relay, kind)
 
-      expect(within(pane).getByText(relayLeaves(kind, session.text))).toBeTruthy()
-      for (const other of MODEL_REQUEST_KINDS.filter((each) => each !== kind)) {
-        expect(within(pane).queryByText(relayLeaves(other, session.text))).toBeNull()
-      }
-      expect(screen.queryByRole('link')).toBeNull()
-    },
-  )
+    expect(within(pane).getByText(relayLeaves(kind, session.text))).toBeTruthy()
+    for (const other of MODEL_REQUEST_KINDS.filter((each) => each !== kind)) {
+      expect(within(pane).queryByText(relayLeaves(other, session.text))).toBeNull()
+    }
+    expect(screen.queryByRole('link')).toBeNull()
+  })
 
   test('says what the next request carries when one of another kind follows', async () => {
     // A pane that read the sentence once, for the first turn it drew, would go on telling
@@ -245,18 +240,14 @@ describe('a turn waiting', () => {
     // write the clipboard. Saying "copied" then would send somebody to paste whatever was
     // on it before; saying nothing would leave them pressing Copy again.
     const user = userEvent.setup()
-    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(
-      new DOMException('Write permission denied.', 'NotAllowedError'),
-    )
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new DOMException('Write permission denied.', 'NotAllowedError'))
     const relay = createRelay()
     mount(relay)
     await start(relay)
 
     await user.click(screen.getByRole('button', { name: 'Copy the request' }))
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('did not let the page copy'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('did not let the page copy'))
     const box = requestBox()
     expect(box.value).toBe(relay.waiting()!.message)
     expect(document.activeElement).toBe(box)
@@ -271,7 +262,7 @@ describe('a turn waiting', () => {
     mount(relay, { name: 'Example Chat', href: 'https://chat.example/new' })
     await start(relay)
 
-    const link = screen.getByRole('link', { name: 'Open Example Chat in a new tab' }) as HTMLAnchorElement
+    const link = screen.getByRole<HTMLAnchorElement>('link', { name: 'Open Example Chat in a new tab' })
     expect(link.href).toBe('https://chat.example/new')
     expect(link.target).toBe('_blank')
     expect(link.rel.split(' ').sort()).toEqual(['noopener', 'noreferrer'])
@@ -362,7 +353,7 @@ describe('a stopped run', () => {
     act(() => stop.stop())
     await start(relay)
 
-    expect((screen.getByRole('textbox', { name: 'The model’s answer' }) as HTMLTextAreaElement).value).toBe('')
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'The model’s answer' }).value).toBe('')
     expect(screen.queryByRole('button', { name: 'Use it anyway' })).toBeNull()
     expect(screen.getByRole('status').textContent).toBe('')
   })

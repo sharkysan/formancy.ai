@@ -94,9 +94,7 @@ export type OptionsSources = Readonly<Record<string, OptionsSource>>
  * sourced field never needs one; a field that names a source renders a message where
  * its chooser would be, exactly as the file field does without an uploader.
  */
-export const FORMANCY_OPTIONS_SOURCES = new InjectionToken<OptionsSources>(
-  'formancy.optionsSources',
-)
+export const FORMANCY_OPTIONS_SOURCES = new InjectionToken<OptionsSources>('formancy.optionsSources')
 
 export function injectOptionsSources(): OptionsSources | null {
   return inject(FORMANCY_OPTIONS_SOURCES, { optional: true })

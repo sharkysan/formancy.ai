@@ -59,7 +59,7 @@ function documentWith(field: Record<string, unknown>, specVersion = '2'): Record
 }
 
 const errorsFor = (document: Record<string, unknown>): readonly string[] => {
-  const result = validateSchema(document as never)
+  const result = validateSchema(document)
   return result.valid ? [] : result.errors.map((error) => `${error.path} ${error.message}`)
 }
 
@@ -117,24 +117,14 @@ describe('the canonical shapes', () => {
     const times = ['23:59', '09:30', '00:00', '10:00']
     expect([...times].sort()).toEqual(['00:00', '09:30', '10:00', '23:59'])
 
-    const instants = [
-      '2026-09-19T08:00:00Z',
-      '2025-12-31T23:59:59Z',
-      '2026-09-19T07:59:59Z',
-    ]
-    expect([...instants].sort()).toEqual([
-      '2025-12-31T23:59:59Z',
-      '2026-09-19T07:59:59Z',
-      '2026-09-19T08:00:00Z',
-    ])
+    const instants = ['2026-09-19T08:00:00Z', '2025-12-31T23:59:59Z', '2026-09-19T07:59:59Z']
+    expect([...instants].sort()).toEqual(['2025-12-31T23:59:59Z', '2026-09-19T07:59:59Z', '2026-09-19T08:00:00Z'])
   })
 })
 
 describe('the bounds', () => {
   test.each(['date', 'time', 'datetime'])('%s accepts earliest and latest', (type) => {
-    const sample = { date: '2026-09-19', time: '09:30', datetime: '2026-09-19T08:00:00Z' }[
-      type as 'date' | 'time' | 'datetime'
-    ]
+    const sample = { date: '2026-09-19', time: '09:30', datetime: '2026-09-19T08:00:00Z' }[type as 'date' | 'time' | 'datetime']
     expect(errorsFor(documentWith({ type, earliest: sample, latest: sample }))).toEqual([])
   })
 
@@ -158,9 +148,7 @@ describe('the bounds', () => {
   })
 
   test('accept earliest equal to latest, which is one permitted answer', () => {
-    expect(
-      errorsFor(documentWith({ type: 'time', earliest: '09:00', latest: '09:00' })),
-    ).toEqual([])
+    expect(errorsFor(documentWith({ type: 'time', earliest: '09:00', latest: '09:00' }))).toEqual([])
   })
 
   test('are refused in a version 1 document, even on the version 1 date type', () => {

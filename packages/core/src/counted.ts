@@ -7,5 +7,4 @@
  */
 const COUNTED_FIELD_TYPES: ReadonlySet<string> = new Set(['text', 'textarea'])
 
-export const showsCount = (def: { type: string; maxLength?: number | undefined }): boolean =>
-  COUNTED_FIELD_TYPES.has(def.type) && def.maxLength !== undefined
+export const showsCount = (def: { type: string; maxLength?: number | undefined }): boolean => COUNTED_FIELD_TYPES.has(def.type) && def.maxLength !== undefined

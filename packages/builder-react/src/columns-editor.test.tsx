@@ -26,13 +26,7 @@ const children: FieldDef[] = [
 
 function mount(columns: DataGridColumn[]): { written: DataGridColumn[][] } {
   const written: DataGridColumn[][] = []
-  render(
-    <ColumnsEditor
-      columns={columns}
-      children={children}
-      onChange={(next) => written.push(next)}
-    />,
-  )
+  render(<ColumnsEditor columns={columns} children={children} onChange={(next) => written.push(next)} />)
   return { written }
 }
 
@@ -46,11 +40,7 @@ describe('the columns editor', () => {
 
     const chooser = screen.getByLabelText('Answer')
     expect(chooser.tagName.toLowerCase()).toBe('select')
-    expect([...(chooser as HTMLSelectElement).options].map((option) => option.value)).toEqual([
-      'name',
-      'qty',
-      'note',
-    ])
+    expect([...(chooser as HTMLSelectElement).options].map((option) => option.value)).toEqual(['name', 'qty', 'note'])
   })
 
   test('shows a column naming a child that is gone, rather than silently rewriting it', () => {
@@ -59,11 +49,9 @@ describe('the columns editor', () => {
     // that the field they meant is missing.
     mount([{ field: 'deleted' }])
 
-    const chooser = screen.getByLabelText('Answer') as HTMLSelectElement
+    const chooser = screen.getByLabelText<HTMLSelectElement>('Answer')
     expect(chooser.value).toBe('deleted')
-    expect([...chooser.options].map((option) => option.textContent)).toContain(
-      'deleted — no such field',
-    )
+    expect([...chooser.options].map((option) => option.textContent)).toContain('deleted — no such field')
   })
 
   test('adds a column for an answer that has none, naming the one it will configure', async () => {

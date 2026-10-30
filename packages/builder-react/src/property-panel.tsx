@@ -31,11 +31,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
   // last character survives — a bug any consumer would reproduce by wiring it
   // the obvious way.
   const view = useBuilder(session)
-  const node = view.nodes.find(
-    (candidate) =>
-      candidate.keyPath.length === keyPath.length &&
-      candidate.keyPath.every((key, at) => key === keyPath[at]),
-  )
+  const node = view.nodes.find((candidate) => candidate.keyPath.length === keyPath.length && candidate.keyPath.every((key, at) => key === keyPath[at]))
   if (node === undefined) return null
 
   const def = node.def
@@ -62,11 +58,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
             // An empty box means "no value", not "the empty string". Writing ''
             // would put a property into the document that the author just
             // cleared, and `minLength: ''` is not a thing the schema accepts.
-            session.setFieldProperty(
-              keyPath,
-              property.name,
-              value === '' || value === undefined ? undefined : value,
-            )
+            session.setFieldProperty(keyPath, property.name, value === '' || value === undefined ? undefined : value)
           }}
         />
       ))}
@@ -87,15 +79,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
  * every single-answer type its version allows, with what still applies kept. Nothing for a
  * group, a page or a repeater, which hold other fields and so cannot change kind.
  */
-function KindOfQuestion({
-  session,
-  keyPath,
-  type,
-}: {
-  session: BuilderSession
-  keyPath: readonly string[]
-  type: FieldType
-}): ReactElement | null {
+function KindOfQuestion({ session, keyPath, type }: { session: BuilderSession; keyPath: readonly string[]; type: FieldType }): ReactElement | null {
   const id = useId()
   const targets = retypeTargets(session, keyPath)
   if (targets.length === 0) return null
@@ -154,8 +138,7 @@ export function PropertyField({
    * simply leaves the document where it was. The form still cannot be PUBLISHED in an
    * invalid state — `canPublish` says no — but it can be typed in.
    */
-  const asText = (raw: unknown): string =>
-    typeof raw === 'string' || typeof raw === 'number' ? String(raw) : ''
+  const asText = (raw: unknown): string => (typeof raw === 'string' || typeof raw === 'number' ? String(raw) : '')
   const [draft, setDraft] = useState(() => asText(value))
   const pushed = useRef(asText(value))
 
@@ -251,11 +234,7 @@ export function PropertyField({
           onChange={(event) => onChange(event.target.checked)}
         />
       ) : property.kind === 'enum' ? (
-        <select
-          {...shared}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => onChange(event.target.value)}
-        >
+        <select {...shared} value={typeof value === 'string' ? value : ''} onChange={(event) => onChange(event.target.value)}>
           <option value="" />
           {(property.choices ?? []).map((choice) => (
             <option key={choice} value={choice}>

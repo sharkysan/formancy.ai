@@ -1,13 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  DEFAULT_WIDTHS,
-  KEYBOARD_STEP,
-  PANES,
-  PANE_COLUMNS,
-  dragSplitter,
-  paneLayout,
-  splitterPosition,
-} from './panes.js'
+import { DEFAULT_WIDTHS, KEYBOARD_STEP, PANES, PANE_COLUMNS, dragSplitter, paneLayout, splitterPosition } from './panes.js'
 import type { PaneId } from './panes.js'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -39,9 +31,7 @@ describe('where the handles are', () => {
   test('and none beside a folded pane, because there is nothing to resize', () => {
     // A handle that does nothing is worse than no handle: it takes a tab stop
     // and announces a value that cannot change.
-    expect(paneLayout(new Set<PaneId>(['engine']), DEFAULT_WIDTHS).splitters).toEqual([
-      { left: 'editor', right: 'form' },
-    ])
+    expect(paneLayout(new Set<PaneId>(['engine']), DEFAULT_WIDTHS).splitters).toEqual([{ left: 'editor', right: 'form' }])
     expect(paneLayout(new Set<PaneId>(['form']), DEFAULT_WIDTHS).splitters).toEqual([])
     expect(paneLayout(new Set<PaneId>(['editor', 'form', 'engine']), DEFAULT_WIDTHS).splitters).toEqual([])
   })
@@ -129,10 +119,14 @@ describe('moving a handle', () => {
     // Two arrow presses put `minmax(19rem, 1.2000000000000002fr)` in the markup
     // before this: floating-point noise in a value a person can read, and in one
     // a test would have to match.
-    const nudged = dragSplitter(dragSplitter(DEFAULT_WIDTHS, { left: 'editor', right: 'form' }, KEYBOARD_STEP), {
-      left: 'editor',
-      right: 'form',
-    }, KEYBOARD_STEP)
+    const nudged = dragSplitter(
+      dragSplitter(DEFAULT_WIDTHS, { left: 'editor', right: 'form' }, KEYBOARD_STEP),
+      {
+        left: 'editor',
+        right: 'form',
+      },
+      KEYBOARD_STEP,
+    )
 
     expect(paneLayout(open, nudged).template).toContain('1.2fr')
   })
@@ -183,9 +177,7 @@ describe('the minimums the grid will not go below', () => {
 
     const minimums = PANE_COLUMNS.reduce((sum, { minimum }) => sum + Number.parseFloat(minimum), 0)
 
-    expect(minimums, `${String(minimums)}rem of minimums against a ${String(breakpoint)}rem breakpoint`).toBeLessThan(
-      Number(breakpoint),
-    )
+    expect(minimums, `${String(minimums)}rem of minimums against a ${String(breakpoint)}rem breakpoint`).toBeLessThan(Number(breakpoint))
   })
 
   test('and are stated separately from the fraction, which is the part that moves', () => {
@@ -219,9 +211,7 @@ describe('the stylesheet and the component', () => {
     const component = readFileSync(join(here, 'app.tsx'), 'utf8')
 
     expect(stylesheet, 'the stylesheet no longer reads the property').toContain('var(\n    --pane-template,')
-    expect(component, 'the component is setting a grid property inline again').not.toMatch(
-      /style=\{\{[^}]*gridTemplate/,
-    )
+    expect(component, 'the component is setting a grid property inline again').not.toMatch(/style=\{\{[^}]*gridTemplate/)
     // The property name, not the expression that feeds it: the fact is which
     // property the row sets, and the value moved from `template` to
     // `panes.template` the first time the file was split.
@@ -285,15 +275,11 @@ describe('the stylesheet and the component', () => {
     // fail here rather than quietly check the wrong thing.
     expect(row, 'this is not the row that carries the template').toContain('pane-template')
 
-    const properties = [...row!.matchAll(/(?:'([^']+)'|([A-Za-z]+))\s*:/g)].map(
-      ([, quoted, plain]) => quoted ?? plain!,
-    )
+    const properties = [...row!.matchAll(/(?:'([^']+)'|([A-Za-z]+))\s*:/g)].map(([, quoted, plain]) => quoted ?? plain!)
     expect(properties.length).toBeGreaterThan(0)
 
     for (const property of properties) {
-      expect(property.startsWith('--'), `the row sets ${property} inline, where no media query can reach it`).toBe(
-        true,
-      )
+      expect(property.startsWith('--'), `the row sets ${property} inline, where no media query can reach it`).toBe(true)
     }
   })
 })

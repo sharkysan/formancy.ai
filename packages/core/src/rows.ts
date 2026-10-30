@@ -53,11 +53,7 @@ export interface Rows {
 
 // The comments on code below are block comments rather than JSDoc: this module is the
 // package's own, and nothing outside it reads them.
-export function createRows(
-  store: ValueStore,
-  interaction: InteractionState,
-  written: (repeater: RepeaterNode) => boolean,
-): Rows {
+export function createRows(store: ValueStore, interaction: InteractionState, written: (repeater: RepeaterNode) => boolean): Rows {
   /*
    * One counter per repeater, monotonic for the engine's lifetime. It is never
    * decremented on removal, so a deleted row's id is never reissued — a new row
@@ -82,10 +78,8 @@ export function createRows(
   }
 
   const count = (repeater: RepeaterNode): number => of(repeater).length
-  const canAdd = (repeater: RepeaterNode): boolean =>
-    !written(repeater) && (repeater.def.maxItems === undefined || count(repeater) < repeater.def.maxItems)
-  const canRemove = (repeater: RepeaterNode): boolean =>
-    !written(repeater) && count(repeater) > (repeater.def.minItems ?? 0)
+  const canAdd = (repeater: RepeaterNode): boolean => !written(repeater) && (repeater.def.maxItems === undefined || count(repeater) < repeater.def.maxItems)
+  const canRemove = (repeater: RepeaterNode): boolean => !written(repeater) && count(repeater) > (repeater.def.minItems ?? 0)
 
   /*
    * Rewrite the row index in every piece of position-keyed state under one repeater.
@@ -130,9 +124,7 @@ export function createRows(
       for (const row of rows) {
         const existing = isRowObject(row) ? row[ROW_ID] : undefined
         if (typeof existing !== 'string') continue
-        const suffix = existing.startsWith(ROW_ID_PREFIX)
-          ? Number.parseInt(existing.slice(ROW_ID_PREFIX.length), 10)
-          : Number.NaN
+        const suffix = existing.startsWith(ROW_ID_PREFIX) ? Number.parseInt(existing.slice(ROW_ID_PREFIX.length), 10) : Number.NaN
         if (Number.isInteger(suffix) && suffix > highest) highest = suffix
       }
       counters.set(repeater.wire, highest)
@@ -207,7 +199,7 @@ export function createRows(
       }
       if (from === to) return
 
-      const moved = [...rows]
+      const moved: unknown[] = rows.slice()
       const [row] = moved.splice(from, 1)
       moved.splice(to, 0, row)
       store.set(repeater.path, moved)

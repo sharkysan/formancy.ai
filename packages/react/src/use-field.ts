@@ -4,8 +4,8 @@ import type { ControlProps, FieldSnapshot, Path } from '@formancy/core'
 import { useFormEngine } from './context.js'
 
 export interface FieldBinding extends FieldSnapshot {
-  setValue(value: unknown): void
-  touch(): void
+  setValue(this: void, value: unknown): void
+  touch(this: void): void
   /** Spread onto the input/select/textarea element. */
   controlProps: ControlProps
   /** Spread onto the label element. */
@@ -30,10 +30,7 @@ export function useField(path: string | Path): FieldBinding {
   const wire = typeof path === 'string' ? path : formatPath(path)
   const parsed = useMemo(() => parsePath(wire), [wire])
 
-  const subscribe = useCallback(
-    (onChange: () => void) => engine.subscribeField(parsed, onChange),
-    [engine, parsed],
-  )
+  const subscribe = useCallback((onChange: () => void) => engine.subscribeField(parsed, onChange), [engine, parsed])
   const getSnapshot = useCallback(() => engine.getFieldSnapshot(parsed), [engine, parsed])
 
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)

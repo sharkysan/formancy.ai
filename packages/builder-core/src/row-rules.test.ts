@@ -69,8 +69,7 @@ const form = (rules: LogicRule[] = []): FormSchema =>
   }) as unknown as FormSchema
 
 /** A rule as the condition editor writes it: the CEL compiled from the metadata kept beside it. */
-const written = (target: string, kind: LogicRule['kind'], editor: ConditionGroup): LogicRule =>
-  ({ target, kind, cel: compileGroup(editor), editor }) as LogicRule
+const written = (target: string, kind: LogicRule['kind'], editor: ConditionGroup): LogicRule => ({ target, kind, cel: compileGroup(editor), editor })
 
 const atLeastThree: ConditionGroup = {
   join: 'all',

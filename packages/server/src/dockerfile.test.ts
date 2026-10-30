@@ -30,8 +30,7 @@ interface Manifest {
   dependencies?: Record<string, string>
 }
 
-const read = (directory: string): Manifest =>
-  JSON.parse(readFileSync(join(repo, 'packages', directory, 'package.json'), 'utf8')) as Manifest
+const read = (directory: string): Manifest => JSON.parse(readFileSync(join(repo, 'packages', directory, 'package.json'), 'utf8')) as Manifest
 
 /** Every workspace package `@formancy/server` needs at runtime, transitively. */
 function workspaceClosure(from: string): Set<string> {
@@ -60,9 +59,7 @@ describe('the container build', () => {
   test('copies every workspace package the server depends on', () => {
     const needed = [...workspaceClosure('server')].sort()
 
-    const missing = needed.filter(
-      (directory) => !dockerfile.includes(`COPY packages/${directory}/ `),
-    )
+    const missing = needed.filter((directory) => !dockerfile.includes(`COPY packages/${directory}/ `))
 
     // The failure this prevents is not a build error. The image builds, the
     // suite is green, and the container exits on startup with a module it
@@ -77,9 +74,7 @@ describe('the container build', () => {
     // either a failed install or a build that is minutes slower for everyone.
     const needed = [...workspaceClosure('server')]
 
-    const manifestless = needed.filter(
-      (directory) => !dockerfile.includes(`COPY packages/${directory}/package.json`),
-    )
+    const manifestless = needed.filter((directory) => !dockerfile.includes(`COPY packages/${directory}/package.json`))
 
     expect(manifestless).toEqual([])
   })

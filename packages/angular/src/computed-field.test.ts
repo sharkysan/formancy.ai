@@ -52,7 +52,7 @@ beforeAll(async () => {
   document.body.innerHTML = ''
 })
 
-const control = (name: string): HTMLInputElement => screen.getByLabelText(name) as HTMLInputElement
+const control = (name: string): HTMLInputElement => screen.getByLabelText<HTMLInputElement>(name)
 
 describe('a computed field', () => {
   // The reported case: "Total, CHF" drawn as an ordinary number input, typed into.
@@ -93,8 +93,28 @@ describe('a computed field', () => {
   // read-only box, there is nothing to tick (0216).
   test.each([
     ['checkbox', 'true', {}, 'Yes'],
-    ['select', "'hi'", { options: [{ value: 'lo', label: 'Low' }, { value: 'hi', label: 'High' }] }, 'High'],
-    ['radio', "'lo'", { options: [{ value: 'lo', label: 'Low' }, { value: 'hi', label: 'High' }] }, 'Low'],
+    [
+      'select',
+      "'hi'",
+      {
+        options: [
+          { value: 'lo', label: 'Low' },
+          { value: 'hi', label: 'High' },
+        ],
+      },
+      'High',
+    ],
+    [
+      'radio',
+      "'lo'",
+      {
+        options: [
+          { value: 'lo', label: 'Low' },
+          { value: 'hi', label: 'High' },
+        ],
+      },
+      'Low',
+    ],
   ] as const)('drawn by the %s control says its answer in words, read-only', async (type, cel, more, said) => {
     await mount([{ key: 'answer', type, label: 'Answer', ...more } as FieldDef], {
       rules: [{ target: 'answer', kind: 'computed', cel }],
@@ -125,10 +145,10 @@ describe('a computed field', () => {
       { items: [{ amount: 1.0 }, { amount: 2.0 }] },
     )
 
-    const totals = screen.getAllByLabelText('Line total') as HTMLInputElement[]
+    const totals = screen.getAllByLabelText<HTMLInputElement>('Line total')
     expect(totals).toHaveLength(2)
     expect(totals.every((input) => input.readOnly)).toBe(true)
-    expect((screen.getAllByLabelText('Amount') as HTMLInputElement[]).some((input) => input.readOnly)).toBe(false)
+    expect(screen.getAllByLabelText<HTMLInputElement>('Amount').some((input) => input.readOnly)).toBe(false)
   })
 
   // A rule may write a whole repeater. Its rows' fields said they were not read-only, and the rows
@@ -158,10 +178,16 @@ describe('a computed field', () => {
       },
     )
 
-    const drugs = screen.getAllByLabelText('Drug') as HTMLInputElement[]
-    expect(drugs.map((input) => [input.value, input.readOnly])).toEqual([['A', true], ['B', true]])
-    const given = screen.getAllByRole('textbox', { name: 'Given' }) as HTMLInputElement[]
-    expect(given.map((input) => [input.value, input.readOnly])).toEqual([['Yes', true], ['No', true]])
+    const drugs = screen.getAllByLabelText<HTMLInputElement>('Drug')
+    expect(drugs.map((input) => [input.value, input.readOnly])).toEqual([
+      ['A', true],
+      ['B', true],
+    ])
+    const given = screen.getAllByRole<HTMLInputElement>('textbox', { name: 'Given' })
+    expect(given.map((input) => [input.value, input.readOnly])).toEqual([
+      ['Yes', true],
+      ['No', true],
+    ])
     expect(screen.queryAllByRole('button', { name: /^(add|remove|move) /i })).toEqual([])
   })
 })

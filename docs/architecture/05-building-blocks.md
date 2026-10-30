@@ -35,6 +35,10 @@ L0  spec                         types · JSON Schema · diff · canonical hash
     server                       Fastify routes, PostgreSQL, auth runtime
     mcp                          an agent's view of a running server
     cli                          `formancy types`: depends on spec only
+
+    code-style                   outside the cake: the lint rules and the format,
+                                 which no package imports; a repository's
+                                 ESLint and Prettier configuration does
 ```
 
 **`tiptap` is at L4 and nothing depends on it.** It is the only package a
@@ -220,6 +224,25 @@ submissions hold. The type is `answersTypeScript` in `@formancy/spec`, printed f
 function, a validation of the document first and a file write. It depends on the spec alone:
 the engine is a test dependency, there to hold the printed type and the engine to the same
 answers ([0190](../decisions/0190-a-form-has-a-type.md)).
+
+### `@formancy/code-style`
+
+The lint rules and the format the formancy repositories share, as one module,
+`src/code-style.mjs`: `eslintConfig`, which makes a repository's ESLint configuration from
+its paths, `prettierConfig`, and `EXTENSIONS` and `FILES`, the files both tools read. It names
+no path of any repository; a reason that holds for one alone is written where that one calls
+it. The module and its test were written for Formancy Health (formancy.ai-health 0017) and
+are carried here byte for byte, and the test is the package's suite. This repository lints and
+formats itself with it from the workspace, and until Formancy Health and Formancy Data pin the
+released package in place of their copies, a rule is changed in Health's module first and
+copied here, never here alone ([0225](../decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
+
+It is published as it is written: JavaScript, with no build, no `typecheck` and no types, so
+`check:pkg` is publint alone, as for `themes`. Its dependencies are the rule sets and the
+plugins it names. ESLint, Prettier and TypeScript are peers a repository brings, each range
+starting at the version the suite runs, which the workspace catalog pins exactly; the install
+gate installs the newest each admits beside the packed tarball and lints and formats a file
+with it (`scripts/install-fixture/lint.mjs`).
 
 ### `@formancy/builder-core` and `@formancy/builder-react`
 

@@ -11,11 +11,7 @@ import type { ExpressionError } from '@formancy/expressions'
  * actually reaches an author: the engine, whose refusal is what the publish
  * gate, `validate_form` and the builder's authoring loop all report.
  */
-export function refusedRule(
-  rule: LogicRule,
-  error: ExpressionError,
-  fields: ReadonlyMap<string, FieldDef>,
-): string {
+export function refusedRule(rule: LogicRule, error: ExpressionError, fields: ReadonlyMap<string, FieldDef>): string {
   const hint = error.hint ?? conditionHint(rule, error, fields)
   return `Rule on "${rule.target}" (${rule.kind}): ${error.message}${hint === undefined ? '' : ` ${hint}`}`
 }
@@ -31,11 +27,7 @@ export function refusedRule(
  * package can only say "produces dyn", which means nothing to the person who
  * wrote it. The fix is always the same, so it is said.
  */
-function conditionHint(
-  rule: LogicRule,
-  error: ExpressionError,
-  fields: ReadonlyMap<string, FieldDef>,
-): string | undefined {
+function conditionHint(rule: LogicRule, error: ExpressionError, fields: ReadonlyMap<string, FieldDef>): string | undefined {
   if (error.code !== 'result_type_not_allowed') return undefined
   // A refused rule always has an expression: a check names a validator and is
   // never compiled, so it cannot reach this.

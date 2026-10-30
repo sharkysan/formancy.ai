@@ -24,15 +24,12 @@ import { FormancyProvider } from './context.js'
  */
 afterEach(cleanup)
 
-const mount = (
-  type: 'date' | 'time' | 'datetime',
-  over: Record<string, unknown> = {},
-): ReturnType<typeof createFormEngine> => {
+const mount = (type: 'date' | 'time' | 'datetime', over: Record<string, unknown> = {}): ReturnType<typeof createFormEngine> => {
   const schema: FormSchema = {
     specVersion: type === 'date' ? '1' : '2',
     id: 'booking',
     title: 'Booking',
-    model: { fields: [{ key: 'when', type, label: 'When', ...over } as never] },
+    model: { fields: [{ key: 'when', type, label: 'When', ...over }] },
   }
   const engine = createFormEngine({
     schema,
@@ -83,7 +80,7 @@ describe('a time', () => {
     // The bounds are the field's, and the control passes them on so the browser
     // refuses out-of-range input before the engine has to.
     const engine = mount('time', { earliest: '09:00', latest: '17:00' })
-    const control = screen.getByLabelText('When') as HTMLInputElement
+    const control = screen.getByLabelText<HTMLInputElement>('When')
 
     expect(control.min).toBe('09:00')
     expect(control.max).toBe('17:00')

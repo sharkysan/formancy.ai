@@ -56,6 +56,23 @@ const RUN_RATHER_THAN_IMPORTED: ReadonlyArray<{ name: string; why: string }> = [
   },
 ]
 
+/**
+ * Published packages whose one consumer is a file outside `packages` and `apps`, each with
+ * that file and the reason.
+ *
+ * The install gate's fixture imports the packed tarballs by name, but it is no workspace
+ * consumer. It imports most of the packages, so counting it would excuse each of them the
+ * day its last real importer went. A file of it is named here for one package, and holds
+ * only while it imports that package and nothing in the workspace does.
+ */
+const CONSUMED_OUTSIDE_THE_WORKSPACE: ReadonlyArray<{ name: string; file: string; why: string }> = [
+  {
+    name: '@formancy/code-style',
+    file: 'scripts/install-fixture/lint.mjs',
+    why: 'A lint configuration: a repository imports it from its eslint.config.mjs, which is no package or app. The install gate imports it by name from the packed tarball and lints a file with it.',
+  },
+]
+
 /** Every package in `packages/` that `pnpm publish` would push, with its manifest. */
 function publishedPackages(): Array<{
   dir: string
@@ -113,6 +130,8 @@ function publishedPackages(): Array<{
  *
  * CSS counts: a theme's only consumer is a stylesheet or a side-effect import, and
  * leaving it out is half of what made this report a false positive.
+ *
+ * The install gate's fixture is not walked: see `CONSUMED_OUTSIDE_THE_WORKSPACE`.
  */
 let sources: ReadonlyArray<{ owner: string; text: string }> | undefined
 function allSources(): ReadonlyArray<{ owner: string; text: string }> {
@@ -139,7 +158,8 @@ function allSources(): ReadonlyArray<{ owner: string; text: string }> {
   return found
 }
 
-function importersOf(name: string, own: string): string[] {
+/** Whether `text` imports `name` by name, in any of the three shapes. */
+function importsByName(text: string, name: string): boolean {
   const escaped = name.replace('/', '\\/')
   const needles = [
     // `import { x } from '<name>'`, and `export … from` with it.
@@ -149,11 +169,42 @@ function importersOf(name: string, own: string): string[] {
     // `@import '<name>/…'`, from a stylesheet.
     new RegExp(`@import\\s+['"]?${escaped}`),
   ]
+  return needles.some((needle) => needle.test(text))
+}
+
+function importersOf(name: string, own: string): string[] {
   const found = new Set<string>()
   for (const { owner, text } of allSources()) {
-    if (owner !== own && needles.some((needle) => needle.test(text))) found.add(owner)
+    if (owner !== own && importsByName(text, name)) found.add(owner)
   }
   return [...found].sort()
+}
+
+/**
+ * Of `packages`, those nothing consumes, a sentence each: no workspace package or app
+ * imports it, it is not run rather than imported, and no allowance names a file that
+ * imports it.
+ */
+function unconsumed(
+  packages: ReadonlyArray<{ name: string; dir: string }>,
+  allowances: ReadonlyArray<{ name: string; file: string }> = CONSUMED_OUTSIDE_THE_WORKSPACE,
+): string[] {
+  const excused = new Set(RUN_RATHER_THAN_IMPORTED.map(({ name }) => name))
+  const allowed = (name: string): boolean =>
+    allowances.some((allowance) => allowance.name === name && importsByName(readFileSync(join(repo, allowance.file), 'utf8'), name))
+  return packages
+    .filter(({ name }) => !excused.has(name))
+    .filter(({ name, dir }) => importersOf(name, dir).length === 0)
+    .filter(({ name }) => !allowed(name))
+    .map(({ name }) => `${name} is published and nothing imports it by name — so nobody has consumed it the way a user would`)
+}
+
+/** The install gate's fixture, a text per module. */
+function fixtureModules(): string[] {
+  const directory = join(repo, 'scripts', 'install-fixture')
+  return readdirSync(directory)
+    .filter((file) => /\.(ts|tsx|mts|mjs)$/.test(file))
+    .map((file) => readFileSync(join(directory, file), 'utf8'))
 }
 
 describe('what consumes each published package', () => {
@@ -178,17 +229,46 @@ describe('what consumes each published package', () => {
   })
 
   test('is something, for every package a user could install', () => {
-    const excused = new Set(RUN_RATHER_THAN_IMPORTED.map(({ name }) => name))
+    expect(unconsumed(publishedPackages())).toEqual([])
+  })
 
-    const orphaned = publishedPackages()
-      .filter(({ name }) => !excused.has(name))
-      .filter(({ name, dir }) => importersOf(name, dir).length === 0)
-      .map(
-        ({ name }) =>
-          `${name} is published and nothing imports it by name — so nobody has consumed it the way a user would`,
-      )
+  test('and the install gate’s fixture counts as no package’s consumer of its own accord', () => {
+    // It imports most of the packages from their tarballs. Were it counted, a package
+    // whose last workspace importer went would still be consumed, by the fixture, and
+    // this ratchet would hold nothing.
+    const counted = publishedPackages().flatMap(({ name, dir }) =>
+      importersOf(name, dir)
+        .filter((owner) => !/^(?:packages|apps)\//.test(owner))
+        .map((owner) => `${name} is counted as consumed by ${owner}`),
+    )
 
-    expect(orphaned).toEqual([])
+    expect(counted).toEqual([])
+  })
+
+  test('so a package only the fixture imports is unconsumed, unless an allowance names the file', () => {
+    // `@formancy/code-style` is such a package today: nothing in the workspace imports
+    // it, and `lint.mjs` does. Without its allowance it is reported; with it, it is not.
+    const fixture = fixtureModules()
+    const onlyTheFixture = publishedPackages().filter(
+      ({ name, dir }) => importersOf(name, dir).length === 0 && fixture.some((text) => importsByName(text, name)),
+    )
+
+    expect(onlyTheFixture.map(({ name }) => name)).toEqual(['@formancy/code-style'])
+    expect(unconsumed(onlyTheFixture, [])).toEqual([
+      '@formancy/code-style is published and nothing imports it by name — so nobody has consumed it the way a user would',
+    ])
+    expect(unconsumed(onlyTheFixture)).toEqual([])
+  })
+
+  test('and every allowance is still true: its file imports the package, and nothing in the workspace does', () => {
+    // An allowance whose file stopped importing its package would excuse a package nobody
+    // consumes; one whose package acquired a workspace importer is an exemption nobody
+    // needs, and comes off as an excuse above does.
+    for (const { name, file, why } of CONSUMED_OUTSIDE_THE_WORKSPACE) {
+      expect(importsByName(readFileSync(join(repo, file), 'utf8'), name), `${file} does not import ${name}`).toBe(true)
+      expect(importersOf(name, `packages/${name.replace('@formancy/', '')}`), name).toEqual([])
+      expect(why.length, `${name} is allowed without a reason`).toBeGreaterThan(40)
+    }
   })
 
   test('and every excuse is still true, so the list cannot rot the other way', () => {
@@ -229,8 +309,9 @@ describe('how each published package is checked as a package', () => {
   /** Whether this package ships anything `attw` could resolve types for. */
   const shipsTypes = (manifest: { types?: unknown; exports?: unknown }): boolean => {
     if (manifest.types !== undefined) return true
-    // A CSS-only package maps its entries to `.css` files and declares no types,
-    // which is the one honest reason to skip attw.
+    // A package with no types maps its entries straight to files and declares none:
+    // `.css` files, or the one JavaScript module `@formancy/code-style` ships, beside
+    // which there is no declaration file. That is the one honest reason to skip attw.
     const entries = Object.values((manifest.exports ?? {}) as Record<string, unknown>)
     return entries.some((entry) => typeof entry === 'object' && entry !== null)
   }
@@ -266,15 +347,16 @@ describe('how each published package is checked as a package', () => {
     expect(missing).toEqual([])
   })
 
-  test('and the one package that skips attw really has no types', () => {
+  test('and the packages that skip attw really have no types', () => {
     // So the exemption cannot be claimed by a package that grows types later.
     const skipping = publishedPackages()
       .filter(({ manifest }) => !(manifest.scripts?.['check:pkg'] ?? '').includes('attw'))
       .map(({ name, manifest }) => ({ name, types: shipsTypes(manifest) }))
 
     // A guard on the guard: if this list empties, the assertion below stops
-    // asserting anything and the test should go rather than sit here green.
-    expect(skipping.map(({ name }) => name)).toEqual(['@formancy/themes'])
+    // asserting anything and the test should go rather than sit here green. Named,
+    // so that a third package skipping attw is a decision somebody writes here.
+    expect(skipping.map(({ name }) => name)).toEqual(['@formancy/code-style', '@formancy/themes'])
     expect(skipping.filter(({ types }) => types)).toEqual([])
   })
 })
@@ -326,9 +408,7 @@ describe('what a package imports from itself', () => {
     // pattern was built in a template literal, where `\s` quietly became `s` and it matched
     // nothing: caught by putting a self-import back and watching the guard stay green.)
     const importsSelf = (text: string): boolean =>
-      ts
-        .preProcessFile(text, true, true)
-        .importedFiles.some(({ fileName }) => fileName === self || fileName.startsWith(`${self}/`))
+      ts.preProcessFile(text, true, true).importedFiles.some(({ fileName }) => fileName === self || fileName.startsWith(`${self}/`))
 
     const walk = (at: string): void => {
       for (const entry of readdirSync(at, { withFileTypes: true })) {
@@ -364,8 +444,7 @@ describe('what a package imports from itself', () => {
   test('and the answer is nothing, so no typecheck needs its own build output', () => {
     const offenders = workspacePackages().flatMap(({ dir, name }) =>
       selfImports(dir, name).map(
-        (file) =>
-          `${file} imports ${name}, its own package — so its typecheck needs this package's own dist, which turbo's \`^build\` does not provide`,
+        (file) => `${file} imports ${name}, its own package — so its typecheck needs this package's own dist, which turbo's \`^build\` does not provide`,
       ),
     )
 
@@ -411,8 +490,7 @@ describe('what a manifest says twice', () => {
   }
 
   /** The top-level keys as written, duplicates included. */
-  const writtenKeys = (text: string): string[] =>
-    [...text.matchAll(/^ {2}"([^"]+)":/gm)].map((match) => match[1]!)
+  const writtenKeys = (text: string): string[] => [...text.matchAll(/^ {2}"([^"]+)":/gm)].map((match) => match[1]!)
 
   test('is read correctly, which is what makes the case below able to fail', () => {
     /*

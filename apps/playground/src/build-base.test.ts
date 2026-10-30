@@ -37,7 +37,7 @@ const { default: config } = await import('../vite.config.js')
  */
 const resolve = (command: ConfigEnv['command']): UserConfig => {
   // The config is a function of its environment, so a test has to supply one.
-  const factory = config as (env: ConfigEnv) => UserConfig
+  const factory = config
   return factory({ command, mode: command === 'build' ? 'production' : 'development' })
 }
 

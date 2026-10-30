@@ -40,9 +40,7 @@ describe('describedBy', () => {
   const ids = fieldIds('contact', ['email'])
 
   test('composes hint, then description, then error — the order screen readers announce', () => {
-    expect(describedBy(ids, { hint: true, description: true, error: true })).toBe(
-      `${ids.hint} ${ids.description} ${ids.error}`,
-    )
+    expect(describedBy(ids, { hint: true, description: true, error: true })).toBe(`${ids.hint} ${ids.description} ${ids.error}`)
   })
 
   test('includes only the parts that are present', () => {

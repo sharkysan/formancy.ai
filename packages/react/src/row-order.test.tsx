@@ -52,8 +52,7 @@ function mount(names: readonly string[]) {
   return engine
 }
 
-const namesIn = (engine: ReturnType<typeof mount>): unknown[] =>
-  (engine.value() as { items: Array<Record<string, unknown>> }).items.map((row) => row['name'])
+const namesIn = (engine: ReturnType<typeof mount>): unknown[] => (engine.value() as { items: Array<Record<string, unknown>> }).items.map((row) => row['name'])
 
 describe('the move buttons', () => {
   test('say where the row goes, with its position in the name', () => {
@@ -86,7 +85,7 @@ describe('the move buttons', () => {
     const engine = mount(['first', 'second'])
     await userEvent.click(screen.getByRole('button', { name: 'Move Item 1 of 2 down' }))
 
-    const inputs = screen.getAllByLabelText('Name') as HTMLInputElement[]
+    const inputs = screen.getAllByLabelText<HTMLInputElement>('Name')
     expect(inputs.map((input) => input.value)).toEqual(['second', 'first'])
     expect(namesIn(engine)).toEqual(['second', 'first'])
   })
@@ -119,7 +118,7 @@ describe('the move buttons', () => {
     // were editing. With stale ids the node stays and focus is left on somebody else's
     // answer.
     const engine = mount(['first', 'second'])
-    const inputs = screen.getAllByLabelText('Name') as HTMLInputElement[]
+    const inputs = screen.getAllByLabelText<HTMLInputElement>('Name')
     inputs[0]!.focus()
     expect((document.activeElement as HTMLInputElement).value).toBe('first')
 
@@ -140,7 +139,7 @@ describe('the move buttons', () => {
     act(() => {
       engine.moveRow(['items'], 0, 1)
     })
-    const inputs = screen.getAllByLabelText('Name') as HTMLInputElement[]
+    const inputs = screen.getAllByLabelText<HTMLInputElement>('Name')
     expect(inputs.map((input) => input.value)).toEqual(['y', 'x'])
   })
 })

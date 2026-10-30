@@ -84,7 +84,7 @@ What it does **not** do, and must not be assumed to do:
 
 ## Composition and third-party dependencies
 
-Sixteen published packages, layered so that the isomorphic ones cannot
+Seventeen published packages, layered so that the isomorphic ones cannot
 acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)).
 Workspace dependencies between them are not listed: the whole repository is
 delivered as one version under one licence, so assessing `@formancy/server` is
@@ -108,6 +108,14 @@ not separately assessing `@formancy/spec`.
 | `@formancy/cli` | none |
 | `@formancy/themes` | none (CSS only) |
 | `@formancy/tiptap` | `@tiptap/core ^3.31.3`, `@tiptap/extension-bold ^3.31.3`, `@tiptap/extension-bullet-list ^3.31.3`, `@tiptap/extension-document ^3.31.3`, `@tiptap/extension-italic ^3.31.3`, `@tiptap/extension-link ^3.31.3`, `@tiptap/extension-list-item ^3.31.3`, `@tiptap/extension-ordered-list ^3.31.3`, `@tiptap/extension-paragraph ^3.31.3`, `@tiptap/extension-text ^3.31.3`, `@tiptap/pm ^3.31.3` |
+| `@formancy/code-style` | `@eslint-community/eslint-plugin-eslint-comments ^4.8.1`, `@eslint/js ^10.0.1`, `eslint-plugin-react-hooks ^7.1.1`, `globals ^17.13.0`, `typescript-eslint ^8.72.1` (lint tooling; each of ESLint, Prettier and TypeScript is a peer) |
+
+`@formancy/code-style` is development tooling: the ESLint rules and the Prettier
+format a repository's lint and format configuration imports. Nothing a form, a
+builder or the server runs imports it, so a manufacturer whose own build does
+not lint with it has none of its row to assess. The release's SBOM names its
+dependencies all the same, as it names every published package's, as required
+([`RELEASING.md`](../../RELEASING.md)).
 
 `@formancy/tiptap`'s nine extensions are listed one by one, in the table and in
 the package's own source, rather than taken from `@tiptap/starter-kit` — which
@@ -1002,6 +1010,7 @@ verify it in the browsers it ships to.
 | Performance budgets, measured: keystroke ≈0.54 ms against a <1 ms budget, re-measured 2026-10-19; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
 | Layout and gesture facts jsdom cannot represent — horizontal overflow, computed grid columns and computed `touch-action` for both renderers — at four viewports in Chromium against the composed site, and a picked image drawn as its thumbnail | `pnpm test:browser` |
 | Package-publication gates: `publint`, `@arethetypeswrong/cli` | `pnpm check:pkg` |
+| Every TypeScript and JavaScript file linted by `@eslint/js`'s recommended rules and typescript-eslint's type-aware ones, every rule at error, and as Prettier formats it — static checks of the source, which say nothing of what a form does ([0225](../decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)) | `pnpm lint`, `pnpm format:check` |
 | Bundle sizes, measured by hand and dated rather than gated — `size-limit` is **not** wired up, and this table named it as a gate until 2026-09-27 | [§9.3](../architecture/09-quality-requirements.md) |
 | Line coverage, reported per package and uploaded per commit — **reported and gated nowhere**, deliberately ([0099](../decisions/0099-coverage-is-reported-per-package-and-never-gated.md)) | `pnpm turbo run test:coverage`, and Codecov |
 | Build provenance for every published tarball | `npm audit signatures` against the installed version |

@@ -107,10 +107,7 @@ export type ScanVerdict = { clean: true } | { clean: false; finding: string }
  * not be asked** — a connection refused, a timeout — and never that the file is clean.
  */
 export interface Scanner {
-  scan(
-    file: { name: string; contentType: string; size: number },
-    bytes: Uint8Array,
-  ): Promise<ScanVerdict>
+  scan(file: { name: string; contentType: string; size: number }, bytes: Uint8Array): Promise<ScanVerdict>
 }
 
 export type ScreenOutcome =
@@ -137,10 +134,7 @@ export async function screenUpload(
   if (scanner === undefined) return { ok: true }
   let verdict: ScanVerdict
   try {
-    verdict = await scanner.scan(
-      { name: file.name, contentType: file.contentType, size: file.size },
-      bytes,
-    )
+    verdict = await scanner.scan({ name: file.name, contentType: file.contentType, size: file.size }, bytes)
   } catch (error) {
     return {
       ok: false,
@@ -151,9 +145,7 @@ export async function screenUpload(
   return verdict.clean ? { ok: true } : { ok: false, reason: 'refused', finding: verdict.finding }
 }
 
-export type ClaimOutcome =
-  | { ok: true; ids: readonly string[] }
-  | { ok: false; unknown: readonly string[] }
+export type ClaimOutcome = { ok: true; ids: readonly string[] } | { ok: false; unknown: readonly string[] }
 
 /**
  * Which files a submission may claim, checked but not yet claimed.
@@ -173,10 +165,7 @@ export type ClaimOutcome =
  * may not; the third would make deleting a submission either leak bytes or
  * break a different one.
  */
-export async function filesToClaim(
-  storage: Storage,
-  input: { schema: FormSchema; formId: string; data: unknown },
-): Promise<ClaimOutcome> {
+export async function filesToClaim(storage: Storage, input: { schema: FormSchema; formId: string; data: unknown }): Promise<ClaimOutcome> {
   const ids = referencedFileIds(input.schema, input.data)
   if (ids.length === 0) return { ok: true, ids: [] }
 
@@ -205,11 +194,7 @@ export async function filesToClaim(
  * reference and bytes without a row are invisible rubbish. Of the two, the
  * second is the one you never find out about.
  */
-export async function collectAbandonedFiles(
-  storage: Storage,
-  now: Date,
-  afterHours: number,
-): Promise<FileRecord[]> {
+export async function collectAbandonedFiles(storage: Storage, now: Date, afterHours: number): Promise<FileRecord[]> {
   const before = new Date(now.getTime() - afterHours * 3_600_000).toISOString()
   return storage.abandonedFiles(before)
 }
@@ -308,7 +293,5 @@ function referencedFileIds(schema: FormSchema, data: unknown): string[] {
 
 /** Re-exported so a host can see which paths a schema's file fields live at. */
 export function fileFieldPaths(schema: FormSchema): string[] {
-  return modelDataPaths(schema.model).filter(
-    (path) => fileFieldAt(schema, path)?.type === 'file',
-  )
+  return modelDataPaths(schema.model).filter((path) => fileFieldAt(schema, path)?.type === 'file')
 }

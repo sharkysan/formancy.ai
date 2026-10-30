@@ -193,13 +193,7 @@ export class FormancyOptionsEditor {
   /** The whole choice, as `withPicture` makes it: a picture taken away is a key that is gone. */
   protected setPicture(at: number, part: 'src' | 'alt', event: Event): void {
     const typed = (event.target as HTMLInputElement).value
-    this.commit(
-      this.draft().map((option, index) =>
-        index === at
-          ? withPicture(option, part === 'src' ? { src: typed } : { alt: typed })
-          : option,
-      ),
-    )
+    this.commit(this.draft().map((option, index) => (index === at ? withPicture(option, part === 'src' ? { src: typed } : { alt: typed }) : option)))
   }
 
   /** The whole choice, as `withFlag` makes it: unticked, the flag is a key that is gone. */

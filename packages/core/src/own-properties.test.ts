@@ -106,10 +106,7 @@ describe('a key every object inherits is no answer', () => {
       // with "[object Undefined]" and `constructor` with the request itself — the whole
       // submission — and each was set on the field as its error code.
       const engine = createFormEngine({
-        schema: form(
-          [{ key: 'email', type: 'text', label: 'Email' }],
-          [{ target: 'email', kind: 'check', check, runsOn: 'both' }],
-        ),
+        schema: form([{ key: 'email', type: 'text', label: 'Email' }], [{ target: 'email', kind: 'check', check, runsOn: 'both' }]),
         capabilities: CLOCK,
         checks: { 'email-not-taken': () => undefined },
       })
@@ -155,7 +152,13 @@ describe('a list holds rows, and only rows', () => {
 
   test.each([
     // The group is also refused for its own shape, a list where its object belongs (0189).
-    ['inside a group sent as a list', [{ key: 'address', type: 'group', label: 'Address', fields: [{ key: 'length', type: 'text', label: 'Length', required: true }] }], { address: [] }, 'address.length', { address: ['type'] }],
+    [
+      'inside a group sent as a list',
+      [{ key: 'address', type: 'group', label: 'Address', fields: [{ key: 'length', type: 'text', label: 'Length', required: true }] }],
+      { address: [] },
+      'address.length',
+      { address: ['type'] },
+    ],
     ['at the top of a submission sent as a list', [{ key: 'length', type: 'number', label: 'Length', required: true }], ['x', 'y'], 'length', {}],
   ])('a required field keyed length %s is refused as required', (_where, fields, initialValue, wire, also) => {
     // The server replays this engine over what was posted: a list answered the question with
@@ -301,11 +304,7 @@ describe('a member somebody else put on every object is no answer either', () =>
 })
 
 describe('__proto__ names no path', () => {
-  test.each([
-    [['__proto__']],
-    [['outer', '__proto__', 'total']],
-    [['rows', 0, '__proto__']],
-  ])('formatPath refuses %j', (path) => {
+  test.each([[['__proto__']], [['outer', '__proto__', 'total']], [['rows', 0, '__proto__']]])('formatPath refuses %j', (path) => {
     // Written, `__proto__` sets the object's prototype rather than a member, so a path
     // through it is a path to no answer — a silent change of identity, which is what
     // formatPath already refuses a "." in a key for.

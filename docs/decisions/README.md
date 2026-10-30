@@ -82,7 +82,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0005](0005-not-web-components.md) | Do not distribute the renderers as Web Components | accepted |
 | [0006](0006-one-engine-build.md) | One engine build runs in the browser and on the server | accepted |
 | [0007](0007-react-and-angular-first.md) | React and Angular first; Vue deferred | accepted |
-| [0008](0008-layered-packages.md) | Layer the packages and enforce the dependency direction | accepted |
+| [0008](0008-layered-packages.md) | Layer the packages and enforce the dependency direction | accepted; its "no linter at all" made untrue by 0225, which adds no boundary rule |
 
 ### The spec
 
@@ -156,7 +156,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 
 | # | Decision | Status |
 |---|---|---|
-| [0037](0037-turborepo-over-nx.md) | pnpm workspaces with Turborepo, not Nx | accepted |
+| [0037](0037-turborepo-over-nx.md) | pnpm workspaces with Turborepo, not Nx | accepted; the boundary rule it anticipated not added by 0225, which brings ESLint for other rules |
 | [0038](0038-esm-only.md) | Publish ESM only | accepted |
 | [0039](0039-pin-typescript.md) | Pin TypeScript to the range Angular accepts | accepted |
 | [0040](0040-no-eval.md) | No `eval` and no `new Function`, anywhere | accepted |
@@ -221,7 +221,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0112](0112-the-mcp-server-says-what-its-tools-do.md) | The MCP server says what its tools do, answers in structure, and ships the order of operations | accepted |
 | [0113](0113-a-theme-is-written-in-reading-order.md) | A theme is written in reading order, and something fails when it is not | accepted |
 | [0114](0114-the-builder-speaks-the-authors-language.md) | The builder speaks the author's language, from one catalogue both builders read | accepted |
-| [0115](0115-a-library-writes-nothing-to-its-hosts-console.md) | A library writes nothing to its host's console | accepted |
+| [0115](0115-a-library-writes-nothing-to-its-hosts-console.md) | A library writes nothing to its host's console | accepted; the gate it found missing for `pnpm lint` added by 0225, which runs no `no-console` |
 | [0116](0116-what-a-builder-says-is-decided-once.md) | What a builder says after a command is decided once, and checked for English left behind | accepted |
 | [0117](0117-the-arrangement-pane-offers-the-same-in-both-builders.md) | The arrangement pane offers the same things in both builders | accepted |
 | [0118](0118-an-editor-is-handed-its-language.md) | An editor is handed its language, and the two list editors have one shape | accepted |
@@ -325,3 +325,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0222](0222-submissions-are-listed-a-page-at-a-time.md) | A form's submissions are listed a page at a time, from where the last page ended | accepted |
 | [0223](0223-responses-are-summarised-on-the-server.md) | A form's responses are summarised on the server, and the admin reads them a page at a time | accepted; reading every submission, superseded in part by 0224 |
 | [0224](0224-a-summary-is-counted-a-response-at-a-time.md) | A summary is counted a response at a time, and the server reads a page of them at once | accepted |
+| [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md) | The four formancy repositories lint and format by one set of rules, published here as `@formancy/code-style`, and CI fails a change that breaks either | accepted |

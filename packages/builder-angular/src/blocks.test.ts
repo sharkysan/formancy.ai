@@ -36,15 +36,10 @@ const form: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 const postal = (): BuilderBlock => {
-  const saved = blockFrom(
-    form,
-    ['billing'],
-    { id: 'postal', name: 'Postal address' },
-    createBuilderText(),
-  )
+  const saved = blockFrom(form, ['billing'], { id: 'postal', name: 'Postal address' }, createBuilderText())
   if (!saved.ok) throw new Error(saved.message)
   return saved.block
 }
@@ -68,12 +63,12 @@ async function mount(inputs: { blocks?: readonly BuilderBlock[] } = {}) {
       await settle()
     },
     click: async (element: Element) => {
-      await user.click(element as HTMLElement)
+      await user.click(element)
       await settle()
     },
     type: async (element: Element, value: string) => {
-      await user.clear(element as HTMLElement)
-      await user.type(element as HTMLElement, value)
+      await user.clear(element)
+      await user.type(element, value)
       await settle()
     },
     tab: async () => {
@@ -95,14 +90,8 @@ describe('blocks in the Angular builder', () => {
     const where = screen.getByRole('dialog', { name: 'Add the block “Postal address” where?' })
     await click(within(where).getByRole('button', { name: 'Order, after Billing address' }))
 
-    expect(session.document().model.fields.map((field) => field.key)).toEqual([
-      'customer',
-      'billing',
-      'billing2',
-    ])
-    expect(screen.getByRole('status').textContent).toBe(
-      'Added the block “Postal address” to Order, after Billing address.',
-    )
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['customer', 'billing', 'billing2'])
+    expect(screen.getByRole('status').textContent).toBe('Added the block “Postal address” to Order, after Billing address.')
   })
 
   test('with none saved yet, say how to make one', async () => {
@@ -112,9 +101,7 @@ describe('blocks in the Angular builder', () => {
     await press('a')
 
     expect(
-      within(screen.getByRole('dialog', { name: 'Add a field' })).getByText(
-        'No blocks yet. Save a field or a group as a block to use it again.',
-      ),
+      within(screen.getByRole('dialog', { name: 'Add a field' })).getByText('No blocks yet. Save a field or a group as a block to use it again.'),
     ).toBeTruthy()
   })
 

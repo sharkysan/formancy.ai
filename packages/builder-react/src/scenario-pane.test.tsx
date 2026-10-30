@@ -24,10 +24,15 @@ const form: FormSchema = {
   title: 'Leave',
   model: {
     fields: [
-      { key: 'kind', type: 'radio', label: 'Kind', options: [
-        { value: 'holiday', label: 'Holiday' },
-        { value: 'other', label: 'Other' },
-      ] },
+      {
+        key: 'kind',
+        type: 'radio',
+        label: 'Kind',
+        options: [
+          { value: 'holiday', label: 'Holiday' },
+          { value: 'other', label: 'Other' },
+        ],
+      },
       { key: 'reason', type: 'text', label: 'Reason' },
     ],
   },
@@ -53,9 +58,7 @@ describe('with scenarios', () => {
   test('says they hold, and says it out loud', async () => {
     render(<ScenarioPane session={createBuilderSession(form)} scenarios={SCENARIOS} />)
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('All 2 scenarios hold'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('All 2 scenarios hold'))
   })
 
   test('names what stopped holding when the document changes under it', async () => {
@@ -75,9 +78,7 @@ describe('with scenarios', () => {
     inverted.logic!.rules[0]!.cel = "kind != 'other'"
     session.replaceDocument(inverted)
 
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('Stopped holding'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Stopped holding'))
     const said = screen.getByRole('status').textContent ?? ''
     expect(said).toContain('other shows the reason')
     expect(said).toContain('holiday hides it')
@@ -117,9 +118,7 @@ describe('with scenarios', () => {
     // A host that keeps the pane on screen and opens another document — the playground,
     // on every switch of form — was told examples had stopped holding that had never run
     // against the document now open.
-    const { rerender } = render(
-      <ScenarioPane session={createBuilderSession(form)} scenarios={SCENARIOS} />,
-    )
+    const { rerender } = render(<ScenarioPane session={createBuilderSession(form)} scenarios={SCENARIOS} />)
     await waitFor(() => expect(screen.getByRole('status').textContent).toContain('All 2'))
 
     const inverted = JSON.parse(JSON.stringify(form)) as FormSchema
@@ -137,7 +136,10 @@ describe('with scenarios', () => {
     render(<ScenarioPane session={createBuilderSession(inverted)} scenarios={SCENARIOS} />)
 
     await waitFor(() => expect(screen.getAllByRole('listitem').length).toBeGreaterThan(2))
-    const text = screen.getAllByRole('listitem').map((item) => item.textContent ?? '').join(' ')
+    const text = screen
+      .getAllByRole('listitem')
+      .map((item) => item.textContent ?? '')
+      .join(' ')
     expect(text).toContain('reason')
     expect(text).toMatch(/expected to be visible|expected to be hidden/)
   })
@@ -148,9 +150,7 @@ describe('with scenarios', () => {
     // CI gate out of the same file.
     const user = userEvent.setup()
     const onChange = vi.fn()
-    render(
-      <ScenarioPane session={createBuilderSession(form)} scenarios={SCENARIOS} onChange={onChange} />,
-    )
+    render(<ScenarioPane session={createBuilderSession(form)} scenarios={SCENARIOS} onChange={onChange} />)
 
     await user.click(screen.getByRole('button', { name: 'Remove holiday hides it' }))
 

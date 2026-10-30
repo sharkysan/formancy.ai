@@ -5,12 +5,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
-import {
-  FormancyForm,
-  injectFieldContext,
-  provideFormancy,
-  provideFormancyRegistry,
-} from './index'
+import { FormancyForm, injectFieldContext, provideFormancy, provideFormancyRegistry } from './index'
 import type { SubmitOutcome } from './index'
 
 // Testing-library's auto-cleanup hooks into a global afterEach, which vitest
@@ -83,7 +78,7 @@ describe('FormancyForm', () => {
     })
     await renderForm(engine)
 
-    const select = screen.getByLabelText('Country') as HTMLSelectElement
+    const select = screen.getByLabelText<HTMLSelectElement>('Country')
     // The empty option is the unanswered state; without it the browser
     // silently pre-selects the first real option.
     expect(select.options[0]?.value).toBe('')
@@ -159,9 +154,7 @@ describe('FormancyForm', () => {
       ]),
     })
     const view = await renderForm(engine, {
-      providers: [
-        provideFormancyRegistry({ byType: { text: ByType }, byPath: { first: ByPath } }),
-      ],
+      providers: [provideFormancyRegistry({ byType: { text: ByType }, byPath: { first: ByPath } })],
     })
     await view.fixture.whenStable()
 

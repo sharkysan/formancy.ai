@@ -1,14 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import {
-  describeSpec,
-  diffForms,
-  getForm,
-  listForms,
-  checkScenarios,
-  proposeFormEdit,
-  publishForm,
-  validateForm,
-} from './tools.js'
+import { describeSpec, diffForms, getForm, listForms, checkScenarios, proposeFormEdit, publishForm, validateForm } from './tools.js'
 import type { ServerAccess } from './tools.js'
 import { FIELD_TYPES, schemaHash } from '@formancy/spec'
 
@@ -36,13 +27,10 @@ const valid = {
 const access = (handler: (url: string, init?: RequestInit) => Response): ServerAccess => ({
   baseUrl: 'http://localhost:4380',
   apiKey: 'k_test',
-  fetch: vi.fn((url: string | URL | Request, init?: RequestInit) =>
-    Promise.resolve(handler(String(url), init)),
-  ) as unknown as typeof globalThis.fetch,
+  fetch: vi.fn((url: string | URL | Request, init?: RequestInit) => Promise.resolve(handler(String(url instanceof Request ? url.url : url), init))),
 })
 
-const json = (body: unknown, status = 200): Response =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+const json = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
 describe('describe_spec', () => {
   test('lists every field type the spec has, so the model does not invent one', () => {
@@ -118,21 +106,14 @@ describe('validate_form', () => {
     // the validator does not read CEL, and the expression check skips what the
     // engine refuses — so nothing here asked the engine. The server's publish
     // gate did, and refused every one of them.
-    const withRules = (
-      fields: readonly object[],
-      rules: readonly object[],
-    ): Record<string, unknown> => ({
+    const withRules = (fields: readonly object[], rules: readonly object[]): Record<string, unknown> => ({
       ...valid,
       model: { fields: [...valid.model.fields, ...fields] },
       logic: { rules },
     })
 
     test('a misspelled field name — the mistake a model makes most', () => {
-      const result = validateForm(
-        withRules([{ key: 'notes', type: 'text', label: 'Notes' }], [
-          { target: 'notes', kind: 'visible', cel: "compnay != ''" },
-        ]),
-      )
+      const result = validateForm(withRules([{ key: 'notes', type: 'text', label: 'Notes' }], [{ target: 'notes', kind: 'visible', cel: "compnay != ''" }]))
 
       expect(result.ok).toBe(false)
       expect(result.summary).toContain('compnay')
@@ -284,7 +265,7 @@ describe('publish_form', () => {
     expect(result.ok).toBe(true)
     expect(seen?.url).toBe('http://localhost:4380/forms')
     expect((seen?.init?.headers as Record<string, string>).authorization).toBe('Bearer k_test')
-    expect(JSON.parse(String(seen?.init?.body))).toMatchObject({ path: 'quote' })
+    expect(JSON.parse(seen?.init?.body as string)).toMatchObject({ path: 'quote' })
   })
 })
 
@@ -308,7 +289,7 @@ describe('talking to a server', () => {
     const server: ServerAccess = {
       baseUrl: 'http://localhost:4380',
       apiKey: 'k',
-      fetch: (() => Promise.reject(new Error('ECONNREFUSED'))) as unknown as typeof globalThis.fetch,
+      fetch: () => Promise.reject(new Error('ECONNREFUSED')),
     }
 
     const result = await listForms(server)
@@ -337,9 +318,9 @@ describe('talking to a server', () => {
       baseUrl: 'http://localhost:4380/',
       apiKey: 'k',
       fetch: vi.fn((url: string | URL | Request) => {
-        seen = String(url)
+        seen = String(url instanceof Request ? url.url : url)
         return Promise.resolve(json({}))
-      }) as unknown as typeof globalThis.fetch,
+      }),
     })
 
     expect(seen).toBe('http://localhost:4380/forms')
@@ -392,9 +373,7 @@ describe('proposing an edit to a published form', () => {
     ({
       baseUrl: 'https://forms.example',
       apiKey: 'k',
-      fetch: vi.fn(() =>
-        Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })),
-      ),
+      fetch: vi.fn(() => Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }))),
     }) as unknown as ServerAccess
 
   test('reports what the edit would do to answers already collected, and publishes nothing', async () => {
@@ -446,9 +425,7 @@ describe('publishing against the version the edit was based on', () => {
         fetch: vi.fn((url: string, init?: { method?: string }) => {
           calls.push(`${init?.method ?? 'GET'} ${url}`)
           const body = init?.method === 'POST' ? { version: 4 } : { schema: current, version: 3 }
-          return Promise.resolve(
-            new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }),
-          )
+          return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }))
         }),
       } as unknown as ServerAccess,
     }
@@ -466,7 +443,7 @@ describe('publishing against the version the edit was based on', () => {
     moved.model.fields.push({ key: 'phone', type: 'text', label: 'Phone' })
     const { access, calls } = serverOn(moved)
 
-    const result = await publishForm(access, 'contact', document, schemaHash(document as never))
+    const result = await publishForm(access, 'contact', document, schemaHash(document))
 
     expect(result.ok).toBe(false)
     expect(result.summary).toMatch(/changed since/i)
@@ -477,7 +454,7 @@ describe('publishing against the version the edit was based on', () => {
   test('publishes when the server is still on it', async () => {
     const { access, calls } = serverOn(document)
 
-    const result = await publishForm(access, 'contact', document, schemaHash(document as never))
+    const result = await publishForm(access, 'contact', document, schemaHash(document))
 
     expect(result.ok).toBe(true)
     expect(calls.filter((call) => call.startsWith('POST'))).toHaveLength(1)
@@ -519,18 +496,21 @@ describe('checking a form against examples', () => {
     title: 'Leave',
     model: {
       fields: [
-        { key: 'kind', type: 'radio', label: 'Kind', options: [
-          { value: 'holiday', label: 'Holiday' },
-          { value: 'other', label: 'Other' },
-        ] },
+        {
+          key: 'kind',
+          type: 'radio',
+          label: 'Kind',
+          options: [
+            { value: 'holiday', label: 'Holiday' },
+            { value: 'other', label: 'Other' },
+          ],
+        },
         { key: 'reason', type: 'text', label: 'Reason' },
       ],
     },
     logic: { rules: [{ target: 'reason', kind: 'visible', cel: "kind == 'other'" }] },
   }
-  const scenarios = [
-    { name: 'other shows the reason', changes: { kind: 'other' }, valid: true, visible: { reason: true } },
-  ]
+  const scenarios = [{ name: 'other shows the reason', changes: { kind: 'other' }, valid: true, visible: { reason: true } }]
 
   test('says which example stopped holding, and what it expected', () => {
     const backwards = structuredClone(form)

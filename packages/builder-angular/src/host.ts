@@ -26,5 +26,5 @@ import { ElementRef, inject } from '@angular/core'
  * can draw and holds each to it.
  */
 export function takeHostOutOfLayout(): void {
-  inject(ElementRef<HTMLElement>).nativeElement.style.setProperty('display', 'contents')
+  inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.style.setProperty('display', 'contents')
 }

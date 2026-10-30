@@ -39,11 +39,7 @@ type Template = (typeof templates)[number]
  */
 function facts(entry: Template): string[] {
   const steps = entry.schemaDocument.model.fields.filter((field) => field.type === 'page').length
-  return [
-    `${String(entry.locales.length)} languages`,
-    ...(steps > 0 ? [`${String(steps)} steps`] : []),
-    'Conditional questions',
-  ]
+  return [`${String(entry.locales.length)} languages`, ...(steps > 0 ? [`${String(steps)} steps`] : []), 'Conditional questions']
 }
 /**
  * The preview's one button, named for what it does here — nothing is sent — in each
@@ -58,8 +54,7 @@ const PREVIEW_WORDS = {
   fr: { 'form.submit': 'Vérifier les réponses' },
 } satisfies Record<Locale, FormWords>
 
-const editUrl = (entry: Entry, locale: Locale): string =>
-  `${PLAYGROUND}?template=${encodeURIComponent(entry.id)}&locale=${encodeURIComponent(locale)}`
+const editUrl = (entry: Entry, locale: Locale): string => `${PLAYGROUND}?template=${encodeURIComponent(entry.id)}&locale=${encodeURIComponent(locale)}`
 
 export function TemplateGallery() {
   const [area, setArea] = useState('all')
@@ -67,10 +62,10 @@ export function TemplateGallery() {
   const [locale, setLocale] = useState<Locale>('en')
   const [selected, setSelected] = useState<Template | null>(null)
   const search = query.trim().toLocaleLowerCase()
-  const shown = templates.filter((entry) =>
-    (area === 'all' || area === entry.area) &&
-    [entry.title[locale], entry.description[locale], entry.title.en, entry.area]
-      .some((text) => text.toLocaleLowerCase().includes(search)),
+  const shown = templates.filter(
+    (entry) =>
+      (area === 'all' || area === entry.area) &&
+      [entry.title[locale], entry.description[locale], entry.title.en, entry.area].some((text) => text.toLocaleLowerCase().includes(search)),
   )
 
   return (
@@ -84,53 +79,138 @@ export function TemplateGallery() {
         <section className="template-hero" aria-labelledby="gallery-title">
           <div>
             <p className="eyebrow">A starting point, already connected</p>
-            <h1 id="gallery-title">A head start<br />for every <em>form.</em></h1>
+            <h1 id="gallery-title">
+              A head start
+              <br />
+              for every <em>form.</em>
+            </h1>
             <p className="lede">From your next event to your next new hire. Pick a template, try its rules, and make it yours.</p>
-            <div className="template-badges"><span>Angular + React</span><span>English · Deutsch · Français</span><span>Apache-2.0</span></div>
+            <div className="template-badges">
+              <span>Angular + React</span>
+              <span>English · Deutsch · Français</span>
+              <span>Apache-2.0</span>
+            </div>
           </div>
           <aside className="template-hero-note" aria-label="Collection at a glance">
-            <div className="template-sheet-art" aria-hidden="true"><span /><span /><i /><i /><b>✓</b></div>
+            <div className="template-sheet-art" aria-hidden="true">
+              <span />
+              <span />
+              <i />
+              <i />
+              <b>✓</b>
+            </div>
             <strong>{templates.length} ready-to-use templates</strong>
-            <p>Real forms. Working conditions.<br />Yours to download and adapt.</p>
+            <p>
+              Real forms. Working conditions.
+              <br />
+              Yours to download and adapt.
+            </p>
           </aside>
         </section>
         <section id="templates" className="template-browser" aria-label="Browse templates">
           <div className="template-toolbar">
-            <label className="template-search">Search templates<input type="search" value={query} placeholder="Try onboarding, feedback or registration" onChange={(event) => setQuery(event.target.value)} /></label>
-            <label className="template-language">Template language<select value={locale} onChange={(event) => {
-              // Map DOM input to known literals before indexing translations or building links.
-              if (event.target.value === 'en') setLocale('en')
-              else if (event.target.value === 'de') setLocale('de')
-              else if (event.target.value === 'fr') setLocale('fr')
-            }}><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option></select></label>
+            <label className="template-search">
+              Search templates
+              <input type="search" value={query} placeholder="Try onboarding, feedback or registration" onChange={(event) => setQuery(event.target.value)} />
+            </label>
+            <label className="template-language">
+              Template language
+              <select
+                value={locale}
+                onChange={(event) => {
+                  // Map DOM input to known literals before indexing translations or building links.
+                  if (event.target.value === 'en') setLocale('en')
+                  else if (event.target.value === 'de') setLocale('de')
+                  else if (event.target.value === 'fr') setLocale('fr')
+                }}
+              >
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+              </select>
+            </label>
           </div>
           <div className="template-filters" role="group" aria-label="Filter by area">
-            <button type="button" aria-pressed={area === 'all'} onClick={() => setArea('all')}>All templates</button>
-            {AREAS.map((item) => <button key={item.id} type="button" aria-pressed={area === item.id} onClick={() => setArea(item.id)}>{item.label}</button>)}
+            <button type="button" aria-pressed={area === 'all'} onClick={() => setArea('all')}>
+              All templates
+            </button>
+            {AREAS.map((item) => (
+              <button key={item.id} type="button" aria-pressed={area === item.id} onClick={() => setArea(item.id)}>
+                {item.label}
+              </button>
+            ))}
           </div>
-          <p className="template-count" role="status">{shown.length} {shown.length === 1 ? 'template' : 'templates'} · Preview first. Customise when you’re ready.</p>
+          <p className="template-count" role="status">
+            {shown.length} {shown.length === 1 ? 'template' : 'templates'} · Preview first. Customise when you’re ready.
+          </p>
           <div className="template-grid">
             {shown.map((entry) => {
               const category = AREAS.find((item) => item.id === entry.area)!
               const title = entry.title[locale]
               return (
                 <article className="template-card" data-area={entry.area} key={entry.id} aria-labelledby={`title-${entry.id}`}>
-                  <div className="template-card-top"><span className="template-category-mark" aria-hidden="true">{category.mark}</span><span>{category.label}</span></div>
+                  <div className="template-card-top">
+                    <span className="template-category-mark" aria-hidden="true">
+                      {category.mark}
+                    </span>
+                    <span>{category.label}</span>
+                  </div>
                   <h2 id={`title-${entry.id}`}>{title}</h2>
                   <p>{entry.description[locale]}</p>
-                  <div className="template-card-meta">{facts(entry).map((fact) => <span key={fact}>{fact}</span>)}</div>
-                  <div className="template-card-actions">
-                    <button type="button" className="action primary" aria-label={`Preview ${title}`} onClick={() => setSelected(entry)}>Preview <span aria-hidden="true">↗</span></button>
-                    <a className="action" href={editUrl(entry, locale)} aria-label={`Edit ${title} in playground`}>Use template <span aria-hidden="true">→</span></a>
+                  <div className="template-card-meta">
+                    {facts(entry).map((fact) => (
+                      <span key={fact}>{fact}</span>
+                    ))}
                   </div>
-                  <a className="template-download" href={entry.download} download={entry.schema.split('/').at(-1)} aria-label={`Download ${title} JSON`}>Download JSON</a>
+                  <div className="template-card-actions">
+                    <button type="button" className="action primary" aria-label={`Preview ${title}`} onClick={() => setSelected(entry)}>
+                      Preview <span aria-hidden="true">↗</span>
+                    </button>
+                    <a className="action" href={editUrl(entry, locale)} aria-label={`Edit ${title} in playground`}>
+                      Use template <span aria-hidden="true">→</span>
+                    </a>
+                  </div>
+                  <a className="template-download" href={entry.download} download={entry.schema.split('/').at(-1)} aria-label={`Download ${title} JSON`}>
+                    Download JSON
+                  </a>
                 </article>
               )
             })}
           </div>
-          {shown.length === 0 ? <div className="template-empty"><h2>No templates match your search.</h2><button type="button" className="action" onClick={() => { setQuery(''); setArea('all') }}>Clear filters</button></div> : null}
+          {shown.length === 0 ? (
+            <div className="template-empty">
+              <h2>No templates match your search.</h2>
+              <button
+                type="button"
+                className="action"
+                onClick={() => {
+                  setQuery('')
+                  setArea('all')
+                }}
+              >
+                Clear filters
+              </button>
+            </div>
+          ) : null}
         </section>
-        <section className="template-next"><div><p className="eyebrow">Your process, your form</p><h2>A useful beginning.<br />Room for your own rules.</h2></div><p>Every template includes editable questions, translations and conditional logic. Start with the closest fit, then adapt it in the visual builder or your code.<br /><a href="/docs/start/templates/">Read the template guide <span aria-hidden="true">→</span></a></p></section>
+        <section className="template-next">
+          <div>
+            <p className="eyebrow">Your process, your form</p>
+            <h2>
+              A useful beginning.
+              <br />
+              Room for your own rules.
+            </h2>
+          </div>
+          <p>
+            Every template includes editable questions, translations and conditional logic. Start with the closest fit, then adapt it in the visual builder or
+            your code.
+            <br />
+            <a href="/docs/start/templates/">
+              Read the template guide <span aria-hidden="true">→</span>
+            </a>
+          </p>
+        </section>
       </main>
       <SiteFooter />
       {selected === null ? null : <Preview entry={selected} locale={locale} onClose={() => setSelected(null)} />}
@@ -141,16 +221,22 @@ export function TemplateGallery() {
 function Preview({ entry, locale, onClose }: { entry: Template; locale: Locale; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [status, setStatus] = useState('')
-  const engine = useMemo(() => createFormEngine({
-    schema: entry.schemaDocument, locale,
-    capabilities: {
-      now: () => Date.now(), random: () => Math.random(),
-      today: () => {
-        const now = new Date()
-        return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-')
-      },
-    },
-  }), [entry, locale])
+  const engine = useMemo(
+    () =>
+      createFormEngine({
+        schema: entry.schemaDocument,
+        locale,
+        capabilities: {
+          now: () => Date.now(),
+          random: () => Math.random(),
+          today: () => {
+            const now = new Date()
+            return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-')
+          },
+        },
+      }),
+    [entry, locale],
+  )
 
   useEffect(() => {
     const element = dialog.current
@@ -166,8 +252,24 @@ function Preview({ entry, locale, onClose }: { entry: Template; locale: Locale; 
   }
 
   return (
-    <dialog ref={dialog} className="template-preview" aria-labelledby="preview-title" onCancel={(event) => { event.preventDefault(); closePreview() }}>
-      <div className="template-preview-header"><div><p className="eyebrow">Live preview</p><h2 id="preview-title">{entry.title[locale]}</h2></div><button type="button" autoFocus onClick={closePreview} aria-label="Close preview">✕</button></div>
+    <dialog
+      ref={dialog}
+      className="template-preview"
+      aria-labelledby="preview-title"
+      onCancel={(event) => {
+        event.preventDefault()
+        closePreview()
+      }}
+    >
+      <div className="template-preview-header">
+        <div>
+          <p className="eyebrow">Live preview</p>
+          <h2 id="preview-title">{entry.title[locale]}</h2>
+        </div>
+        <button type="button" autoFocus onClick={closePreview} aria-label="Close preview">
+          ✕
+        </button>
+      </div>
       <p className="template-preview-note">Try the questions and conditions. Answers stay in this tab.</p>
       {/* A real <form> around it for the native boundary: it keeps the radio
           groups to themselves and stops Enter navigating out of the dialog.
@@ -190,10 +292,21 @@ function Preview({ entry, locale, onClose }: { entry: Template; locale: Locale; 
             }
           />
         </FormancyProvider>
-        <div className="template-preview-controls"><a href={editUrl(entry, locale)}>Edit in playground <span aria-hidden="true">↗</span></a></div>
+        <div className="template-preview-controls">
+          <a href={editUrl(entry, locale)}>
+            Edit in playground <span aria-hidden="true">↗</span>
+          </a>
+        </div>
         <p role="status">{status}</p>
       </form>
-      <details className="template-adapt"><summary>What to adapt before use</summary><ul>{entry.adaptBeforeUse.map((note) => <li key={note}>{note}</li>)}</ul></details>
+      <details className="template-adapt">
+        <summary>What to adapt before use</summary>
+        <ul>
+          {entry.adaptBeforeUse.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </details>
     </dialog>
   )
 }

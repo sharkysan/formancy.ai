@@ -41,7 +41,7 @@ const form: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 const clock = fixedCapabilities({ nowMs: 0, today: '2026-10-09', random: 0.5 })
 
@@ -56,13 +56,7 @@ describe('the rules overview', () => {
   })
 
   test('and given the answers a preview holds, says what each rule does now and why', () => {
-    render(
-      <RulesOverview
-        session={createBuilderSession(form)}
-        answers={{ country: 'DE' }}
-        capabilities={clock}
-      />,
-    )
+    render(<RulesOverview session={createBuilderSession(form)} answers={{ country: 'DE' }} capabilities={clock} />)
 
     expect(screen.getByText('Hidden now.')).toBeTruthy()
     expect(screen.getByText('Country is Switzerland: no — it is Germany')).toBeTruthy()
@@ -72,9 +66,7 @@ describe('the rules overview', () => {
     const plain = { ...form, logic: { rules: [] } } as FormSchema
     render(<RulesOverview session={createBuilderSession(plain)} />)
 
-    expect(
-      screen.getByText('This form has no rules: every field always behaves the same way.'),
-    ).toBeTruthy()
+    expect(screen.getByText('This form has no rules: every field always behaves the same way.')).toBeTruthy()
   })
 })
 
@@ -109,9 +101,7 @@ describe('a rule in a repeater row', () => {
           cel: 'item.amount != null && item.amount >= 1000.0',
           editor: {
             join: 'all',
-            conditions: [
-              { field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' },
-            ],
+            conditions: [{ field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' }],
           },
         },
       ],
@@ -119,20 +109,12 @@ describe('a rule in a repeater row', () => {
   } as FormSchema
 
   const rowsSaid = (): string[] =>
-    [
-      ...document.querySelectorAll(
-        '[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p',
-      ),
-    ].map((line) => line.textContent ?? '')
+    [...document.querySelectorAll('[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p')].map(
+      (line) => line.textContent ?? '',
+    )
 
   test('says, row by row, what it does now and why', () => {
-    render(
-      <RulesOverview
-        session={createBuilderSession(rowForm)}
-        answers={{ recipients: [{ amount: 50 }, { amount: 1200 }] }}
-        capabilities={clock}
-      />,
-    )
+    render(<RulesOverview session={createBuilderSession(rowForm)} answers={{ recipients: [{ amount: 50 }, { amount: 1200 }] }} capabilities={clock} />)
 
     expect(rowsSaid()).toEqual(['Row 1 Not required now.', 'Row 2 Required now.'])
     expect(screen.getByText('Amount in this row is at least 1000: no — it is 50')).toBeTruthy()

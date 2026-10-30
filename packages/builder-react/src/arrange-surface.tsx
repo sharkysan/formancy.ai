@@ -69,12 +69,7 @@ function sitsSideBySide(element: HTMLElement): boolean {
   return part === 'layout-row' || part === 'layout-table'
 }
 
-export function FormancyArrangeSurface({
-  session,
-  layout,
-  enabled = false,
-  children,
-}: ArrangeSurfaceProps): ReactElement {
+export function FormancyArrangeSurface({ session, layout, enabled = false, children }: ArrangeSurfaceProps): ReactElement {
   const view = useBuilder(session)
   const surface = useRef<HTMLDivElement | null>(null)
   const [dragging, setDragging] = useState<readonly number[] | null>(null)
@@ -87,12 +82,7 @@ export function FormancyArrangeSurface({
    * asks it of everything drawn there, on every `dragover`.
    */
   const fieldNodes = useMemo(
-    () =>
-      new Map(
-        flattenLayout(view.document, layout, session.text).flatMap((row) =>
-          row.node.kind === 'field' ? [[row.node.path, row.path] as const] : [],
-        ),
-      ),
+    () => new Map(flattenLayout(view.document, layout, session.text).flatMap((row) => (row.node.kind === 'field' ? [[row.node.path, row.path] as const] : []))),
     [view.document, layout, session],
   )
 
@@ -215,8 +205,7 @@ export function FormancyArrangeSurface({
     // Between two children of what is under the pointer, the nearer child is aimed at;
     // anywhere else, what is under it is.
     const aimed =
-      gapNeighbour(over, drawnIn(node?.element ?? under), pointer) ??
-      (node === undefined ? undefined : { ...node, box: node.element.getBoundingClientRect() })
+      gapNeighbour(over, drawnIn(node?.element ?? under), pointer) ?? (node === undefined ? undefined : { ...node, box: node.element.getBoundingClientRect() })
     if (aimed === undefined) return undefined
 
     const drop = arrangeDrop({
@@ -264,12 +253,7 @@ export function FormancyArrangeSurface({
         // row or a table the drop lands beside the field, so the line goes down
         // its side. That was left to the stylesheet to infer, and a rule of equal
         // weight drew it across the top instead.
-        target.element.dataset['drop'] =
-          target.kind === 'wrap'
-            ? `wrap-${target.side}`
-            : target.axis === 'inline'
-              ? `inline-${target.edge}`
-              : target.edge
+        target.element.dataset['drop'] = target.kind === 'wrap' ? `wrap-${target.side}` : target.axis === 'inline' ? `inline-${target.edge}` : target.edge
       }}
       onDragLeave={() => clearIndicators()}
       onDrop={(event) => {

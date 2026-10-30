@@ -232,18 +232,11 @@ describe('filesToClaim', () => {
   test('refuses a file whose bytes never arrived', async () => {
     await storage.insertFile(file({ id: 'a', state: 'offered' }))
 
-    expect(
-      (await filesToClaim(storage, { schema, formId: 'form1', data: { evidence: [{ id: 'a' }] } }))
-        .ok,
-    ).toBe(false)
+    expect((await filesToClaim(storage, { schema, formId: 'form1', data: { evidence: [{ id: 'a' }] } })).ok).toBe(false)
   })
 
   test('a submission with no files claims nothing and is fine', async () => {
-    expect(
-      (await filesToClaim(storage, { schema, formId: 'form1', data: { reference: 'x' } })).ok,
-    ).toBe(
-      true,
-    )
+    expect((await filesToClaim(storage, { schema, formId: 'form1', data: { reference: 'x' } })).ok).toBe(true)
   })
 
   test('ignores values that merely look like file references', async () => {
@@ -321,9 +314,7 @@ describe('receiving a file', () => {
 
   test('settling a claimed row is refused, and it keeps its submission', async () => {
     // A lease naming this exact instant, so only the state can be what refuses it.
-    await storage.insertFile(
-      file({ id: 'c', state: 'claimed', submissionId: 's1', receivingUntil: at(2) }),
-    )
+    await storage.insertFile(file({ id: 'c', state: 'claimed', submissionId: 's1', receivingUntil: at(2) }))
 
     // The defect: the write that ended an upload put the row back to `stored` with no
     // submission, and the collector deletes an unclaimed file after a day.
@@ -357,8 +348,7 @@ describe('collectAbandonedFiles', () => {
     storage = createMemoryStorage()
   })
 
-  const hoursAgo = (hours: number): string =>
-    new Date(NOW.getTime() - hours * 3_600_000).toISOString()
+  const hoursAgo = (hours: number): string => new Date(NOW.getTime() - hours * 3_600_000).toISOString()
 
   test('collects a file nobody ever claimed', async () => {
     await storage.insertFile(file({ id: 'a', createdAt: hoursAgo(30) }))
@@ -375,9 +365,7 @@ describe('collectAbandonedFiles', () => {
   })
 
   test('never collects a claimed file, however old', async () => {
-    await storage.insertFile(
-      file({ id: 'a', createdAt: hoursAgo(10_000), state: 'claimed', submissionId: 's1' }),
-    )
+    await storage.insertFile(file({ id: 'a', createdAt: hoursAgo(10_000), state: 'claimed', submissionId: 's1' }))
 
     // A claimed file belongs to a submission, and a submission is evidence
     // somebody sent something. Age is not a reason to delete it.

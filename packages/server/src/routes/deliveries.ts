@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { healthOf, replayDelivery } from '@formancy/server-core'
 import type { AuditDraft, ServerDeps } from '@formancy/server-core'
 
@@ -17,7 +17,7 @@ export async function deliveryRoutes(
     audit,
   }: {
     deps: ServerDeps
-    requires: (action: 'form.publish') => preHandlerHookHandler
+    requires: (action: 'form.publish') => preHandlerAsyncHookHandler
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
   },
 ): Promise<void> {
@@ -55,34 +55,26 @@ export async function deliveryRoutes(
     })
   })
 
-  app.post(
-    '/deliveries/:id/replay',
-    { preHandler: requires('form.publish') },
-    async (request, reply) => {
-      const { id } = request.params as { id: string }
-      const outcome = await replayDelivery(
-        { storage: deps.storage, now: () => new Date(deps.nowIso()) },
-        id,
-      )
+  app.post('/deliveries/:id/replay', { preHandler: requires('form.publish') }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const outcome = await replayDelivery({ storage: deps.storage, now: () => new Date(deps.nowIso()) }, id)
 
-      if (!outcome.ok) {
-        return outcome.kind === 'unknown'
-          ? reply.code(404).send({ error: 'unknown_delivery' })
-          : reply.code(409).send({
-              error: 'not_dead',
-              state: outcome.state,
-              message:
-                'Only a dead delivery can be replayed. A pending one is already queued, and a delivered one would be sent twice.',
-            })
-      }
+    if (!outcome.ok) {
+      return outcome.kind === 'unknown'
+        ? reply.code(404).send({ error: 'unknown_delivery' })
+        : reply.code(409).send({
+            error: 'not_dead',
+            state: outcome.state,
+            message: 'Only a dead delivery can be replayed. A pending one is already queued, and a delivered one would be sent twice.',
+          })
+    }
 
-      // Recorded: it sends data to a third party on a person's say-so.
-      await audit(request, {
-        action: 'delivery.replayed',
-        subject: id,
-        detail: { webhookId: outcome.delivery.webhookId },
-      })
-      return reply.code(202).send({ id, state: outcome.delivery.state })
-    },
-  )
+    // Recorded: it sends data to a third party on a person's say-so.
+    await audit(request, {
+      action: 'delivery.replayed',
+      subject: id,
+      detail: { webhookId: outcome.delivery.webhookId },
+    })
+    return reply.code(202).send({ id, state: outcome.delivery.state })
+  })
 }

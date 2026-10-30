@@ -49,9 +49,7 @@ describe('structural limits', () => {
   })
 
   test('allows comprehension nesting up to the limit', () => {
-    expect(parse('a.all(x, b.all(y, x == y))', { limits: { maxComprehensionDepth: 2 } }).ok).toBe(
-      true,
-    )
+    expect(parse('a.all(x, b.all(y, x == y))', { limits: { maxComprehensionDepth: 2 } }).ok).toBe(true)
   })
 
   test('charges CHAINED comprehensions a plus b, not a times b', () => {

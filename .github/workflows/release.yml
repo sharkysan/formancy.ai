@@ -93,6 +93,11 @@ jobs:
       # against this tree.
       - run: pnpm build
       - run: pnpm typecheck
+      # The lint rules and the format, as in CI's verify (0225): nothing
+      # requires a tag's commit to have passed CI, so a tree that breaks either
+      # stops here rather than publishing the rules it breaks.
+      - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm test
       - run: pnpm check:pkg
 

@@ -50,8 +50,7 @@ export type LayoutAddition =
 export function layoutAdditions(session: BuilderSession, layout: string): LayoutAddition[] {
   const { text } = session
   const document = session.document()
-  const locked =
-    document.specVersion === '1' && !(SPEC_1_LAYOUT_KINDS as readonly string[]).includes('qrcode')
+  const locked = document.specVersion === '1' && !(SPEC_1_LAYOUT_KINDS as readonly string[]).includes('qrcode')
 
   return [
     ...LAYOUT_CONTAINERS.map((kind): LayoutAddition => ({
@@ -102,10 +101,7 @@ export function codeAnswers(session: BuilderSession): Array<{ path: string; labe
  */
 export function layoutNodeFor(
   session: BuilderSession,
-  addition:
-    | { what: 'container'; kind: string }
-    | { what: 'field'; path: string }
-    | { what: 'code'; path: string },
+  addition: { what: 'container'; kind: string } | { what: 'field'; path: string } | { what: 'code'; path: string },
 ): LayoutNode {
   if (addition.what === 'field') return { kind: 'field', path: addition.path }
   if (addition.what === 'code') {
@@ -136,68 +132,40 @@ export function nameOfAddition(session: BuilderSession, node: LayoutNode): strin
  * wrap a container together with something inside it, and not offering a choice
  * beats offering it and explaining afterwards.
  */
-export function wrapCandidates(
-  rows: readonly LayoutTreeNode[],
-  subject: LayoutTreeNode,
-): LayoutTreeNode[] {
+export function wrapCandidates(rows: readonly LayoutTreeNode[], subject: LayoutTreeNode): LayoutTreeNode[] {
   return rows.filter(
-    (candidate) =>
-      !samePath(candidate.path, subject.path) &&
-      !encloses(subject.path, candidate.path) &&
-      !encloses(candidate.path, subject.path),
+    (candidate) => !samePath(candidate.path, subject.path) && !encloses(subject.path, candidate.path) && !encloses(candidate.path, subject.path),
   )
 }
 
 export function addLayoutAndSay(session: BuilderSession, name = 'web'): string {
   const outcome = session.addLayout(name)
-  return outcome.ok
-    ? session.text('said.layoutAdded', { name })
-    : session.text('said.cannotAdd', { reason: outcome.message })
+  return outcome.ok ? session.text('said.layoutAdded', { name }) : session.text('said.cannotAdd', { reason: outcome.message })
 }
 
-export function insertLayoutAndSay(
-  session: BuilderSession,
-  node: LayoutNode,
-  target: { location: LayoutLocation; label: string },
-): string {
+export function insertLayoutAndSay(session: BuilderSession, node: LayoutNode, target: { location: LayoutLocation; label: string }): string {
   const what = nameOfAddition(session, node)
   const outcome = session.insertLayoutNode(target.location, node)
-  return outcome.ok
-    ? session.text('said.added', { what, where: target.label })
-    : session.text('said.cannotAdd', { reason: outcome.message })
+  return outcome.ok ? session.text('said.added', { what, where: target.label }) : session.text('said.cannotAdd', { reason: outcome.message })
 }
 
-export function moveLayoutAndSay(
-  session: BuilderSession,
-  address: LayoutAddress,
-  target: { location: LayoutLocation; label: string },
-): string {
+export function moveLayoutAndSay(session: BuilderSession, address: LayoutAddress, target: { location: LayoutLocation; label: string }): string {
   const name = nodeName(session, address)
   const outcome = session.moveLayoutNode(address, target.location)
-  return outcome.ok
-    ? session.text('said.moved', { name, where: target.label })
-    : session.text('said.cannotMove', { reason: outcome.message })
+  return outcome.ok ? session.text('said.moved', { name, where: target.label }) : session.text('said.cannotMove', { reason: outcome.message })
 }
 
 /** A drop, named by the node that moved. The React pane said only "Moved." */
-export function dropLayoutAndSay(
-  session: BuilderSession,
-  address: LayoutAddress,
-  location: LayoutLocation,
-): string {
+export function dropLayoutAndSay(session: BuilderSession, address: LayoutAddress, location: LayoutLocation): string {
   const name = nodeName(session, address)
   const outcome = session.moveLayoutNode(address, location)
-  return outcome.ok
-    ? session.text('said.dropped', { name })
-    : session.text('said.cannotMove', { reason: outcome.message })
+  return outcome.ok ? session.text('said.dropped', { name }) : session.text('said.cannotMove', { reason: outcome.message })
 }
 
 export function unwrapLayoutAndSay(session: BuilderSession, address: LayoutAddress): string {
   const name = nodeName(session, address)
   const outcome = session.unwrapLayoutNode(address)
-  return outcome.ok
-    ? session.text('said.layoutUnwrapped', { name })
-    : session.text('said.cannotUnwrap', { name, reason: outcome.message })
+  return outcome.ok ? session.text('said.layoutUnwrapped', { name }) : session.text('said.cannotUnwrap', { name, reason: outcome.message })
 }
 
 /**
@@ -207,32 +175,19 @@ export function unwrapLayoutAndSay(session: BuilderSession, address: LayoutAddre
 export function removeLayoutAndSay(session: BuilderSession, address: LayoutAddress): string {
   const name = nodeName(session, address)
   const outcome = session.removeLayoutNode(address)
-  return outcome.ok
-    ? session.text('said.layoutRemoved', { name })
-    : session.text('said.cannotRemove', { name, reason: outcome.message })
+  return outcome.ok ? session.text('said.layoutRemoved', { name }) : session.text('said.cannotRemove', { name, reason: outcome.message })
 }
 
 /**
  * Put two items side by side in a new row, the first one chosen first. `at` is
  * where the row goes when it is not where the first of them was.
  */
-export function wrapAndSay(
-  session: BuilderSession,
-  layout: string,
-  first: readonly number[],
-  second: readonly number[],
-  at?: readonly number[],
-): string {
+export function wrapAndSay(session: BuilderSession, layout: string, first: readonly number[], second: readonly number[], at?: readonly number[]): string {
   const one = nodeName(session, { layout, path: first })
   const other = nodeName(session, { layout, path: second })
   const row: LayoutNode = { kind: 'row', children: [] }
-  const outcome =
-    at === undefined
-      ? session.wrapLayoutNodes(layout, [first, second], row)
-      : session.wrapLayoutNodes(layout, [first, second], row, at)
-  return outcome.ok
-    ? session.text('said.wrapped', { first: one, second: other })
-    : session.text('said.cannotWrap', { reason: outcome.message })
+  const outcome = at === undefined ? session.wrapLayoutNodes(layout, [first, second], row) : session.wrapLayoutNodes(layout, [first, second], row, at)
+  return outcome.ok ? session.text('said.wrapped', { first: one, second: other }) : session.text('said.cannotWrap', { reason: outcome.message })
 }
 
 /** What the arrangement pane's legend lists, in the session's language. */
@@ -250,9 +205,7 @@ export function layoutKeyHelp(session: BuilderSession): ReadonlyArray<readonly [
 }
 
 function nodeName(session: BuilderSession, address: LayoutAddress): string {
-  const row = flattenLayout(session.document(), address.layout, session.text).find((candidate) =>
-    samePath(candidate.path, address.path),
-  )
+  const row = flattenLayout(session.document(), address.layout, session.text).find((candidate) => samePath(candidate.path, address.path))
   return row?.name ?? address.path.join('.')
 }
 
@@ -275,12 +228,7 @@ function encloses(outer: readonly number[], inner: readonly number[]): boolean {
  * which is not what anybody aimed at. The sentence names both items, where the
  * surfaces said "Put them side by side".
  */
-export function arrangeDropAndSay(
-  session: BuilderSession,
-  layout: string,
-  from: readonly number[],
-  drop: ArrangeDrop,
-): string {
+export function arrangeDropAndSay(session: BuilderSession, layout: string, from: readonly number[], drop: ArrangeDrop): string {
   if (drop.kind === 'wrap') {
     const [first, second] = drop.side === 'start' ? [from, drop.over] : [drop.over, from]
     return wrapAndSay(session, layout, first, second, drop.over)
@@ -289,7 +237,5 @@ export function arrangeDropAndSay(
   // which is what makes the sentence true.
   const where = describeLayoutTarget(session.document(), drop.location, from, session.text)
   const outcome = session.moveLayoutNode({ layout, path: from }, drop.location)
-  return outcome.ok
-    ? session.text('said.movedTo', { where })
-    : session.text('said.cannotMove', { reason: outcome.message })
+  return outcome.ok ? session.text('said.movedTo', { where }) : session.text('said.cannotMove', { reason: outcome.message })
 }

@@ -21,15 +21,7 @@ import { describe, expect, test } from 'vitest'
  * in a row — is a sentence written into code, and it is named here
  * ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
  */
-const here = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  '..',
-  'packages',
-  'builder-core',
-  'src',
-)
+const here = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'packages', 'builder-core', 'src')
 
 /**
  * The files whose sentences are not the builder's to put in the catalogue, with
@@ -59,18 +51,10 @@ const SPEAKS_FOR_ITSELF: ReadonlyArray<{ file: string; why: string }> = [
  * off a file name a translator might choose differently.
  */
 function isCatalogue(file: string): boolean {
-  const source = ts.createSourceFile(
-    file,
-    readFileSync(join(here, file), 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-  )
+  const source = ts.createSourceFile(file, readFileSync(join(here, file), 'utf8'), ts.ScriptTarget.Latest, true)
   let found = false
   const visit = (node: ts.Node): void => {
-    if (
-      ts.isSatisfiesExpression(node) &&
-      /^Record<\w+, Message>$/.test(node.type.getText(source))
-    ) {
+    if (ts.isSatisfiesExpression(node) && /^Record<\w+, Message>$/.test(node.type.getText(source))) {
       found = true
     }
     // The spec's words beside the schema (0121), and the validator's sentences by
@@ -90,23 +74,13 @@ const TRANSLATION_TYPES = new Set(['SchemaWords', 'SchemaErrorSentences'])
 const SENTENCE = /[A-Za-z]{2,}[,;:]?\s+[A-Za-z]{2,}[,;:]?\s+[A-Za-z]{2,}/
 
 function sentencesIn(file: string): string[] {
-  const source = ts.createSourceFile(
-    file,
-    readFileSync(join(here, file), 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-  )
+  const source = ts.createSourceFile(file, readFileSync(join(here, file), 'utf8'), ts.ScriptTarget.Latest, true)
   const found: string[] = []
   const visit = (node: ts.Node): void => {
     // A thrown Error is for whoever called this package wrongly — a broken
     // invariant no correct caller reaches — not for the person building, and the
     // builders never show one. Skipped by where it stands, not by what it says.
-    if (
-      ts.isNewExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'Error'
-    )
-      return
+    if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'Error') return
     const pieces: string[] = []
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) pieces.push(node.text)
     if (ts.isTemplateExpression(node)) {
@@ -126,9 +100,7 @@ function sentencesIn(file: string): string[] {
 
 describe('a sentence this package says to a person', () => {
   const exempt = new Set(SPEAKS_FOR_ITSELF.map((entry) => entry.file))
-  const sources = readdirSync(here).filter(
-    (name: string) => name.endsWith('.ts') && !name.endsWith('.test.ts'),
-  )
+  const sources = readdirSync(here).filter((name: string) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
   const catalogues = sources.filter(isCatalogue)
   const files = sources.filter((name) => !exempt.has(name) && !catalogues.includes(name))
 

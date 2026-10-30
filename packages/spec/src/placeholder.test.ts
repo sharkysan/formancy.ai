@@ -38,8 +38,6 @@ describe('a placeholder', () => {
   })
 
   test('in a version 4 document is refused, naming the property', () => {
-    expect(errorsOf(formWith({ placeholder: '079 123 45 67' }, '4'))).toMatchObject([
-      { path: '/model/fields/0/placeholder', code: 'version.property' },
-    ])
+    expect(errorsOf(formWith({ placeholder: '079 123 45 67' }, '4'))).toMatchObject([{ path: '/model/fields/0/placeholder', code: 'version.property' }])
   })
 })

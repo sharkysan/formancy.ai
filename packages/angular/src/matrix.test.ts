@@ -60,10 +60,7 @@ describe('the matrix control', () => {
 
     for (const row of ['Taste', 'Delivery']) {
       const group = within(matrix.getByRole('group', { name: row }))
-      expect(group.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual([
-        'poor',
-        'great',
-      ])
+      expect(group.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual(['poor', 'great'])
       expect(group.getByRole('radio', { name: 'Great' })).toBeTruthy()
     }
   })
@@ -79,7 +76,7 @@ describe('the matrix control', () => {
     await settle()
 
     expect(engine.value()).toEqual({ rating: { taste: 'great', delivery: 'poor' } })
-    expect((taste.getByRole('radio', { name: 'Great' }) as HTMLInputElement).checked).toBe(true)
+    expect(taste.getByRole<HTMLInputElement>('radio', { name: 'Great' }).checked).toBe(true)
     const names = new Set(matrix.getAllByRole('radio').map((radio) => radio.getAttribute('name')))
     expect(names.size).toBe(2)
   })

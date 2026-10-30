@@ -152,9 +152,7 @@ describe('drafting', () => {
     const user = userEvent.setup()
     const changed = vi.fn()
     const { ask } = model(drafting(HOLDS, FAILS))
-    render(
-      <ScenarioPane session={createBuilderSession(form)} scenarios={[EXISTING]} onChange={changed} ask={ask} />,
-    )
+    render(<ScenarioPane session={createBuilderSession(form)} scenarios={[EXISTING]} onChange={changed} ask={ask} />)
 
     await draft(user)
     expect(screen.getAllByRole('button', { name: /^Keep / })).toHaveLength(2)
@@ -224,9 +222,7 @@ describe('drafting', () => {
      */
     const user = userEvent.setup()
     const { ask } = model(drafting(one.example))
-    render(
-      <Host session={createBuilderSession(one.document)} ask={ask} initialValue={one.initialValue} mode={one.mode} />,
-    )
+    render(<Host session={createBuilderSession(one.document)} ask={ask} initialValue={one.initialValue} mode={one.mode} />)
 
     const list = await draft(user)
     const before = within(list)
@@ -266,12 +262,7 @@ describe('drafting', () => {
     const user = userEvent.setup()
     const reason = 'No example can check a colour.'
     const declined = render(
-      <ScenarioPane
-        session={createBuilderSession(form)}
-        scenarios={[]}
-        onChange={() => undefined}
-        ask={model(JSON.stringify({ declined: reason })).ask}
-      />,
+      <ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={model(JSON.stringify({ declined: reason })).ask} />,
     )
     await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'It should look blue.')
     await user.click(screen.getByRole('button', { name: 'Draft examples' }))
@@ -279,15 +270,7 @@ describe('drafting', () => {
     declined.unmount()
 
     const prose = 'Sure! Here are some examples.'
-    render(
-      <ScenarioPane
-        session={createBuilderSession(form)}
-        scenarios={[]}
-        onChange={() => undefined}
-        ask={model(prose).ask}
-        attempts={1}
-      />,
-    )
+    render(<ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={model(prose).ask} attempts={1} />)
     await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'anything')
     await user.click(screen.getByRole('button', { name: 'Draft examples' }))
     expect(await screen.findByText(prose)).toBeTruthy()
@@ -317,9 +300,7 @@ describe('drafting', () => {
       turn.onCancel(cancelled)
       return new Promise<string>(() => undefined)
     }
-    const view = render(
-      <ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={ask} />,
-    )
+    const view = render(<ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={ask} />)
     await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'anything')
     await user.click(screen.getByRole('button', { name: 'Draft examples' }))
     await screen.findByRole('button', { name: 'Stop drafting' })
@@ -335,24 +316,10 @@ describe('drafting', () => {
     // keeping into the new form's list, and leave a relay holding a turn about a form
     // nobody is looking at.
     const user = userEvent.setup()
-    const view = render(
-      <ScenarioPane
-        session={createBuilderSession(form)}
-        scenarios={[]}
-        onChange={() => undefined}
-        ask={model(drafting(HOLDS)).ask}
-      />,
-    )
+    const view = render(<ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={model(drafting(HOLDS)).ask} />)
     await draft(user)
 
-    view.rerender(
-      <ScenarioPane
-        session={createBuilderSession(form)}
-        scenarios={[]}
-        onChange={() => undefined}
-        ask={model(drafting(HOLDS)).ask}
-      />,
-    )
+    view.rerender(<ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={model(drafting(HOLDS)).ask} />)
     expect(screen.queryByRole('list', { name: 'Drafted examples' })).toBeNull()
 
     const cancelled = vi.fn()
@@ -360,14 +327,10 @@ describe('drafting', () => {
       turn.onCancel(cancelled)
       return new Promise<string>(() => undefined)
     }
-    view.rerender(
-      <ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={waiting} />,
-    )
+    view.rerender(<ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={waiting} />)
     await user.click(screen.getByRole('button', { name: 'Draft examples' }))
     await screen.findByRole('button', { name: 'Stop drafting' })
-    view.rerender(
-      <ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={waiting} />,
-    )
+    view.rerender(<ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={waiting} />)
 
     expect(cancelled).toHaveBeenCalledTimes(1)
   })
@@ -385,9 +348,7 @@ describe('drafting', () => {
     answer(drafting(HOLDS))
 
     const statuses = await screen.findAllByRole('status')
-    await waitFor(() =>
-      expect(statuses.some((status) => status.textContent === 'Stopped. Nothing was drafted.')).toBe(true),
-    )
+    await waitFor(() => expect(statuses.some((status) => status.textContent === 'Stopped. Nothing was drafted.')).toBe(true))
     expect(screen.queryByRole('list', { name: 'Drafted examples' })).toBeNull()
     expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Draft examples with a model' }))
   })

@@ -43,26 +43,34 @@ describe('a rule’s message', () => {
   // two sentences for one code and no saying which the person reads.
   test('is refused where another rule on the field has the same code', () => {
     expect(
-      errorsOf(formWith([{ code: 'adult', message: 'Too young.' }, { code: 'adult', cel: 'age < 120' }])),
+      errorsOf(
+        formWith([
+          { code: 'adult', message: 'Too young.' },
+          { code: 'adult', cel: 'age < 120' },
+        ]),
+      ),
     ).toMatchObject([{ path: '/logic/rules/1/code', code: 'rule.codeShared' }])
     // On another field, the same code is another field's word.
     expect(
       errorsOf({
         ...formWith([{ code: 'adult', message: 'Too young.' }]),
-        model: { fields: [{ key: 'age', type: 'number', label: 'Age' }, { key: 'other', type: 'number', label: 'Other' }] },
+        model: {
+          fields: [
+            { key: 'age', type: 'number', label: 'Age' },
+            { key: 'other', type: 'number', label: 'Other' },
+          ],
+        },
         logic: {
           rules: [
             { target: 'age', kind: 'validate', cel: 'age >= 18', code: 'adult', message: 'Too young.' },
             { target: 'other', kind: 'validate', cel: 'other >= 18', code: 'adult', message: 'Too young.' },
           ],
         },
-      } as FormSchema),
+      }),
     ).toEqual([])
   })
 
   test('in a version 4 document is refused, naming the property', () => {
-    expect(errorsOf(formWith([{ code: 'adult', message: 'Too young.' }], '4'))).toMatchObject([
-      { path: '/logic/rules/0/message', code: 'version.property' },
-    ])
+    expect(errorsOf(formWith([{ code: 'adult', message: 'Too young.' }], '4'))).toMatchObject([{ path: '/logic/rules/0/message', code: 'version.property' }])
   })
 })

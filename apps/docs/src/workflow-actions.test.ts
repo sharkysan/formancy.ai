@@ -40,8 +40,7 @@ function steps(): Step[] {
   return found
 }
 
-const firstParty = (action: string): boolean =>
-  action.startsWith('./') || action.startsWith('docker://') || /^(actions|github)\//.test(action)
+const firstParty = (action: string): boolean => action.startsWith('./') || action.startsWith('docker://') || /^(actions|github)\//.test(action)
 
 describe('the actions the workflows run', () => {
   test('are found at all, so the rule below cannot pass by reading nothing', () => {

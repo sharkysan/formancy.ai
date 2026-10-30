@@ -79,16 +79,7 @@ export interface ScenarioPaneProps {
   drafting?: DraftRun | undefined
 }
 
-export function ScenarioPane({
-  session,
-  scenarios,
-  onChange,
-  initialValue,
-  mode,
-  ask,
-  attempts,
-  drafting,
-}: ScenarioPaneProps): ReactElement | null {
+export function ScenarioPane({ session, scenarios, onChange, initialValue, mode, ask, attempts, drafting }: ScenarioPaneProps): ReactElement | null {
   const revision = useSyncExternalStore(
     (listener) => session.subscribe(listener),
     () => session.revision(),
@@ -105,7 +96,7 @@ export function ScenarioPane({
     // `revision` is the dependency that means "the document changed". Reading
     // it here rather than the document itself is what makes the rerun happen
     // on an edit and not on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revision is how the memo learns the document changed; the rule sees it unread
     [session, scenarios, initialValue, mode, revision],
   )
 
@@ -141,11 +132,7 @@ export function ScenarioPane({
       ) : (
         <ul data-formancy-part="scenario-list">
           {results.map((result) => (
-            <li
-              key={result.name}
-              data-passed={result.passed}
-              data-regressed={change.regressions.includes(result.name)}
-            >
+            <li key={result.name} data-passed={result.passed} data-regressed={change.regressions.includes(result.name)}>
               <strong>{result.name}</strong>
               {result.failures.length === 0 ? null : (
                 <ul>
@@ -159,10 +146,7 @@ export function ScenarioPane({
                 </ul>
               )}
               {onChange === undefined ? null : (
-                <button
-                  type="button"
-                  onClick={() => onChange(scenarios.filter((one) => one.name !== result.name))}
-                >
+                <button type="button" onClick={() => onChange(scenarios.filter((one) => one.name !== result.name))}>
                   {session.text('scenarios.remove', { name: result.name })}
                 </button>
               )}

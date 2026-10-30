@@ -15,32 +15,22 @@
  */
 export const SCHEMA_ERRORS = {
   // -------------------------------------------------------------- fields
-  'repeater.nested':
-    'A repeater cannot sit inside another repeater. Move it out of the outer repeater, or make it a group.',
-  'page.nested':
-    'A page can only sit at the top level of a form. Move it out of "{key}", or make it a group.',
+  'repeater.nested': 'A repeater cannot sit inside another repeater. Move it out of the outer repeater, or make it a group.',
+  'page.nested': 'A page can only sit at the top level of a form. Move it out of "{key}", or make it a group.',
   'grid.rowNotFlat':
     'A grid\'s rows are flat, and "{key}" holds fields of its own. Give each of those fields a column of its own, or take the grid off this repeater and its rows will be stacked.',
-  'grid.columnUnknown':
-    'No field of this grid has the key "{field}", so the column would show nothing. Name one of its own fields.',
+  'grid.columnUnknown': 'No field of this grid has the key "{field}", so the column would show nothing. Name one of its own fields.',
   'grid.columnTwice': 'Two columns both show "{field}". One answer cannot fill two columns.',
-  'bounds.crossed':
-    'The earliest allowed value "{earliest}" is after the latest allowed "{latest}", so no answer could be accepted. Swap them, or remove one.',
-  'key.taken':
-    'Another field already uses the key "{key}". A key identifies one answer, so two fields cannot share one.',
-  'key.reserved':
-    '"{key}" is reserved: it is how a repeater row carries its identity, so no field can be called that.',
-  'key.unstorable':
-    '"{key}" cannot name an answer: every JavaScript object already has it, so an answer stored under it would be lost. Choose another name.',
-  'rename.self':
-    'This field says it was renamed from itself. Drop "renamedFrom", or set it to the key this field used to have.',
+  'bounds.crossed': 'The earliest allowed value "{earliest}" is after the latest allowed "{latest}", so no answer could be accepted. Swap them, or remove one.',
+  'key.taken': 'Another field already uses the key "{key}". A key identifies one answer, so two fields cannot share one.',
+  'key.reserved': '"{key}" is reserved: it is how a repeater row carries its identity, so no field can be called that.',
+  'key.unstorable': '"{key}" cannot name an answer: every JavaScript object already has it, so an answer stored under it would be lost. Choose another name.',
+  'rename.self': 'This field says it was renamed from itself. Drop "renamedFrom", or set it to the key this field used to have.',
   'rename.keyInUse':
     'The key "{key}" is still in use by a field in this form, so this is a copy rather than a rename. Two fields cannot claim the same answers.',
-  'rename.claimed':
-    'Another field already says it was renamed from "{key}". Old answers can only move to one place.',
+  'rename.claimed': 'Another field already says it was renamed from "{key}". Old answers can only move to one place.',
   'pattern.invalid': 'This is not a valid regular expression: {reason}.',
-  'option.imageInDropdown':
-    'A dropdown cannot show a picture, so this image would never be seen. Make the field a radio group, or remove the image.',
+  'option.imageInDropdown': 'A dropdown cannot show a picture, so this image would never be seen. Make the field a radio group, or remove the image.',
   'option.imageInChips':
     'A tag picker shows its options as chips, which cannot show a picture, so this image would never be seen. Take the tag picker off, or remove the image.',
   'option.imageNotDrawn':
@@ -53,49 +43,38 @@ export const SCHEMA_ERRORS = {
     'Two columns of this matrix share the value "{value}". A matrix stores the column chosen, so it could not say which of the two was — give each column a value of its own.',
   'option.exclusiveNotAList':
     'Only an option of a list of ticks can be chosen on its own: in a radio group or a dropdown every option already is, and a ranking or a matrix uses them all. Remove "exclusive", or make the field a list of ticks.',
-  'mask.noPositions':
-    'This mask has nowhere to type, so the field could take no answer. Use 9 for a digit, a for a letter or * for either.',
+  'mask.noPositions': 'This mask has nowhere to type, so the field could take no answer. Use 9 for a digit, a for a letter or * for either.',
 
   // -------------------------------------------------------------- logic
-  'rule.skipNoPages':
-    'A skip rule walks past a page, and this form has no pages. Give it a "page" field first, or remove the rule.',
+  'rule.skipNoPages': 'A skip rule walks past a page, and this form has no pages. Give it a "page" field first, or remove the rule.',
   'rule.skipNotAPage':
     '"{target}" is not a page. A skip rule names the key of a page — {pages} — rather than a data path, because a page carries no answer of its own.',
-  'rule.unknownTarget':
-    'No field has the data path "{target}". A rule can only apply to a field the model defines.',
+  'rule.unknownTarget': 'No field has the data path "{target}". A rule can only apply to a field the model defines.',
   'rule.runsOn':
     'Only a validate or check rule can choose where it runs. A {kind} rule that behaved differently in the browser and on the server would leave the server unable to check what the browser did.',
-  'rule.duplicate':
-    '"{target}" already has a {kind} rule. A field can carry one rule per kind, because two would have no defined winner.',
+  'rule.duplicate': '"{target}" already has a {kind} rule. A field can carry one rule per kind, because two would have no defined winner.',
   'rule.codeShared':
     'Another rule on "{target}" already reports "{code}", and one of them has a message. One code on a field is said one way, so give this rule a code of its own.',
 
   // ------------------------------------------------------- translations
-  'i18n.noDefaultCatalogue':
-    'There is no "{locale}" catalogue, so the language everything falls back to has no words in it.',
+  'i18n.noDefaultCatalogue': 'There is no "{locale}" catalogue, so the language everything falls back to has no words in it.',
   'i18n.noSection': '"{id}" refers to a translation, but this form has no i18n section.',
   'i18n.unknownMessage': 'No message called "{id}" in the "{locale}" catalogue.',
 
   // ----------------------------------------------------------- layouts
-  'layout.nameTaken':
-    'Another layout is already called "{name}". A layout is asked for by name, so two cannot share one.',
-  'layout.spanOutsideTable':
-    '"span" says how many of a table\'s columns to take, and this node is not in a table. Put it in a table node, or remove the span.',
-  'layout.spanTooWide':
-    'This spans {span} columns in a table that has {columns}. Use "all" for the full width, so it stays right if the column count changes.',
-  'layout.codeUnknownPath':
-    'No field has the data path "{path}", so this code would encode nothing.',
+  'layout.nameTaken': 'Another layout is already called "{name}". A layout is asked for by name, so two cannot share one.',
+  'layout.spanOutsideTable': '"span" says how many of a table\'s columns to take, and this node is not in a table. Put it in a table node, or remove the span.',
+  'layout.spanTooWide': 'This spans {span} columns in a table that has {columns}. Use "all" for the full width, so it stays right if the column count changes.',
+  'layout.codeUnknownPath': 'No field has the data path "{path}", so this code would encode nothing.',
   'layout.codeNeedsLabel':
     'This code needs a label saying what it is. The picture cannot be read aloud and the value under it is a bare string, so the label is the only thing a screen reader has to go on.',
   'layout.unknownPath': 'No field has the data path "{path}", so this layout places nothing here.',
-  'layout.placedTwice':
-    '"{path}" is already placed in the "{layout}" layout. A field has one place in an arrangement.',
+  'layout.placedTwice': '"{path}" is already placed in the "{layout}" layout. A field has one place in an arrangement.',
   'layout.placedInGroup':
     '"{path}" is in the group "{group}", which the "{layout}" layout places whole. A field has one place in an arrangement: place the group or its fields, not both.',
   'layout.tabNotSection':
     'A tabs node holds sections, one per tab, and this one holds a "{kind}". Wrap it in a section and give the section a label — that label is the tab\'s name.',
-  'layout.tabUnnamed':
-    'This tab has no name, so nobody can tell what is behind it. Give the section a label.',
+  'layout.tabUnnamed': 'This tab has no name, so nobody can tell what is behind it. Give the section a label.',
   'layout.tabsEmpty': 'A tabs node with no tabs shows nothing at all.',
   'layout.columnsWhole': "A table's column count has to be a whole number.",
 
@@ -138,10 +117,8 @@ export const SCHEMA_ERRORS = {
   'shape.unknownProperty': 'Unknown property "{property}". Check the spelling, or remove it.',
   'shape.const': 'Must be {value}.',
   'shape.notOneOf': '{found} is not one of the allowed values: {allowed}.',
-  'shape.fieldKey':
-    '{found} is not a usable field key. Start with a letter or an underscore, then use only letters, digits and underscores.',
-  'shape.formId':
-    '{found} is not a usable form ID. Start with a letter or a digit, then use only letters, digits, dots, dashes and underscores.',
+  'shape.fieldKey': '{found} is not a usable field key. Start with a letter or an underscore, then use only letters, digits and underscores.',
+  'shape.formId': '{found} is not a usable form ID. Start with a letter or a digit, then use only letters, digits, dots, dashes and underscores.',
   'shape.checkName':
     '{found} is not a usable check name. Name the check and let the deployment say where to ask — an address here would be a deployment detail frozen into a published form, and a way to make a server inside a private network fetch something.',
   'shape.imageSource':
@@ -176,8 +153,7 @@ export interface SchemaError {
 }
 
 /** The names a sentence's `{placeholders}` use, read off the sentence's own type. */
-type PlaceholdersIn<Sentence extends string> =
-  Sentence extends `${string}{${infer Name}}${infer Rest}` ? Name | PlaceholdersIn<Rest> : never
+type PlaceholdersIn<Sentence extends string> = Sentence extends `${string}{${infer Name}}${infer Rest}` ? Name | PlaceholdersIn<Rest> : never
 
 /** Exactly the values a code's sentence names. */
 type ValuesFor<Code extends SchemaErrorCode> = {
@@ -203,7 +179,5 @@ export function schemaError<Code extends SchemaErrorCode>(
 
 /** A sentence with its placeholders filled, a missing value left visible. */
 export function renderSchemaError(template: string, values: SchemaErrorValues): string {
-  return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
-    values[name] === undefined ? whole : String(values[name]),
-  )
+  return template.replace(/\{(\w+)\}/g, (whole, name: string) => (values[name] === undefined ? whole : String(values[name])))
 }

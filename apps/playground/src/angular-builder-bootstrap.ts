@@ -49,10 +49,7 @@ export async function mountAngularBuilder(
   let app: ApplicationRef
   try {
     app = await bootstrapApplication(AngularBuilderHost, {
-      providers: [
-        provideZonelessChangeDetection(),
-        { provide: PLAYGROUND_BUILDER, useValue: state },
-      ],
+      providers: [provideZonelessChangeDetection(), { provide: PLAYGROUND_BUILDER, useValue: state }],
     })
   } catch (error) {
     // A bootstrap that throws must not leave its element behind: the next

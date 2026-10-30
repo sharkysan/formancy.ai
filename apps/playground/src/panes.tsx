@@ -91,10 +91,7 @@ export interface Splitter {
  * A folded pane gets no splitter: there is nothing to resize, and a handle that
  * does nothing is worse than no handle.
  */
-export function paneLayout(
-  folded: ReadonlySet<PaneId>,
-  widths: Readonly<Record<PaneId, number>>,
-): { template: string; splitters: Splitter[] } {
+export function paneLayout(folded: ReadonlySet<PaneId>, widths: Readonly<Record<PaneId, number>>): { template: string; splitters: Splitter[] } {
   const columns: string[] = []
   const splitters: Splitter[] = []
 
@@ -135,11 +132,7 @@ export function paneLayout(
  * what actually stops a pane being too narrow to use; this stops the *state*
  * becoming incoherent, which is a different failure.
  */
-export function dragSplitter(
-  widths: Readonly<Record<PaneId, number>>,
-  { left, right }: Splitter,
-  delta: number,
-): Record<PaneId, number> {
+export function dragSplitter(widths: Readonly<Record<PaneId, number>>, { left, right }: Splitter, delta: number): Record<PaneId, number> {
   const total = widths[left] + widths[right]
 
   /*
@@ -168,10 +161,7 @@ export function dragSplitter(
 }
 
 /** Where the handle sits between its two panes, as a percentage. */
-export function splitterPosition(
-  widths: Readonly<Record<PaneId, number>>,
-  { left, right }: Splitter,
-): { now: number; min: number; max: number } {
+export function splitterPosition(widths: Readonly<Record<PaneId, number>>, { left, right }: Splitter): { now: number; min: number; max: number } {
   const total = widths[left] + widths[right]
   const percent = (fraction: number): number => Math.round((fraction / total) * 100)
 
@@ -255,9 +245,7 @@ export function PaneSplitter({
     // Home and End go to the ends of the travel rather than of the row, because
     // the clamp is where the handle actually stops; announcing 0% and arriving
     // at 25% would be the control lying about itself.
-    const step = { ArrowLeft: -KEYBOARD_STEP, ArrowRight: KEYBOARD_STEP, Home: -Infinity, End: Infinity }[
-      event.key
-    ]
+    const step = { ArrowLeft: -KEYBOARD_STEP, ArrowRight: KEYBOARD_STEP, Home: -Infinity, End: Infinity }[event.key]
     if (step === undefined) return
 
     event.preventDefault()
@@ -291,15 +279,7 @@ export function PaneSplitter({
  * change under somebody mid-sentence. The heading beside it is not the button,
  * because the editor's heading already holds the build/schema switch.
  */
-export function FoldPane({
-  pane,
-  folded,
-  onToggle,
-}: {
-  pane: string
-  folded: boolean
-  onToggle: () => void
-}) {
+export function FoldPane({ pane, folded, onToggle }: { pane: string; folded: boolean; onToggle: () => void }) {
   return (
     <button
       className="fold"
@@ -363,15 +343,7 @@ export function usePaneLayout(): {
  * the one call inside the hook, so a handle can never occupy a column the
  * template did not reserve.
  */
-export function PaneBoundary({
-  layout,
-  left,
-  right,
-}: {
-  layout: ReturnType<typeof usePaneLayout>
-  left: PaneId
-  right: PaneId
-}) {
+export function PaneBoundary({ layout, left, right }: { layout: ReturnType<typeof usePaneLayout>; left: PaneId; right: PaneId }) {
   const splitter = layout.splitters.find((candidate) => candidate.left === left && candidate.right === right)
   if (splitter === undefined) return null
 

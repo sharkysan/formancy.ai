@@ -1,9 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core'
-import {
-  editableLayoutPropertiesFor,
-  layoutNodeAt,
-  layoutPropertyHeading,
-} from '@formancy/builder-core'
+import { editableLayoutPropertiesFor, layoutNodeAt, layoutPropertyHeading } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import type { BuilderSession, EditableProperty, LayoutAddress, LayoutNode } from './types.js'
 import { FormancyProperty } from './property-panel.js'
@@ -66,9 +62,7 @@ export class FormancyLayoutPropertyPanel {
     const node = this.node()
     return node === undefined ? '' : layoutPropertyHeading(node.kind, this.session().text)
   })
-  protected readonly properties = computed((): EditableProperty[] =>
-    editableLayoutPropertiesFor(this.node()?.kind ?? '', this.session().text),
-  )
+  protected readonly properties = computed((): EditableProperty[] => editableLayoutPropertiesFor(this.node()?.kind ?? '', this.session().text))
 
   constructor() {
     takeHostOutOfLayout()
@@ -81,10 +75,6 @@ export class FormancyLayoutPropertyPanel {
   protected set(name: string, value: unknown): void {
     // An empty box means "no value", not "the empty string": writing '' would put
     // a property into the document the author just cleared.
-    this.session().setLayoutNodeProperty(
-      this.address(),
-      name,
-      value === '' || value === undefined ? undefined : value,
-    )
+    this.session().setLayoutNodeProperty(this.address(), name, value === '' || value === undefined ? undefined : value)
   }
 }

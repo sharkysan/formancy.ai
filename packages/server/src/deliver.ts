@@ -85,9 +85,7 @@ export async function deliver(
   // EVERY address, not the first. A name that returns one public and one
   // private address is the rebinding attack spelled out, and picking the
   // public one to validate while the stack might use either is no check at all.
-  const forbidden = options.allowPrivateAddresses === true
-    ? undefined
-    : addresses.find((address) => isPrivateAddress(address))
+  const forbidden = options.allowPrivateAddresses === true ? undefined : addresses.find((address) => isPrivateAddress(address))
   if (forbidden !== undefined) {
     return { ok: false, error: `${url.hostname} resolves to ${forbidden}, which is not reachable from here.` }
   }
@@ -107,11 +105,7 @@ export async function deliver(
       // internals, and getting it wrong fails only at connect time — where no
       // unit test looks.
       lookup: (_hostname, opts: { all?: boolean | undefined }, callback: (...args: never[]) => void) => {
-        const done = callback as unknown as (
-          error: Error | null,
-          result: string | Array<{ address: string; family: number }>,
-          family?: number,
-        ) => void
+        const done = callback as unknown as (error: Error | null, result: string | Array<{ address: string; family: number }>, family?: number) => void
         if (opts.all === true) done(null, [{ address: pinned, family }])
         else done(null, pinned, family)
       },
@@ -145,9 +139,7 @@ export async function deliver(
     // controls.
     await drain(response, RESPONSE_CAP_BYTES)
 
-    return response.ok
-      ? { ok: true, status: response.status }
-      : { ok: false, status: response.status, error: `Receiver answered ${String(response.status)}.` }
+    return response.ok ? { ok: true, status: response.status } : { ok: false, status: response.status, error: `Receiver answered ${String(response.status)}.` }
   } catch (error) {
     // `fetch failed` on its own tells an operator nothing. The cause carries
     // the refused connection, the TLS failure or the timeout.

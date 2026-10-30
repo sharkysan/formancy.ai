@@ -25,54 +25,39 @@ export const BUILDER_MESSAGES_FR = {
   'refuse.cannotOpen': 'Impossible d’ouvrir ce document dans le constructeur : {reasons}',
   'refuse.noContainer': 'Aucun conteneur à « {path} ».',
   'refuse.noField': 'Aucun champ à « {path} ».',
-  'refuse.moveIntoItself':
-    'Impossible de déplacer « {path} » à l’intérieur de lui-même ou de l’un de ses propres enfants.',
-  'refuse.unwrapRenames':
-    'Défaire « {where} » renomme chaque réponse qu’il contient — « {from} » devient « {to} » —, et {refused}',
-  'refuse.renameFollows':
-    'Renommer « {before} » en « {after} » oblige chaque règle qui le nomme à suivre, et {refused}',
+  'refuse.moveIntoItself': 'Impossible de déplacer « {path} » à l’intérieur de lui-même ou de l’un de ses propres enfants.',
+  'refuse.unwrapRenames': 'Défaire « {where} » renomme chaque réponse qu’il contient — « {from} » devient « {to} » —, et {refused}',
+  'refuse.renameFollows': 'Renommer « {before} » en « {after} » oblige chaque règle qui le nomme à suivre, et {refused}',
   'refuse.noRule': 'Aucune règle à la position {index}.',
   'refuse.noLayout': 'Aucune disposition nommée « {name} ».',
-  'refuse.crossLayout':
-    'Impossible de déplacer entre les dispositions « {from} » et « {to} ». Retirez l’élément de l’une et placez-le dans l’autre.',
+  'refuse.crossLayout': 'Impossible de déplacer entre les dispositions « {from} » et « {to} ». Retirez l’élément de l’une et placez-le dans l’autre.',
   'refuse.downgrade':
     'Ce formulaire est écrit pour la version {from} de la spécification et ne peut pas revenir à la {to} : ce que la version plus récente a ajouté n’aurait nulle part où aller, ce serait une perte de données plutôt qu’une modification.',
   'refuse.noLayoutNode': 'Rien à cette position dans la disposition « {layout} ».',
-  'refuse.notAContainerNode':
-    'Rien à cette position dans la disposition « {layout} » ne peut contenir d’autres éléments.',
-  'refuse.unwrapLeaf':
-    '« {where} » contient une seule réponse. Il n’y a rien à garder à l’intérieur, et défaire n’est pas un autre mot pour supprimer.',
+  'refuse.notAContainerNode': 'Rien à cette position dans la disposition « {layout} » ne peut contenir d’autres éléments.',
+  'refuse.unwrapLeaf': '« {where} » contient une seule réponse. Il n’y a rien à garder à l’intérieur, et défaire n’est pas un autre mot pour supprimer.',
   'refuse.unwrapRepeater':
     '« {where} » est une répétition, et les champs qu’elle contient décrivent une LIGNE, pas une liste de questions. Les sortir ferait des réponses de chaque ligne une seule réponse chacune et perdrait toutes les lignes après la première — sans que rien ne le dise, car le formulaire obtenu serait parfaitement valide. Déplacez les champs un par un si c’est ce que vous vouliez.',
   'proposal.stale':
     'Le formulaire a changé depuis cette proposition ; l’appliquer effacerait cette modification. Redemandez pour obtenir une proposition fondée sur le formulaire tel qu’il est maintenant.',
   'proposal.empty': 'Cette proposition ne change rien au formulaire.',
-  'refuse.i18nNoneYet':
-    'Ce formulaire n’a pas encore de traductions. Rendez d’abord un libellé traduisible.',
+  'refuse.i18nNoneYet': 'Ce formulaire n’a pas encore de traductions. Rendez d’abord un libellé traduisible.',
   'refuse.i18nNone': 'Ce formulaire n’a pas de traductions.',
-  'refuse.fieldNodeHoldsNothing':
-    'Un élément de champ place un seul champ. Il n’y a rien à garder à l’intérieur.',
-  'refuse.wrapNeedsTwo':
-    'Regrouper demande au moins deux éléments. Utilisez insertLayoutNode pour un seul.',
-  'refuse.wrapperNotContainer':
-    'L’enveloppe doit être un conteneur. Un élément de champ ne peut rien contenir.',
+  'refuse.fieldNodeHoldsNothing': 'Un élément de champ place un seul champ. Il n’y a rien à garder à l’intérieur.',
+  'refuse.wrapNeedsTwo': 'Regrouper demande au moins deux éléments. Utilisez insertLayoutNode pour un seul.',
+  'refuse.wrapperNotContainer': 'L’enveloppe doit être un conteneur. Un élément de champ ne peut rien contenir.',
   'refuse.nodeListedTwice': 'Cet élément figure deux fois. Chacun ne peut entrer qu’une fois.',
-  'refuse.wrapContainerWithChild':
-    'Impossible de regrouper un conteneur avec un élément qu’il contient.',
-  'refuse.moveNodeIntoItself':
-    'Impossible de déplacer ceci à l’intérieur de lui-même ou de l’un de ses propres enfants.',
+  'refuse.wrapContainerWithChild': 'Impossible de regrouper un conteneur avec un élément qu’il contient.',
+  'refuse.moveNodeIntoItself': 'Impossible de déplacer ceci à l’intérieur de lui-même ou de l’un de ses propres enfants.',
   'refuse.fieldNodeName': 'Un élément de champ prend son nom du champ qu’il place.',
-  'refuse.notText':
-    '« {property} » sur « {path} » n’est pas du texte : il n’y a donc rien à traduire.',
+  'refuse.notText': '« {property} » sur « {path} » n’est pas du texte : il n’y a donc rien à traduire.',
   'refuse.defaultLocale':
     '« {locale} » est la langue par défaut : toutes les autres s’y rabattent, et la retirer laisserait chaque message non traduit sans rien vers quoi se rabattre.',
   'refuse.notASetting':
     '« {property} » n’est pas un réglage. C’est ce qu’est l’élément, ou l’endroit où il se trouve, et ce sont les commandes de la disposition qui le changent.',
-  'refuse.settingName':
-    '« {property} » n’est pas autorisé comme nom de réglage d’un élément de disposition.',
+  'refuse.settingName': '« {property} » n’est pas autorisé comme nom de réglage d’un élément de disposition.',
   'translations.unreadable': 'Ce fichier n’a pas pu être lu : ce n’est pas du JSON.',
-  'refuse.notACatalogue':
-    'Ce n’est pas un fichier de traduction d’un constructeur formancy : il n’a ni langue ni liste de messages.',
+  'refuse.notACatalogue': 'Ce n’est pas un fichier de traduction d’un constructeur formancy : il n’a ni langue ni liste de messages.',
   'refuse.ruleCannotFollow':
     'la règle {number} (« {kind} » sur « {target} ») ne peut pas suivre la modification : {reason} Modifiez ou supprimez d’abord la règle.',
 
@@ -122,8 +107,7 @@ export const BUILDER_MESSAGES_FR = {
   'tree.moveTitle': 'Déplacer {name}',
   'tree.locked': {
     one: '{types} demande une version plus récente de la spécification. Ce formulaire indique la version {version}.',
-    other:
-      '{types} demandent une version plus récente de la spécification. Ce formulaire indique la version {version}.',
+    other: '{types} demandent une version plus récente de la spécification. Ce formulaire indique la version {version}.',
   },
   'tree.upgrade': 'Passer à la version {version}',
   'dialog.cancel': 'Annuler',
@@ -147,8 +131,7 @@ export const BUILDER_MESSAGES_FR = {
   'said.pageAdded': '{page} ajoutée.',
   'said.firstPageAdded': {
     one: '{page} ajoutée ; elle contient le champ qui était au premier niveau. Le formulaire est maintenant multi-étapes.',
-    other:
-      '{page} ajoutée ; elle contient les {count} champs qui étaient au premier niveau. Le formulaire est maintenant multi-étapes.',
+    other: '{page} ajoutée ; elle contient les {count} champs qui étaient au premier niveau. Le formulaire est maintenant multi-étapes.',
   },
   'said.cannotAddPage': 'Impossible d’ajouter une page : {reason}',
   'said.unwrappedEmpty': '{name} était vide et a été retiré.',
@@ -176,8 +159,7 @@ export const BUILDER_MESSAGES_FR = {
   'said.cannotAdd': 'Impossible d’ajouter : {reason}',
   'keys.block.what': 'enregistrer le champ actif comme bloc',
   'blocks.heading': 'Vos blocs',
-  'blocks.none':
-    'Aucun bloc pour l’instant. Enregistrez un champ ou un groupe comme bloc pour le réutiliser.',
+  'blocks.none': 'Aucun bloc pour l’instant. Enregistrez un champ ou un groupe comme bloc pour le réutiliser.',
   'blocks.save': 'Enregistrer comme bloc',
   'blocks.name': 'Nom du bloc',
   'blocks.saveConfirm': 'Enregistrer le bloc',
@@ -188,17 +170,13 @@ export const BUILDER_MESSAGES_FR = {
   },
   'said.blockSavedWhole': '« {name} » enregistré comme bloc.',
   'said.blockAdded': 'Bloc « {name} » ajouté — {where}.',
-  'refuse.blockIsPage':
-    'Une page n’est pas un bloc : enregistrez un champ, ou un groupe ou une répétition de champs.',
-  'refuse.blockInRow':
-    'Un champ dans une ligne de répétition ne peut pas être enregistré comme bloc : ses règles portent sur chaque ligne.',
-  'refuse.blockRulesInRow':
-    'Un bloc avec des règles ne peut pas aller dans une ligne de répétition : ses règles porteraient sur chaque ligne.',
+  'refuse.blockIsPage': 'Une page n’est pas un bloc : enregistrez un champ, ou un groupe ou une répétition de champs.',
+  'refuse.blockInRow': 'Un champ dans une ligne de répétition ne peut pas être enregistré comme bloc : ses règles portent sur chaque ligne.',
+  'refuse.blockRulesInRow': 'Un bloc avec des règles ne peut pas aller dans une ligne de répétition : ses règles porteraient sur chaque ligne.',
   'said.moved': '{name} déplacé : {where}.',
   'said.dropped': '{name} déplacé.',
   'said.cannotMove': 'Impossible de déplacer : {reason}',
-  'said.upgraded':
-    'Ce formulaire est maintenant en version {version} de la spécification. Rien d’autre n’a changé.',
+  'said.upgraded': 'Ce formulaire est maintenant en version {version} de la spécification. Rien d’autre n’a changé.',
   'said.cannotUpgrade': 'Impossible de mettre à niveau : {reason}',
   'said.alreadyNewest': 'il est déjà à la version la plus récente',
 
@@ -207,8 +185,7 @@ export const BUILDER_MESSAGES_FR = {
   'layout.none':
     'Ce formulaire n’a pas de disposition. Sans elle, les moteurs de rendu affichent chaque champ dans l’ordre du modèle, un par ligne — ce qui est un très bon formulaire. Ajoutez une disposition pour placer des champs côte à côte.',
   'layout.addLayout': 'Ajouter une disposition',
-  'layout.placesNothing':
-    'Cette disposition ne place encore rien ; le formulaire suit donc l’ordre du modèle.',
+  'layout.placesNothing': 'Cette disposition ne place encore rien ; le formulaire suit donc l’ordre du modèle.',
   'layout.unplaced': 'Absent de cette disposition',
   'layout.addTitle': 'Ajouter à la disposition',
   'layout.addWhere': 'Où placer {what} ?',
@@ -217,19 +194,15 @@ export const BUILDER_MESSAGES_FR = {
   'layout.kind.column': 'Colonne',
   'layout.kind.section': 'Section',
   'layout.kind.qrcode': 'Code',
-  'layout.hint.row':
-    'Place son contenu côte à côte, et de nouveau en une seule colonne quand la largeur manque pour deux.',
+  'layout.hint.row': 'Place son contenu côte à côte, et de nouveau en une seule colonne quand la largeur manque pour deux.',
   'layout.hint.column': 'Un côté d’une ligne.',
   'layout.hint.section': 'Un groupe nommé d’éléments, annoncé comme un seul.',
-  'layout.hint.qrcode':
-    'Un code scannable tiré d’une réponse. Ne recueille rien lui-même et affiche la réponse en texte à côté.',
-  'layout.codeLocked':
-    'Un code scannable demande la version {version} de la spécification. Ce formulaire indique la version {current}.',
+  'layout.hint.qrcode': 'Un code scannable tiré d’une réponse. Ne recueille rien lui-même et affiche la réponse en texte à côté.',
+  'layout.codeLocked': 'Un code scannable demande la version {version} de la spécification. Ce formulaire indique la version {current}.',
   'layout.hint.unplaced': 'Placé nulle part pour l’instant.',
   'layout.newCode': '{name} en code',
   'layout.wrapTitle': 'Que placer à côté de {name} dans une ligne ?',
-  'layout.wrapHelp':
-    'Choisissez l’élément à placer à côté de {name}. Les deux vont dans une nouvelle ligne, {name} en premier.',
+  'layout.wrapHelp': 'Choisissez l’élément à placer à côté de {name}. Les deux vont dans une nouvelle ligne, {name} en premier.',
   'keys.layout.arrows.what': 'passer d’un élément à l’autre',
   'keys.layout.add.what': 'ajouter une ligne, une colonne, une section, un code ou un champ',
   'keys.layout.move.what': 'déplacer l’élément sélectionné',
@@ -238,8 +211,7 @@ export const BUILDER_MESSAGES_FR = {
   'keys.layout.delete.what': 'le retirer de la disposition',
   'said.layoutAdded': 'Disposition « {name} » ajoutée.',
   'said.layoutUnwrapped': '{name} défait. Son contenu est resté où il était.',
-  'said.layoutRemoved':
-    '{name} retiré de la disposition. Le formulaire le recueille toujours.',
+  'said.layoutRemoved': '{name} retiré de la disposition. Le formulaire le recueille toujours.',
   'said.wrapped': '{first} et {second} sont maintenant côte à côte dans une ligne.',
   'said.cannotWrap': 'Impossible de regrouper : {reason}',
   'said.nothingBeside': 'Rien ne peut être placé à côté de {name}.',
@@ -267,8 +239,7 @@ export const BUILDER_MESSAGES_FR = {
   'options.keepPlace': 'Garde sa place quand l’ordre est mélangé',
   'list.remove': 'Supprimer',
   'columns.heading': 'Colonnes',
-  'columns.empty':
-    'Aucune colonne configurée. Chaque réponse en reçoit quand même une, dans l’ordre où les champs sont déclarés.',
+  'columns.empty': 'Aucune colonne configurée. Chaque réponse en reçoit quand même une, dans l’ordre où les champs sont déclarés.',
   'columns.answer': 'Réponse',
   'columns.noSuchField': '{name} — aucun champ de ce nom',
   'columns.width': 'Largeur, en proportion',
@@ -322,8 +293,7 @@ export const BUILDER_MESSAGES_FR = {
   'logic.value.choose': 'Choisir une valeur',
   'logic.field.inRow': '{field} dans cette ligne',
   'overview.heading': 'Toutes les règles de ce formulaire',
-  'overview.empty':
-    'Ce formulaire n’a aucune règle : chaque champ se comporte toujours de la même façon.',
+  'overview.empty': 'Ce formulaire n’a aucune règle : chaque champ se comporte toujours de la même façon.',
   'overview.written': 'Écrite comme',
   'overview.comparison': '{field} {operator} {value}',
   'overview.comparison.noValue': '{field} {operator}',
@@ -337,16 +307,13 @@ export const BUILDER_MESSAGES_FR = {
     'Affiché maintenant, car la règle ne peut pas être tranchée : une règle qui échoue affiche le champ qu’elle devait masquer.',
   'overview.now.required.holds': 'Obligatoire maintenant.',
   'overview.now.required.fails': 'Facultatif maintenant.',
-  'overview.now.required.undecided':
-    'Facultatif maintenant, car la règle ne peut pas être tranchée.',
+  'overview.now.required.undecided': 'Facultatif maintenant, car la règle ne peut pas être tranchée.',
   'overview.now.disabled.holds': 'Désactivé maintenant.',
   'overview.now.disabled.fails': 'Modifiable maintenant.',
-  'overview.now.disabled.undecided':
-    'Modifiable maintenant, car la règle ne peut pas être tranchée.',
+  'overview.now.disabled.undecided': 'Modifiable maintenant, car la règle ne peut pas être tranchée.',
   'overview.now.validate.holds': 'Accepté maintenant.',
   'overview.now.validate.fails': 'Refusé maintenant.',
-  'overview.now.validate.undecided':
-    'Refusé maintenant, car la règle ne peut pas être tranchée : une vérification qui échoue refuse la réponse.',
+  'overview.now.validate.undecided': 'Refusé maintenant, car la règle ne peut pas être tranchée : une vérification qui échoue refuse la réponse.',
   'overview.now.skip.holds': 'Sautée maintenant.',
   'overview.now.skip.fails': 'Pas sautée maintenant.',
   'overview.now.skip.undecided': 'Pas sautée maintenant, car la règle ne peut pas être tranchée.',
@@ -374,10 +341,8 @@ export const BUILDER_MESSAGES_FR = {
     one: '{count} traduction écrite.',
     other: '{count} traductions écrites.',
   },
-  'translations.unknown':
-    'Non écrites, car ce formulaire ne les a plus — le fichier a été exporté avant qu’un champ soit retiré : {list}',
-  'translations.stale':
-    'Écrites, mais traduites d’un texte qui a changé depuis — à vérifier : {list}',
+  'translations.unknown': 'Non écrites, car ce formulaire ne les a plus — le fichier a été exporté avant qu’un champ soit retiré : {list}',
+  'translations.stale': 'Écrites, mais traduites d’un texte qui a changé depuis — à vérifier : {list}',
   'translations.missing': 'Non traduit',
   'translations.preview': 'Aperçu en {locale}',
 
@@ -388,16 +353,14 @@ export const BUILDER_MESSAGES_FR = {
   'prompt.writing': 'Rédaction…',
   'prompt.stop': 'Arrêter',
   'prompt.review': 'Examiner ces modifications',
-  'prompt.review.costs':
-    'Examiner ces modifications — certaines touchent des réponses déjà recueillies',
+  'prompt.review.costs': 'Examiner ces modifications — certaines touchent des réponses déjà recueillies',
   'prompt.review.stops': {
     one: 'Examiner ces modifications — {count} scénario ne tiendrait plus : {list}',
     other: 'Examiner ces modifications — {count} scénarios ne tiendraient plus : {list}',
   },
   'prompt.review.costsStops': {
     one: 'Examiner ces modifications — certaines touchent des réponses déjà recueillies, et {count} scénario ne tiendrait plus : {list}',
-    other:
-      'Examiner ces modifications — certaines touchent des réponses déjà recueillies, et {count} scénarios ne tiendraient plus : {list}',
+    other: 'Examiner ces modifications — certaines touchent des réponses déjà recueillies, et {count} scénarios ne tiendraient plus : {list}',
   },
   'prompt.asked': 'En réponse à « {instruction} »',
   'prompt.apply': 'Appliquer ces modifications',
@@ -407,23 +370,19 @@ export const BUILDER_MESSAGES_FR = {
   'prompt.status.refused': 'Non appliqué. {reason}',
   'prompt.status.ready': {
     one: 'Prêt à examiner : {count} modification, qui ne touche aucune réponse déjà recueillie. Rien n’a été appliqué.',
-    other:
-      'Prêt à examiner : {count} modifications, dont aucune ne touche des réponses déjà recueillies. Rien n’a été appliqué.',
+    other: 'Prêt à examiner : {count} modifications, dont aucune ne touche des réponses déjà recueillies. Rien n’a été appliqué.',
   },
   'prompt.status.readyCosts': {
     one: 'Prêt à examiner : {count} modification, et elle touche des réponses déjà recueillies. Rien n’a été appliqué.',
-    other:
-      'Prêt à examiner : {count} modifications, et certaines touchent des réponses déjà recueillies. Rien n’a été appliqué.',
+    other: 'Prêt à examiner : {count} modifications, et certaines touchent des réponses déjà recueillies. Rien n’a été appliqué.',
   },
   'prompt.status.readyAfter': {
     one: 'Prêt à examiner après {attempts} tentatives : {count} modification, qui ne touche aucune réponse déjà recueillie. Rien n’a été appliqué.',
-    other:
-      'Prêt à examiner après {attempts} tentatives : {count} modifications, dont aucune ne touche des réponses déjà recueillies. Rien n’a été appliqué.',
+    other: 'Prêt à examiner après {attempts} tentatives : {count} modifications, dont aucune ne touche des réponses déjà recueillies. Rien n’a été appliqué.',
   },
   'prompt.status.readyAfterCosts': {
     one: 'Prêt à examiner après {attempts} tentatives : {count} modification, et elle touche des réponses déjà recueillies. Rien n’a été appliqué.',
-    other:
-      'Prêt à examiner après {attempts} tentatives : {count} modifications, et certaines touchent des réponses déjà recueillies. Rien n’a été appliqué.',
+    other: 'Prêt à examiner après {attempts} tentatives : {count} modifications, et certaines touchent des réponses déjà recueillies. Rien n’a été appliqué.',
   },
   'prompt.status.wouldStop': 'Ne tiendrait plus une fois appliqué : {list}.',
   'prompt.status.wouldHold': 'Tiendrait de nouveau une fois appliqué : {list}.',
@@ -434,16 +393,13 @@ export const BUILDER_MESSAGES_FR = {
   'prompt.status.stopped': 'Arrêté. Rien n’a été appliqué.',
   'prompt.status.unreachable': 'Rien n’a été appliqué. Le modèle n’a pas pu être joint : {reason}',
   'prompt.status.unreachableNoReason': 'Rien n’a été appliqué. Le modèle n’a pas pu être joint.',
-  'prompt.status.busy':
-    'Rien n’a été appliqué. Une autre demande attend encore la réponse du modèle : terminez-la ou arrêtez-la d’abord.',
+  'prompt.status.busy': 'Rien n’a été appliqué. Une autre demande attend encore la réponse du modèle : terminez-la ou arrêtez-la d’abord.',
   'prompt.status.declined': 'Rien n’a été appliqué. Le modèle a refusé cette demande.',
 
   'relay.title': 'Porter cette demande à un modèle',
   'relay.turn': 'Tour {attempt} sur {limit} au plus',
-  'relay.first':
-    'Copiez la demande dans une conversation avec un modèle, puis collez sa réponse complète ci-dessous.',
-  'relay.retry':
-    'Cette réponse ne fonctionnait pas. Copiez ce qui n’allait pas dans la même conversation, puis collez la nouvelle réponse ci-dessous.',
+  'relay.first': 'Copiez la demande dans une conversation avec un modèle, puis collez sa réponse complète ci-dessous.',
+  'relay.retry': 'Cette réponse ne fonctionnait pas. Copiez ce qui n’allait pas dans la même conversation, puis collez la nouvelle réponse ci-dessous.',
   'relay.leaves.authoring':
     'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient votre description et, si elle modifie un formulaire, tout ce formulaire, règles comprises. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
   'relay.leaves.translation':
@@ -460,8 +416,7 @@ export const BUILDER_MESSAGES_FR = {
   'relay.check': 'Vérifier cette réponse',
   'relay.anyway': 'L’utiliser quand même',
   'relay.copied': 'Copié. Collez-le dans la conversation.',
-  'relay.copyRefused':
-    'Ce navigateur n’a pas permis à la page de copier. Le texte est sélectionné dans le champ de la demande : copiez-le depuis là.',
+  'relay.copyRefused': 'Ce navigateur n’a pas permis à la page de copier. Le texte est sélectionné dans le champ de la demande : copiez-le depuis là.',
   'relay.noObject':
     'Cette réponse ne contient aucun objet JSON. Copiez toute la réponse, bloc de code compris, ou utilisez-la quand même : le modèle en sera informé.',
 
@@ -480,12 +435,10 @@ export const BUILDER_MESSAGES_FR = {
   'translate.apply': 'Appliquer ces traductions',
   'translate.rest': 'Traduire le reste',
   'translate.preview': 'Aperçu en {locale}, tel que proposé',
-  'translate.dropped':
-    'Non écrits, parce que personne ne les a demandés ou qu’une personne les a traduits depuis : {list}',
+  'translate.dropped': 'Non écrits, parce que personne ne les a demandés ou qu’une personne les a traduits depuis : {list}',
   'translate.status.asking': 'Demande des traductions manquantes, et vérification de la réponse.',
   'translate.status.elsewhereAsking': 'Un modèle traduit en {locale}. Choisissez {locale} pour suivre la demande, ou l’arrêter.',
-  'translate.status.elsewhereHeld':
-    'La traduction en {locale} d’un modèle attend d’être examinée. Choisissez {locale} pour l’examiner. Rien n’a été appliqué.',
+  'translate.status.elsewhereHeld': 'La traduction en {locale} d’un modèle attend d’être examinée. Choisissez {locale} pour l’examiner. Rien n’a été appliqué.',
   'translate.status.goneAsking':
     'Un modèle traduit en {locale}, qui n’est plus une langue du formulaire. Arrêtez-le ici, ou ajoutez de nouveau {locale} pour suivre la demande.',
   'translate.status.goneHeld':
@@ -510,8 +463,7 @@ export const BUILDER_MESSAGES_FR = {
   },
   'translate.status.failed': {
     one: 'Rien n’a été appliqué. {count} tentative, et la réponse n’était toujours pas un catalogue pour cette langue.',
-    other:
-      'Rien n’a été appliqué. {count} tentatives, et la réponse n’était toujours pas un catalogue pour cette langue.',
+    other: 'Rien n’a été appliqué. {count} tentatives, et la réponse n’était toujours pas un catalogue pour cette langue.',
   },
 
   'scenarios.label': 'Scénarios',
@@ -533,8 +485,7 @@ export const BUILDER_MESSAGES_FR = {
   'palette.firstRow': 'Première ligne',
 
   'rule.visible.label': 'Afficher ce champ quand',
-  'rule.visible.hint':
-    'Masqué sinon, et sa réponse est effacée sauf si le champ indique le contraire.',
+  'rule.visible.hint': 'Masqué sinon, et sa réponse est effacée sauf si le champ indique le contraire.',
   'rule.required.label': 'Exiger une réponse quand',
   'rule.required.hint': 'Seulement tant que la condition est vraie.',
   'rule.disabled.label': 'Désactiver ce champ quand',
@@ -548,8 +499,7 @@ export const BUILDER_MESSAGES_FR = {
   'rule.computed.hint':
     'Une expression CEL qui produit la réponse, recalculée dès que ce qu’elle lit change. Le champ est rempli plutôt que demandé, donc ce que la personne a saisi est remplacé.',
   'rule.skip.label': 'Sauter cette page quand',
-  'rule.skip.hint':
-    'La page est passée, dans les deux sens, et ses questions ne sont ni posées ni validées.',
+  'rule.skip.hint': 'La page est passée, dans les deux sens, et ses questions ne sont ni posées ni validées.',
 
   'operator.is': 'est',
   'operator.isNot': 'n’est pas',

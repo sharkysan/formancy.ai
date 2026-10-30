@@ -18,7 +18,7 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.5 Unit implementation and verification | **Yes** | Test-first development, with per-package coverage reported; the suite size is stated as a dated floor under [Verification gates](#verification-gates) rather than transcribed twice — this row said 1,155 while that one said 1,661, both written on one day |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
-| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM of what a consumer installs, checked before publishing, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist. CI installs the packed tarballs into a project outside the workspace and runs them on every push to `main` (`test:e2e:install`); the release workflow repeats `build`, `typecheck`, `test` and `check:pkg` and not that gate, nothing requires CI to have passed on the commit a tag names, and nothing re-checks a version once it is on the registry |
+| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM of what a consumer installs, checked before publishing, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist. CI installs the packed tarballs into a project outside the workspace and runs them on every push to `main` (`test:e2e:install`); the release workflow repeats `build`, `typecheck`, `lint`, `format:check`, `test` and `check:pkg` and not that gate, nothing requires CI to have passed on the commit a tag names, and nothing re-checks a version once it is on the registry |
 | §6 Software maintenance | **No** | Releases exist, and no maintenance process is defined for them — no support commitment, no backport policy, and no defined response time beyond `SECURITY.md` |
 | §7 Risk management | Partially | [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) identifies failure modes; no ISO 14971 file, by design |
 | §8 Configuration management | **Yes** | Git, pinned dependencies, lockfile, immutable published schema versions |
@@ -82,6 +82,8 @@ pnpm install --frozen-lockfile
 pnpm build
 pnpm build:web
 pnpm typecheck
+pnpm lint
+pnpm format:check
 pnpm test:coverage
 pnpm check:pkg
 node scripts/verify-licenses.mjs
@@ -113,6 +115,19 @@ Each gate exists for a reason that was paid for at least once:
 - **`typecheck`** — carries part of the architecture. The isomorphic packages
   have no `@types/node`, so a Node import is a compile error rather than a
   review finding ([0008](../decisions/0008-layered-packages.md)).
+- **`lint`** and **`format:check`** — every TypeScript and JavaScript file git holds but
+  the generated schema validator, linted by `@eslint/js`'s recommended rules and typescript-eslint's type-aware ones, every
+  rule at error, and checked against Prettier's format, read and never written: the rules
+  the four formancy repositories share, which this repository publishes as
+  `@formancy/code-style` ([0225](../decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)). The type-aware rules see
+  what review missed: the day they first ran here they found five defects, among them a
+  builder's button named "Remove [object Object]" and an admin pane that posted the outcome
+  of pressing Submit instead of the answers, each fixed with a test that failed first. Run
+  after the build, whose declarations those rules read, and by the release too.
+  `apps/docs/src/lint.test.ts` holds which rules reach which files and that both workflows
+  run both steps; each step was watched failing on a fault planted in a package's source on
+  2026-10-30. What they do not show is that a finding is a defect, or that a disable
+  comment's reason, which the rules require, is true.
 - **`test`** — **over 1,600 tests**, the server's integration suites among them
   against a real PostgreSQL instance through Testcontainers. Versioning defects only manifest
   against real SQL semantics, so a mocked database would not find them. The
@@ -129,6 +144,9 @@ Each gate exists for a reason that was paid for at least once:
   ([0038](../decisions/0038-esm-only.md)). It runs for **every** published
   package: three of them were on a weaker check than their twelve siblings until
   somebody counted, two with no `attw` at all and one with no check whatsoever.
+  `attw` runs wherever there are types to resolve; `@formancy/themes`, which ships
+  stylesheets, and `@formancy/code-style`, which ships one JavaScript module, have
+  none, and run `publint` alone (`apps/docs/src/published-packages.test.ts`).
 - **`test:e2e:install`** — the tarballs `pnpm pack` produces, installed into a
   plain npm project which is then type-checked with `skipLibCheck` **off**, run
   under Node, and built with Vite. Every other gate runs *inside* the workspace,
@@ -148,6 +166,11 @@ Each gate exists for a reason that was paid for at least once:
   `@formancy/spec` — the one place a command is run from its tarball. Watched failing with
   `SignatureAnswer` taken out of the spec's exports
   ([0190](../decisions/0190-a-form-has-a-type.md)).
+  And it lints a file of that project with the packed `@formancy/code-style`, its
+  dependencies installed by npm and its peers, ESLint and Prettier, at the newest each
+  range admits, and formats with its options: the file's floating promise is reported by a
+  type-aware rule alone, so only once every plugin has loaded and typescript-eslint has
+  built the project's program.
 - **`test:e2e:angular`** — the Angular packages' equivalent, once per Angular version in
   `compatibility.json`: the tarballs installed into an Angular project at that version, with
   Material at the same one, built by that project's own Angular and run in Chromium. The
@@ -316,9 +339,9 @@ Stated plainly, because a gap named is more useful than a gap implied:
 - No formal problem-report and resolution record. Defects are fixed with a
   regression test and described in the commit.
 - No formal release *review*. Releases are cut from CI and the gates are
-  mechanical — tests, typecheck, package linting, licence presence, tag-to-
-  manifest version agreement, and an SBOM that names every package published and
-  what each declares, checked before publishing
+  mechanical — tests, typecheck, the lint rules and the format, package linting,
+  licence presence, tag-to-manifest version agreement, and an SBOM that names every
+  package published and what each declares, checked before publishing
   ([0187](../decisions/0187-the-sbom-describes-what-a-consumer-installs.md)) — but
   no human sign-off is recorded against a checklist. See
   [`RELEASING.md`](../../RELEASING.md).

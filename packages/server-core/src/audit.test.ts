@@ -127,9 +127,7 @@ describe('a submission', () => {
     expect(outcome.ok).toBe(false)
     // Scoped to the submission: the fixture's own publish is audited too, now
     // that a publish writes its row inside its transaction.
-    const created = (await d.storage.listAudit(50)).filter(
-      (entry) => entry.action === 'submission.created',
-    )
+    const created = (await d.storage.listAudit(50)).filter((entry) => entry.action === 'submission.created')
     expect(created).toHaveLength(0)
   })
 
@@ -179,7 +177,7 @@ describe('a submission', () => {
 
 describe('the log', () => {
   test('comes back newest first', async () => {
-    const { d, hash } = await publishedForm()
+    const { d } = await publishedForm()
 
     await d.storage.recordAudit({ id: 'a1', at: '2026-09-25T09:00:00.000Z', action: 'auth.login' })
     await d.storage.recordAudit({ id: 'a2', at: '2026-09-25T11:00:00.000Z', action: 'auth.login' })

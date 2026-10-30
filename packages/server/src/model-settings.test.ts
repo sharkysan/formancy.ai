@@ -24,9 +24,7 @@ describe('which model the environment names', () => {
   test('none when compose passed all three through blank', () => {
     // Compose can blank a variable but not drop one, so blank is how an operator turns a
     // model off again without editing the compose file.
-    expect(
-      modelSettings({ FORMANCY_MODEL_PROVIDER: '', FORMANCY_MODEL_API_KEY: '', FORMANCY_MODEL: '' }),
-    ).toEqual({ kind: 'none' })
+    expect(modelSettings({ FORMANCY_MODEL_PROVIDER: '', FORMANCY_MODEL_API_KEY: '', FORMANCY_MODEL: '' })).toEqual({ kind: 'none' })
   })
 
   test.each([
@@ -36,9 +34,12 @@ describe('which model the environment names', () => {
   ])('%s, with its key and the model named', (provider, model) => {
     // A setting read under the wrong name is a request signed with nothing, which the
     // provider answers 401 on every turn.
-    expect(
-      modelSettings({ FORMANCY_MODEL_PROVIDER: provider, FORMANCY_MODEL_API_KEY: 'key', FORMANCY_MODEL: model }),
-    ).toEqual({ kind: 'configured', provider, apiKey: 'key', model })
+    expect(modelSettings({ FORMANCY_MODEL_PROVIDER: provider, FORMANCY_MODEL_API_KEY: 'key', FORMANCY_MODEL: model })).toEqual({
+      kind: 'configured',
+      provider,
+      apiKey: 'key',
+      model,
+    })
   })
 })
 
@@ -46,12 +47,8 @@ describe('what is refused', () => {
   test('a provider formancy has no adapter for, naming the three it has', () => {
     // Started anyway, the server would have no model and the operator would think it had
     // one; `gemini` and `Anthropic` are both refused, rather than one guessed at.
-    expect(() => modelSettings({ ...anthropic, FORMANCY_MODEL_PROVIDER: 'gemini' })).toThrow(
-      /anthropic, openai or xai/,
-    )
-    expect(() => modelSettings({ ...anthropic, FORMANCY_MODEL_PROVIDER: 'Anthropic' })).toThrow(
-      /FORMANCY_MODEL_PROVIDER/,
-    )
+    expect(() => modelSettings({ ...anthropic, FORMANCY_MODEL_PROVIDER: 'gemini' })).toThrow(/anthropic, openai or xai/)
+    expect(() => modelSettings({ ...anthropic, FORMANCY_MODEL_PROVIDER: 'Anthropic' })).toThrow(/FORMANCY_MODEL_PROVIDER/)
   })
 
   test.each(['FORMANCY_MODEL_API_KEY', 'FORMANCY_MODEL'])('a provider without %s, missing or blank', (name) => {
@@ -65,9 +62,7 @@ describe('what is refused', () => {
   test.each(['FORMANCY_MODEL_API_KEY', 'FORMANCY_MODEL'])('%s without a provider', (name) => {
     // Half a configuration: somebody set a key and believes the server has a model. It
     // would start with none, and the builders would draw nothing to say so.
-    expect(() => modelSettings({ [name]: anthropic[name as keyof typeof anthropic] })).toThrow(
-      /FORMANCY_MODEL_PROVIDER/,
-    )
+    expect(() => modelSettings({ [name]: anthropic[name as keyof typeof anthropic] })).toThrow(/FORMANCY_MODEL_PROVIDER/)
   })
 
   test.each([
@@ -84,7 +79,9 @@ describe('what is refused', () => {
     // Blank is unset, as for the server's own variables; and the other SDK's variable is
     // read by a client this server never builds.
     expect(modelSettings({ ...configured, [name]: '' })).toMatchObject({ kind: 'configured', provider })
-    expect(modelSettings({ ...configured, [name === 'ANTHROPIC_CUSTOM_HEADERS' ? 'OPENAI_CUSTOM_HEADERS' : 'ANTHROPIC_CUSTOM_HEADERS']: 'x: y' })).toMatchObject({ kind: 'configured', provider })
+    expect(
+      modelSettings({ ...configured, [name === 'ANTHROPIC_CUSTOM_HEADERS' ? 'OPENAI_CUSTOM_HEADERS' : 'ANTHROPIC_CUSTOM_HEADERS']: 'x: y' }),
+    ).toMatchObject({ kind: 'configured', provider })
   })
 
   test('with no model, the SDKs’ own variables are not the server’s business', () => {

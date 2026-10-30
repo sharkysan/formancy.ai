@@ -104,8 +104,7 @@ export function RelayPane({ session, relay, chat }: RelayPaneProps): ReactElemen
   const fresh: Held = { turn, answer: '', said: undefined, toCopy: undefined }
   const mine: Held = held?.turn === turn ? held : fresh
   /** Change what is held about this turn, starting it clean if it is new. */
-  const update = (change: Partial<Omit<Held, 'turn'>>): void =>
-    setHeld((before) => ({ ...(before?.turn === turn ? before : fresh), ...change }))
+  const update = (change: Partial<Omit<Held, 'turn'>>): void => setHeld((before) => ({ ...(before?.turn === turn ? before : fresh), ...change }))
 
   const copy = async (what: string): Promise<void> => {
     const copied = await written(what)
@@ -170,9 +169,7 @@ export function RelayPane({ session, relay, chat }: RelayPaneProps): ReactElemen
           rows={6}
           value={mine.answer}
           // A changed answer has not been checked, so "use it anyway" no longer applies.
-          onChange={(event) =>
-            update({ answer: event.target.value, ...(mine.said === 'no-object' ? { said: undefined } : {}) })
-          }
+          onChange={(event) => update({ answer: event.target.value, ...(mine.said === 'no-object' ? { said: undefined } : {}) })}
         />
         <button type="button" disabled={mine.answer.trim() === ''} onClick={() => send(false)}>
           {text('relay.check')}

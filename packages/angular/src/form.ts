@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, LayoutNode } from '@formancy/spec'
@@ -107,8 +99,7 @@ export class FormancyForm {
   private readonly engine = injectEngine()
   private readonly submit = injectSubmit()
 
-  protected readonly wizard: WizardBinding | undefined =
-    this.engine.wizard() === undefined ? undefined : injectWizard()
+  protected readonly wizard: WizardBinding | undefined = this.engine.wizard() === undefined ? undefined : injectWizard()
 
   /** The current step's help text (0194), or nothing on a form with no pages. */
   protected readonly pageDescription = computed(() => {
@@ -149,9 +140,7 @@ export class FormancyForm {
   // Row fields render inside their repeater's own section, never in the flat
   // list — a row needs its remove button and its position context. The static
   // wires never change: visibility is per-slot metadata, not list membership.
-  protected readonly staticWires = this.engine
-    .fieldPaths()
-    .filter((wire) => !this.repeaterWires.some((repeater) => wire.startsWith(`${repeater}[`)))
+  protected readonly staticWires = this.engine.fieldPaths().filter((wire) => !this.repeaterWires.some((repeater) => wire.startsWith(`${repeater}[`)))
 
   protected readonly staticOnPage = computed(() => {
     const wizard = this.wizard
@@ -209,10 +198,6 @@ export class FormancyForm {
       const firstInvalid = this.engine.firstInvalid()
       if (firstInvalid !== null) this.wizard.goTo(this.engine.pageOf(parsePath(firstInvalid)))
     }
-    this.submitted.emit(
-      outcome.ok
-        ? { ok: true, errors: outcome.errors, data: this.engine.value() }
-        : { ok: false, errors: outcome.errors },
-    )
+    this.submitted.emit(outcome.ok ? { ok: true, errors: outcome.errors, data: this.engine.value() } : { ok: false, errors: outcome.errors })
   }
 }

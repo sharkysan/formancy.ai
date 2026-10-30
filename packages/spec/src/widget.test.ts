@@ -58,7 +58,7 @@ function documentWith(field: Record<string, unknown>, specVersion = '2'): Record
 }
 
 const errorsFor = (document: Record<string, unknown>): readonly string[] => {
-  const result = validateSchema(document as never)
+  const result = validateSchema(document)
   // Narrowed on `valid` rather than reaching for `errors`: the result is a
   // discriminated union, and a valid document has no errors property at all.
   return result.valid ? [] : result.errors.map((error) => `${error.path} ${error.message}`)
@@ -71,9 +71,7 @@ describe('the widget list', () => {
     // works.
     expect(FIELD_WIDGETS.length).toBeGreaterThan(0)
     for (const widget of FIELD_WIDGETS) {
-      const accepting = Object.entries(WIDGETS_BY_FIELD_TYPE).filter(([, widgets]) =>
-        (widgets as readonly string[]).includes(widget),
-      )
+      const accepting = Object.entries(WIDGETS_BY_FIELD_TYPE).filter(([, widgets]) => (widgets as readonly string[]).includes(widget))
       expect(accepting.length, `no field type accepts "${widget}"`).toBeGreaterThan(0)
     }
   })

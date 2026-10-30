@@ -21,9 +21,7 @@ describe('blocks', () => {
   })
 
   test('consecutive lines are one paragraph, joined with a space', () => {
-    expect(parseRichText('one\ntwo')).toEqual([
-      { kind: 'paragraph', children: [text('one two')] },
-    ])
+    expect(parseRichText('one\ntwo')).toEqual([{ kind: 'paragraph', children: [text('one two')] }])
   })
 
   test('a Windows paste is not a paragraph break plus a stray return', () => {
@@ -31,15 +29,11 @@ describe('blocks', () => {
   })
 
   test('bullets become an unordered list', () => {
-    expect(parseRichText('- milk\n- eggs')).toEqual([
-      { kind: 'list', ordered: false, items: [[text('milk')], [text('eggs')]] },
-    ])
+    expect(parseRichText('- milk\n- eggs')).toEqual([{ kind: 'list', ordered: false, items: [[text('milk')], [text('eggs')]] }])
   })
 
   test('numbers become an ordered list, whichever punctuation is used', () => {
-    expect(parseRichText('1. first\n2) second')).toEqual([
-      { kind: 'list', ordered: true, items: [[text('first')], [text('second')]] },
-    ])
+    expect(parseRichText('1. first\n2) second')).toEqual([{ kind: 'list', ordered: true, items: [[text('first')], [text('second')]] }])
   })
 
   test('changing marker starts a new list rather than mixing two kinds of item', () => {
@@ -60,12 +54,7 @@ describe('inline', () => {
     expect(parseRichText('a **b** c *d*')).toEqual([
       {
         kind: 'paragraph',
-        children: [
-          text('a '),
-          { kind: 'strong', children: [text('b')] },
-          text(' c '),
-          { kind: 'emphasis', children: [text('d')] },
-        ],
+        children: [text('a '), { kind: 'strong', children: [text('b')] }, text(' c '), { kind: 'emphasis', children: [text('d')] }],
       },
     ])
   })
@@ -93,9 +82,7 @@ describe('inline', () => {
   test('an unclosed marker is the character somebody typed', () => {
     // Degrading to the literal text is the only honest answer: the alternative
     // is swallowing the rest of the answer into an emphasis nobody opened.
-    expect(parseRichText('2 * 3 = 6')).toEqual([
-      { kind: 'paragraph', children: [text('2 * 3 = 6')] },
-    ])
+    expect(parseRichText('2 * 3 = 6')).toEqual([{ kind: 'paragraph', children: [text('2 * 3 = 6')] }])
   })
 })
 
@@ -104,10 +91,7 @@ describe('links', () => {
     expect(parseRichText('see [the docs](https://example.ch/x)')).toEqual([
       {
         kind: 'paragraph',
-        children: [
-          text('see '),
-          { kind: 'link', href: 'https://example.ch/x', children: [text('the docs')] },
-        ],
+        children: [text('see '), { kind: 'link', href: 'https://example.ch/x', children: [text('the docs')] }],
       },
     ])
   })
@@ -143,9 +127,7 @@ describe('links', () => {
   })
 
   test('a malformed link is left alone rather than half-read', () => {
-    expect(parseRichText('[no closing paren](https://example.ch')).toEqual([
-      { kind: 'paragraph', children: [text('[no closing paren](https://example.ch')] },
-    ])
+    expect(parseRichText('[no closing paren](https://example.ch')).toEqual([{ kind: 'paragraph', children: [text('[no closing paren](https://example.ch')] }])
   })
 })
 
@@ -153,28 +135,19 @@ describe('what is deliberately not markup', () => {
   test('angle brackets are characters, not tags', () => {
     // The whole reason this grammar exists. Nothing downstream can turn this
     // into an element, because nothing downstream is ever handed a string.
-    expect(parseRichText('<script>alert(1)</script>')).toEqual([
-      { kind: 'paragraph', children: [text('<script>alert(1)</script>')] },
-    ])
+    expect(parseRichText('<script>alert(1)</script>')).toEqual([{ kind: 'paragraph', children: [text('<script>alert(1)</script>')] }])
   })
 
   test('an ampersand is an ampersand', () => {
-    expect(parseRichText('Tom &amp; Jerry &lt;b&gt;')).toEqual([
-      { kind: 'paragraph', children: [text('Tom &amp; Jerry &lt;b&gt;')] },
-    ])
+    expect(parseRichText('Tom &amp; Jerry &lt;b&gt;')).toEqual([{ kind: 'paragraph', children: [text('Tom &amp; Jerry &lt;b&gt;')] }])
   })
 
   test('headings and images are not in the grammar', () => {
-    expect(parseRichText('# Heading')).toEqual([
-      { kind: 'paragraph', children: [text('# Heading')] },
-    ])
+    expect(parseRichText('# Heading')).toEqual([{ kind: 'paragraph', children: [text('# Heading')] }])
     expect(parseRichText('![alt](https://example.ch/x.png)')).toEqual([
       {
         kind: 'paragraph',
-        children: [
-          text('!'),
-          { kind: 'link', href: 'https://example.ch/x.png', children: [text('alt')] },
-        ],
+        children: [text('!'), { kind: 'link', href: 'https://example.ch/x.png', children: [text('alt')] }],
       },
     ])
   })
@@ -206,7 +179,6 @@ describe('it terminates, on the shapes that make parsers hang', () => {
     expect(Date.now() - started).toBeLessThan(500)
   })
 })
-
 
 test('hostile emphasis nesting stays within a renderable tree depth', () => {
   const source = '*'.repeat(40_000)

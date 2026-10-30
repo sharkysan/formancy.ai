@@ -52,23 +52,19 @@ describe('what is refused', () => {
   test('a directory and an endpoint together', () => {
     // Two stores means files land in one and are looked for in the other, and
     // nothing records which.
-    expect(() =>
-      fileStoreSettings({ ...s3, FORMANCY_FILES_DIR: '/var/lib/formancy/files' }),
-    ).toThrow(/not both/)
+    expect(() => fileStoreSettings({ ...s3, FORMANCY_FILES_DIR: '/var/lib/formancy/files' })).toThrow(/not both/)
   })
 
-  test.each([
-    'FORMANCY_S3_BUCKET',
-    'FORMANCY_S3_REGION',
-    'FORMANCY_S3_ACCESS_KEY_ID',
-    'FORMANCY_S3_SECRET_ACCESS_KEY',
-  ])('an endpoint without %s, missing or empty', (name) => {
-    // None is defaulted: a guessed bucket uploads into nothing and a guessed
-    // credential reads every file as missing. The message names the setting, so
-    // the refusal says what to fix.
-    expect(() => fileStoreSettings({ ...s3, [name]: undefined })).toThrow(name)
-    expect(() => fileStoreSettings({ ...s3, [name]: '' })).toThrow(name)
-  })
+  test.each(['FORMANCY_S3_BUCKET', 'FORMANCY_S3_REGION', 'FORMANCY_S3_ACCESS_KEY_ID', 'FORMANCY_S3_SECRET_ACCESS_KEY'])(
+    'an endpoint without %s, missing or empty',
+    (name) => {
+      // None is defaulted: a guessed bucket uploads into nothing and a guessed
+      // credential reads every file as missing. The message names the setting, so
+      // the refusal says what to fix.
+      expect(() => fileStoreSettings({ ...s3, [name]: undefined })).toThrow(name)
+      expect(() => fileStoreSettings({ ...s3, [name]: '' })).toThrow(name)
+    },
+  )
 })
 
 describe('an empty setting is an unset one', () => {
@@ -91,9 +87,10 @@ describe('an empty setting is an unset one', () => {
   test('an empty endpoint beside a directory leaves the directory', () => {
     // An `.env` with `FORMANCY_S3_ENDPOINT=` left in it would otherwise refuse the
     // volume compose sets up as a second store.
-    expect(
-      fileStoreSettings({ FORMANCY_S3_ENDPOINT: '', FORMANCY_FILES_DIR: '/var/lib/formancy/files' }),
-    ).toEqual({ kind: 'local', directory: '/var/lib/formancy/files' })
+    expect(fileStoreSettings({ FORMANCY_S3_ENDPOINT: '', FORMANCY_FILES_DIR: '/var/lib/formancy/files' })).toEqual({
+      kind: 'local',
+      directory: '/var/lib/formancy/files',
+    })
   })
 
   test('an empty endpoint alone is no store, not a demand for four more settings', () => {

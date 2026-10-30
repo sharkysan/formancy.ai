@@ -20,16 +20,13 @@ const schema: FormSchema = {
   },
 }
 
-const mount = (
-  initial: FormSchema = schema,
-): ReturnType<typeof createBuilderSession> => {
+const mount = (initial: FormSchema = schema): ReturnType<typeof createBuilderSession> => {
   const session = createBuilderSession(initial)
   render(<LogicPanel session={session} keyPath={['canton']} />)
   return session
 }
 
-const rulesOf = (session: ReturnType<typeof createBuilderSession>): LogicRule[] =>
-  session.document().logic?.rules ?? []
+const rulesOf = (session: ReturnType<typeof createBuilderSession>): LogicRule[] => session.document().logic?.rules ?? []
 
 describe('authoring a rule', () => {
   test('a field with none says so plainly', () => {
@@ -295,18 +292,14 @@ describe('existing rules', () => {
 
     // By what the rule does, in words: "the visible rule" named it by an id from the
     // format, which is not a word in any language a builder speaks.
-    expect(
-      screen.getByRole('button', { name: 'Remove the rule “Show this field when” on canton' }),
-    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove the rule “Show this field when” on canton' })).toBeTruthy()
   })
 
   test('removing one takes it out of the document', async () => {
     const user = userEvent.setup()
     const session = mount(withRule)
 
-    await user.click(
-      screen.getByRole('button', { name: 'Remove the rule “Show this field when” on canton' }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Remove the rule “Show this field when” on canton' }))
 
     expect(rulesOf(session)).toEqual([])
   })
@@ -465,10 +458,7 @@ describe('the rule kind no builder could write', () => {
     const session = mount()
 
     await user.click(screen.getByRole('button', { name: /add a rule/i }))
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /what the rule does/i }),
-      'computed',
-    )
+    await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'computed')
     await user.type(screen.getByRole('textbox', { name: /the calculation/i }), 'qty * unitPrice')
     await user.click(screen.getByRole('button', { name: /^add rule$/i }))
 
@@ -486,10 +476,7 @@ describe('the rule kind no builder could write', () => {
     mount()
 
     await user.click(screen.getByRole('button', { name: /add a rule/i }))
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /what the rule does/i }),
-      'computed',
-    )
+    await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'computed')
 
     expect(screen.queryByRole('button', { name: /add a comparison/i })).toBeNull()
   })
@@ -499,14 +486,9 @@ describe('the rule kind no builder could write', () => {
     mount()
 
     await user.click(screen.getByRole('button', { name: /add a rule/i }))
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /what the rule does/i }),
-      'computed',
-    )
+    await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'computed')
 
-    expect(
-      (screen.getByRole('button', { name: /^add rule$/i }) as HTMLButtonElement).disabled,
-    ).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: /^add rule$/i }).disabled).toBe(true)
   })
 })
 
@@ -538,7 +520,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
         { key: 'canton', type: 'text', label: 'Canton' },
       ],
     },
-  } as FormSchema
+  }
 
   const open = async () => {
     const user = userEvent.setup()
@@ -562,11 +544,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
 
     const value = screen.getByLabelText('Value')
     expect(value.tagName).toBe('SELECT')
-    expect([...(value as HTMLSelectElement).options].map((option) => option.text)).toEqual([
-      'Choose a value',
-      'Switzerland',
-      'Germany',
-    ])
+    expect([...(value as HTMLSelectElement).options].map((option) => option.text)).toEqual(['Choose a value', 'Switzerland', 'Germany'])
     await user.selectOptions(value, 'DE')
     expect(screen.getByText('country == "DE"')).toBeTruthy()
   })
@@ -575,18 +553,15 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
     const { user } = await open()
 
     await user.selectOptions(screen.getByLabelText('Field'), 'terms')
-    expect([...(screen.getByLabelText('Value') as HTMLSelectElement).options].map((o) => o.text)).toEqual(
-      ['Yes', 'No'],
-    )
+    expect([...screen.getByLabelText<HTMLSelectElement>('Value').options].map((o) => o.text)).toEqual(['Yes', 'No'])
 
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
-    expect((screen.getByLabelText('Value') as HTMLInputElement).type).toBe('date')
+    expect(screen.getByLabelText<HTMLInputElement>('Value').type).toBe('date')
   })
 
   test('and the comparisons offered are the ones the field can take', async () => {
     const { user } = await open()
-    const offered = () =>
-      [...(screen.getByLabelText('Comparison') as HTMLSelectElement).options].map((o) => o.value)
+    const offered = () => [...screen.getByLabelText<HTMLSelectElement>('Comparison').options].map((o) => o.value)
 
     await user.selectOptions(screen.getByLabelText('Field'), 'leave')
     expect(offered()).toContain('isBefore')
@@ -610,9 +585,7 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
     await user.selectOptions(screen.getByLabelText('Match'), 'any')
     await user.click(screen.getByRole('button', { name: 'Add rule' }))
 
-    expect(session.document().logic?.rules[0]?.cel).toBe(
-      'country == "CH" || (age != null && age >= 18.0 && terms == true)',
-    )
+    expect(session.document().logic?.rules[0]?.cel).toBe('country == "CH" || (age != null && age >= 18.0 && terms == true)')
     expect(session.canPublish().valid).toBe(true)
   })
 
@@ -655,16 +628,14 @@ describe('a rule on a field in a repeater row', () => {
     render(<LogicPanel session={session} keyPath={['items', 'note']} />)
     await user.click(screen.getByRole('button', { name: 'Add a rule' }))
 
-    const field = screen.getByLabelText('Field') as HTMLSelectElement
+    const field = screen.getByLabelText<HTMLSelectElement>('Field')
     expect([...field.options].map((option) => option.text)).toContain('Quantity in this row')
     await user.selectOptions(field, 'items[].qty')
     await user.selectOptions(screen.getByLabelText('Comparison'), 'isAtLeast')
     await user.type(screen.getByLabelText('Value'), '3')
     await user.click(screen.getByRole('button', { name: 'Add rule' }))
 
-    expect(rulesOf(session)).toMatchObject([
-      { target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty >= 3.0' },
-    ])
+    expect(rulesOf(session)).toMatchObject([{ target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty >= 3.0' }])
     expect(session.canPublish().valid).toBe(true)
   })
 })

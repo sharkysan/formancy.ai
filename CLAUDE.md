@@ -117,6 +117,10 @@ by whoever made it; one deleted by hand first has its pull request merged with
 the branch's tip as the merged head
 ([0152](docs/decisions/0152-a-merged-branch-is-deleted.md)).
 
+**A pull request that holds a commit `.git-blame-ignore-revs` names merges with "Create a
+merge commit"**, never a squash or a rebase: either would give that commit another SHA, and the
+file would name nothing on `main` ([0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
+
 **Commit as `Daniel Bacher <dbacher@gmail.com>`**, never
 `daniel.bacher@ergon.ch`.
 
@@ -267,11 +271,18 @@ exactly that reason.
 
 ## Checks before pushing
 
-CI runs `pnpm build`, `pnpm build:web`, `pnpm typecheck`, `pnpm test:coverage`,
-`pnpm check:pkg`, `pnpm test:e2e:install`, `pnpm test:e2e:angular` and `pnpm test:browser` —
-the two install tests once per React and Angular version in `compatibility.json`, and the
-engine and server once per Node version there. Run the ones
+CI runs `pnpm build`, `pnpm build:web`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`,
+`pnpm test:coverage`, `pnpm check:pkg`, `pnpm test:e2e:install`, `pnpm test:e2e:angular` and
+`pnpm test:browser` — the two install tests once per React and Angular version in
+`compatibility.json`, and the engine and server once per Node version there. Run the ones
 for the packages you changed.
+
+Run `pnpm format` before committing, and `pnpm lint` after `pnpm build`, since the type-aware
+rules read the built declarations: `verify`, and a release before it publishes, fail a
+TypeScript or JavaScript file that breaks a lint rule or that Prettier would write otherwise
+([0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)). A finding is fixed, not disabled; a disable comment is for a finding that is
+deliberate, and says why after `--`. `apps/docs/src/lint.test.ts` holds what the rules reach
+and that both workflows run them.
 
 `build:web` is not redundant with `build`: it composes the landing page, the
 playground and the docs under one origin, and it carries the check for
@@ -315,6 +326,10 @@ Do not restate these here; go and read them.
 - **One suite, N drivers**, and why element lookup is restricted to role and
   accessible name — [0033](docs/decisions/0033-one-suite-n-drivers.md) and
   [0034](docs/decisions/0034-accessible-name-only.md).
+- **The lint rules and the format** are `@formancy/code-style`'s, which the four formancy
+  repositories share: until the others pin it, a rule is changed in Formancy Health's module
+  first and copied into `packages/code-style/src` byte for byte, never changed here alone —
+  [0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md).
 - **TypeScript is pinned to `~6.0.3`** because Angular 22 requires
   `>=6.0 <6.1`; it lives in the workspace catalog once, with the reason beside
   it — [0039](docs/decisions/0039-pin-typescript.md). `latest` is 7.x and

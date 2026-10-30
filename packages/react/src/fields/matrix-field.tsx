@@ -24,10 +24,7 @@ export function MatrixField({ path, label }: FieldComponentProps) {
     label: engine.text(row.label) ?? row.value,
   }))
   const showError = field.touched && field.errors.length > 0
-  const answer =
-    typeof field.value === 'object' && field.value !== null && !Array.isArray(field.value)
-      ? (field.value as Record<string, unknown>)
-      : {}
+  const answer = typeof field.value === 'object' && field.value !== null && !Array.isArray(field.value) ? (field.value as Record<string, unknown>) : {}
 
   const choose = (row: string, column: string): void => {
     field.setValue({ ...answer, [row]: column })

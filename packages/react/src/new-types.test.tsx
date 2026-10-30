@@ -98,9 +98,7 @@ describe('selectboxes', () => {
     // "At least one" is a property of the question. On each box it would
     // announce every option as required, which is the opposite of what it says.
     const group = screen.getByRole('group', { name: 'Topics' })
-    const described = (group.getAttribute('aria-describedby') ?? '')
-      .split(/\s+/)
-      .map((id) => document.getElementById(id)?.textContent?.trim())
+    const described = (group.getAttribute('aria-describedby') ?? '').split(/\s+/).map((id) => document.getElementById(id)?.textContent?.trim())
 
     expect(described).toContain('required')
     for (const box of screen.getAllByRole('checkbox')) {
@@ -130,13 +128,7 @@ describe('richtext', () => {
     const toolbar = screen.getByRole('toolbar', { name: 'Formatting for Notes' })
     const buttons = within(toolbar).getAllByRole('button')
 
-    expect(buttons.map((button) => button.textContent)).toEqual([
-      'BBold',
-      'IItalic',
-      '↗Link',
-      '•Bulleted list',
-      '1.Numbered list',
-    ])
+    expect(buttons.map((button) => button.textContent)).toEqual(['BBold', 'IItalic', '↗Link', '•Bulleted list', '1.Numbered list'])
     // A roving tabindex: five stops between a keyboard user and the box they
     // came to type in is five too many.
     expect(buttons.filter((button) => button.getAttribute('tabindex') === '0')).toHaveLength(1)
@@ -146,7 +138,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello there')
     box.setSelectionRange(0, 5)
     await user.click(screen.getByRole('button', { name: 'Bold' }))
@@ -160,7 +152,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello')
     box.setSelectionRange(0, 5)
     await user.click(screen.getByRole('button', { name: 'Bold' }))
@@ -174,7 +166,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello')
     box.setSelectionRange(0, 5)
     box.focus()
@@ -198,7 +190,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     fireEvent.change(box, { target: { value: 'one\ntwo' } })
     box.setSelectionRange(0, 7)
     await user.click(screen.getByRole('button', { name: 'Bulleted list' }))
@@ -210,7 +202,7 @@ describe('richtext', () => {
     const user = userEvent.setup()
     mount(schema)
 
-    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    const box = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Notes' })
     await user.type(box, 'hello')
     box.setSelectionRange(0, 5)
     await user.click(screen.getByRole('button', { name: 'Bold' }))
@@ -234,10 +226,7 @@ describe('richtext', () => {
    * start of a key descriptor, which is exactly the punctuation this grammar
    * uses — so typing a link would send keystrokes nobody meant.
    */
-  const write = async (
-    user: ReturnType<typeof userEvent.setup>,
-    markup: string,
-  ): Promise<void> => {
+  const write = async (user: ReturnType<typeof userEvent.setup>, markup: string): Promise<void> => {
     await user.click(screen.getByRole('textbox', { name: 'Notes' }))
     await user.paste(markup)
   }
@@ -314,10 +303,7 @@ describe('file', () => {
     storageKey: `k-${name}`,
   })
 
-  const pick = async (
-    user: ReturnType<typeof userEvent.setup>,
-    name: string,
-  ): Promise<void> => {
+  const pick = async (user: ReturnType<typeof userEvent.setup>, name: string): Promise<void> => {
     const file = new File(['x'], name, { type: 'application/pdf' })
     await user.upload(screen.getByLabelText('Evidence'), file)
   }
@@ -371,19 +357,14 @@ describe('file', () => {
     })
     const engine = mount(schema, upload)
 
-    const files = [
-      new File(['x'], 'first.pdf', { type: 'application/pdf' }),
-      new File(['x'], 'second.pdf', { type: 'application/pdf' }),
-    ]
+    const files = [new File(['x'], 'first.pdf', { type: 'application/pdf' }), new File(['x'], 'second.pdf', { type: 'application/pdf' })]
     await user.upload(screen.getByLabelText('Evidence'), files)
 
     // The failure is reported, and the file that DID upload is recorded.
     // Discarding it would leave bytes in storage that the submission never
     // mentions -- collected as unclaimed within the day -- while telling
     // somebody their upload failed when half of it did not.
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('second.pdf'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('second.pdf'))
     expect(engine.value()).toEqual({ evidence: [stored('first.pdf')] })
   })
 
@@ -467,9 +448,7 @@ describe('file', () => {
 
     // A file that silently failed is a submission somebody believes carries
     // their evidence and does not.
-    await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('the object store is full'),
-    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('the object store is full'))
   })
 })
 
@@ -478,7 +457,7 @@ describe('time', () => {
     model: {
       fields: [{ key: 'slot', type: 'time', label: 'Slot', earliest: '09:00', latest: '17:00' }],
     },
-  } as Partial<FormSchema>)
+  })
 
   test('is a control a person can find and fill in', async () => {
     // By accessible name, like everything else here: a control a screen reader
@@ -517,7 +496,7 @@ describe('time', () => {
 describe('datetime', () => {
   const schema = base({
     model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
-  } as Partial<FormSchema>)
+  })
 
   test('converts the local wall clock the control shows into a stored instant', () => {
     // No browser has a zoned datetime input, so the control is local and this
@@ -541,7 +520,7 @@ describe('datetime', () => {
     const engine = mount(
       base({
         model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
-      } as Partial<FormSchema>),
+      }),
     )
     // Inside `act`, because a write straight to the engine is an external-store
     // update React has to be given the chance to flush before the DOM is read.
@@ -550,9 +529,8 @@ describe('datetime', () => {
     })
     const pad = (part: number): string => String(part).padStart(2, '0')
     const expected =
-      `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` +
-      `T${pad(local.getHours())}:${pad(local.getMinutes())}`
-    expect((screen.getByLabelText('Starts') as HTMLInputElement).value).toBe(expected)
+      `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` + `T${pad(local.getHours())}:${pad(local.getMinutes())}`
+    expect(screen.getByLabelText<HTMLInputElement>('Starts').value).toBe(expected)
   })
 
   test('never stores a malformed string, whatever the control hands back', () => {
@@ -581,7 +559,7 @@ describe('qrcode', () => {
         ],
       },
     ],
-  } as Partial<FormSchema>)
+  })
 
   test('says what the code IS, with a name attached rather than a label beside it', () => {
     // The bug this exists for, reported by somebody looking at the running playground:
@@ -604,9 +582,7 @@ describe('qrcode', () => {
     // And the name comes from the document's own words, never from a string this
     // renderer invented -- an English caption baked into a renderer is one no
     // catalogue can translate.
-    expect(document.querySelector('[data-formancy-part="code-label"]')?.textContent).toBe(
-      'Your pass',
-    )
+    expect(document.querySelector('[data-formancy-part="code-label"]')?.textContent).toBe('Your pass')
   })
 
   test('shows the value of the answer it encodes, as text', () => {
@@ -640,9 +616,7 @@ describe('qrcode', () => {
     act(() => {
       engine.setValue(['reference'], 'AB-1234')
     })
-    expect(
-      document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state'),
-    ).toBe('ready')
+    expect(document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state')).toBe('ready')
   })
 
   test('does not count as placing the field, so the control still appears', () => {
@@ -653,7 +627,7 @@ describe('qrcode', () => {
       base({
         model: { fields: [{ key: 'reference', type: 'text', label: 'Booking reference' }] },
         layouts: [{ name: 'web', nodes: [{ kind: 'qrcode', path: 'reference' }] }],
-      } as Partial<FormSchema>),
+      }),
     )
     expect(document.querySelector('[data-formancy-part="code"]')).not.toBeNull()
   })
@@ -725,9 +699,7 @@ describe('tabs', () => {
     expect(screen.getByRole('tab', { name: 'Contact' }).getAttribute('aria-selected')).toBe('true')
 
     await user.keyboard('{End}')
-    expect(screen.getByRole('tab', { name: 'Anything else' }).getAttribute('aria-selected')).toBe(
-      'true',
-    )
+    expect(screen.getByRole('tab', { name: 'Anything else' }).getAttribute('aria-selected')).toBe('true')
 
     await user.keyboard('{Home}')
     expect(screen.getByRole('tab', { name: 'About you' }).getAttribute('aria-selected')).toBe('true')
@@ -773,11 +745,7 @@ describe('tabs', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Submit' }))
     expect(document.activeElement).toBe(email)
 
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Contact' }).getAttribute('aria-selected')).toBe(
-        'true',
-      ),
-    )
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Contact' }).getAttribute('aria-selected')).toBe('true'))
   })
 
   test('clicking a tab shows its panel and hides the others', async () => {
@@ -845,11 +813,11 @@ describe('table', () => {
     mount(schema)
 
     const grid = screen.getByRole('group', { name: 'Measurements' })
-    expect(within(grid).getAllByRole('textbox').map((input) => input.getAttribute('name'))).toEqual([
-      'a',
-      'b',
-      'c',
-    ])
+    expect(
+      within(grid)
+        .getAllByRole('textbox')
+        .map((input) => input.getAttribute('name')),
+    ).toEqual(['a', 'b', 'c'])
   })
 })
 
@@ -869,9 +837,7 @@ describe('a field waiting for a check', () => {
     title: 'Sign up',
     model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
     logic: {
-      rules: [
-        { target: 'email', kind: 'check', check: 'email-not-taken', code: 'taken', runsOn: 'both' },
-      ],
+      rules: [{ target: 'email', kind: 'check', check: 'email-not-taken', code: 'taken', runsOn: 'both' }],
     },
   }
 
@@ -883,7 +849,9 @@ describe('a field waiting for a check', () => {
       checks: {
         'email-not-taken': () =>
           new Promise<string | undefined>((resolve) => {
-            release = () => { resolve(undefined) }
+            release = () => {
+              resolve(undefined)
+            }
           }),
       },
     })
@@ -951,10 +919,11 @@ describe('a stepper over a form that skips a page', () => {
     const engine = mount()
     const stepper = screen.getByRole('navigation', { name: /progress/i })
 
-    expect(within(stepper).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      'About you',
-      'Confirm',
-    ])
+    expect(
+      within(stepper)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['About you', 'Confirm'])
 
     await act(async () => {
       engine.setValue(['needsVisa'], true)

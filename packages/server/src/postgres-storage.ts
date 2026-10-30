@@ -54,10 +54,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async updateFormAccess(formId, access) {
-      await db
-        .update(forms)
-        .set({ accessSubmit: access.accessSubmit, allowedOrigins: access.allowedOrigins })
-        .where(eq(forms.id, formId))
+      await db.update(forms).set({ accessSubmit: access.accessSubmit, allowedOrigins: access.allowedOrigins }).where(eq(forms.id, formId))
     },
 
     async setCurrentVersion(formId, versionId) {
@@ -97,11 +94,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
           schemaHash: version.schemaHash,
         })
 
-        const pointed = await tx
-          .update(forms)
-          .set({ currentVersionId: version.id })
-          .where(eq(forms.id, version.formId))
-          .returning({ id: forms.id })
+        const pointed = await tx.update(forms).set({ currentVersionId: version.id }).where(eq(forms.id, version.formId)).returning({ id: forms.id })
 
         // An UPDATE that matched nothing is not an error in SQL, so it has to
         // be looked at: without this, publishing to a form that has been
@@ -130,10 +123,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async findVersionByHash(formId, schemaHash) {
-      const rows = await db
-        .select()
-        .from(formVersions)
-        .where(eq(formVersions.formId, formId))
+      const rows = await db.select().from(formVersions).where(eq(formVersions.formId, formId))
       const row = rows.find((candidate) => candidate.schemaHash === schemaHash)
       if (row === undefined) return undefined
       return {
@@ -257,9 +247,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         ...(row.actorId === null ? {} : { actorId: row.actorId }),
         ...(row.subject === null ? {} : { subject: row.subject }),
         ...(row.requestId === null ? {} : { requestId: row.requestId }),
-        ...(row.detail === null
-          ? {}
-          : { detail: row.detail as NonNullable<AuditEntry['detail']> }),
+        ...(row.detail === null ? {} : { detail: row.detail as NonNullable<AuditEntry['detail']> }),
       }))
     },
 
@@ -366,12 +354,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async deadDeliveries(limit) {
-      const rows = await db
-        .select()
-        .from(deliveries)
-        .where(eq(deliveries.state, 'dead'))
-        .orderBy(desc(deliveries.nextAttemptAt))
-        .limit(limit)
+      const rows = await db.select().from(deliveries).where(eq(deliveries.state, 'dead')).orderBy(desc(deliveries.nextAttemptAt)).limit(limit)
       return rows.map(toDeliveryRecord)
     },
 
@@ -409,11 +392,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async listSubmissionsByForm(formId) {
-      const rows = await db
-        .select()
-        .from(submissions)
-        .where(eq(submissions.formId, formId))
-        .orderBy(desc(submissions.submittedAt), desc(submissions.id))
+      const rows = await db.select().from(submissions).where(eq(submissions.formId, formId)).orderBy(desc(submissions.submittedAt), desc(submissions.id))
       return rows.map(toSubmissionRecord)
     },
 
@@ -436,11 +415,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async listVersionsByForm(formId) {
-      const rows = await db
-        .select()
-        .from(formVersions)
-        .where(eq(formVersions.formId, formId))
-        .orderBy(desc(formVersions.version))
+      const rows = await db.select().from(formVersions).where(eq(formVersions.formId, formId)).orderBy(desc(formVersions.version))
       return rows.map((row) => ({
         id: row.id,
         formId: row.formId,
@@ -490,13 +465,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
   }
 }
 
-function toSubmissionRecord(row: {
-  id: string
-  formId: string
-  formVersionId: string
-  data: unknown
-  submittedAt: Date
-}) {
+function toSubmissionRecord(row: { id: string; formId: string; formVersionId: string; data: unknown; submittedAt: Date }) {
   return {
     id: row.id,
     formId: row.formId,

@@ -17,7 +17,7 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'What the person filling the form in reads next to this field, or a reference to it in the message catalogue.':
     'Ce que lit la personne qui remplit le formulaire à côté de ce champ, ou une référence vers ce texte dans le catalogue de messages.',
   Autofill: 'Remplissage automatique',
-  'What the answer is, in the words browsers and assistive technology share — `email`, `given-name`, `postal-code` — so a browser can fill it in and a person\'s own tools can mark it, as WCAG 1.3.5 asks of a field that collects information about the person filling the form in. One of the input purposes the standard names, except the password and payment-card ones: a form platform keeps its answers, and storing a card number or a password in a submission is not something to invite. On text, long text, number, date and choice fields. Needs spec version 5.':
+  "What the answer is, in the words browsers and assistive technology share — `email`, `given-name`, `postal-code` — so a browser can fill it in and a person's own tools can mark it, as WCAG 1.3.5 asks of a field that collects information about the person filling the form in. One of the input purposes the standard names, except the password and payment-card ones: a form platform keeps its answers, and storing a card number or a password in a submission is not something to invite. On text, long text, number, date and choice fields. Needs spec version 5.":
     'Ce qu’est la réponse, dans les mots que partagent les navigateurs et les technologies d’assistance – `email`, `given-name`, `postal-code` –, pour qu’un navigateur puisse la remplir et que les outils de la personne puissent la signaler, comme le demande le WCAG 1.3.5 pour un champ qui recueille des informations sur la personne qui remplit le formulaire. L’un des usages que nomme la norme, sauf ceux des mots de passe et des cartes de paiement : une plateforme de formulaires conserve ses réponses, et un numéro de carte ou un mot de passe dans une soumission n’est pas à inviter. Sur les champs texte, texte long, nombre, date et choix. Nécessite la version 5 de la spécification.',
   Placeholder: 'Texte indicatif',
   'An example of the answer, shown in the empty box until somebody types — "079 123 45 67". Never instead of a label: it disappears as soon as there is an answer, and many readers never announce it, so what the question asks belongs in the label and how to answer it in the description. On a masked field it replaces the shape the control would show. Text, or a reference to it in the message catalogue. On text, long text and number fields. Needs spec version 5.':
@@ -59,8 +59,7 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show the tick-box as a switch. The answer is unchanged: still true, false, or untouched.':
     'L’apparence de ce champ. Présentation seulement : cela ne change jamais ce que le champ recueille ni ce qui est enregistré. Laissez vide pour la commande par défaut. Affiche la case à cocher comme un interrupteur. La réponse ne change pas : vrai, faux ou non touché.',
   Options: 'Choix',
-  'The answers this field offers, in the order they appear.':
-    'Les réponses que propose ce champ, dans l’ordre où elles apparaissent.',
+  'The answers this field offers, in the order they appear.': 'Les réponses que propose ce champ, dans l’ordre où elles apparaissent.',
   'How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Let somebody type to narrow the options instead of scrolling them. The answer is still one of the options offered.':
     'L’apparence de ce champ. Présentation seulement : cela ne change jamais ce que le champ recueille ni ce qui est enregistré. Laissez vide pour la commande par défaut. Permet de taper pour réduire les choix au lieu de les faire défiler. La réponse reste l’un des choix proposés.',
   'Options source': 'Source des choix',
@@ -113,8 +112,7 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'How many rows the repeater may hold. No add button is offered past it, and a submission with more rows is refused.':
     'Combien de lignes la répétition peut contenir. Au-delà, aucun bouton d’ajout n’est proposé, et un envoi avec plus de lignes est refusé.',
   'Add button label': 'Libellé du bouton d’ajout',
-  'The accessible name of the control that adds a row.':
-    'Le nom accessible de la commande qui ajoute une ligne.',
+  'The accessible name of the control that adds a row.': 'Le nom accessible de la commande qui ajoute une ligne.',
   'Remove button label': 'Libellé du bouton de suppression',
   "The accessible name of the control that removes a row. The renderer appends the row's position, so a screen reader user hears which row a button kills.":
     'Le nom accessible de la commande qui supprime une ligne. Le moteur de rendu y ajoute la position de la ligne, afin qu’une personne utilisant un lecteur d’écran entende quelle ligne un bouton supprime.',
@@ -137,17 +135,14 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   "What a reader is told this code IS. Required, because it is the code's accessible content: the picture is decoration a screen reader cannot use, and the value beneath it is a bare string — a booking reference announced with nothing to say what it is. Not the field's own label, which names the control somewhere else on the page.":
     'Ce que l’on dit à la personne que ce code EST. Obligatoire, car c’est le contenu accessible du code : l’image est une décoration inutilisable par un lecteur d’écran, et la valeur en dessous est une chaîne nue — une référence de réservation annoncée sans rien qui dise ce qu’elle est. Pas le libellé du champ lui-même, qui nomme la commande ailleurs sur la page.',
   'Single-line text': 'Texte sur une ligne',
-  'One line of free text: a name, a reference, a short answer.':
-    'Une ligne de texte libre : un nom, une référence, une réponse courte.',
+  'One line of free text: a name, a reference, a short answer.': 'Une ligne de texte libre : un nom, une référence, une réponse courte.',
   'Multi-line text': 'Texte sur plusieurs lignes',
-  'A box several lines tall, for a message or a description.':
-    'Une zone de plusieurs lignes, pour un message ou une description.',
+  'A box several lines tall, for a message or a description.': 'Une zone de plusieurs lignes, pour un message ou une description.',
   Number: 'Nombre',
   'A numeric answer, for amounts and counts. Do not use it for phone numbers, postcodes or account numbers: those lose their leading zeros.':
     'Une réponse numérique, pour des montants et des quantités. À ne pas utiliser pour des numéros de téléphone, des codes postaux ou des numéros de compte : ils perdent leurs zéros initiaux.',
   Checkbox: 'Case à cocher',
-  'A single yes-or-no answer, such as accepting the terms.':
-    'Une seule réponse oui ou non, comme l’acceptation des conditions.',
+  'A single yes-or-no answer, such as accepting the terms.': 'Une seule réponse oui ou non, comme l’acceptation des conditions.',
   Dropdown: 'Liste déroulante',
   'One answer picked from a list, shown collapsed. Best when the list is long.':
     'Une réponse choisie dans une liste, affichée repliée. Idéal pour une longue liste.',
@@ -163,8 +158,7 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'Text shown to the reader that collects nothing: a heading, an explanation, a notice.':
     'Un texte montré à la personne qui ne recueille rien : un titre, une explication, un avis.',
   Group: 'Groupe',
-  'Related fields kept together on the same page. Collects nothing itself.':
-    'Des champs liés, gardés ensemble sur la même page. Ne recueille rien lui-même.',
+  'Related fields kept together on the same page. Collects nothing itself.': 'Des champs liés, gardés ensemble sur la même page. Ne recueille rien lui-même.',
   Repeater: 'Répétition',
   'A set of fields the reader can fill in more than once, such as one block per passenger. A repeater cannot be placed inside another repeater in this version of the spec.':
     'Un ensemble de champs que l’on peut remplir plusieurs fois, comme un bloc par passager. Une répétition ne peut pas être placée dans une autre dans cette version de la spécification.',
@@ -193,7 +187,7 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'How many options must be put in order. Set it to the number of options to ask for a complete order; leave it unset and any number may be ranked — use `required` rather than a minimum of 1, so the reader is told before they start.':
     'Combien d’options doivent être mises en ordre. Réglez-le sur le nombre d’options pour demander un ordre complet ; sans valeur, on peut en classer autant qu’on veut — utilisez `required` plutôt qu’un minimum de 1, pour que la personne le sache avant de commencer.',
   'Most ranked': 'Classées au maximum',
-  'How many options may be put in order, which is how \"your top three\" is asked.':
+  'How many options may be put in order, which is how "your top three" is asked.':
     'Combien d’options peuvent être mises en ordre : c’est ainsi qu’on demande « vos trois premiers ».',
   Rows: 'Lignes',
   'The things the question is asked of, one answer each. The options are the columns every row shares.':

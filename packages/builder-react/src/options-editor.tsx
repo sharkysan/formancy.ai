@@ -124,12 +124,7 @@ export function OptionsEditor({
               />
 
               <label htmlFor={`${id}-value-${String(index)}`}>{text('options.value')}</label>
-              <input
-                id={`${id}-value-${String(index)}`}
-                type="text"
-                value={option.value}
-                onChange={(event) => replace(index, { value: event.target.value })}
-              />
+              <input id={`${id}-value-${String(index)}`} type="text" value={option.value} onChange={(event) => replace(index, { value: event.target.value })} />
 
               {pictures ? (
                 <>
@@ -181,7 +176,7 @@ export function OptionsEditor({
                 // Named, not an unlabelled ✕: five identical "remove" buttons
                 // are five identical announcements.
                 aria-label={text('options.remove', {
-                  name: option.label === '' ? option.value : String(option.label),
+                  name: typeof option.label === 'string' && option.label !== '' ? option.label : option.value,
                 })}
                 onClick={() => commit(draft.filter((_, at) => at !== index))}
               >

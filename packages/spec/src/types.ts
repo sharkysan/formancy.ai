@@ -65,7 +65,6 @@ export const SPEC_1_FIELD_TYPES = [
   'repeater',
 ] as const satisfies readonly FieldType[]
 
-
 /** A reference into the message catalogue, in place of a literal string. */
 export interface MessageRef {
   $t: string
@@ -80,7 +79,6 @@ export interface FormI18n {
   /** locale -> message id -> text. Non-default locales may be partial. */
   messages: Record<string, Record<string, string>>
 }
-
 
 export interface FormModel {
   fields: FieldDef[]
@@ -136,14 +134,7 @@ export const UNSTORABLE_KEY = '__proto__'
  * lists answers is "may a document declaring version N use this", and an answer
  * computed from two other lists is one nobody can read off the page.
  */
-export const SPEC_2_FIELD_TYPES = [
-  ...SPEC_1_FIELD_TYPES,
-  'selectboxes',
-  'time',
-  'datetime',
-  'file',
-  'richtext',
-] as const
+export const SPEC_2_FIELD_TYPES = [...SPEC_1_FIELD_TYPES, 'selectboxes', 'time', 'datetime', 'file', 'richtext'] as const
 
 /** Field types version 3 defines: version 2's, plus the signature. */
 export const SPEC_3_FIELD_TYPES = [...SPEC_2_FIELD_TYPES, 'signature'] as const
@@ -201,12 +192,7 @@ export type ContainerFieldType = (typeof CONTAINER_FIELD_TYPES)[number]
  * format: anything reading a formancy document has to agree about it, or two
  * readers disagree about whether a form is showing a field.
  */
-export const LIST_VALUED_FIELD_TYPES = [
-  'selectboxes',
-  'ranking',
-  'file',
-  'repeater',
-] as const satisfies readonly FieldType[]
+export const LIST_VALUED_FIELD_TYPES = ['selectboxes', 'ranking', 'file', 'repeater'] as const satisfies readonly FieldType[]
 
 export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
 
@@ -243,7 +229,6 @@ export const TEMPORAL_SHAPES = {
 export const TEMPORAL_FIELD_TYPES = ['date', 'time', 'datetime'] as const satisfies readonly FieldType[]
 
 export type TemporalFieldType = (typeof TEMPORAL_FIELD_TYPES)[number]
-
 
 /**
  * One column of a repeater arranged as a grid.
@@ -288,7 +273,6 @@ export interface DataGridColumn {
   header?: Text
 }
 
-
 /**
  * What a `signature` field collects: a mark, or a name.
  *
@@ -312,9 +296,7 @@ export interface DataGridColumn {
  * equipped to hold. A signature here is a mark somebody made, not evidence
  * about their body.
  */
-export type SignatureAnswer =
-  | { drawn: Array<Array<[number, number]>>; typed?: never }
-  | { typed: string; drawn?: never }
+export type SignatureAnswer = { drawn: Array<Array<[number, number]>>; typed?: never } | { typed: string; drawn?: never }
 
 export interface FieldDef {
   /**
@@ -488,7 +470,6 @@ export interface FieldDef {
 /** A closed list on purpose: each entry is one well-tested check, not a
  *  per-form regular expression. */
 export type FieldFormat = 'email' | 'url' | 'uuid'
-
 
 /** A row of a matrix: what it stores the answer under, and what it says. No picture. */
 export interface MatrixRow {

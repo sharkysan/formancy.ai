@@ -9,7 +9,6 @@ import type { StoredFile, Uploader } from '../uploads.js'
 import { FieldShell } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
-
 /**
  * The file control, over an uploader the host supplies.
  *
@@ -119,22 +118,12 @@ export function FileField({ path, label }: FieldComponentProps) {
                   disabled button still announces a control that does nothing. The
                   position is in the name, so nobody counts rows before pressing. */}
               {index > 0 ? (
-                <button
-                  type="button"
-                  data-formancy-part="file-up"
-                  disabled={field.disabled}
-                  onClick={() => field.setValue(moved(files, index, index - 1))}
-                >
+                <button type="button" data-formancy-part="file-up" disabled={field.disabled} onClick={() => field.setValue(moved(files, index, index - 1))}>
                   {text('file.up', { name: file.name, position: index + 1, count: files.length })}
                 </button>
               ) : null}
               {index < files.length - 1 ? (
-                <button
-                  type="button"
-                  data-formancy-part="file-down"
-                  disabled={field.disabled}
-                  onClick={() => field.setValue(moved(files, index, index + 1))}
-                >
+                <button type="button" data-formancy-part="file-down" disabled={field.disabled} onClick={() => field.setValue(moved(files, index, index + 1))}>
                   {text('file.down', { name: file.name, position: index + 1, count: files.length })}
                 </button>
               ) : null}
@@ -208,17 +197,7 @@ function moved(files: readonly StoredFile[], from: number, to: number): StoredFi
 }
 
 /** A file not yet in the answer: waiting, being sent, or refused. */
-function PendingRow({
-  entry,
-  queue,
-  disabled,
-  text,
-}: {
-  entry: PendingUpload
-  queue: UploadQueue<File>
-  disabled: boolean
-  text: FormText
-}) {
+function PendingRow({ entry, queue, disabled, text }: { entry: PendingUpload; queue: UploadQueue<File>; disabled: boolean; text: FormText }) {
   const failed = entry.state === 'failed'
   return (
     <li data-formancy-part="file-item" data-state={entry.state}>
@@ -233,9 +212,7 @@ function PendingRow({
           {...(entry.total === undefined ? {} : { value: entry.sent, max: entry.total })}
         />
       ) : null}
-      {failed ? (
-        <span data-formancy-part="file-error">{text('file.notAttached', { reason: entry.reason ?? '' })}</span>
-      ) : null}
+      {failed ? <span data-formancy-part="file-error">{text('file.notAttached', { reason: entry.reason ?? '' })}</span> : null}
       {failed ? (
         <button type="button" disabled={disabled} onClick={() => queue.retry(entry.key)}>
           {text('file.retry', { name: entry.name })}
@@ -306,8 +283,7 @@ function useUploadQueue(wire: string, upload: Uploader | undefined): UploadQueue
  */
 function FileThumbnail({ source }: { source: File | undefined }) {
   const canvas = useRef<HTMLCanvasElement>(null)
-  const drawable =
-    source !== undefined && source.type.startsWith('image/') && typeof createImageBitmap === 'function'
+  const drawable = source !== undefined && source.type.startsWith('image/') && typeof createImageBitmap === 'function'
 
   useEffect(() => {
     if (!drawable) return

@@ -1,14 +1,7 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { MODEL_REQUEST_KINDS } from '@formancy/builder-core'
 import { completeBuilderRequest } from '@formancy/server-core'
-import type {
-  Actor,
-  AuditDraft,
-  BuilderRequest,
-  BuilderRequestOutcome,
-  Cancellation,
-  Completer,
-} from '@formancy/server-core'
+import type { Actor, AuditDraft, BuilderRequest, BuilderRequestOutcome, Cancellation, Completer } from '@formancy/server-core'
 import type { ModelProvider } from '../model-settings.js'
 import { limited } from '../rate-limits.js'
 import type { Budget } from '../rate-limits.js'
@@ -55,7 +48,7 @@ export async function modelRoutes(
     limit,
   }: {
     model: DeploymentModel | undefined
-    requires: (action: 'form.publish') => preHandlerHookHandler
+    requires: (action: 'form.publish') => preHandlerAsyncHookHandler
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
     limit: Budget
   },
@@ -110,9 +103,7 @@ export async function modelRoutes(
             outcome: outcome.ok ? 'answered' : outcome.failure,
             // The provider's status, which is what an operator has to go on, here and in
             // the log; its words go nowhere (SAFETY-ANALYSIS C3).
-            ...(!outcome.ok && outcome.failure === 'unavailable' && outcome.status !== undefined
-              ? { status: outcome.status }
-              : {}),
+            ...(!outcome.ok && outcome.failure === 'unavailable' && outcome.status !== undefined ? { status: outcome.status } : {}),
           },
         })
       }
@@ -157,9 +148,7 @@ function answer(reply: FastifyReply, request: FastifyRequest, outcome: BuilderRe
         message: `kind must be one of ${MODEL_REQUEST_KINDS.join(', ')}: the requests formancy makes of a model.`,
       })
     case 'no_user':
-      return reply
-        .code(400)
-        .send({ error: 'bad_request', message: 'Body needs { kind, user }, user being the text to ask.' })
+      return reply.code(400).send({ error: 'bad_request', message: 'Body needs { kind, user }, user being the text to ask.' })
     case 'refused':
       return reply.send({ declined: outcome.reason })
     case 'truncated':

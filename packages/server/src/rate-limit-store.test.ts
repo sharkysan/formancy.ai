@@ -48,7 +48,10 @@ afterEach(async () => {
 })
 
 /** An app, every route it registered while it was built, and every limit among them. */
-async function built(storage: Storage, options: Omit<AppOptions, 'authSecret'>): Promise<{
+async function built(
+  storage: Storage,
+  options: Omit<AppOptions, 'authSecret'>,
+): Promise<{
   app: FastifyInstance
   routes: string[]
   limits: Limit[]
@@ -90,7 +93,7 @@ function capture(): { sink: LogSink; lines: () => Array<Record<string, unknown>>
 async function adminSession(storage: Storage): Promise<string> {
   const { app } = await built(storage, { bootstrapAdmin: ADMIN })
   const login = await app.inject({ method: 'POST', url: '/auth/login', payload: ADMIN })
-  return (login.json() as { token: string }).token
+  return login.json<{ token: string }>().token
 }
 
 /** A request to a limited route, with each parameter filled in and the admin's session. */
@@ -203,7 +206,7 @@ describe('the limits the routes register', () => {
       // A HEAD is its GET's route, with the GET's limit, and has no body to read the refusal in.
       if (method === 'HEAD' || counted.has(route)) continue
       const response = await reach(app, { method, url, rateLimit: {} }, 'no-session')
-      const forSession = response.statusCode === 401 && (response.json() as { error?: unknown }).error === 'unauthenticated'
+      const forSession = response.statusCode === 401 && response.json<{ error?: unknown }>().error === 'unauthenticated'
       if (!forSession) unlimited.push(route)
     }
 
@@ -219,9 +222,7 @@ describe('the limits the routes register', () => {
     // whatever the store said — which nobody chose (0170).
     const { limits } = await built(createMemoryStorage(), {})
 
-    const unsaid = limits
-      .filter(({ rateLimit }) => typeof rateLimit.skipOnError !== 'boolean')
-      .map(({ method, url }) => `${method} ${url}`)
+    const unsaid = limits.filter(({ rateLimit }) => typeof rateLimit.skipOnError !== 'boolean').map(({ method, url }) => `${method} ${url}`)
     const misnamed = limits
       .filter(({ rateLimit }) => typeof rateLimit.timeWindow !== 'number' || 'timeWindowMs' in rateLimit)
       .map(({ method, url }) => `${method} ${url}`)
@@ -360,9 +361,7 @@ describe('when the counter cannot answer', () => {
       await app.inject({ method: 'POST', url: '/f/contact-us/submissions', payload: {} })
     }
 
-    expect(log.lines()).toEqual([
-      { time: expect.any(String), level: 'error', event: 'ratelimit.unanswered', kind: 'Error', code: 'ECONNREFUSED' },
-    ])
+    expect(log.lines()).toEqual([{ time: expect.any(String), level: 'error', event: 'ratelimit.unanswered', kind: 'Error', code: 'ECONNREFUSED' }])
     expect(log.text()).not.toMatch(/127\.0\.0\.1|formancy@/)
   })
 
@@ -378,9 +377,7 @@ describe('when the counter cannot answer', () => {
     const response = await app.inject({ method: 'POST', url: '/f/contact-us/submissions', payload: {} })
 
     expect(response.statusCode).toBe(400)
-    expect(log.lines()).toEqual([
-      { time: expect.any(String), level: 'error', event: 'ratelimit.unanswered', kind: 'Error', code: 'RATE_LIMIT_TIMEOUT' },
-    ])
+    expect(log.lines()).toEqual([{ time: expect.any(String), level: 'error', event: 'ratelimit.unanswered', kind: 'Error', code: 'RATE_LIMIT_TIMEOUT' }])
   })
 
   test('a refusal is written on its route, with its 503 and the code that says why', async () => {
@@ -413,8 +410,6 @@ describe('when the counter cannot answer', () => {
     const response = await app.inject({ method: 'POST', url: '/f/contact-us/submissions', payload: {} })
 
     expect(response.statusCode).toBe(400)
-    await vi.waitFor(() =>
-      expect(log.lines()).toContainEqual(expect.objectContaining({ level: 'error', event: 'ratelimit.sweep.failed' })),
-    )
+    await vi.waitFor(() => expect(log.lines()).toContainEqual(expect.objectContaining({ level: 'error', event: 'ratelimit.sweep.failed' })))
   })
 })

@@ -83,10 +83,7 @@ function propertyError(path: string, property: string, versions: Versions): Sche
  * A property is reported only when it is newer than what carries it: a version 3
  * `box` on a `signature` field adds nothing to the field type's own error.
  */
-export function versionErrors(
-  schema: FormSchema,
-  fields: ReadonlyArray<{ field: FieldDef; path: string }>,
-): SchemaError[] {
+export function versionErrors(schema: FormSchema, fields: ReadonlyArray<{ field: FieldDef; path: string }>): SchemaError[] {
   const declared = Number(schema.specVersion)
   if (!Number.isFinite(declared)) return []
 
@@ -101,12 +98,7 @@ export function versionErrors(
   })
 
   /** Every key of `object` that arrived after both its holder and the declared version. */
-  const later = (
-    object: object,
-    since: Readonly<Record<string, number>>,
-    holder: number,
-    at: string,
-  ): void => {
+  const later = (object: object, since: Readonly<Record<string, number>>, holder: number, at: string): void => {
     for (const key of Object.keys(object)) {
       const version = since[key]
       if (version === undefined || version <= holder || version <= declared) continue
@@ -146,17 +138,11 @@ export function versionErrors(
       if (version <= type || version <= declared) continue
       errors.push(propertyError(`${path}/${key}`, key, versions(version)))
     }
-    field.options?.forEach((option, index) =>
-      later(option, OPTION_PROPERTY_SINCE, type, `${path}/options/${String(index)}`),
-    )
-    field.rows?.forEach((row, index) =>
-      later(row, MATRIX_ROW_PROPERTY_SINCE, type, `${path}/rows/${String(index)}`),
-    )
+    field.options?.forEach((option, index) => later(option, OPTION_PROPERTY_SINCE, type, `${path}/options/${String(index)}`))
+    field.rows?.forEach((row, index) => later(row, MATRIX_ROW_PROPERTY_SINCE, type, `${path}/rows/${String(index)}`))
 
     if (type > declared) {
-      errors.push(
-        schemaError(`${path}/type`, 'version.fieldType', { type: field.type, ...versions(type) }),
-      )
+      errors.push(schemaError(`${path}/type`, 'version.fieldType', { type: field.type, ...versions(type) }))
     }
   }
 

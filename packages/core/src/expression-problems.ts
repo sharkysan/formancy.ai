@@ -117,10 +117,7 @@ export function expressionProblems(schema: FormSchema): ExpressionProblem[] {
   if (rules.length === 0) return []
 
   const declarations: VariableDeclarations = Object.fromEntries(
-    topLevelDataFields(schema.model.fields).map((def): [string, DeclaredType] => [
-      def.key,
-      STRICT_TYPES[def.type] ?? 'dyn',
-    ]),
+    topLevelDataFields(schema.model.fields).map((def): [string, DeclaredType] => [def.key, STRICT_TYPES[def.type] ?? 'dyn']),
   )
 
   const problems: ExpressionProblem[] = []
@@ -135,9 +132,7 @@ export function expressionProblems(schema: FormSchema): ExpressionProblem[] {
     // the checker does not have would be reporting it under the wrong rules.
     const kind: ExpressionKind = rule.kind === 'skip' ? 'visible' : rule.kind
 
-    const variables = rule.target.includes('[]')
-      ? { ...declarations, ...ROW_VARIABLES }
-      : declarations
+    const variables = rule.target.includes('[]') ? { ...declarations, ...ROW_VARIABLES } : declarations
 
     const parsed = parse(rule.cel, { variables })
     // A parse failure is the engine's business and is already fatal there;

@@ -48,9 +48,7 @@ export function themeTokens(rules: ReadonlyArray<ThemeRule>): Map<string, Record
     // declares its properties for both, so taking the first match would
     // attribute a scoped declaration to the theme.
     const selectors = selectorText.split(',').map((selector) => selector.trim())
-    const themes = selectors
-      .map((selector) => THEME_ROOT.exec(selector)?.[1])
-      .filter((theme): theme is string => theme !== undefined)
+    const themes = selectors.map((selector) => THEME_ROOT.exec(selector)?.[1]).filter((theme): theme is string => theme !== undefined)
     if (themes.length !== selectors.length) continue
 
     for (const theme of themes) {
@@ -163,20 +161,14 @@ export interface PresetReading {
  * rather than dropped — a preset that half applies and says nothing reads as one that
  * worked.
  */
-export function readPreset(
-  rules: ReadonlyArray<ThemeRule>,
-  theme: string,
-  declared: Readonly<Record<string, string>>,
-): PresetReading {
+export function readPreset(rules: ReadonlyArray<ThemeRule>, theme: string, declared: Readonly<Record<string, string>>): PresetReading {
   const byTheme = themeTokens(rules)
   const forTheme = byTheme.get(theme) ?? {}
 
   const elsewhere = rules
     .filter(({ selectorText, declarations }) => {
       const roots = selectorText.split(',').map((selector) => THEME_ROOT.test(selector.trim()))
-      return (
-        !roots.every(Boolean) && declarations.some(([property]) => property.startsWith('--fm-'))
-      )
+      return !roots.every(Boolean) && declarations.some(([property]) => property.startsWith('--fm-'))
     })
     .map(({ selectorText }) => selectorText)
 
@@ -200,14 +192,10 @@ export function describePreset(file: string, theme: string, reading: PresetReadi
     sentences.push(`Not read: ${reading.undeclared.join(', ')}, which ${theme} does not declare.`)
   }
   if (reading.otherThemes.length > 0) {
-    sentences.push(
-      `It also has tokens for ${reading.otherThemes.join(', ')}: choose that theme and import it again.`,
-    )
+    sentences.push(`It also has tokens for ${reading.otherThemes.join(', ')}: choose that theme and import it again.`)
   }
   if (reading.elsewhere.length > 0) {
-    sentences.push(
-      `Not read: what it declares on ${reading.elsewhere.join(', ')}, which is not a theme's own selector and would not reach a themed form.`,
-    )
+    sentences.push(`Not read: what it declares on ${reading.elsewhere.join(', ')}, which is not a theme's own selector and would not reach a themed form.`)
   }
   return sentences.join(' ')
 }

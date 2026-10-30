@@ -49,8 +49,8 @@ export interface UploadQueueOptions<F, S> {
 
 export interface UploadQueue<F> {
   /** The same array until something changes, so a binding can compare it by identity. */
-  pending(): readonly PendingUpload[]
-  subscribe(listener: () => void): () => void
+  pending(this: void): readonly PendingUpload[]
+  subscribe(this: void, listener: () => void): () => void
   add(files: Iterable<F>): void
   /** Take a file out, whatever it is doing: not sent, stopped, or dismissed after a failure. */
   cancel(key: string): void
@@ -67,10 +67,9 @@ interface Entry<F> {
   stops: Array<() => void>
 }
 
-export function createUploadQueue<
-  F extends { readonly name: string; readonly size: number },
-  S extends { readonly id: string },
->(options: UploadQueueOptions<F, S>): UploadQueue<F> {
+export function createUploadQueue<F extends { readonly name: string; readonly size: number }, S extends { readonly id: string }>(
+  options: UploadQueueOptions<F, S>,
+): UploadQueue<F> {
   let entries: Array<Entry<F>> = []
   let snapshot: readonly PendingUpload[] = []
   let running: Entry<F> | undefined
@@ -83,11 +82,7 @@ export function createUploadQueue<
     for (const listener of [...listeners]) listener()
   }
 
-  const fresh = (
-    entry: Entry<F>,
-    state: PendingUpload['state'],
-    reason?: string,
-  ): PendingUpload => ({
+  const fresh = (entry: Entry<F>, state: PendingUpload['state'], reason?: string): PendingUpload => ({
     key: entry.view.key,
     name: entry.file.name,
     size: entry.file.size,
@@ -240,10 +235,10 @@ export interface FieldUploads<F, S> {
 const formsUploads = new WeakMap<FormEngine, Map<string, FieldUploads<never, never>>>()
 
 /** The uploads of the file field at `wire`, made the first time a control asks. */
-export function fieldUploads<
-  F extends { readonly name: string; readonly size: number },
-  S extends { readonly id: string },
->(engine: FormEngine, wire: string): FieldUploads<F, S> {
+export function fieldUploads<F extends { readonly name: string; readonly size: number }, S extends { readonly id: string }>(
+  engine: FormEngine,
+  wire: string,
+): FieldUploads<F, S> {
   const identity = identityOf(engine, parsePath(wire))
   const key = JSON.stringify(identity)
   let forms = formsUploads.get(engine)
@@ -258,15 +253,13 @@ export function fieldUploads<
   const made: FieldUploads<F, S> = {
     sender: undefined,
     queue: createUploadQueue<F, S>({
-      upload: (file, attempt) =>
-        made.sender === undefined
-          ? Promise.reject(new Error('No upload destination.'))
-          : made.sender(file, attempt, field),
+      upload: (file, attempt) => (made.sender === undefined ? Promise.reject(new Error('No upload destination.')) : made.sender(file, attempt, field)),
       stored: (file) => {
         const path = pathOf(engine, identity)
         if (path === undefined) return
         const before = engine.getFieldSnapshot(path).value
-        engine.setValue(path, [...(Array.isArray(before) ? before : []), file])
+        const earlier: unknown[] = Array.isArray(before) ? before : []
+        engine.setValue(path, [...earlier, file])
       },
       // Visited once its files have settled, so "required" is not shown while the first
       // file is still on its way.
@@ -289,9 +282,7 @@ export function cancelUploads(engine: FormEngine): void {
 type Identity = ReadonlyArray<string | { readonly row: string }>
 
 function identityOf(engine: FormEngine, path: Path): Identity {
-  return path.map((segment, at) =>
-    typeof segment === 'number' ? { row: engine.rowId(path.slice(0, at), segment) } : segment,
-  )
+  return path.map((segment, at) => (typeof segment === 'number' ? { row: engine.rowId(path.slice(0, at), segment) } : segment))
 }
 
 /** Where a row identity is now, or undefined when the row is gone. */

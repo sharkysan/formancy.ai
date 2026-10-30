@@ -55,10 +55,7 @@ export function fieldIds(formId: string, path: Path): FieldIds {
  * Error text is referenced here and must NOT also be a live region — that is
  * the classic double-announcement bug.
  */
-export function describedBy(
-  ids: FieldIds,
-  present: { hint?: boolean; description?: boolean; count?: boolean; error?: boolean },
-): string | undefined {
+export function describedBy(ids: FieldIds, present: { hint?: boolean; description?: boolean; count?: boolean; error?: boolean }): string | undefined {
   const parts: string[] = []
   if (present.hint) parts.push(ids.hint)
   if (present.description) parts.push(ids.description)

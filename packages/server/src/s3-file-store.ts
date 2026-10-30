@@ -105,16 +105,9 @@ export function createS3FileStore(config: S3FileStoreConfig): FileStore {
    * after `timeoutMs`, rather than holding its connection for however long something
    * else takes to close it.
    */
-  const send = async (
-    method: 'GET' | 'PUT' | 'DELETE' | 'HEAD',
-    key: string,
-    body?: Buffer,
-  ): Promise<Answer> => {
+  const send = async (method: 'GET' | 'PUT' | 'DELETE' | 'HEAD', key: string, body?: Buffer): Promise<Answer> => {
     const url = urlFor(key)
-    const payloadHash =
-      body === undefined
-        ? EMPTY_PAYLOAD_SHA256
-        : createHash('sha256').update(body).digest('hex')
+    const payloadHash = body === undefined ? EMPTY_PAYLOAD_SHA256 : createHash('sha256').update(body).digest('hex')
 
     // `content-length` is deliberately neither signed nor set. undici refuses a
     // manually supplied one -- `InvalidArgumentError: invalid content-length
@@ -260,10 +253,7 @@ function clock(timeoutMs: number, request: string) {
  * An abort after the headers errors the body with the clock's reason, so a body the
  * clock ran out on fails rather than ending early and looking complete.
  */
-async function* timed(
-  stream: ReadableStream<Uint8Array>,
-  waiting: ReturnType<typeof clock>,
-): AsyncGenerator<Uint8Array> {
+async function* timed(stream: ReadableStream<Uint8Array>, waiting: ReturnType<typeof clock>): AsyncGenerator<Uint8Array> {
   try {
     for await (const chunk of stream) {
       waiting.stop()
@@ -293,8 +283,5 @@ async function discard(body: Answer['body']): Promise<void> {
  * would make that a conversation instead of an edit.
  */
 function encodeSegment(value: string): string {
-  return encodeURIComponent(value).replace(
-    /[!'()*]/g,
-    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
-  )
+  return encodeURIComponent(value).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)
 }

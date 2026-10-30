@@ -1,12 +1,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import axe from 'axe-core'
 
-import {
-  ACCESSIBILITY_EXCLUSIONS,
-  ACCESSIBILITY_TAGS,
-  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
-} from '@formancy/conformance'
+import { ACCESSIBILITY_EXCLUSIONS, ACCESSIBILITY_TAGS, ACCESSIBILITY_UNMEASURABLE_IN_JSDOM } from '@formancy/conformance'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { createFormText } from '@formancy/core/words'
@@ -44,10 +40,7 @@ const WAITING = { timeout: 5_000 }
  * branch and not the scanner's — a text field with no scanner still collects by
  * typing, and a select whose options come only from a source collects nothing.
  */
-function schema(
-  widget?: 'typeahead',
-  { before = [], logic }: { before?: unknown[]; logic?: unknown } = {},
-): FormSchema {
+function schema(widget?: 'typeahead', { before = [], logic }: { before?: unknown[]; logic?: unknown } = {}): FormSchema {
   return {
     specVersion: '2',
     id: 'sourced',
@@ -119,11 +112,7 @@ const answering = (rows = CANTONS): { sources: OptionsSources; asked: OptionsReq
         debounceMs: 0,
         resolve: (request) => {
           asked.push(request)
-          return Promise.resolve(
-            request.kind === 'labels'
-              ? rows.filter((row) => request.values.includes(row.value))
-              : rows,
-          )
+          return Promise.resolve(request.kind === 'labels' ? rows.filter((row) => request.values.includes(row.value)) : rows)
         },
       },
     },
@@ -145,12 +134,7 @@ describe('a select whose options come from a source', () => {
     mount({ sources })
 
     await waitFor(() => {
-      expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
-        '',
-        'Zürich',
-        'Bern',
-        'Vaud',
-      ])
+      expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['', 'Zürich', 'Bern', 'Vaud'])
     }, WAITING)
   })
 
@@ -238,9 +222,7 @@ describe('a select whose options come from a source', () => {
       initialValue: { canton: 'VD' },
     })
 
-    expect(
-      screen.getAllByRole('option').map((option) => option.textContent),
-    ).toContain('VD')
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toContain('VD')
   })
 })
 
@@ -550,10 +532,7 @@ const paging = (rows = MANY): { sources: OptionsSources; asked: OptionsRequest[]
 }
 
 /** A source whose every answer comes from `answer`, whatever its shape. */
-const by = (
-  answer: (request: OptionsRequest) => unknown,
-  extra: Partial<OptionsSource> = {},
-): { sources: OptionsSources; asked: OptionsRequest[] } => {
+const by = (answer: (request: OptionsRequest) => unknown, extra: Partial<OptionsSource> = {}): { sources: OptionsSources; asked: OptionsRequest[] } => {
   const asked: OptionsRequest[] = []
   return {
     asked,
@@ -744,9 +723,7 @@ describe('a typeahead over a source that pages', () => {
     }, WAITING)
     fireEvent.change(box, { target: { value: between } })
     await waitFor(() => {
-      expect(region().textContent).toBe(
-        answer === undefined ? say('options.tooShort', { count: 2 }) : say('options.failed'),
-      )
+      expect(region().textContent).toBe(answer === undefined ? say('options.tooShort', { count: 2 }) : say('options.failed'))
     }, WAITING)
 
     fireEvent.change(box, { target: { value: 'abz' } })
@@ -882,9 +859,7 @@ describe('a sourced control a rule disables', () => {
     await settle(20)
 
     expect(asked.filter((request) => request.kind === 'search')).toEqual([])
-    expect(asked.filter((request) => request.kind === 'labels').map((request) => request.values)).toEqual([
-      ['VD'],
-    ])
+    expect(asked.filter((request) => request.kind === 'labels').map((request) => request.values)).toEqual([['VD']])
     expect(region().textContent).toBe('')
     expect(box.getAttribute('aria-busy')).toBeNull()
   })
@@ -1015,7 +990,7 @@ describe('a sourced control a rule disables', () => {
     mount({ widget: 'typeahead', sources, initialValue: { canton: 'VD' }, logic: { rules: DISABLED } })
 
     await waitFor(() => {
-      expect((screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement).value).toBe('Vaud')
+      expect(screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' }).value).toBe('Vaud')
     }, WAITING)
     expect(asked.map((request) => request.kind)).toEqual(['labels'])
   })
@@ -1031,7 +1006,7 @@ describe('a sourced control a rule disables', () => {
     // held before this change too; it is here because the gate it goes through is new.
     const { sources, asked } = by(answer)
     mount({ widget: 'typeahead', sources, initialValue: { canton: 'VD' }, logic: { rules: DISABLED } })
-    const box = screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement
+    const box = screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' })
 
     await waitFor(() => {
       expect(asked.map((request) => request.kind)).toEqual(['labels'])
@@ -1075,7 +1050,7 @@ describe('an auditor over what a sourced control says', () => {
 
     mount({ widget: 'typeahead', sources: answering().sources, initialValue: { canton: 'VD' }, logic: { rules: DISABLED } })
     await waitFor(() => {
-      expect((screen.getByRole('combobox', { name: 'Canton' }) as HTMLInputElement).value).toBe('Vaud')
+      expect(screen.getByRole<HTMLInputElement>('combobox', { name: 'Canton' }).value).toBe('Vaud')
     }, WAITING)
     expect(await violationsNow()).toEqual([])
   }, 20_000)

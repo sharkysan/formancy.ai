@@ -129,12 +129,7 @@ export function TranslationsPane({ session, ask, attempts, run }: TranslationsPa
 
         <label>
           {text('translations.new')}
-          <input
-            type="text"
-            value={adding}
-            onChange={(event) => setAdding(event.target.value)}
-            placeholder={text('translations.new.example')}
-          />
+          <input type="text" value={adding} onChange={(event) => setAdding(event.target.value)} placeholder={text('translations.new.example')} />
         </label>
         <button
           type="button"
@@ -201,28 +196,15 @@ export function TranslationsPane({ session, ask, attempts, run }: TranslationsPa
       {/* Keyed by the language: choosing another ends the part's own run and review rather
           than leaving French under review beside German. A run the host holds goes on, and
           the part on another language says where it is. */}
-      {ask === undefined ? null : (
-        <TranslationReview
-          key={chosen}
-          session={session}
-          ask={ask}
-          locale={chosen}
-          attempts={attempts}
-          run={run}
-        />
-      )}
+      {ask === undefined ? null : <TranslationReview key={chosen} session={session} ask={ask} locale={chosen} attempts={attempts} run={run} />}
 
       {problem === null ? null : <p data-formancy-part="translations-problem">{problem}</p>}
 
       {report === undefined ? null : (
         <div data-formancy-part="translations-report">
           <p>{text('translations.written', { count: report.written })}</p>
-          {report.unknown.length === 0 ? null : (
-            <p>{text('translations.unknown', { list: text.list(report.unknown) })}</p>
-          )}
-          {report.stale.length === 0 ? null : (
-            <p>{text('translations.stale', { list: text.list(report.stale) })}</p>
-          )}
+          {report.unknown.length === 0 ? null : <p>{text('translations.unknown', { list: text.list(report.unknown) })}</p>}
+          {report.stale.length === 0 ? null : <p>{text('translations.stale', { list: text.list(report.stale) })}</p>}
         </div>
       )}
 
@@ -245,12 +227,7 @@ export function TranslationsPane({ session, ask, attempts, run }: TranslationsPa
                 <th scope="row">{source}</th>
                 <td>
                   {chosen === defaultLocale ? (
-                    <input
-                      type="text"
-                      aria-label={source}
-                      value={source}
-                      onChange={(event) => session.setMessage(chosen, id, event.target.value)}
-                    />
+                    <input type="text" aria-label={source} value={source} onChange={(event) => session.setMessage(chosen, id, event.target.value)} />
                   ) : (
                     <>
                       <input
@@ -260,9 +237,7 @@ export function TranslationsPane({ session, ask, attempts, run }: TranslationsPa
                         onChange={(event) => session.setMessage(chosen, id, event.target.value)}
                       />
                       {translated === undefined || translated === '' ? (
-                        <span data-formancy-part="translations-missing">
-                          {text('translations.missing')}
-                        </span>
+                        <span data-formancy-part="translations-missing">{text('translations.missing')}</span>
                       ) : null}
                     </>
                   )}
@@ -273,11 +248,7 @@ export function TranslationsPane({ session, ask, attempts, run }: TranslationsPa
         </tbody>
       </table>
 
-      <TranslationsPreview
-        document={document}
-        locale={chosen}
-        label={text('translations.preview', { locale: chosen })}
-      />
+      <TranslationsPreview document={document} locale={chosen} label={text('translations.preview', { locale: chosen })} />
 
       {unused}
     </div>

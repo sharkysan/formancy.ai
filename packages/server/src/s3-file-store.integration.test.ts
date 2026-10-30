@@ -6,6 +6,10 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { createS3FileStore } from './s3-file-store.js'
 import type { FileStore } from './file-store.js'
 
+/** The colour escapes Garage's CLI writes around its output, which the ids and keys are read past. */
+// eslint-disable-next-line no-control-regex -- the escape character is what is being matched
+const ANSI_COLOUR = /\u001b\[[0-9;]*m/g
+
 /**
  * The S3 store against Garage, which is the implementation the design calls for.
  *
@@ -82,7 +86,7 @@ beforeAll(async () => {
   // A node with no layout stores nothing, and says so with an unhelpful error at
   // PUT time rather than at startup.
   const status = await run('status')
-  const nodeId = /^([0-9a-f]{16,})/m.exec(status.replace(/\u001b\[[0-9;]*m/g, ''))?.[1]
+  const nodeId = /^([0-9a-f]{16,})/m.exec(status.replace(ANSI_COLOUR, ''))?.[1]
   if (nodeId === undefined) throw new Error(`Could not find the node id in: ${status}`)
 
   await run('layout', 'assign', '-z', 'dc1', '-c', '1G', nodeId)
@@ -92,7 +96,7 @@ beforeAll(async () => {
   // Positional, not `--name`: v1.0.1 rejects the flag. Checked against
   // `garage key create --help` in the image rather than guessed twice.
   const created = await run('key', 'create', 'test')
-  const plain = created.replace(/\u001b\[[0-9;]*m/g, '')
+  const plain = created.replace(ANSI_COLOUR, '')
   const accessKeyId = /Key ID:\s*(\S+)/.exec(plain)?.[1]
   const secretAccessKey = /Secret key:\s*(\S+)/.exec(plain)?.[1]
   if (accessKeyId === undefined || secretAccessKey === undefined) {

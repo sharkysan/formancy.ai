@@ -28,11 +28,7 @@ describe('a translation of the spec’s words', () => {
     // reworded, fails here until it is translated — rather than appearing in
     // English in a German builder with nothing to say so.
     const texts = schemaTexts()
-    const missing = SHIPPED.flatMap(([locale, words]) =>
-      texts
-        .filter((text) => words[text] === undefined)
-        .map((text) => `${locale}: ${text.slice(0, 60)}`),
-    )
+    const missing = SHIPPED.flatMap(([locale, words]) => texts.filter((text) => words[text] === undefined).map((text) => `${locale}: ${text.slice(0, 60)}`))
 
     expect(texts.length).toBeGreaterThan(100)
     expect(missing).toEqual([])
@@ -55,8 +51,7 @@ describe('a translation of the spec’s words', () => {
     // `required`, `application/pdf`, `.png` and a date written as an answer are
     // the format's own tokens; a translation that "translated" one would tell an
     // author to type something the validator refuses.
-    const quoted = (text: string): string[] =>
-      [...text.matchAll(/`[^`]+`|\d{4}-\d{2}-\d{2}T?[\d:]*Z?|\d{2}:\d{2}/g)].map((m) => m[0])
+    const quoted = (text: string): string[] => [...text.matchAll(/`[^`]+`|\d{4}-\d{2}-\d{2}T?[\d:]*Z?|\d{2}:\d{2}/g)].map((m) => m[0])
     const lost = SHIPPED.flatMap(([locale, words]) =>
       Object.entries(words).flatMap(([english, translated]) =>
         quoted(english)
@@ -78,14 +73,10 @@ describe('the builder shows them in the session’s language', () => {
   const english = createBuilderText()
 
   test('in a property panel', () => {
-    const required = editablePropertiesFor('text', undefined, german).find(
-      (p) => p.name === 'required',
-    )
+    const required = editablePropertiesFor('text', undefined, german).find((p) => p.name === 'required')
 
     expect(required?.title).toBe('Pflichtfeld')
-    expect(
-      editablePropertiesFor('text', undefined, english).find((p) => p.name === 'required')?.title,
-    ).toBe('Required')
+    expect(editablePropertiesFor('text', undefined, english).find((p) => p.name === 'required')?.title).toBe('Required')
   })
 
   test('in a layout property panel', () => {
@@ -104,8 +95,6 @@ describe('the builder shows them in the session’s language', () => {
   test('and falls back to the schema’s English where a language has no translation', () => {
     const partial = createBuilderText({ locale: 'xx', messages: {}, schema: { Required: 'R' } })
 
-    expect(
-      editablePropertiesFor('text', undefined, partial).find((p) => p.name === 'label')?.title,
-    ).toBe('Label')
+    expect(editablePropertiesFor('text', undefined, partial).find((p) => p.name === 'label')?.title).toBe('Label')
   })
 })

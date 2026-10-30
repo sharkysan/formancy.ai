@@ -23,13 +23,8 @@ import type { LogicRule } from './rules.js'
  * be called harmless without evaluating the rule against the data, which is
  * the engine's job and not this function's.
  */
-export function compareRules(
-  previous: readonly LogicRule[],
-  next: readonly LogicRule[],
-  renamed: ReadonlyMap<string, string>,
-): Change[] {
-  const identity = (rule: LogicRule): string =>
-    `${rule.target}|${rule.kind}${rule.code === undefined ? '' : `|${rule.code}`}`
+export function compareRules(previous: readonly LogicRule[], next: readonly LogicRule[], renamed: ReadonlyMap<string, string>): Change[] {
+  const identity = (rule: LogicRule): string => `${rule.target}|${rule.kind}${rule.code === undefined ? '' : `|${rule.code}`}`
 
   /*
    * The before-side read as though the renames had already happened.
@@ -101,10 +96,7 @@ function repath(rule: LogicRule, renamed: ReadonlyMap<string, string>): LogicRul
   if (renamed.size === 0) return rule
 
   const sources = [...renamed.keys()].sort((a, b) => b.length - a.length)
-  const pattern = new RegExp(
-    `(?<![A-Za-z0-9_$])(${sources.map(escapeForPattern).join('|')})(?![A-Za-z0-9_$])`,
-    'g',
-  )
+  const pattern = new RegExp(`(?<![A-Za-z0-9_$])(${sources.map(escapeForPattern).join('|')})(?![A-Za-z0-9_$])`, 'g')
   const move = (text: string): string => text.replace(pattern, (match) => renamed.get(match) ?? match)
 
   return {

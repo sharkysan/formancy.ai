@@ -56,7 +56,7 @@ function files(directory: string, keep: (name: string) => boolean): string[] {
 }
 
 const markdown = (name: string): boolean => (name.endsWith('.md') || name.endsWith('.mdx')) && name !== 'CHANGELOG.md'
-const pages = (name: string): boolean => name.endsWith('.html') || /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)
+const pages = (name: string): boolean => name.endsWith('.html') || (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name))
 
 /** Every page a reader is expected to read as formancy describing itself. */
 const prose = [
@@ -94,7 +94,13 @@ describe('the documentation names no other product', () => {
   // The landing page is the comparison 0141 removed; this keeps it from coming back by
   // another component.
   test('no page of the site names one', () => {
-    expect(named(site, (product) => product.source, (text) => text)).toEqual([])
+    expect(
+      named(
+        site,
+        (product) => product.source,
+        (text) => text,
+      ),
+    ).toEqual([])
   })
 
   // The FormEngine exception must not hide the type it exists for: the engine's own name in

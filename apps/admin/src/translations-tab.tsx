@@ -43,7 +43,7 @@ export function TranslationsTab({
     }
     // On mount only, like the build tab: re-opening on every keystroke of the
     // source would throw the undo stack away each time this pane edits it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the session is opened on mount only; a keystroke in source must not throw the undo stack away
   }, [])
 
   if (session === null) {

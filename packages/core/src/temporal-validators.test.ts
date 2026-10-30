@@ -43,7 +43,7 @@ const schema: FormSchema = {
       },
     ],
   },
-} as FormSchema
+}
 
 function errorsFor(initialValue: Record<string, unknown>): Record<string, string[]> {
   return createFormEngine({ schema, initialValue }).validate().errors

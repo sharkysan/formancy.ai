@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { createMemoryStorage } from './testing/memory-storage.js'
-import {
-  authenticateApiKey,
-  authenticateLocal,
-  can,
-  createApiKey,
-  createLocalUser,
-} from './auth.js'
+import { authenticateApiKey, authenticateLocal, can, createApiKey, createLocalUser } from './auth.js'
 import type { AuthDeps } from './auth.js'
 
 function djb2(text: string): string {

@@ -69,11 +69,7 @@ export const RULE_KIND_CHOICES: readonly RuleKindChoice[] = [
  * speaking another language reads `text(`rule.${id}.label`)` instead of
  * `label` ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
  */
-function kindChoice(
-  id: LogicRule['kind'],
-  on: RuleKindChoice['on'],
-  writes: RuleKindChoice['writes'],
-): RuleKindChoice {
+function kindChoice(id: LogicRule['kind'], on: RuleKindChoice['on'], writes: RuleKindChoice['writes']): RuleKindChoice {
   return {
     id,
     label: BUILDER_MESSAGES[`rule.${id}.label`],
@@ -107,12 +103,7 @@ export function operatorLabel(id: Operator, text: BuilderText): string {
  * single one is a number somebody has to wonder about. Both panels numbered their
  * rows this way by hand.
  */
-export function comparisonLabel(
-  part: 'field' | 'comparison' | 'value',
-  at: number,
-  count: number,
-  text: BuilderText,
-): string {
+export function comparisonLabel(part: 'field' | 'comparison' | 'value', at: number, count: number, text: BuilderText): string {
   return count > 1 ? text(`logic.${part}.numbered`, { number: at + 1 }) : text(`logic.${part}`)
 }
 
@@ -148,13 +139,8 @@ export function kindCarriesCondition(kind: LogicRule['kind']): boolean {
  * `visible` pointed at a page
  * ([0087](../../../docs/decisions/0087-a-page-can-be-walked-past.md)).
  */
-export function ruleTargetFor(
-  document: FormSchema,
-  keyPath: readonly string[],
-): { target: string; on: 'field' | 'page' } {
-  const node = flatten(document).find(
-    (candidate) => candidate.keyPath.join('.') === keyPath.join('.'),
-  )
+export function ruleTargetFor(document: FormSchema, keyPath: readonly string[]): { target: string; on: 'field' | 'page' } {
+  const node = flatten(document).find((candidate) => candidate.keyPath.join('.') === keyPath.join('.'))
   if (node?.def.type === 'page') {
     return { target: keyPath[keyPath.length - 1] ?? keyPath.join('.'), on: 'page' }
   }
@@ -205,7 +191,7 @@ export function composeRule(input: {
     // the engine's `invalid`, said in the reader's language — every rule used to carry
     // `condition`, which no catalogue words, and the person read that word (0198).
     ...(message === '' ? {} : { code: freshCode(input.rules ?? [], input.target), message }),
-  } as LogicRule
+  }
 }
 
 /** `condition`, or `condition-2` and on, whichever no rule on the field reports yet. */
@@ -234,13 +220,7 @@ export function ruleSays(document: FormSchema, rule: LogicRule): string | undefi
 }
 
 /** Whether what is on screen is enough to add. */
-export function draftIsComplete(input: {
-  kind: LogicRule['kind']
-  draft: ConditionDraft
-  check: string
-  expression?: string
-  message?: string
-}): boolean {
+export function draftIsComplete(input: { kind: LogicRule['kind']; draft: ConditionDraft; check: string; expression?: string; message?: string }): boolean {
   // A check with no name asks nobody, an empty expression calculates nothing,
   // and an empty comparison compiles to an expression about nothing. Which of
   // the three applies depends on the kind.
@@ -253,10 +233,7 @@ export function draftIsComplete(input: {
       // A validate rule says what is wrong as well, where it is asked to — an error that says
       // only that something is leaves the person to guess what would be right. `undefined` is
       // not asked: a document older than spec 5 cannot hold one (0198).
-      return (
-        rowsOf(input.draft).every((row) => row.field !== '') &&
-        (input.kind !== 'validate' || input.message === undefined || input.message.trim() !== '')
-      )
+      return rowsOf(input.draft).every((row) => row.field !== '') && (input.kind !== 'validate' || input.message === undefined || input.message.trim() !== '')
   }
 }
 

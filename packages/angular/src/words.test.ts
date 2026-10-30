@@ -46,8 +46,7 @@ const de = (id: FormWordId, values: Record<string, string | number> = {}): strin
   expect(said).not.toBe(createFormText({ locale: '' })(id, values))
   return said
 }
-const en = (id: FormWordId, values: Record<string, string | number> = {}): string =>
-  createFormText({ locale: '' })(id, values)
+const en = (id: FormWordId, values: Record<string, string | number> = {}): string => createFormText({ locale: '' })(id, values)
 
 const document_ = (fields: unknown[], extra: Record<string, unknown> = {}): FormSchema =>
   ({ specVersion: '5', id: 'worte', title: 'Worte', model: { fields }, ...extra }) as unknown as FormSchema
@@ -78,11 +77,7 @@ async function mount(
   })
   const view = await render(component, {
     componentInputs: inputs,
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine, words === undefined ? {} : { words }),
-      ...providers,
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine, words === undefined ? {} : { words }), ...providers],
   })
   await view.fixture.whenStable()
   return engine
@@ -114,25 +109,15 @@ describe('a German form', () => {
   })
 
   test('names a repeater’s buttons and its rows’ in German when the document does not', async () => {
-    await mount(
-      document_([
-        { key: 'contacts', type: 'repeater', label: 'Kontakt', fields: [{ key: 'email', type: 'text', label: 'E-Mail' }] },
-      ]),
-    )
+    await mount(document_([{ key: 'contacts', type: 'repeater', label: 'Kontakt', fields: [{ key: 'email', type: 'text', label: 'E-Mail' }] }]))
 
     fireEvent.click(screen.getByRole('button', { name: de('repeater.add', { label: 'Kontakt' }) }))
     fireEvent.click(screen.getByRole('button', { name: de('repeater.add', { label: 'Kontakt' }) }))
 
     const remove = de('repeater.remove', { label: 'Kontakt' })
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: de('repeater.removeRow', { remove, position: 1, count: 2 }) })).toBeTruthy(),
-    )
-    expect(
-      screen.getByRole('button', { name: de('repeater.moveDown', { label: 'Kontakt', position: 1, count: 2 }) }),
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: de('repeater.moveUp', { label: 'Kontakt', position: 2, count: 2 }) }),
-    ).toBeTruthy()
+    await waitFor(() => expect(screen.getByRole('button', { name: de('repeater.removeRow', { remove, position: 1, count: 2 }) })).toBeTruthy())
+    expect(screen.getByRole('button', { name: de('repeater.moveDown', { label: 'Kontakt', position: 1, count: 2 }) })).toBeTruthy()
+    expect(screen.getByRole('button', { name: de('repeater.moveUp', { label: 'Kontakt', position: 2, count: 2 }) })).toBeTruthy()
   })
 
   // Said where the add button was once the repeater holds its maximum (0220): the renderer's word,
@@ -156,11 +141,7 @@ describe('a German form', () => {
   })
 
   test('says a group is required in German', async () => {
-    await mount(
-      document_([
-        { key: 'contactBy', type: 'radio', label: 'Kontaktweg', required: true, options: [{ value: 'post', label: 'Post' }] },
-      ]),
-    )
+    await mount(document_([{ key: 'contactBy', type: 'radio', label: 'Kontaktweg', required: true, options: [{ value: 'post', label: 'Post' }] }]))
 
     const group = screen.getByRole('group', { name: 'Kontaktweg' })
     expect(within(group).getByText(de('form.required'))).toBeTruthy()
@@ -170,9 +151,7 @@ describe('a German form', () => {
   test('names a tab with no heading in German', async () => {
     await mount(
       document_([{ key: 'name', type: 'text', label: 'Name' }], {
-        layouts: [
-          { name: 'web', nodes: [{ kind: 'tabs', children: [{ kind: 'section', children: [{ kind: 'field', path: 'name' }] }] }] },
-        ],
+        layouts: [{ name: 'web', nodes: [{ kind: 'tabs', children: [{ kind: 'section', children: [{ kind: 'field', path: 'name' }] }] }] }],
       }),
       { inputs: { layout: 'web' } },
     )
@@ -197,9 +176,7 @@ describe('a German form', () => {
 
     fireEvent.click(screen.getByRole('button', { name: de('ranking.rank', { option: 'Tee' }) }))
 
-    await waitFor(() =>
-      expect(screen.getByRole('list', { name: de('ranking.order', { label: 'Getränke' }) })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('list', { name: de('ranking.order', { label: 'Getränke' }) })).toBeTruthy())
     expect(screen.getByRole('list', { name: de('ranking.pool', { label: 'Getränke' }) })).toBeTruthy()
     expect(screen.getByRole('button', { name: de('ranking.up', { option: 'Tee' }) })).toBeTruthy()
     expect(screen.getByRole('button', { name: de('ranking.down', { option: 'Tee' }) })).toBeTruthy()
@@ -207,21 +184,13 @@ describe('a German form', () => {
   })
 
   test('names a tag picker’s chosen list and its remove buttons in German', async () => {
-    await mount(
-      document_([
-        { key: 'tags', type: 'selectboxes', widget: 'tagpicker', label: 'Themen', options: [{ value: 'a', label: 'Alpha' }] },
-      ]),
-    )
+    await mount(document_([{ key: 'tags', type: 'selectboxes', widget: 'tagpicker', label: 'Themen', options: [{ value: 'a', label: 'Alpha' }] }]))
 
     fireEvent.input(screen.getByRole('combobox', { name: 'Themen' }), { target: { value: 'Al' } })
-    await waitFor(() =>
-      expect(screen.getByRole('listbox', { name: de('options.suggestions', { label: 'Themen' }) })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('listbox', { name: de('options.suggestions', { label: 'Themen' }) })).toBeTruthy())
     fireEvent.click(screen.getByRole('option', { name: 'Alpha' }))
 
-    await waitFor(() =>
-      expect(screen.getByRole('list', { name: de('tagpicker.chosen', { label: 'Themen' }) })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('list', { name: de('tagpicker.chosen', { label: 'Themen' }) })).toBeTruthy())
     expect(screen.getByRole('button', { name: de('tagpicker.remove', { option: 'Alpha' }) })).toBeTruthy()
   })
 
@@ -263,9 +232,7 @@ describe('the error summary in a German form', () => {
 
     fireEvent.click(screen.getByRole('button', { name: de('form.submit') }))
 
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: de('errors.heading', { count: 2 }) })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('heading', { name: de('errors.heading', { count: 2 }) })).toBeTruthy())
     // The error said in German too, not left as the engine's code (0191).
     const entry = createFormText({ locale: 'de' })
     const problems = entry('error.required')
@@ -279,9 +246,7 @@ describe('the error summary in a German form', () => {
 
     await mount(document_(fields.slice(0, 1)), { component: SummaryHost })
     fireEvent.click(screen.getByRole('button', { name: de('form.submit') }))
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: de('errors.heading', { count: 1 }) })).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByRole('heading', { name: de('errors.heading', { count: 1 }) })).toBeTruthy())
   })
 })
 
@@ -386,10 +351,24 @@ describe('every error in a German form', () => {
       value: [{ _id: 'r1' }, { _id: 'r2' }],
       values: { count: 1 },
     },
-    'error.maxFileSize': { field: { type: 'file', maxFileSize: 2_000_000 }, value: [stored('d.pdf', 3_000_000, 'application/pdf')], values: { maxFileSize: '2 MB' } },
+    'error.maxFileSize': {
+      field: { type: 'file', maxFileSize: 2_000_000 },
+      value: [stored('d.pdf', 3_000_000, 'application/pdf')],
+      values: { maxFileSize: '2 MB' },
+    },
     'error.accept': { field: { type: 'file', accept: ['.pdf'] }, value: [stored('e.png', 3, 'image/png')], values: { accept: '.pdf' } },
     'error.box': { field: { type: 'signature', box: [100, 50] }, value: { drawn: [[[200, 10]]] } },
-    'error.maxPoints': { field: { type: 'signature', box: [100, 50], maxPoints: 1 }, value: { drawn: [[[1, 1], [2, 2]]] } },
+    'error.maxPoints': {
+      field: { type: 'signature', box: [100, 50], maxPoints: 1 },
+      value: {
+        drawn: [
+          [
+            [1, 1],
+            [2, 2],
+          ],
+        ],
+      },
+    },
   }
   const keyOf = (id: string): string => id.replace(/[^a-zA-Z]/g, '_')
 
@@ -408,9 +387,7 @@ describe('every error in a German form', () => {
       }),
       {
         providers: [provideFormancyUploader(uploader)],
-        initialValue: Object.fromEntries(
-          Object.entries(ERRORS).flatMap(([id, { value }]) => (value === undefined ? [] : [[keyOf(id), value]])),
-        ),
+        initialValue: Object.fromEntries(Object.entries(ERRORS).flatMap(([id, { value }]) => (value === undefined ? [] : [[keyOf(id), value]]))),
       },
     )
     engine.setValue([keyOf('error.minItems.rows')], [])
@@ -449,9 +426,7 @@ describe('every live region in a German form', () => {
     expect(screen.getByRole('button', { name: de('file.cancel', { name: 'a.pdf' }) })).toBeTruthy()
 
     settlers[0]!.reject(new Error('zu gross'))
-    await waitFor(() =>
-      expect(status('file-status')).toBe(de('file.status.failed', { name: 'a.pdf', reason: 'zu gross' })),
-    )
+    await waitFor(() => expect(status('file-status')).toBe(de('file.status.failed', { name: 'a.pdf', reason: 'zu gross' })))
     expect(screen.getByText(de('file.notAttached', { reason: 'zu gross' }))).toBeTruthy()
     expect(screen.getByRole('button', { name: de('file.retry', { name: 'a.pdf' }) })).toBeTruthy()
     expect(screen.getByRole('button', { name: de('file.dismiss', { name: 'a.pdf' }) })).toBeTruthy()
@@ -460,9 +435,7 @@ describe('every live region in a German form', () => {
     await waitFor(() => expect(settlers).toHaveLength(2))
     settlers[1]!.reject(new Error('nein'))
     const text = createFormText({ locale: 'de' })
-    await waitFor(() =>
-      expect(status('file-status')).toBe(text('file.status.failedSeveral', { count: 2, names: ['a.pdf', 'b.pdf'] })),
-    )
+    await waitFor(() => expect(status('file-status')).toBe(text('file.status.failedSeveral', { count: 2, names: ['a.pdf', 'b.pdf'] })))
     expect(status('file-status')).toContain('a.pdf und b.pdf')
   })
 
@@ -534,19 +507,16 @@ describe('every live region in a German form', () => {
           }),
       },
     }
-    await mount(
-      document_([{ key: 'ort', type: 'select', widget: 'typeahead', label: 'Ort', optionsSource: 'orte' }]),
-      { providers: [provideFormancyOptionsSources(sources)] },
-    )
+    await mount(document_([{ key: 'ort', type: 'select', widget: 'typeahead', label: 'Ort', optionsSource: 'orte' }]), {
+      providers: [provideFormancyOptionsSources(sources)],
+    })
     const box = screen.getByRole('combobox', { name: 'Ort' })
     const busy = (): string | null => box.getAttribute('aria-busy')
 
     fireEvent.input(box, { target: { value: 'Z' } })
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.tooShort', { count: 2 })))
     // Collapsed while there is nothing to offer, and named all the same.
-    expect(screen.getByRole('listbox', { hidden: true }).getAttribute('aria-label')).toBe(
-      de('options.suggestions', { label: 'Ort' }),
-    )
+    expect(screen.getByRole('listbox', { hidden: true }).getAttribute('aria-label')).toBe(de('options.suggestions', { label: 'Ort' }))
 
     fireEvent.input(box, { target: { value: 'Zü' } })
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.searching')))
@@ -579,11 +549,7 @@ describe('every live region in a German form', () => {
   })
 
   test('says nothing matched in German', async () => {
-    await mount(
-      document_([
-        { key: 'ort', type: 'select', widget: 'typeahead', label: 'Ort', options: [{ value: 'ZH', label: 'Zürich' }] },
-      ]),
-    )
+    await mount(document_([{ key: 'ort', type: 'select', widget: 'typeahead', label: 'Ort', options: [{ value: 'ZH', label: 'Zürich' }] }]))
 
     fireEvent.input(screen.getByRole('combobox', { name: 'Ort' }), { target: { value: 'Bern' } })
 
@@ -666,9 +632,7 @@ describe('every live region in a German form', () => {
     fireEvent.click(button)
     await settle()
     refuse(new Error('Kamera verweigert'))
-    await waitFor(() =>
-      expect(status('scanner-status')).toBe(de('scanner.failed', { reason: 'Kamera verweigert' })),
-    )
+    await waitFor(() => expect(status('scanner-status')).toBe(de('scanner.failed', { reason: 'Kamera verweigert' })))
   })
 })
 
@@ -706,12 +670,9 @@ describe('a draft that came back changed, told in German', () => {
 
 describe('whose words win', () => {
   test('the author’s: a submit label and a repeater’s own button words', async () => {
-    await mount(
-      document_([
-        { key: 'items', type: 'repeater', label: 'Posten', addLabel: 'Noch einer', fields: [{ key: 'x', type: 'text', label: 'X' }] },
-      ]),
-      { inputs: { submitLabel: 'Bestellen' } },
-    )
+    await mount(document_([{ key: 'items', type: 'repeater', label: 'Posten', addLabel: 'Noch einer', fields: [{ key: 'x', type: 'text', label: 'X' }] }]), {
+      inputs: { submitLabel: 'Bestellen' },
+    })
 
     expect(screen.getByRole('button', { name: 'Bestellen' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Noch einer' })).toBeTruthy()

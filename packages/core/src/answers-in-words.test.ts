@@ -27,7 +27,15 @@ const form: FormSchema = {
           { value: 'DE', label: 'Germany' },
         ],
       },
-      { key: 'topics', type: 'selectboxes', label: 'Topics', options: [{ value: 'a', label: 'Apples' }, { value: 'b', label: 'Bread' }] },
+      {
+        key: 'topics',
+        type: 'selectboxes',
+        label: 'Topics',
+        options: [
+          { value: 'a', label: 'Apples' },
+          { value: 'b', label: 'Bread' },
+        ],
+      },
       { key: 'qty', type: 'number', label: 'Quantity' },
       { key: 'agree', type: 'checkbox', label: 'I agree' },
       { key: 'arrive', type: 'date', label: 'Arriving' },
@@ -53,7 +61,10 @@ const data = {
   proof: [{ id: 'f', name: 'receipt.pdf', size: 3, contentType: 'application/pdf', storageKey: 'k' }],
   sign: { typed: 'Ada Lovelace' },
   address: { city: 'Basel' },
-  items: [{ _id: 'r1', sku: 'A-1' }, { _id: 'r2', sku: 'B-2' }],
+  items: [
+    { _id: 'r1', sku: 'A-1' },
+    { _id: 'r2', sku: 'B-2' },
+  ],
   email: 'ada@example.com',
 }
 
@@ -96,5 +107,31 @@ describe('a submission in words', () => {
   test('says an answer as stored when its question cannot name it', () => {
     const said = answersInWords(form, { country: 'FR', sign: { drawn: [[[1, 1]]] } }, createFormText({ locale: 'en' }))
     expect(said.map(({ said: words }) => words)).toEqual(['FR', 'A drawn signature'])
+  })
+
+  // The same, for an answer of a shape its question never takes: a quantity, a tick, a date and a
+  // choice each holding a record were said as "[object Object]", which names nothing.
+  test('says an answer of another shape as the data it is, not as "[object Object]"', () => {
+    const said = answersInWords(
+      form,
+      { qty: { amount: 1 }, agree: { yes: true }, arrive: { on: 'friday' }, country: { code: 'CH' } },
+      createFormText({ locale: 'en' }),
+    )
+    expect(said.map(({ said: words }) => words)).toEqual(['{"code":"CH"}', '{"amount":1}', '{"yes":true}', '{"on":"friday"}'])
+  })
+
+  // A file list whose item is not a file record: the item was written out as "[object Object]".
+  test('says an uploaded item that is not a file record as the data it is', () => {
+    const said = answersInWords(form, { proof: [{ id: 'x' }, 'plain'] }, createFormText({ locale: 'en' }))
+    expect(said.map(({ said: words }) => words)).toEqual(['{"id":"x"} and plain'])
+  })
+
+  // What JSON cannot write, which a host's answers can hold though a stored submission cannot: a
+  // bigint, alone or in a record, made JSON throw, so the whole submission failed to read back,
+  // and NaN came out as "null", which reads as nothing answered. A value that is not a record is
+  // said as `String` says it, as each was before a record was said as JSON.
+  test('says what JSON cannot write as String writes it', () => {
+    const said = answersInWords(form, { country: Number.NaN, qty: { amount: 1n }, agree: 12n }, createFormText({ locale: 'en' }))
+    expect(said.map(({ said: words }) => words)).toEqual(['NaN', '{"amount":"1"}', '12'])
   })
 })

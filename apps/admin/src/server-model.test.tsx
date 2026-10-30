@@ -50,8 +50,7 @@ function serve(model: { provider: string; model: string } | undefined, answer: u
       const method = init?.method ?? 'GET'
       const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as unknown) : undefined
       calls.push({ url: input, method, body })
-      const json = (value: unknown, status = 200): Response =>
-        new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } })
+      const json = (value: unknown, status = 200): Response => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } })
 
       if (input === '/api/model') return Promise.resolve(json(model ?? NONE))
       if (input === '/api/model/complete') return Promise.resolve(json(answer))
@@ -166,9 +165,7 @@ describe('askServerModel', () => {
   test('hands a provider’s refusal back as a decline, so the run ends on that turn', async () => {
     // As the model's own `{"declined": …}` would (0158): one turn, and the reason shown.
     serve({ provider: 'anthropic', model: 'm' }, { declined: 'The model service declined this request.' })
-    expect(await askServerModel(prompt(modelBriefing('scenarios')), turn)).toBe(
-      declinedAnswer('The model service declined this request.'),
-    )
+    expect(await askServerModel(prompt(modelBriefing('scenarios')), turn)).toBe(declinedAnswer('The model service declined this request.'))
   })
 
   test('rejects with the server’s sentence when there is no answer', async () => {
@@ -184,18 +181,17 @@ describe('askServerModel', () => {
         ),
       ),
     )
-    await expect(askServerModel(prompt(modelBriefing('authoring')), turn)).rejects.toThrow(
-      'The model service refused this server’s key.',
-    )
+    await expect(askServerModel(prompt(modelBriefing('authoring')), turn)).rejects.toThrow('The model service refused this server’s key.')
   })
 
   test('rejects with the status when the server gave no sentence', async () => {
     // A proxy's error page, or a rate limit answered by something in front of the server:
     // the reason the person reads still says which request failed and how.
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('<html>Bad gateway</html>', { status: 502 }))))
-    await expect(askServerModel(prompt(modelBriefing('translation')), turn)).rejects.toThrow(
-      'The server could not ask its model (502).',
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('<html>Bad gateway</html>', { status: 502 }))),
     )
+    await expect(askServerModel(prompt(modelBriefing('translation')), turn)).rejects.toThrow('The server could not ask its model (502).')
   })
 
   test('abandons the request when the person stops the run', async () => {
@@ -206,9 +202,7 @@ describe('askServerModel', () => {
       'fetch',
       vi.fn((_input: string, init?: RequestInit) => {
         signal = init?.signal ?? undefined
-        return new Promise<Response>((_resolve, reject) =>
-          signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))),
-        )
+        return new Promise<Response>((_resolve, reject) => signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))
       }),
     )
     let stop: () => void = () => undefined
@@ -224,7 +218,10 @@ describe('fetchModel', () => {
   test('is none for the server’s answer that it has none', async () => {
     // The 200 a deployment without a model gives (0183). Read as a model because it is a
     // 200, it would draw a prompt pane naming "null", whose every turn the server refuses.
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(JSON.stringify(NONE), { status: 200 }))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(JSON.stringify(NONE), { status: 200 }))),
+    )
     expect(await fetchModel()).toBeUndefined()
   })
 
@@ -241,7 +238,10 @@ describe('fetchModel', () => {
   test('is none for an answer that is not a model, whatever its status', async () => {
     // A server older than this route answers `/model` some other way; reading any 200 as
     // a model would draw a pane whose every turn fails.
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(JSON.stringify({ version: 1 }), { status: 200 }))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(JSON.stringify({ version: 1 }), { status: 200 }))),
+    )
     expect(await fetchModel()).toBeUndefined()
   })
 })

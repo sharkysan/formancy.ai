@@ -80,7 +80,9 @@ describe('a 5xx', () => {
   test('says nothing of it either from an app that keeps no log, which is how a host embeds it', async () => {
     // What the reply carries is not the log's business: a host that keeps its own output, and
     // so passes no log, must not get the old reply back.
-    const answered = await (await failing(new DrizzleQueryError('planted-secret-8a0c'))).inject({
+    const answered = await (
+      await failing(new DrizzleQueryError('planted-secret-8a0c'))
+    ).inject({
       method: 'GET',
       url: '/f/contact',
     })
@@ -96,7 +98,9 @@ describe('a 5xx', () => {
     const disk = Object.assign(new Error("ENOSPC: no space left on device, open '/data/planted-path-41c2'"), {
       code: 'ENOSPC',
     })
-    const answered = await (await failing(disk, { log: { sink: log.sink, level: 'info' } })).inject({
+    const answered = await (
+      await failing(disk, { log: { sink: log.sink, level: 'info' } })
+    ).inject({
       method: 'GET',
       url: '/f/contact',
     })
@@ -136,7 +140,9 @@ describe('a 5xx', () => {
 
   test('from something thrown that is not an error is answered the same way', async () => {
     // A promise rejected with a sentence: no class, no code, and nothing but its words.
-    const answered = await (await failing('planted-sentence-2c6d about the database')).inject({
+    const answered = await (
+      await failing('planted-sentence-2c6d about the database')
+    ).inject({
       method: 'GET',
       url: '/f/contact',
     })

@@ -1,10 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { optionsStatus } from '@formancy/core/words'
 import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 import { FormancyTypeaheadSelect } from './typeahead-field.js'
 import { FormancyErrorText } from './error-text.js'
-
 
 /**
  * One answer from a set: a tick, a list, or a group of radios.
@@ -52,9 +51,7 @@ export class FormancyCheckboxField extends FieldComponentBase {
    * attribute bound to null — which is what keeps an ordinary checkbox's markup
    * exactly as it was.
    */
-  protected readonly part = computed(() =>
-    this.field.snapshot().def.widget === 'toggle' ? 'toggle' : null,
-  )
+  protected readonly part = computed(() => (this.field.snapshot().def.widget === 'toggle' ? 'toggle' : null))
 
   protected onChange(event: Event): void {
     this.field.setValue((event.target as HTMLInputElement).checked)
@@ -234,7 +231,6 @@ export class FormancyRadioGroupField extends FieldComponentBase {
     const snapshot = this.field.snapshot()
     return snapshot.touched && snapshot.errors.length > 0
   })
-
 
   protected optionId(option: { value: string }): string {
     return `${this.field.snapshot().ids.control}:${option.value}`

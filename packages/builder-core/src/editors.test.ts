@@ -51,15 +51,11 @@ describe('a choice’s picture, as both options editors change it', () => {
   test('an emptied address takes the picture away, rather than leaving one with nowhere to load from', () => {
     // An image with an empty address is refused by the validator, so the edit would
     // be refused and the box would snap back mid-clear.
-    expect(
-      withPicture({ ...cat, image: { src: '/cat.png', alt: 'A tabby' } }, { src: '' }),
-    ).toEqual(cat)
+    expect(withPicture({ ...cat, image: { src: '/cat.png', alt: 'A tabby' } }, { src: '' })).toEqual(cat)
   })
 
   test('and an emptied description leaves the picture as decoration', () => {
-    expect(
-      withPicture({ ...cat, image: { src: '/cat.png', alt: 'A tabby' } }, { alt: '' }),
-    ).toEqual({
+    expect(withPicture({ ...cat, image: { src: '/cat.png', alt: 'A tabby' } }, { alt: '' })).toEqual({
       ...cat,
       image: { src: '/cat.png' },
     })

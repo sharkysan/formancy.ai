@@ -69,7 +69,7 @@ beforeAll(async () => {
     url: '/auth/login',
     payload: { email: 'root@test.ch', password: 'root-password-1' },
   })
-  admin = { authorization: `Bearer ${(login.json() as { token: string }).token}` }
+  admin = { authorization: `Bearer ${login.json<{ token: string }>().token}` }
   await publish('evidence')
   const opened = await app.inject({ method: 'PUT', url: '/f/evidence/access', headers: admin, payload: { submit: 'public' } })
   expect(opened.statusCode).toBe(204)
@@ -94,7 +94,7 @@ async function uploaded(name: string, body: Buffer): Promise<string> {
     payload: { field: 'evidence', name, size: body.byteLength, contentType: 'application/pdf' },
   })
   expect(offered.statusCode).toBe(201)
-  const file = offered.json() as { id: string; uploadUrl: string }
+  const file = offered.json<{ id: string; uploadUrl: string }>()
   const put = await app.inject({ method: 'PUT', url: file.uploadUrl, headers: { 'content-type': 'application/pdf' }, payload: body })
   expect(put.statusCode).toBe(204)
   return file.id

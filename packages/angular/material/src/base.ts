@@ -3,12 +3,7 @@ import type { Type } from '@angular/core'
 import type { ErrorStateMatcher } from '@angular/material/core'
 import { MatInput } from '@angular/material/input'
 import type { FieldType } from '@formancy/spec'
-import {
-  DEFAULT_FIELD_COMPONENTS,
-  injectEngine,
-  injectField,
-  injectFieldContext,
-} from '@formancy/angular'
+import { DEFAULT_FIELD_COMPONENTS, injectEngine, injectField, injectFieldContext } from '@formancy/angular'
 
 /**
  * What every Material control shares: the field, and the three things Material and the
@@ -53,9 +48,7 @@ export abstract class MaterialFieldBase {
 
   /** The engine's description ids without its error id, which Material adds itself. */
   protected readonly describedBy = computed(() => {
-    const ids = (this.control()['aria-describedby'] ?? '')
-      .split(/\s+/)
-      .filter((id) => id !== '' && id !== this.errorId())
+    const ids = (this.control()['aria-describedby'] ?? '').split(/\s+/).filter((id) => id !== '' && id !== this.errorId())
     return ids.length === 0 ? null : ids.join(' ')
   })
 

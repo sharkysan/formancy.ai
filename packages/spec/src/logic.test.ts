@@ -19,14 +19,7 @@ const base: FormSchema = {
 
 describe('modelDataPaths', () => {
   test('lists data paths: pages transparent, groups nested, repeater rows marked', () => {
-    expect(modelDataPaths(base.model)).toEqual([
-      'country',
-      'canton',
-      'address',
-      'address.city',
-      'items',
-      'items[].qty',
-    ])
+    expect(modelDataPaths(base.model)).toEqual(['country', 'canton', 'address', 'address.city', 'items', 'items[].qty'])
   })
 })
 
@@ -285,17 +278,13 @@ describe('runsOn', () => {
     }) as unknown as FormSchema
 
   test('a validate rule may choose where it runs', () => {
-    const result = validateSchema(
-      withRule({ target: 'email', kind: 'validate', cel: 'true', code: 'x', runsOn: 'server' }),
-    )
+    const result = validateSchema(withRule({ target: 'email', kind: 'validate', cel: 'true', code: 'x', runsOn: 'server' }))
 
     expect(result.valid).toBe(true)
   })
 
   test('a metadata rule may not, because the server could no longer check the client', () => {
-    const result = validateSchema(
-      withRule({ target: 'email', kind: 'visible', cel: 'true', runsOn: 'client' }),
-    )
+    const result = validateSchema(withRule({ target: 'email', kind: 'visible', cel: 'true', runsOn: 'client' }))
 
     expect(result.valid).toBe(false)
     if (result.valid) throw new Error('unreachable')
@@ -303,9 +292,7 @@ describe('runsOn', () => {
   })
 
   test('an unknown side is refused by the schema itself', () => {
-    const result = validateSchema(
-      withRule({ target: 'email', kind: 'validate', cel: 'true', code: 'x', runsOn: 'nowhere' }),
-    )
+    const result = validateSchema(withRule({ target: 'email', kind: 'validate', cel: 'true', code: 'x', runsOn: 'nowhere' }))
 
     expect(result.valid).toBe(false)
   })

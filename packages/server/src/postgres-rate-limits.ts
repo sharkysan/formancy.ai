@@ -84,10 +84,7 @@ export interface PostgresRateLimits {
  * The plugin's in-memory store is the second implementation of the same interface, and what
  * `createApp` counts in when it is given none.
  */
-export function createPostgresRateLimitStore(
-  databaseUrl: string,
-  options: PostgresRateLimitOptions = {},
-): PostgresRateLimits {
+export function createPostgresRateLimitStore(databaseUrl: string, options: PostgresRateLimitOptions = {}): PostgresRateLimits {
   const timeoutMs = options.timeoutMs ?? COUNT_TIMEOUT_MS
   const sweepEveryMs = options.sweepEveryMs ?? SWEEP_EVERY_MS
   const log = options.log
@@ -179,11 +176,7 @@ export function createPostgresRateLimitStore(
       this.#route = route
     }
 
-    incr(
-      key: string,
-      callback: (error: Error | null, result?: { current: number; ttl: number }) => void,
-      timeWindow: number,
-    ): void {
+    incr(key: string, callback: (error: Error | null, result?: { current: number; ttl: number }) => void, timeWindow: number): void {
       count(`${this.#route}${key}`, timeWindow).then(
         (result) => {
           if (!answering) {
@@ -210,8 +203,7 @@ export function createPostgresRateLimitStore(
       // The plugin hands a route over as `routeInfo` (its index.js, and its own Redis store
       // reads it there); its type definitions say otherwise, so it is read as it arrives. The
       // route is part of the key, or every limit an address has would be one budget.
-      const { method, url } = (routeOptions as unknown as { routeInfo: { method: string | string[]; url: string } })
-        .routeInfo
+      const { method, url } = (routeOptions as unknown as { routeInfo: { method: string | string[]; url: string } }).routeInfo
       return new PostgresRateLimitStore(undefined, `${[method].flat().join(',')} ${url} `)
     }
   }
@@ -223,10 +215,10 @@ export function createPostgresRateLimitStore(
 
 /** What a route that refuses without a count answers: a 503, and nothing about the database. */
 function uncounted(): Error {
-  return Object.assign(
-    new Error('This request could not be counted against its limit, so it was not taken. Try again in a moment.'),
-    { statusCode: 503, code: 'RATE_LIMIT_UNAVAILABLE' },
-  )
+  return Object.assign(new Error('This request could not be counted against its limit, so it was not taken. Try again in a moment.'), {
+    statusCode: 503,
+    code: 'RATE_LIMIT_UNAVAILABLE',
+  })
 }
 
 /**

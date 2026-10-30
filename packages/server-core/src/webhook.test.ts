@@ -1,13 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  EVENT_ID_HEADER,
-  MAX_ATTEMPTS,
-  SIGNATURE_HEADER,
-  deliveryHeaders,
-  retryDelayMs,
-  signBody,
-  verifySignature,
-} from './webhook.js'
+import { EVENT_ID_HEADER, MAX_ATTEMPTS, SIGNATURE_HEADER, deliveryHeaders, retryDelayMs, signBody, verifySignature } from './webhook.js'
 
 const SECRET = 'whsec_a_secret_a_receiver_also_holds'
 const BODY = '{"id":"sub_1","data":{"email":"ada@example.ch"}}'
@@ -23,9 +15,7 @@ describe('signing', () => {
   test('a changed body fails', () => {
     const header = `t=${String(NOW)},v1=${signBody(SECRET, NOW, BODY)}`
 
-    expect(
-      verifySignature({ secret: SECRET, body: `${BODY} `, header, nowSeconds: NOW }),
-    ).toBe(false)
+    expect(verifySignature({ secret: SECRET, body: `${BODY} `, header, nowSeconds: NOW })).toBe(false)
   })
 
   test('the wrong secret fails', () => {
@@ -40,9 +30,7 @@ describe('signing', () => {
     // longer matches, because it was taken over `timestamp.body`.
     const forged = header.replace(String(NOW), String(NOW + 10))
 
-    expect(verifySignature({ secret: SECRET, body: BODY, header: forged, nowSeconds: NOW + 10 })).toBe(
-      false,
-    )
+    expect(verifySignature({ secret: SECRET, body: BODY, header: forged, nowSeconds: NOW + 10 })).toBe(false)
   })
 
   test('an old signature is refused even though it is genuine', () => {
@@ -51,17 +39,12 @@ describe('signing', () => {
     // Genuine but captured an hour ago. Without the window it would be
     // replayable forever.
     expect(verifySignature({ secret: SECRET, body: BODY, header, nowSeconds: NOW })).toBe(false)
-    expect(
-      verifySignature({ secret: SECRET, body: BODY, header, nowSeconds: NOW, toleranceSeconds: 7200 }),
-    ).toBe(true)
+    expect(verifySignature({ secret: SECRET, body: BODY, header, nowSeconds: NOW, toleranceSeconds: 7200 })).toBe(true)
   })
 
   test('a malformed header is refused rather than throwing', () => {
     for (const header of ['', 'garbage', 't=notanumber,v1=abc', 'v1=abc']) {
-      expect(
-        verifySignature({ secret: SECRET, body: BODY, header, nowSeconds: NOW }),
-        header,
-      ).toBe(false)
+      expect(verifySignature({ secret: SECRET, body: BODY, header, nowSeconds: NOW }), header).toBe(false)
     }
   })
 })
@@ -129,8 +112,6 @@ describe('interoperability', () => {
     // Pinned as a literal so this test does not simply ask our implementation
     // whether it agrees with itself. A receiver using Stripe's documented
     // scheme — signed payload `timestamp.body`, hex HMAC-SHA256 — gets this.
-    expect(signBody(SECRET, NOW, BODY)).toBe(
-      'c332e0caa944441d2a62d7fb3b30f80e2fc2d315ef6b21f940ab80cf6f7bf0e4',
-    )
+    expect(signBody(SECRET, NOW, BODY)).toBe('c332e0caa944441d2a62d7fb3b30f80e2fc2d315ef6b21f940ab80cf6f7bf0e4')
   })
 })

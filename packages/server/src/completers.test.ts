@@ -18,7 +18,7 @@ describe('the provider named', () => {
   ])('%s is asked at %s, and nowhere else', async (provider, origin) => {
     const hosts: string[] = []
     const fetch = (input: string | URL | Request): Promise<Response> => {
-      hosts.push(new URL(String(input)).origin)
+      hosts.push(new URL(String(input instanceof Request ? input.url : input)).origin)
       // Refused, so the adapter stops at once; only where it went is under test.
       return Promise.resolve(new Response('{}', { status: 400, headers: { 'content-type': 'application/json' } }))
     }

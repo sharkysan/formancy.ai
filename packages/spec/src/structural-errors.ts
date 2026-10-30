@@ -20,9 +20,7 @@ export function toSchemaErrors(errors: ErrorObject[], document: unknown): Schema
   /** `oneOf` reports its own failure plus one failure per branch. The branches
    *  are noise — "must be equal to constant" twelve times over — so they are
    *  folded back into the single `oneOf` error that lists what was allowed. */
-  const branchPrefixes = errors
-    .filter((error) => error.keyword === 'oneOf')
-    .map((error) => `${error.schemaPath}/`)
+  const branchPrefixes = errors.filter((error) => error.keyword === 'oneOf').map((error) => `${error.schemaPath}/`)
 
   /** Instance paths some other keyword already has an opinion about. A property
    *  that failed on its own terms is not also an unexpected property: a group
@@ -30,14 +28,9 @@ export function toSchemaErrors(errors: ErrorObject[], document: unknown): Schema
    *  CONTENTS failed: when the branch declaring a property fails, ajv also reports
    *  the property as unevaluated, so an option value one character too long said
    *  "Unknown property options. Check the spelling" — about a word spelled right. */
-  const judged = new Set(
-    errors
-      .filter((error) => !NAMES_A_PROPERTY.has(error.keyword))
-      .map((error) => error.instancePath),
-  )
+  const judged = new Set(errors.filter((error) => !NAMES_A_PROPERTY.has(error.keyword)).map((error) => error.instancePath))
 
-  const isJudged = (path: string): boolean =>
-    judged.has(path) || [...judged].some((other) => other.startsWith(`${path}/`))
+  const isJudged = (path: string): boolean => judged.has(path) || [...judged].some((other) => other.startsWith(`${path}/`))
 
   const reported = errors.filter((error) => {
     // `must match "then" schema` only restates whichever branch error follows it.
@@ -67,10 +60,7 @@ const NAMES_A_PROPERTY = new Set(['additionalProperties', 'unevaluatedProperties
 /** Point at the value the author has to edit, not at the object holding it:
  *  a missing or unexpected property belongs to the property, not its parent. */
 function pathOf(error: ErrorObject): string {
-  const named =
-    stringParam(error, 'missingProperty') ??
-    stringParam(error, 'additionalProperty') ??
-    stringParam(error, 'unevaluatedProperty')
+  const named = stringParam(error, 'missingProperty') ?? stringParam(error, 'additionalProperty') ?? stringParam(error, 'unevaluatedProperty')
 
   return named === undefined ? error.instancePath : `${error.instancePath}/${escapeToken(named)}`
 }
@@ -86,18 +76,13 @@ function errorFor(error: ErrorObject, allErrors: ErrorObject[], document: unknow
       // `not` inside the branch that DECLARES `optionsSource` makes the branch fail as
       // a whole -- and `unevaluatedProperties` then reports the property as unknown,
       // telling the author to check the spelling of a word they spelled correctly.
-      return schemaError(
-        path,
-        error.instancePath.endsWith('/options') ? 'options.twoSources' : 'shape.notAllowed',
-      )
+      return schemaError(path, error.instancePath.endsWith('/options') ? 'options.twoSources' : 'shape.notAllowed')
 
     case 'type': {
       // One sentence per JSON type, so a translation is a sentence and not "Must be"
       // with an English phrase set into it.
       const type = stringParam(error, 'type') ?? 'something else'
-      return type in TYPE_CODES
-        ? schemaError(path, TYPE_CODES[type as keyof typeof TYPE_CODES])
-        : schemaError(path, 'shape.type', { type })
+      return type in TYPE_CODES ? schemaError(path, TYPE_CODES[type as keyof typeof TYPE_CODES]) : schemaError(path, 'shape.type', { type })
     }
 
     case 'required':
@@ -107,8 +92,7 @@ function errorFor(error: ErrorObject, allErrors: ErrorObject[], document: unknow
 
     case 'additionalProperties':
     case 'unevaluatedProperties': {
-      const property =
-        stringParam(error, 'additionalProperty') ?? stringParam(error, 'unevaluatedProperty') ?? ''
+      const property = stringParam(error, 'additionalProperty') ?? stringParam(error, 'unevaluatedProperty') ?? ''
       // `fields` is the one property the spec allows on some field types and not
       // others, so the generic "unknown property" wording would misdirect.
       if (property === 'fields') return schemaError(path, 'shape.childFields')
@@ -133,21 +117,14 @@ function errorFor(error: ErrorObject, allErrors: ErrorObject[], document: unknow
       return schemaError(path, 'shape.maxLength', { limit: String(error.params['limit']) })
 
     case 'minLength':
-      return error.params['limit'] === 1
-        ? schemaError(path, 'shape.empty')
-        : schemaError(path, 'shape.minLength', { limit: String(error.params['limit']) })
+      return error.params['limit'] === 1 ? schemaError(path, 'shape.empty') : schemaError(path, 'shape.minLength', { limit: String(error.params['limit']) })
 
     default:
       return schemaError(path, 'shape.other', { detail: asSentence(error.message ?? 'Invalid.') })
   }
 }
 
-function notOneOf(
-  path: string,
-  document: unknown,
-  instancePath: string,
-  allowed: readonly unknown[],
-): SchemaError {
+function notOneOf(path: string, document: unknown, instancePath: string, allowed: readonly unknown[]): SchemaError {
   return schemaError(path, 'shape.notOneOf', {
     found: JSON.stringify(resolvePointer(document, instancePath)),
     allowed: allowed.map((value) => String(value)).join(', '),
@@ -162,13 +139,8 @@ function allowedConstants(error: ErrorObject, allErrors: ErrorObject[]): unknown
   // so filter by instancePath too — otherwise each message lists the allowed
   // values once per broken field.
   const values = allErrors
-    .filter(
-      (candidate) =>
-        candidate.keyword === 'const' &&
-        candidate.schemaPath.startsWith(prefix) &&
-        candidate.instancePath === error.instancePath,
-    )
-    .map((candidate) => candidate.params['allowedValue'])
+    .filter((candidate) => candidate.keyword === 'const' && candidate.schemaPath.startsWith(prefix) && candidate.instancePath === error.instancePath)
+    .map((candidate): unknown => candidate.params['allowedValue'])
   return [...new Set(values)]
 }
 
@@ -201,12 +173,12 @@ const TYPE_CODES = {
 } as const
 
 function stringParam(error: ErrorObject, name: string): string | undefined {
-  const value = error.params[name]
+  const value: unknown = error.params[name]
   return typeof value === 'string' ? value : undefined
 }
 
 function listParam(error: ErrorObject, name: string): unknown[] {
-  const value = error.params[name]
+  const value: unknown = error.params[name]
   return Array.isArray(value) ? value : []
 }
 

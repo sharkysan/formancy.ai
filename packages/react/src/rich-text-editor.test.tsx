@@ -87,7 +87,6 @@ function typeInto(spy: Spy, mount: RichTextEditorMount, text: string): void {
   mount.onChange(text)
 }
 
-
 function mountForm(factory?: RichTextEditorFactory) {
   const engine = createFormEngine({ schema: SCHEMA, capabilities: CAPABILITIES })
   const form = (
@@ -95,9 +94,7 @@ function mountForm(factory?: RichTextEditorFactory) {
       <FormancyForm />
     </FormancyProvider>
   )
-  render(
-    factory === undefined ? form : <RichTextEditorProvider value={factory}>{form}</RichTextEditorProvider>,
-  )
+  render(factory === undefined ? form : <RichTextEditorProvider value={factory}>{form}</RichTextEditorProvider>)
   return engine
 }
 
@@ -160,7 +157,6 @@ describe('with a host editor', () => {
     // `for` does not reach one.
     expect(mount.attributes['aria-labelledby']).toBeTruthy()
   })
-
 
   test('names the editing surface so a theme can style it', () => {
     const spy = fresh()

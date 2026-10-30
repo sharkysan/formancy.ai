@@ -87,21 +87,16 @@ const BUILDER_OWN_MESSAGES = {
   'refuse.noContainer': 'No container at "{path}".',
   'refuse.noField': 'No field at "{path}".',
   'refuse.moveIntoItself': 'Cannot move "{path}" inside itself or one of its own children.',
-  'refuse.unwrapRenames':
-    'Unwrapping "{where}" renames every answer inside it — "{from}" becomes "{to}" — and {refused}',
-  'refuse.renameFollows':
-    'Renaming "{before}" to "{after}" means every rule naming it has to follow, and {refused}',
+  'refuse.unwrapRenames': 'Unwrapping "{where}" renames every answer inside it — "{from}" becomes "{to}" — and {refused}',
+  'refuse.renameFollows': 'Renaming "{before}" to "{after}" means every rule naming it has to follow, and {refused}',
   'refuse.noRule': 'No rule at index {index}.',
   'refuse.noLayout': 'No layout called "{name}".',
-  'refuse.crossLayout':
-    'Cannot move between the "{from}" and "{to}" layouts. Remove it from one and place it in the other.',
+  'refuse.crossLayout': 'Cannot move between the "{from}" and "{to}" layouts. Remove it from one and place it in the other.',
   'refuse.downgrade':
     'This form is written against spec {from} and cannot go back to {to}: whatever the newer version added has nowhere to go, so it would be data loss rather than a change.',
   'refuse.noLayoutNode': 'Nothing at that position in the "{layout}" layout.',
-  'refuse.notAContainerNode':
-    'Nothing at that position in the "{layout}" layout holds other nodes.',
-  'refuse.unwrapLeaf':
-    '"{where}" holds one answer. There is nothing inside it to keep, and unwrapping is not another word for deleting.',
+  'refuse.notAContainerNode': 'Nothing at that position in the "{layout}" layout holds other nodes.',
+  'refuse.unwrapLeaf': '"{where}" holds one answer. There is nothing inside it to keep, and unwrapping is not another word for deleting.',
   'refuse.unwrapRepeater':
     '"{where}" is a repeater, and the fields inside it describe one ROW rather than a list of questions. Lifting them out would turn every row\'s answers into one answer each and lose every row after the first — and nothing would say so, because the form that came out would be perfectly valid. Move the fields out one at a time if that is what you meant.',
 
@@ -113,11 +108,9 @@ const BUILDER_OWN_MESSAGES = {
   // ------------------------------------ what a translation or layout command refuses
   'refuse.i18nNoneYet': 'This form has no translations yet. Extract a label first.',
   'refuse.i18nNone': 'This form has no translations.',
-  'refuse.fieldNodeHoldsNothing':
-    'A field node places one field. There is nothing inside it to keep.',
+  'refuse.fieldNodeHoldsNothing': 'A field node places one field. There is nothing inside it to keep.',
   'refuse.wrapNeedsTwo': 'Wrapping needs at least two nodes. Use insertLayoutNode for one.',
-  'refuse.wrapperNotContainer':
-    'The wrapper has to be a container. A field node cannot hold anything.',
+  'refuse.wrapperNotContainer': 'The wrapper has to be a container. A field node cannot hold anything.',
   'refuse.nodeListedTwice': 'That node is listed twice. Each one can only go in once.',
   'refuse.wrapContainerWithChild': 'Cannot wrap a container together with something inside it.',
   'refuse.moveNodeIntoItself': 'Cannot move this inside itself or one of its own children.',
@@ -125,16 +118,13 @@ const BUILDER_OWN_MESSAGES = {
   'refuse.notText': '"{property}" on "{path}" is not text, so there is nothing to translate.',
   'refuse.defaultLocale':
     '"{locale}" is the default locale: every other locale falls back to it, so removing it would leave every untranslated message with nothing to resolve to.',
-  'refuse.notASetting':
-    '"{property}" is not a setting. It is what the node is, or where it sits, and the arrangement\'s own commands change it.',
+  'refuse.notASetting': '"{property}" is not a setting. It is what the node is, or where it sits, and the arrangement\'s own commands change it.',
   'refuse.settingName': '"{property}" is not allowed as a layout node setting name.',
   'translations.unreadable': 'That file could not be read: it is not JSON.',
-  'refuse.notACatalogue':
-    'That is not a translation file from a formancy builder: it has no locale and no list of messages.',
+  'refuse.notACatalogue': 'That is not a translation file from a formancy builder: it has no locale and no list of messages.',
   // Set into refuse.renameFollows and refuse.unwrapRenames after "and", so it
   // starts in lower case. {reason} is the expression parser's own message.
-  'refuse.ruleCannotFollow':
-    'rule {number} (“{kind}” on “{target}”) cannot follow the change: {reason} Change or delete the rule first.',
+  'refuse.ruleCannotFollow': 'rule {number} (“{kind}” on “{target}”) cannot follow the change: {reason} Change or delete the rule first.',
 
   // --------------------------------------------- naming a node in the layout tree
   // Whole sentences per kind rather than a kind slotted into a template: the
@@ -221,8 +211,7 @@ const BUILDER_OWN_MESSAGES = {
   'said.pageAdded': 'Added {page}.',
   'said.firstPageAdded': {
     one: 'Added {page}, holding the {count} field that was at the top level. The form is a wizard now.',
-    other:
-      'Added {page}, holding the {count} fields that were at the top level. The form is a wizard now.',
+    other: 'Added {page}, holding the {count} fields that were at the top level. The form is a wizard now.',
   },
   'said.cannotAddPage': 'Cannot add a page: {reason}',
   'said.unwrappedEmpty': 'Removed {name}, which was empty.',
@@ -252,8 +241,7 @@ const BUILDER_OWN_MESSAGES = {
   'layout.none':
     'This form has no arrangement. Without one the renderers show every field in the order the model lists them, one per line — which is a perfectly good form. Add an arrangement to put fields side by side.',
   'layout.addLayout': 'Add an arrangement',
-  'layout.placesNothing':
-    "This arrangement places nothing yet, so the form falls back to the model's own order.",
+  'layout.placesNothing': "This arrangement places nothing yet, so the form falls back to the model's own order.",
   'layout.unplaced': 'Not in this arrangement',
   'layout.addTitle': 'Add to the arrangement',
   'layout.addWhere': 'Where should {what} go?',
@@ -262,20 +250,16 @@ const BUILDER_OWN_MESSAGES = {
   'layout.kind.column': 'Column',
   'layout.kind.section': 'Section',
   'layout.kind.qrcode': 'Code',
-  'layout.hint.row':
-    'Puts what is inside it side by side, and back into one column when there is no width for two.',
+  'layout.hint.row': 'Puts what is inside it side by side, and back into one column when there is no width for two.',
   'layout.hint.column': 'One side of a row.',
   'layout.hint.section': 'A named group of items, announced as one.',
-  'layout.hint.qrcode':
-    'A scannable code drawn from an answer. Collects nothing itself, and shows the answer as text beside it.',
-  'layout.codeLocked':
-    'A scannable code needs spec version {version}. This form says version {current}.',
+  'layout.hint.qrcode': 'A scannable code drawn from an answer. Collects nothing itself, and shows the answer as text beside it.',
+  'layout.codeLocked': 'A scannable code needs spec version {version}. This form says version {current}.',
   'layout.hint.unplaced': 'Not placed anywhere yet.',
   // Written into the document as the code's label, so it is in the author's language.
   'layout.newCode': '{name} as a code',
   'layout.wrapTitle': 'What should go beside {name} in a row?',
-  'layout.wrapHelp':
-    'Choose the item to put beside {name}. Both go into a new row, with {name} first.',
+  'layout.wrapHelp': 'Choose the item to put beside {name}. Both go into a new row, with {name} first.',
   'keys.layout.arrows.what': 'move between items',
   'keys.layout.add.what': 'add a row, column, section, code or field',
   'keys.layout.move.what': 'move the focused item',
@@ -320,8 +304,7 @@ const BUILDER_OWN_MESSAGES = {
   'options.keepPlace': 'Keeps its place when shuffled',
   'list.remove': 'Remove',
   'columns.heading': 'Columns',
-  'columns.empty':
-    'No columns configured. Every answer still gets one, in the order the fields are declared.',
+  'columns.empty': 'No columns configured. Every answer still gets one, in the order the fields are declared.',
   'columns.answer': 'Answer',
   'columns.noSuchField': '{name} — no such field',
   'columns.width': 'Width, as a share',
@@ -360,10 +343,8 @@ const BUILDER_OWN_MESSAGES = {
   'translations.download': 'Download {locale}',
   'translations.upload': 'Upload a translated file',
   'translations.written': { one: '{count} translation written.', other: '{count} translations written.' },
-  'translations.unknown':
-    'Not written, because this form no longer has them — the file was exported before a field was removed: {list}',
-  'translations.stale':
-    'Written, but translated from wording that has since changed, so worth a look: {list}',
+  'translations.unknown': 'Not written, because this form no longer has them — the file was exported before a field was removed: {list}',
+  'translations.stale': 'Written, but translated from wording that has since changed, so worth a look: {list}',
   'translations.missing': 'Not translated',
   'translations.preview': 'Preview in {locale}',
 
@@ -388,7 +369,6 @@ const BUILDER_OWN_MESSAGES = {
   'palette.firstOption': 'First option',
   'palette.secondOption': 'Second option',
   'palette.firstRow': 'First row',
-
 } as const satisfies Record<string, Message>
 
 /**
@@ -487,8 +467,7 @@ export function createBuilderText(language?: BuilderLanguage): BuilderText {
 
   const text = (id: BuilderMessageId, values: Readonly<Record<string, string | number>> = {}) => {
     const message: Message = messages[id] ?? BUILDER_MESSAGES[id]
-    const template =
-      typeof message === 'string' ? message : pluralForm(message, plurals, values['count'])
+    const template = typeof message === 'string' ? message : pluralForm(message, plurals, values['count'])
 
     return template.replace(/\{(\w+)\}/g, (whole, name: string) => {
       const value = values[name]
@@ -530,11 +509,7 @@ function runtimeHas(locale: string | undefined): locale is string {
   return locale !== undefined && Intl.ListFormat.supportedLocalesOf([locale]).length > 0
 }
 
-function pluralForm(
-  message: PluralMessage,
-  rules: Intl.PluralRules,
-  count: string | number | undefined,
-): string {
+function pluralForm(message: PluralMessage, rules: Intl.PluralRules, count: string | number | undefined): string {
   // A plural message called without a count says so rather than guessing a
   // number: the `other` form with `{count}` left visible.
   if (typeof count !== 'number') return message.other

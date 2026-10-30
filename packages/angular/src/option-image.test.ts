@@ -40,9 +40,7 @@ describe('an option with a picture', () => {
     await mount('radio', [CAT])
 
     const picture = screen.getByRole('img', { name: 'A tabby asleep in the sun' })
-    expect(picture.closest('label')?.htmlFor).toBe(
-      (screen.getByRole('radio') as HTMLInputElement).id,
-    )
+    expect(picture.closest('label')?.htmlFor).toBe(screen.getByRole<HTMLInputElement>('radio').id)
     expect(picture.getAttribute('data-formancy-part')).toBe('option-image')
   })
 
@@ -56,15 +54,11 @@ describe('an option with a picture', () => {
     await mount('radio', [{ value: 'dog', label: 'Dog', image: { src: '/dog.png' } }])
 
     expect(screen.getByRole('radio', { name: 'Dog' })).toBeTruthy()
-    expect(document.querySelector('[data-formancy-part="option-image"]')?.getAttribute('alt')).toBe(
-      '',
-    )
+    expect(document.querySelector('[data-formancy-part="option-image"]')?.getAttribute('alt')).toBe('')
   })
 
   test('and a picture from an address the format does not allow is not loaded', async () => {
-    await mount('radio', [
-      { value: 'cat', label: 'Cat', image: { src: 'http://tracker.example/x.png' } },
-    ])
+    await mount('radio', [{ value: 'cat', label: 'Cat', image: { src: 'http://tracker.example/x.png' } }])
 
     expect(document.querySelector('[data-formancy-part="option-image"]')).toBeNull()
     expect(screen.getByRole('radio', { name: 'Cat' })).toBeTruthy()

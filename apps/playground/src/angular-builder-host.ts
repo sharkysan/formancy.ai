@@ -12,15 +12,7 @@ import {
   FormancyTranslationsPane,
   FormancyScenarioPane,
 } from '@formancy/builder-angular'
-import type {
-  BuilderBlock,
-  BuilderSession,
-  Capabilities,
-  DraftRun,
-  PromptRun,
-  Relay,
-  TranslationRun,
-} from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, Capabilities, DraftRun, PromptRun, Relay, TranslationRun } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core/authoring'
 import { RELAY_CHAT } from './demo-capabilities.js'
 import { PlaygroundSuggestionsList } from './angular-suggestions-list.js'
@@ -119,12 +111,7 @@ export interface FromThePage {
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
 
 /** Make one, for the bootstrap to provide. */
-export function playgroundBuilder(
-  session: BuilderSession,
-  tab: BuilderTab,
-  from: FromThePage,
-  back: ToThePage,
-): PlaygroundBuilder {
+export function playgroundBuilder(session: BuilderSession, tab: BuilderTab, from: FromThePage, back: ToThePage): PlaygroundBuilder {
   return {
     session,
     tab: signal(tab),

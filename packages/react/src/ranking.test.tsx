@@ -54,9 +54,7 @@ describe('the ranking control', () => {
     const { group } = mount()
 
     expect(group.queryByRole('list', { name: 'Put these in order: your order' })).toBeNull()
-    expect(group.getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(
-      ['Rank Coffee', 'Rank Tea', 'Rank Water'],
-    )
+    expect(group.getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['Rank Coffee', 'Rank Tea', 'Rank Water'])
   })
 
   test('ranking them all is a run of Enter, focus moving to the next one each time', async () => {

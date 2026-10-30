@@ -56,32 +56,24 @@ function schema(widget?: 'scanner'): FormSchema {
         },
       ],
     },
-  } as FormSchema
+  }
 }
 
-async function mount(
-  scan?: Scanner,
-  widget: 'scanner' | undefined = 'scanner',
-): Promise<{ engine: FormEngine; settle: () => Promise<void> }> {
+async function mount(scan?: Scanner, widget: 'scanner' | undefined = 'scanner'): Promise<{ engine: FormEngine; settle: () => Promise<void> }> {
   const engine = createFormEngine({ schema: schema(widget), capabilities: CLOCK })
   const view = await render(FormancyForm, {
-    providers: [
-      provideZonelessChangeDetection(),
-      provideFormancy(engine),
-      ...(scan === undefined ? [] : [provideFormancyScanner(scan)]),
-    ],
+    providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(scan === undefined ? [] : [provideFormancyScanner(scan)])],
   })
   await view.fixture.whenStable()
   return { engine, settle: () => view.fixture.whenStable() }
 }
 
 const statusOf = (label: string): string =>
-  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="field"]')!
-    .querySelector('[data-formancy-part="scanner-status"]')?.textContent ?? ''
+  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="field"]')!.querySelector('[data-formancy-part="scanner-status"]')?.textContent ??
+  ''
 
 const errorOf = (label: string): string | null =>
-  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="field"]')!
-    .querySelector('[data-formancy-part="error"]')?.textContent ?? null
+  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="field"]')!.querySelector('[data-formancy-part="error"]')?.textContent ?? null
 
 describe('a text field with the scanner widget', () => {
   test('is a text box with the same name, whether a scanner is there or not', async () => {
@@ -131,10 +123,7 @@ describe('a text field with the scanner widget', () => {
       expect(engine.value()).toEqual({ serial: 'ABC123' })
     })
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: 'Serial number' })).toHaveProperty(
-        'value',
-        'ABC123',
-      )
+      expect(screen.getByRole('textbox', { name: 'Serial number' })).toHaveProperty('value', 'ABC123')
     })
   })
 
@@ -223,10 +212,7 @@ describe('a text field with the scanner widget', () => {
     await settle()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Scan Serial number' })).toHaveProperty(
-        'disabled',
-        false,
-      )
+      expect(screen.getByRole('button', { name: 'Scan Serial number' })).toHaveProperty('disabled', false)
     })
     expect(statusOf('Serial number')).toBe('')
     expect(engine.value()).toEqual({})

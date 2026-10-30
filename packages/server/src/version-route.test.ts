@@ -32,7 +32,7 @@ async function serve(): Promise<{ server: FastifyInstance; admin: string }> {
     loginRateLimit: { max: 1_000, timeWindowMs: 60_000 },
   })
   app = server
-  const admin = ((await server.inject({ method: 'POST', url: '/auth/login', payload: ADMIN })).json() as { token: string }).token
+  const admin = (await server.inject({ method: 'POST', url: '/auth/login', payload: ADMIN })).json<{ token: string }>().token
   for (const title of ['Contact, first', 'Contact, second']) {
     await server.inject({ method: 'POST', url: '/forms', headers: { authorization: `Bearer ${admin}` }, payload: { path: 'contact', schema: contact(title) } })
   }

@@ -149,11 +149,7 @@ export function createAngularDriver(
       // The locale the document is read in, as the renderer reads it (0171).
       words = createFormText({ locale: resolvedLocale(engine.schema(), engine.locale()) })
       const view = await render(FormancyForm, {
-        providers: [
-          provideZonelessChangeDetection(),
-          provideFormancy(engine),
-          ...(extra.providers ?? []),
-        ],
+        providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...(extra.providers ?? [])],
         // No `submitLabel`: the button is found by the form's own word for it, so the
         // suite holds the default rather than a name the driver chose.
         inputs: options?.layout === undefined ? {} : { layout: options.layout },
@@ -170,7 +166,7 @@ export function createAngularDriver(
       if (def?.type === 'radio') {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const chosen = (def.options ?? []).find((option) => option.value === value)
-        if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
+        if (chosen === undefined) throw new Error(`No option "${said(value)}" on "${path}"`)
         fireEvent.click(within(group).getByLabelText(textOf(chosen.label) ?? chosen.value))
         await settle()
         return
@@ -187,9 +183,7 @@ export function createAngularDriver(
           const row = (def.rows ?? []).find((candidate) => candidate.value === rowValue)
           const column = (def.options ?? []).find((candidate) => candidate.value === columnValue)
           const rowGroup = within(group).getByRole('group', { name: textOf(row?.label) ?? rowValue })
-          fireEvent.click(
-            within(rowGroup).getByRole('radio', { name: textOf(column?.label) ?? String(columnValue) }),
-          )
+          fireEvent.click(within(rowGroup).getByRole('radio', { name: textOf(column?.label) ?? said(columnValue) }))
           await settle()
         }
         return
@@ -222,9 +216,7 @@ export function createAngularDriver(
         const group = screen.getByRole('group', { name: labelOf(path) })
         const wanted = new Set((Array.isArray(value) ? value : []).map(String))
         for (const option of def.options ?? []) {
-          const box = within(group).getByLabelText(
-            textOf(option.label) ?? option.value,
-          ) as HTMLInputElement
+          const box = within(group).getByLabelText<HTMLInputElement>(textOf(option.label) ?? option.value)
           if (box.checked !== wanted.has(option.value)) fireEvent.click(box)
         }
         await settle()
@@ -238,11 +230,11 @@ export function createAngularDriver(
         if ((control as HTMLInputElement).checked !== (value === true)) fireEvent.click(control)
       } else if (def?.type === 'select') {
         fireEvent.focus(control)
-        fireEvent.change(control, { target: { value: value === null ? '' : String(value) } })
+        fireEvent.change(control, { target: { value: value === null ? '' : said(value) } })
         fireEvent.blur(control)
       } else {
         fireEvent.focus(control)
-        fireEvent.input(control, { target: { value: value === null ? '' : String(value) } })
+        fireEvent.input(control, { target: { value: value === null ? '' : said(value) } })
         fireEvent.blur(control)
       }
       await settle()
@@ -329,11 +321,7 @@ export function createAngularDriver(
         return within(group)
           .queryAllByRole('button', { name: up })
           .map((button) => up.exec(button.getAttribute('aria-label') ?? '')?.[1] ?? '')
-          .map(
-            (shown) =>
-              (def.options ?? []).find((option) => textOf(option.label as Text) === shown)?.value ??
-              shown,
-          )
+          .map((shown) => (def.options ?? []).find((option) => textOf(option.label) === shown)?.value ?? shown)
       }
       if (def?.type === 'selectboxes') {
         const group = screen.getByRole('group', { name: labelOf(path) })
@@ -433,9 +421,7 @@ export function createAngularDriver(
       if (lastOutcome === undefined) throw new Error('the submit control reported no outcome')
       const outcome = lastOutcome
       lastOutcome = undefined
-      const messages: ConformanceMessage[] = Object.entries(outcome.errors).flatMap(
-        ([errorPath, codes]) => codes.map((code) => ({ path: errorPath, code })),
-      )
+      const messages: ConformanceMessage[] = Object.entries(outcome.errors).flatMap(([errorPath, codes]) => codes.map((code) => ({ path: errorPath, code })))
       if (outcome.ok) {
         return { status: 'accepted', data: outcome.data as JsonValue, messages }
       }
@@ -475,9 +461,7 @@ async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
     ...ACCESSIBILITY_EXCLUSIONS,
     ...ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
   }
-  const rules = Object.fromEntries(
-    Object.keys(disabled).map((id) => [id, { enabled: false }] as const),
-  )
+  const rules = Object.fromEntries(Object.keys(disabled).map((id) => [id, { enabled: false }] as const))
 
   const results = await axe.run(document.body, {
     runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
@@ -487,13 +471,16 @@ async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
 
   return results.violations.map((violation) => ({
     id: violation.id,
-    ...(violation.impact === undefined || violation.impact === null
-      ? {}
-      : { impact: violation.impact }),
+    ...(violation.impact === undefined || violation.impact === null ? {} : { impact: violation.impact }),
     help: violation.help,
     helpUrl: violation.helpUrl,
     nodes: violation.nodes.map((node) => node.html),
   }))
+}
+
+/** A value as a person would read it in a message or type it into a control; a string as it is. */
+function said(value: JsonValue): string {
+  return typeof value === 'string' ? value : JSON.stringify(value)
 }
 
 function escapeRegExp(value: string): string {

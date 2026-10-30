@@ -115,7 +115,10 @@ describe('a form’s responses, summarised on the server', () => {
   // Counted a page at a time from the storage, so the server holds a page of responses and not
   // the form's every one (0224): the whole list is never asked for.
   test('read the responses a page at a time, never all at once', async () => {
-    await answered(first, Array.from({ length: 2500 }, (_, at) => ({ colour: at % 2 === 0 ? 'red' : 'blue' })))
+    await answered(
+      first,
+      Array.from({ length: 2500 }, (_, at) => ({ colour: at % 2 === 0 ? 'red' : 'blue' })),
+    )
     const pages: number[] = []
     const storage = deps.storage
     deps = {

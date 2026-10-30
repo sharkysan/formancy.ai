@@ -147,11 +147,7 @@ export interface ScenarioPrompt {
 }
 
 /** Asking a model for examples of `document`, from what its author said it should do. */
-export function scenarioPrompt(
-  document: FormSchema,
-  intent: string,
-  options: ScenarioPromptOptions = {},
-): ScenarioPrompt {
+export function scenarioPrompt(document: FormSchema, intent: string, options: ScenarioPromptOptions = {}): ScenarioPrompt {
   return { system: scenarioBriefing(), user: request(document, intent, options) }
 }
 
@@ -178,7 +174,9 @@ export function scenarioBriefing(): string {
     '',
     `Answers as JSON, by field type: ${Object.entries(ANSWER_EXAMPLES)
       .map(([type, example]) => `${type} ${JSON.stringify(example)}`)
-      .join(', ')}. A select or radio answer is one option value, and a list-valued field’s empty answer is [], never null. Anything else that holds text is a string. To leave a number, a date, a time, a choice or a tick box unanswered, set it to null: "" is an answer only to a field that holds text.`,
+      .join(
+        ', ',
+      )}. A select or radio answer is one option value, and a list-valued field’s empty answer is [], never null. Anything else that holds text is a string. To leave a number, a date, a time, a choice or a tick box unanswered, set it to null: "" is an answer only to a field that holds text.`,
     `Every example starts from the starting answers, never from the example before it, and runs as though today were ${EXAMPLE_TODAY}.`,
     '',
     'For example, for this form:',
@@ -206,9 +204,7 @@ function request(document: FormSchema, intent: string, options: ScenarioPromptOp
     start === undefined || Object.keys(start).length === 0
       ? 'Every example starts from an empty form.'
       : `Every example starts from these answers: ${JSON.stringify(start)}`,
-    taken.length === 0
-      ? 'No names are taken yet.'
-      : `Names already taken: ${taken.map((name) => JSON.stringify(name)).join(', ')}.`,
+    taken.length === 0 ? 'No names are taken yet.' : `Names already taken: ${taken.map((name) => JSON.stringify(name)).join(', ')}.`,
     '',
     'What the author said the form should do:',
     intent,
@@ -251,9 +247,7 @@ function inventory(document: FormSchema): string {
     list
       .map((option) => {
         const label = say(option.label)
-        return label === undefined || label === option.value
-          ? JSON.stringify(option.value)
-          : `${JSON.stringify(option.value)} (${label})`
+        return label === undefined || label === option.value ? JSON.stringify(option.value) : `${JSON.stringify(option.value)} (${label})`
       })
       .join(', ')
 
