@@ -141,14 +141,14 @@ function reactWorkspaces(): string[] {
 
 const isUntyped = (file: string) => UNTYPED.some((directory) => file.startsWith(directory))
 
-// The one case that lints a file builds one program, the tools'. Measured
-// on 30 October 2026, under Node 22.23.3, with CI=true: 0.7 s for that case
-// and 2.8 s for the whole file run alone. It once built a program for each
-// of about thirty tsconfigs and took 308 s on CI's runner beside every other
-// suite (run 41117900910), against 9 to 13 s locally. The app's limit
-// (vitest.config.ts) is 30 s a case, which a loaded runner can pass on one
-// program's work, so these cases wait the same.
-const TYPED = { timeout: 30_000 }
+// The one case that lints a file builds one program, the tools', which
+// takes in Vite's and vitest's types. Measured on 30 October 2026: 0.7 s
+// for that case with this file run alone under CI=true (Node 22.23.3), and
+// 55.7 s on CI's runner, where `pnpm test:coverage` runs every suite at once
+// (run of 0f13a27, which this limit's earlier 30 s failed). It once built a
+// program for each of about thirty tsconfigs and took 308 s there (run
+// 41117900910). So these cases wait 120 s, twice the runner's measure.
+const TYPED = { timeout: 120_000 }
 
 describe('the linter', TYPED, () => {
   // A file ESLint never reads, or reads at warn, or with a recommended rule
