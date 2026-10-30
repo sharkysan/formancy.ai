@@ -127,6 +127,14 @@ describe('why a field is shown or hidden now', () => {
     })
   })
 
+  test('says an answer that is not a plain value as data, not as "[object Object]"', () => {
+    // A submission is untrusted: a country answered with a record was written out as
+    // "it is [object Object]", which says nothing of what was found.
+    const verdict = explainRule(visibleRule, form([visibleRule]), { country: { code: 'DE' }, age: 12 }, english, capabilities)
+
+    expect(verdict?.because[0]).toBe('Country is Switzerland: no — it is {"code":"DE"}')
+  })
+
   test('and agrees with the engine about the same answers', () => {
     // The point of the explanation. Shown, hidden, shown: each verdict is checked
     // against what the engine did with the same rule and the same answers.

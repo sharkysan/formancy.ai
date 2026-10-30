@@ -108,4 +108,15 @@ describe('a submission in words', () => {
     const said = answersInWords(form, { country: 'FR', sign: { drawn: [[[1, 1]]] } }, createFormText({ locale: 'en' }))
     expect(said.map(({ said: words }) => words)).toEqual(['FR', 'A drawn signature'])
   })
+
+  // The same, for an answer of a shape its question never takes: a quantity, a tick and a list
+  // of dates each holding a record were said as "[object Object]", which names nothing.
+  test('says an answer of another shape as the data it is, not as "[object Object]"', () => {
+    const said = answersInWords(
+      form,
+      { qty: { amount: 1 }, agree: { yes: true }, arrive: { on: 'friday' }, country: { code: 'CH' } },
+      createFormText({ locale: 'en' }),
+    )
+    expect(said.map(({ said: words }) => words)).toEqual(['{"code":"CH"}', '{"amount":1}', '{"yes":true}', '{"on":"friday"}'])
+  })
 })

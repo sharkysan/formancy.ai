@@ -36,6 +36,12 @@ given, so the code is now drawn only from a string, a number or a boolean.
 one. A form's data can hold a record with those keys, and an expression handing it back gave a
 string that said nothing of it.
 
+**A submission read back in words, and a rule's explanation of why a field is hidden, say an
+answer of an unexpected shape as the data it is.** A quantity, a tick or a choice holding a record
+was said as `[object Object]` in a response's text and in "it is …" beside a rule; both now give
+its JSON, which a reviewer can read. A submission is untrusted, so the shape of an answer is not
+the shape its question takes.
+
 ## 0.11.0 — 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a

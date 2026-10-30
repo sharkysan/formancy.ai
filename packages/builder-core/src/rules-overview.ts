@@ -122,7 +122,8 @@ function valueInWords(value: unknown, field: ConditionField | undefined, text: B
   if (typeof value === 'boolean') return text(value ? 'logic.value.yes' : 'logic.value.no')
   if (Array.isArray(value)) return text.list(value.map((item) => valueInWords(item, field, text)))
   const option = field?.options.find((candidate) => candidate.value === value)
-  return option?.label ?? String(value)
+  if (option !== undefined) return option.label
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint' ? String(value) : JSON.stringify(value)
 }
 
 /** What a rule does with the answers given, and why. */
