@@ -294,6 +294,14 @@ Measured in jsdom on 2026-10-29 on `0.10.0`'s code; earlier releases were not ru
 `0.11.0`: focus goes into the new row, the row in a removed one's place, or a moved row's button
 ([0219](../decisions/0219-focus-follows-a-row-a-person-adds-removes-or-moves.md)).
 
+**Every release through `0.11.0` leaves a typeahead's list where it is as a person arrows
+through it**, in both renderers, so the row a screen reader names can lie outside what the list
+shows: after End, the last of the playground starter's twelve languages sat 168 px below
+Blueprint's list, measured in Chromium on 2026-10-30. A gap recorded since
+[0072](../decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md), and fixed in no
+release yet: the change is under *Unreleased* in the changelog
+([0227](../decisions/0227-the-row-arrowed-to-is-scrolled-into-view.md)).
+
 **`0.7.0` to `0.10.0` give a field drawn with no control no element carrying its id** — a file
 field in a deployment that takes no uploads, a choice whose source the deployment lacks — measured
 on 2026-10-20, so the error summary's link to it does nothing, and from `0.9.0` `useGoToField` with

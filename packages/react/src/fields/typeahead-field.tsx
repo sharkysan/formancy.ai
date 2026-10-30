@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { optionsStatus } from '@formancy/core/words'
@@ -73,6 +73,14 @@ export function TypeaheadSelectField({
   const activeIndex = matches.findIndex((option) => option.value === activeValue)
   const activeId = expanded && activeIndex !== -1 ? optionDomId(field, matches[activeIndex]!.value) : undefined
   const listboxId = `${field.ids.control}:listbox`
+  const listbox = useRef<HTMLUListElement>(null)
+
+  // The row arrowed to is scrolled to, only as far as it takes: a theme draws the list shorter
+  // than a page of options, and DOM focus stays in the box, so the browser moves nothing itself.
+  // Optional because jsdom has no scrollIntoView, and a host's own tests run this in it.
+  useEffect(() => {
+    if (expanded && activeIndex !== -1) listbox.current?.children[activeIndex]?.scrollIntoView?.({ block: 'nearest' })
+  }, [expanded, activeIndex])
 
   const choose = (value: string): void => {
     field.setValue(value)
@@ -206,7 +214,14 @@ export function TypeaheadSelectField({
             Not the field's own name: two elements answering to the same accessible
             name make "the control called X" ambiguous for every query that uses it,
             starting with the conformance driver's own. */}
-        <ul id={listboxId} role="listbox" aria-label={text('options.suggestions', { label })} data-formancy-part="typeahead-listbox" hidden={!expanded}>
+        <ul
+          ref={listbox}
+          id={listboxId}
+          role="listbox"
+          aria-label={text('options.suggestions', { label })}
+          data-formancy-part="typeahead-listbox"
+          hidden={!expanded}
+        >
           {matches.map((option) => (
             <li
               key={option.value}

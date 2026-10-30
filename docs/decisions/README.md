@@ -178,7 +178,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0069](0069-contributions-under-a-cla.md) | Contributions under a CLA | accepted |
 | [0070](0070-a-code-is-an-arrangement-not-a-field.md) | A code is an arrangement, not a field | accepted |
 | [0071](0071-a-scanner-is-supplied-not-built.md) | A scanner is supplied, not built | accepted |
-| [0072](0072-a-typeahead-is-a-combobox-over-the-same-answer.md) | A typeahead is a combobox over the same answer | accepted |
+| [0072](0072-a-typeahead-is-a-combobox-over-the-same-answer.md) | A typeahead is a combobox over the same answer | accepted; its active option scrolled into view by 0227 |
 | [0073](0073-a-host-element-is-not-a-layout.md) | A host element is not a layout | mechanism superseded by 0079 |
 | [0074](0074-a-table-child-may-span.md) | A table child may span | accepted |
 | [0075](0075-a-datagrid-is-drawn-not-tabulated.md) | A datagrid is drawn, not tabulated | accepted |
@@ -283,7 +283,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0174](0174-the-builders-hosts-take-no-part-in-layout.md) | The builder's hosts take no part in layout, and the two builders are measured part by part | accepted |
 | [0175](0175-a-name-goes-into-a-header-encoded.md) | A name goes into a header encoded, and an error's reply drops a header that cannot be written | accepted |
 | [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted |
-| [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted |
+| [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted; its active option scrolled into view by 0227 |
 | [0178](0178-the-rooms-palette-is-published.md) | The admin's palette is published, and the admin imports it like anybody else | accepted |
 | [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted; `errors` and `visible` at a list's own path, which it refused, let through by 0184 |
 | [0183](0183-no-model-is-an-answer.md) | A deployment with no model says so in a 200, not a 404 | accepted |
@@ -327,3 +327,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0224](0224-a-summary-is-counted-a-response-at-a-time.md) | A summary is counted a response at a time, and the server reads a page of them at once | accepted |
 | [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md) | The four formancy repositories lint and format by one set of rules, published here as `@formancy/code-style`, and CI fails a change that breaks either | accepted |
 | [0226](0226-a-pattern-is-analysed-as-it-runs.md) | A pattern is analysed as it runs, from the one definition of how it runs | accepted |
+| [0227](0227-the-row-arrowed-to-is-scrolled-into-view.md) | The row arrowed to in a typeahead's list is scrolled into view, the page with it if it must | accepted |

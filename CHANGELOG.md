@@ -22,6 +22,15 @@ the validator, the engine and the analysis all read it
 ([0226](docs/decisions/0226-a-pattern-is-analysed-as-it-runs.md)). A version published before is
 not analysed again until it is republished; MIGRATIONS says how to find one.
 
+**A typeahead's list scrolls to the row a person arrows to, in both renderers.** Focus stays in
+the text box and the row is named by `aria-activedescendant`, so the browser scrolled nothing, and
+a theme draws the list shorter than a long one: measured in Chromium on the playground's starter,
+after End the last of twelve languages sat 168 px below Blueprint's list while a screen reader
+named it. The row now asks to be scrolled into view with `block: 'nearest'`, which moves the list
+only as far as it takes, and moves the page too when the list runs past the bottom of the window
+([0227](docs/decisions/0227-the-row-arrowed-to-is-scrolled-into-view.md)). The call is skipped
+where there is no `scrollIntoView`, as in jsdom, so a host's own tests are untouched.
+
 **`@formancy/code-style` is a new package: the ESLint rules and the Prettier format the
 formancy repositories share.** Repositories lint and format alike only while they hold the
 same rules, and a copy in each lets a rule changed in one differ in the others until somebody
