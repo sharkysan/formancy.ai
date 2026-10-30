@@ -153,11 +153,12 @@ And it is larger: with this repository's paths, as first committed, the shared r
   Once this package is released, each swaps its copy for it in a pull request of its own,
   pinned exactly as a root devDependency (formancy.ai-health 0017, formancy.ai-data 0114); from
   then a rule is changed here, and reaches each of them by a release and a bump of its pin.
-- **The licence, the maintainer's to confirm.** The rules were written in Formancy Health, under
+- **Apache-2.0, as the maintainer decided.** The rules were written in Formancy Health, under
   its source-available terms, and are published here under Apache-2.0, as everything here is
   ([0002](0002-apache-2-0.md)). Both repositories are the maintainer's, and the module is
-  configuration with no product code in it. Nothing is published until he cuts a release, and
-  he is to confirm the terms before the first one that carries the package.
+  configuration with no product code in it. The grant is made when the module reaches this
+  public repository, not when the package is first published, so the maintainer decided it
+  before this change was pushed, on 30 October 2026: Apache-2.0.
 
 ## Consequences
 
@@ -187,9 +188,9 @@ the others pin this package it is one version of one module in all four.
   not, and a repository pinning it either bumps for nothing or falls behind on a version number
   that says nothing about the rules. Until each pins, the module is three copies, here, in
   Health and in Data, which nothing compares.
-- **The licence is a question until it is answered.** Should the maintainer decide the rules
-  belong under Health's terms, the package's licence changes before its first publish, and this
-  repository, which lints itself with it, would depend on terms it uses nowhere else.
+- **One module under two licences until Health pins it.** Health's copy stays under its
+  source-available terms and this one is Apache-2.0; a repository that pins the package takes it
+  under Apache-2.0, and the grant, once made here, is not taken back.
 - **The release's SBOM names lint tooling.** It is made from every package the release publishes,
   installed as a consumer installs them (0187), so this package's dependencies — the rule sets,
   typescript-eslint's parser and plugin, the hooks plugin and the Babel it parses with — are in

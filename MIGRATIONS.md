@@ -366,6 +366,19 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A host's interfaces declare `this: void` (unreleased)
+
+**If you implement `FieldBinding` or `UploadOptions` (React or Angular), core's `UploadQueue`,
+server-core's `ServerDeps` or `AuthDeps`, or the builder's `PromptRun`, `DraftRun`,
+`TranslationRun` or `Relay` with an object literal written in place whose function reads
+`this`**, it no longer compiles: each of their functions now declares `this: void` (TS2339 on
+the `this`), which says it may be passed on detached, as a host does when it destructures
+`useField`'s answer
+([0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
+Such a function would have lost its `this` the first time it was passed on. Read what it needs
+from a variable the literal closes over instead. A class or an object built elsewhere and then
+assigned compiles as before, and a parameter is checked as it was.
+
 ## A server's first start of 0.11.0 builds an index (0.11.0)
 
 **If you run the server against a database with many submissions**, its first start of `0.11.0`
