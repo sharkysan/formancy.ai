@@ -12,10 +12,11 @@
     watched failing
     ([formancy.ai-health 0017](https://github.com/sharkysan/formancy.ai-health/blob/main/docs/decisions/0017-every-typescript-and-javascript-file-is-linted-by-the-recommended-type-aware-rules-and-formatted-by-prettier.md)
     says how); here it failed whole before the package had a manifest. With `CI=true`, as
-    GitHub Actions runs it, one case failed on 30 October 2026, *an async member that awaits
-    nothing is not refused, and an un-awaited promise still is*: it lints a file twice in one
-    process, which then gives no findings the second time (below). Its correction is made in
-    Formancy Health's module and copied here, as every change to the rules is.
+    GitHub Actions runs it, one case of `4f151a2`'s failed on 30 October 2026, *an async
+    member that awaits nothing is not refused, and an un-awaited promise still is*: it linted
+    a file twice in one process, which then gives no findings the second time (below). Health
+    corrected it in `0935874`, and the correction was copied here; after that, the same day,
+    the suite passed 18 of 18 with `CI=true`, and so did the docs suite, 389 of 389.
   - **`apps/docs/src/lint.test.ts`**, in `pnpm test` — this repository's wiring, derived from
     the files git holds and from the two recommended sets as ESLint computes them: every
     TypeScript and JavaScript file linted by `pnpm lint` as `eslint .`, by the rules its kind

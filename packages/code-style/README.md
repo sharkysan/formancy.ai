@@ -21,8 +21,7 @@ It declares no Node of its own. The Node it runs on is ESLint's, which its
 `eslint` peer and its `@eslint/js` dependency both declare as
 `^20.19.0 || ^22.13.0 || >=24` (ESLint 10.13.0 and `@eslint/js` 10.0.1, read on
 2026-10-30). That is the floor that binds, and it is above the `>=22.12.0`
-formancy.ai's manifest declares, whose engine and server CI tests on Node 22.12:
-there, ESLint runs outside the Node it says it runs on.
+formancy.ai's own manifest declares.
 
 `eslint.config.mjs`:
 
