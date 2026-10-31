@@ -41,6 +41,7 @@ import { checkArrangeGaps } from './arrange-browser-test.mjs'
 import { checkMaterialDateButton } from './material-date-browser-test.mjs'
 import { checkNoForeignRequests } from './request-browser-test.mjs'
 import { checkSuggestionsPlacement } from './suggestions-browser-test.mjs'
+import { checkActiveOptionInView } from './typeahead-browser-test.mjs'
 import { checkBuildersLayAlike } from './builders-layout-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -196,6 +197,7 @@ async function run() {
     await checkUploadThumbnails(browser, url, check)
     await checkArrangeGaps(browser, url, check)
     await checkSuggestionsPlacement(browser, url, check)
+    await checkActiveOptionInView(browser, url, check)
     await checkBuildersLayAlike(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })

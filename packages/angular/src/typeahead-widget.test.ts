@@ -1,7 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen } from '@testing-library/angular'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import axe from 'axe-core'
 import { ACCESSIBILITY_EXCLUSIONS, ACCESSIBILITY_TAGS, ACCESSIBILITY_UNMEASURABLE_IN_JSDOM } from '@formancy/conformance'
 import { createFormEngine } from '@formancy/core'
@@ -243,6 +243,28 @@ describe('a select with the typeahead widget', () => {
     await type('tsch')
     await press('End')
     expect(activeOptionLabel()).toBe('Schwiizerdütsch')
+  })
+
+  test('scrolls the list only as far as the option arrowed to, and only when it moves', async () => {
+    // The failure this prevents: a list a theme makes shorter than its options, where a person
+    // arrows past the last row they can see and hears rows they cannot find on the screen (0072).
+    // jsdom lays nothing out and has no scrollIntoView, so this holds the call;
+    // `pnpm test:browser` measures where the row lands in Chromium.
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true })
+    try {
+      await mount('typeahead')
+      await press('ArrowDown')
+      await press('End')
+      expect((scrollIntoView.mock.contexts.at(-1) as Element).textContent).toBe('Schwiizerdütsch')
+      expect(scrollIntoView).toHaveBeenLastCalledWith({ block: 'nearest' })
+      // A keystroke makes nothing active, so the list stays where the person left it.
+      const calls = scrollIntoView.mock.calls.length
+      await type('d')
+      expect(scrollIntoView).toHaveBeenCalledTimes(calls)
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+    }
   })
 
   test('Enter chooses the active option and stores that option value', async () => {
