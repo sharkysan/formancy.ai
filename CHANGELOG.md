@@ -10,6 +10,34 @@ later.
 
 ## Unreleased
 
+## 0.12.0 — 2026-10-31
+
+**A minor release; the spec version stays 5.** `0.12.0` reads and writes what `0.11.0` does, so a
+document moves between the two either way and nothing migrates. It fixes a denial of service every
+release from `0.2.0` shipped: the analysis that refuses a `pattern` that can be made to backtrack
+read it without the `u` flag the engine runs it with, so a pattern such as `(\p{L}+)+` was
+published, and one answer to it could hold the server's CPU. **A deployment that upgrades should
+republish every form with a pattern**, because a version stored before is not analysed again until
+it is ([`MIGRATIONS.md`](MIGRATIONS.md)). It also scrolls a typeahead's list to the row a person
+arrows to, stops four places in the packages writing an answer of an unexpected shape as
+`[object Object]`, fixes two defects in the admin's fill pane, and publishes
+`@formancy/code-style`, the lint rules and the format the formancy repositories share, which CI now
+holds every file to. It is a minor release because a host can see it, where a breaking change lands
+before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by choosing it**: one on `^0.11.0`
+keeps `0.11.0` until it moves to `^0.12.0`, and a server run from `compose.published.yaml` runs the
+tag `FORMANCY_VERSION` pins.
+
+**What a host sees change.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to change.
+
+- **A pattern that published before can be refused at publish**, with its field and complexity, as
+  any pattern that backtracks is (0226).
+- **The interfaces a host implements declare `this: void` on their functions**, so an object
+  literal written in their place whose function reads `this` no longer compiles (0225).
+- **A typeahead's list scrolls to the row arrowed to**, and the page with it when the list runs
+  past the window (0227).
+- **A code node bound to an answer that is not text, a number or a boolean draws nothing**, and a
+  response read back in words says such an answer as JSON.
+
 **A pattern that backtracks with Unicode semantics is refused at publish.** The engine runs a
 field's `pattern` with JavaScript's `u` flag, and the analysis that refuses a pattern that can be
 made to backtrack ([0045](docs/decisions/0045-reject-backtracking-patterns.md)) read it without.
@@ -98,6 +126,32 @@ and started a second, which replaced the first in what the page remembered and l
 the server with nothing to finish it. A save made meanwhile now waits for the start under way.
 Found when CI, slowed by coverage, typed past a test's 60 ms quiet; the drafts page now tells a
 host to do the same.
+
+### What 0.12.0 knowingly does not have
+
+Everything 0.11.0 listed still holds. Among it:
+
+- **A default left alone is stored as the person's answer**, indistinguishable from one chosen
+  (0197; hazard A10).
+- **Nothing records that the person looked at the review** before sending (0204).
+- **A rule's message is said for its code wherever the field carries it**, and nothing checks a
+  message against its rule (0198; hazard D20).
+- **React's bundle is over its 4 kB budget**, and only core's budget is a gate (0208).
+- **A version stored with a field keyed `__proto__` cannot be opened**, and nothing finds such
+  versions for an operator (0185).
+- **Under Material, a field's description and its count sit outside the form field** (0211).
+- **The images published before `v0.9.0` keep only BuildKit's provenance** (0209).
+- **A computed field whose options come from a source is said by its stored value** (0216).
+- **A listing asked for no page is every submission** (0222; arc42 §11.2).
+- **A summary read while responses arrive counts a list that moved** (0224).
+- **Nothing is announced when a row is removed** (0219).
+
+New, or found while making this release:
+
+- **A version stored before 0.12.0 is not analysed again until it is republished**, and nothing
+  searches the stored documents for a pattern that backtracks (0226).
+- **A tag picker's list has no row arrowed to**: Enter adds its first match, so a later match is
+  chosen by typing until it is first (0227).
 
 ## 0.11.0 — 2026-10-30
 
