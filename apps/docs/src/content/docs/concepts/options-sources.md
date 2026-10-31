@@ -246,9 +246,6 @@ server, is drawn in the architecture's
 
 ## Not built
 
-- **The active option is not scrolled into view**, so a keyboard user arrowing down a long page
-  does not see where they are past what the theme's list shows
-  ([0072](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)).
 - **A typeahead, or a tag picker, asks for a page when it is drawn**, before anybody opens it, if its source has no
   minimum and the field is enabled — one read per such field per form opened. Over a source with a
   minimum it asks nothing until somebody types that much.

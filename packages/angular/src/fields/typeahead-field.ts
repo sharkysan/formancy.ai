@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, signal, viewChild } from '@angular/core'
 import { optionsStatus } from '@formancy/core/words'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { injectFormText } from '../text.js'
@@ -102,6 +102,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
              Not with the name the field already has: two elements answering to the
              same accessible name make every query by that name ambiguous. -->
         <ul
+          #listbox
           [id]="listboxId()"
           role="listbox"
           [attr.aria-label]="popupLabel()"
@@ -181,6 +182,19 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
   protected readonly popupLabel = computed(() => this.words('options.suggestions', { label: this.context.label }))
 
   private readonly activeIndex = computed(() => this.matches().findIndex((option) => option.value === this.activeValue()))
+
+  private readonly listbox = viewChild.required<ElementRef<HTMLUListElement>>('listbox')
+
+  /**
+   * The row arrowed to is scrolled to, only as far as it takes: a theme draws the list shorter
+   * than a page of options, and DOM focus stays in the box, so the browser moves nothing itself.
+   * After the render, when the row is in the list. Optional because jsdom has no
+   * scrollIntoView, and a host's own tests run this in it.
+   */
+  private readonly scrollToActive = afterRenderEffect(() => {
+    const index = this.activeIndex()
+    if (this.expanded() && index !== -1) this.listbox().nativeElement.children[index]?.scrollIntoView?.({ block: 'nearest' })
+  })
 
   /** Absent rather than empty when nothing is active: an empty IDREF is a broken
    *  reference, not a way of saying "nothing". Angular omits an attribute bound to
