@@ -3,13 +3,18 @@ import type { CelNode, ExpressionAst } from './ast.js'
 import { translateCelError } from './cel.js'
 import { decimalFromString } from './decimal.js'
 import { ExpressionError, withHint } from './errors.js'
-import { KIND_POLICIES } from './kinds.js'
+import { KIND_POLICIES, UNREPRODUCIBLE, reproducibleOf } from './kinds.js'
 import type { ExpressionKind, KindPolicy } from './kinds.js'
 import type { ParsedExpression } from './parse.js'
 import type { ResultType } from './types.js'
 
 export interface CheckOptions {
   readonly kind: ExpressionKind
+  /**
+   * Refuse the clock and the random source, whatever the kind allows, so the same values always
+   * give the same result: for a caller with nothing to capture them in (0228).
+   */
+  readonly reproducible?: boolean | undefined
 }
 
 export type CheckOutcome = { readonly ok: true; readonly type: ResultType } | { readonly ok: false; readonly error: ExpressionError }
@@ -29,7 +34,8 @@ export function check(ast: ExpressionAst, options: CheckOptions): CheckOutcome {
     // with anything, so a check that looked like it passed would be worthless.
     throw new TypeError('check needs an expression parsed with variable declarations')
   }
-  const policy = KIND_POLICIES[options.kind]
+  const reproducible = options.reproducible === true
+  const policy = reproducible ? reproducibleOf(KIND_POLICIES[options.kind]) : KIND_POLICIES[options.kind]
 
   const outcome = parsed.program.check()
   if (!outcome.valid) {
@@ -47,7 +53,7 @@ export function check(ast: ExpressionAst, options: CheckOptions): CheckOutcome {
   // Type checking first: a misspelled function should be reported as unknown
   // rather than as forbidden, which would send the author looking for a
   // permission they cannot grant.
-  const forbidden = findForbiddenCall(parsed.node, policy, options.kind, parsed.source)
+  const forbidden = findForbiddenCall(parsed.node, policy, { kind: options.kind, reproducible }, parsed.source)
   if (forbidden !== undefined) return { ok: false, error: forbidden }
 
   if (policy.resultTypes !== 'any' && !policy.resultTypes.has(outcome.type)) {
@@ -66,27 +72,36 @@ export function check(ast: ExpressionAst, options: CheckOptions): CheckOutcome {
   return { ok: true, type: outcome.type }
 }
 
+/** The kind an expression was checked as, and whether it was asked to be reproducible. */
+interface AskedFor {
+  readonly kind: ExpressionKind
+  readonly reproducible: boolean
+}
+
 /**
  * The allow-list is checked on the AST rather than by leaving functions out of
  * the environment, because the set differs per kind and the environment is
  * shared. A name that reaches evaluation is therefore one that two independent
  * gates agreed on.
  */
-function findForbiddenCall(node: CelNode, policy: KindPolicy, kind: ExpressionKind, source: string): ExpressionError | undefined {
+function findForbiddenCall(node: CelNode, policy: KindPolicy, asked: AskedFor, source: string): ExpressionError | undefined {
   const called = calledFunctionName(node)
   if (called !== undefined && !policy.allowedFunctions.has(called)) {
+    const unreproducible = asked.reproducible && UNREPRODUCIBLE.has(called)
     return new ExpressionError({
       kind: 'policy',
       code: 'function_not_allowed',
-      message: `${called}() cannot be used in a ${kind} expression.`,
+      message: `${called}() cannot be used in a ${asked.reproducible ? 'reproducible ' : ''}${asked.kind} expression.`,
       source,
       position: { start: node.start, end: node.end },
-      hint: `Allowed here: ${[...policy.allowedFunctions].sort().join(', ')}.`,
+      hint: unreproducible
+        ? 'It reads the clock or a random source, so the same values could give two results. Hand the value in instead.'
+        : `Allowed here: ${[...policy.allowedFunctions].sort().join(', ')}.`,
     })
   }
 
   for (const child of childNodes(node)) {
-    const forbidden = findForbiddenCall(child, policy, kind, source)
+    const forbidden = findForbiddenCall(child, policy, asked, source)
     if (forbidden !== undefined) return forbidden
   }
   return undefined

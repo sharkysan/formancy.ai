@@ -11,6 +11,8 @@ export interface CompileOptions {
   readonly kind: ExpressionKind
   readonly variables: VariableDeclarations
   readonly limits?: Partial<StructuralLimits> | undefined
+  /** Refuse the clock and the random source, whatever the kind allows; see `CheckOptions`. */
+  readonly reproducible?: boolean | undefined
 }
 
 /**
@@ -50,7 +52,7 @@ export function compile(source: string, options: CompileOptions): CompileOutcome
   })
   if (!parsed.ok) return parsed
 
-  const checked = check(parsed.ast, { kind: options.kind })
+  const checked = check(parsed.ast, { kind: options.kind, reproducible: options.reproducible })
   if (!checked.ok) return checked
 
   const program: CompiledProgram = {

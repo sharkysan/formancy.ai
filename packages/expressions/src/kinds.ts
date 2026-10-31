@@ -108,3 +108,15 @@ export const KIND_POLICIES: Readonly<Record<ExpressionKind, KindPolicy>> = Objec
   validate: policy([READ_ONLY_CORE, CLOCK], BOOLEAN_OR_MESSAGE),
   computed: policy([READ_ONLY_CORE, CLOCK, RANDOM], 'any'),
 })
+
+/**
+ * What a reproducible expression may not call, whatever its kind allows: the clock and the random
+ * source, which give two evaluations of the same values two answers. A form captures both with the
+ * submission; a caller with nothing to capture them in asks for neither (0228).
+ */
+export const UNREPRODUCIBLE: ReadonlySet<string> = new Set([...CLOCK, ...RANDOM])
+
+/** A kind's policy without `UNREPRODUCIBLE`. */
+export function reproducibleOf(kindPolicy: KindPolicy): KindPolicy {
+  return policy([[...kindPolicy.allowedFunctions].filter((name) => !UNREPRODUCIBLE.has(name))], kindPolicy.resultTypes)
+}
