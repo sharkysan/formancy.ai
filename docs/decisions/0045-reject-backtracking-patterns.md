@@ -1,6 +1,7 @@
 # 0045 — Refuse a pattern that can be made to backtrack
 
-- **Status:** accepted
+- **Status:** accepted; analysed without the `u` the engine runs it with until
+  [0226](0226-a-pattern-is-analysed-as-it-runs.md)
 - **Date:** 2026-09-20
 - **Deciders:** Daniel Bacher
 - **Verified by:** the `patterns that backtrack are refused at publish` block in

@@ -1,6 +1,7 @@
 # 0177 — A source may say its list goes on, and a sourced control says only what the person can act on
 
-- **Status:** accepted
+- **Status:** accepted; its active option scrolled into view by
+  [0227](0227-the-row-arrowed-to-is-scrolled-into-view.md)
 - **Date:** 2026-10-16
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/spec/src/options-source.test.ts` (*acceptRemoteAnswer*,
