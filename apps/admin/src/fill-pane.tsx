@@ -111,6 +111,12 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
    * just stored, and the draft's token is one nothing has spent.
    */
   const stored = useRef(0)
+  /**
+   * The draft the server is still starting. A save made meanwhile, by somebody typing past the quiet
+   * while the server is slow, waits for this one: starting its own would replace it in what the
+   * page remembers and leave it on the server with nothing to finish it.
+   */
+  const starting = useRef<ReturnType<typeof startDraft> | undefined>(undefined)
 
   useEffect(() => {
     let live = true
@@ -186,7 +192,9 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
       if (readOnly) return
       if (draft.current === undefined) {
         const before = stored.current
-        const started = await startDraft(path)
+        const start = (starting.current ??= startDraft(path))
+        const started = await start
+        if (starting.current === start) starting.current = undefined
         if (stored.current !== before) return
         if (started === undefined) {
           setSaved('Could not start a draft.')

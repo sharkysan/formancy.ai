@@ -165,6 +165,20 @@ the same terms as submissions, so an undebounced save will start returning
 while somebody types is a form that stops saving exactly when they are working
 hardest.
 
+**Start the draft once, even while the first start is under way.** The quiet runs out again if
+the server is slow to answer the start and somebody types on, and that save finds no draft
+yet either. Started a second time, the second draft replaces the first in what the page keeps,
+and the first stays on the server with nothing to finish it. Keep the start that is under way,
+and have a save made meanwhile wait for it:
+
+```ts
+let starting: Promise<Draft> | undefined
+
+const start = (starting ??= startDraft())
+const draft = await start
+if (starting === start) starting = undefined
+```
+
 ### Show the migration report
 
 A resume can come back with `migration`, which means the form was republished and

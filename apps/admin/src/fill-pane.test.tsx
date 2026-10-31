@@ -167,6 +167,38 @@ describe('filling in a published form', () => {
     expect(saves()[0]?.url).not.toContain('t1')
   })
 
+  test('a save made while its draft is still being started waits for that draft, rather than starting another', async () => {
+    // The server is slow to start the draft and the person goes on typing past the quiet, so a
+    // second save fires while the first waits. It found no draft yet and started one of its own,
+    // which replaced the first in what the page remembers and sends with, and left the first on
+    // the server with nothing to finish it. Seen on CI, where coverage slowed typing past a 60 ms
+    // quiet. Events are fired rather than typed, so the second save is made while the start is
+    // held, however fast the runner.
+    let release = (): void => undefined
+    replies['POST /api/f/contact/drafts'] = {
+      body: { draftId: 'd1', token: 't1', submissionToken: 'st-d1' },
+      held: new Promise<void>((resolve) => {
+        release = resolve
+      }),
+    }
+    render(<FillPane path="contact" quietMs={60} />)
+
+    fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'a@b.ch' } })
+    await waitFor(() => {
+      expect(starts()).toHaveLength(1)
+    })
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'hello' } })
+    // Past the quiet, so the second save has fired while the start is held.
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    release()
+    await waitFor(() => {
+      expect(saves()).toHaveLength(2)
+    })
+
+    expect(starts()).toHaveLength(1)
+    expect(saves().at(-1)?.body).toMatchObject({ email: 'a@b.ch', message: 'hello' })
+  })
+
   test('resumes on the next visit, using the token it kept', async () => {
     window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
     replies['GET /api/f/contact/drafts/d1'] = {
@@ -381,6 +413,29 @@ describe('sending the response', () => {
     await screen.findByLabelText('Email')
 
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual(['GET /api/f/contact'])
+  })
+
+  test('answers typed after the response is stored start a draft of their own', async () => {
+    // The draft whose answers were just sent is finished, and its token is spent. A save that
+    // went back to the start that made it would put the next answers in that draft, and their
+    // Submit would be refused as already sent.
+    render(<FillPane path="contact" quietMs={60} />)
+    fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'a@b.ch' } })
+    await waitFor(() => {
+      expect(saves()).toHaveLength(1)
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await screen.findByText('Submitted.')
+
+    replies['POST /api/f/contact/drafts'] = { body: { draftId: 'd2', token: 't2', submissionToken: 'st-d2' } }
+    replies['PUT /api/f/contact/drafts/d2'] = { body: { ok: true } }
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'again' } })
+    await waitFor(() => {
+      expect(saves()).toHaveLength(2)
+    })
+
+    expect(starts()).toHaveLength(2)
+    expect(saves().at(-1)?.url).toBe('/api/f/contact/drafts/d2')
   })
 
   test('a save waiting out the quiet when the response is sent starts no draft afterwards', async () => {

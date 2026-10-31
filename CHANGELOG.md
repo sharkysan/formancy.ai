@@ -92,6 +92,13 @@ server received the answers under a `data` key beside `ok` and `errors`, and a f
 had not filled in validly was sent as readily. It now sends `data`, and sends nothing when the
 form refused. Found by `@typescript-eslint/no-misused-promises` on the async handler.
 
+**The admin's fill pane starts one draft, however slowly the server answers.** A save made while
+the server was still starting the draft, by somebody typing on past the quiet, found no draft yet
+and started a second, which replaced the first in what the page remembered and left the first on
+the server with nothing to finish it. A save made meanwhile now waits for the start under way.
+Found when CI, slowed by coverage, typed past a test's 60 ms quiet; the drafts page now tells a
+host to do the same.
+
 ## 0.11.0 — 2026-10-30
 
 **A minor release; the spec version stays 5.** `0.11.0` reads and writes what `0.10.0` does, so a
