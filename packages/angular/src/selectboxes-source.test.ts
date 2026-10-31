@@ -114,7 +114,9 @@ describe('a list of ticks whose options come from a source', () => {
   test('ticks what the form already holds, named by the source, asked once', async () => {
     const { sources, asked } = answering(CANTONS.slice(0, 2))
     const { settle } = await mount({ sources, initialValue: { cantons: ['VD', 'ZH'] } })
-    await until(settle, () => expect(screen.getByRole('checkbox', { name: 'Vaud' })).toBeTruthy())
+    // Both answers, not the first: the labels name Vaud and Zürich before the search draws Bern,
+    // and which lands first is the runner's to decide.
+    await until(settle, () => expect([...boxes()].sort()).toEqual(['BE', 'VD', 'ZH']))
     expect(checked('Vaud')).toBe(true)
     expect(checked('Zürich')).toBe(true)
     expect(checked('Bern')).toBe(false)
