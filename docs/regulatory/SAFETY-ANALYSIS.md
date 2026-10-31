@@ -1460,11 +1460,20 @@ vulnerable one is refused, naming the field, the pattern and the complexity
 caught there: a JavaScript regular expression cannot be timed out once it has
 started matching. The check found a polynomial case in formancy's own built-in
 email format on its first run, which is now fixed and pinned by a timing test.
+What is analysed is the expression the engine runs, anchored and with the `u`
+flag, read by the validator, the engine and the analysis from one definition in
+`@formancy/spec` ([0226](../decisions/0226-a-pattern-is-analysed-as-it-runs.md)).
+Every release from `0.2.0` through `0.11.0` analysed without `u`, where `\p{L}`
+is a p and a brace, and published `(\p{L}+)+`, which the engine runs
+exponentially. `use-cases.test.ts` refuses that pattern, and refuses it again
+when an unchanged document holding it is republished.
 
 *Residual:* a pattern recheck reports as `unknown` is accepted, deliberately —
 refusing on an undecided analysis would make publishing depend on an analysis
-timeout. Patterns stored before this gate existed were never analysed, so a
-deployment carrying older forms should republish them.
+timeout. Patterns stored before this gate existed were never analysed, and those
+`0.2.0` to `0.11.0` stored were analysed without `u`, so a deployment carrying
+older forms should republish them: the analysis runs before an unchanged
+document is answered as current, and refuses one that backtracks.
 
 ### D4. A control cannot be reached by assistive technology
 

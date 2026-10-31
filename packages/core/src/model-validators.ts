@@ -1,4 +1,4 @@
-import { ANSWER_KINDS, TEMPORAL_SHAPES, fitsAnswerShape, fitsMask } from '@formancy/spec'
+import { ANSWER_KINDS, PATTERN_FLAGS, TEMPORAL_SHAPES, anchoredPattern, fitsAnswerShape, fitsMask } from '@formancy/spec'
 import type { FieldDef, FieldFormat, StoredFile } from '@formancy/spec'
 import type { BuiltInErrorCode } from './error-codes.js'
 import { formatPath } from './path.js'
@@ -315,10 +315,9 @@ const compiledPatterns = new WeakMap<FieldDef, RegExp>()
 function patternFor(def: FieldDef): RegExp {
   let compiled = compiledPatterns.get(def)
   if (compiled === undefined) {
-    // Anchored: the schema documents pattern as matching the WHOLE answer.
-    // A substring match quietly accepts "xxABCxx" against "[A-Z]{3}", which is
-    // never what a form author meant.
-    compiled = new RegExp(`^(?:${def.pattern!})$`, 'u')
+    // Anchored, with Unicode semantics, as the spec defines a pattern to run — the one
+    // definition the server's backtracking analysis reads too.
+    compiled = new RegExp(anchoredPattern(def.pattern!), PATTERN_FLAGS)
     compiledPatterns.set(def, compiled)
   }
   return compiled

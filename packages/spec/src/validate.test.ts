@@ -238,6 +238,29 @@ describe('validateSchema semantic rules', () => {
   })
 })
 
+describe('a pattern is compiled when the form is saved, as the engine runs it', () => {
+  const withPattern = (pattern: string): FormSchema =>
+    revise((draft) => {
+      draft.model.fields[0]!.pattern = pattern
+    })
+
+  // `a{` is a literal brace without `u` and a syntax error with it. Compiled without the
+  // flag the engine uses, the form saves, and the engine throws as the person types.
+  test('refuses a pattern that compiles only without Unicode semantics', () => {
+    const error = onlyError(validateSchema(withPattern('a{')))
+
+    expect(error).toMatchObject({ path: '/model/fields/0/pattern', code: 'pattern.invalid' })
+  })
+
+  // Wrapped in the anchors, `a)|(b` compiles, and means "starts with a, or ends with b":
+  // a pattern that escaped the anchors would accept answers it describes only a part of.
+  test('refuses a pattern that compiles only inside the anchors', () => {
+    const error = onlyError(validateSchema(withPattern('a)|(b')))
+
+    expect(error).toMatchObject({ path: '/model/fields/0/pattern', code: 'pattern.invalid' })
+  })
+})
+
 describe('a key that can name no answer', () => {
   test('refuses a field keyed _id, which every repeater row carries as its identity', () => {
     // Inside a row the field's answer and the row's identity would be one member, and

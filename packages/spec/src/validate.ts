@@ -10,6 +10,7 @@ import type { LayoutNode } from './layout.js'
 import { versionErrors } from './version-errors.js'
 import { toSchemaErrors } from './structural-errors.js'
 import { maskHasPositions } from './mask.js'
+import { PATTERN_FLAGS } from './pattern.js'
 import { optionImageRefusal } from './option-image.js'
 import { schemaError } from './schema-errors.js'
 import type { SchemaError } from './schema-errors.js'
@@ -151,10 +152,11 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     if (previousKey !== undefined) claimedRenames.add(previousKey)
 
     // A broken pattern must fail the AUTHOR, not the person filling the form
-    // in — new RegExp at answer time would throw mid-keystroke.
+    // in — new RegExp at answer time would throw mid-keystroke. With the engine's
+    // flags, and unwrapped: `a)|(b` compiles inside the anchors and escapes them.
     if (field.pattern !== undefined) {
       try {
-        new RegExp(field.pattern, 'u')
+        new RegExp(field.pattern, PATTERN_FLAGS)
       } catch (cause) {
         errors.push(
           schemaError(`${path}/pattern`, 'pattern.invalid', {

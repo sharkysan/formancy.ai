@@ -36,8 +36,8 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'Maximum length': 'Longueur maximale',
   'The longest answer that counts, in characters.': 'La réponse la plus longue acceptée, en caractères.',
   Pattern: 'Motif',
-  'A regular expression the whole answer must match. Checked when the form is saved, so a broken or dangerous pattern never reaches a person filling the form in.':
-    'Une expression régulière à laquelle toute la réponse doit correspondre. Vérifiée à l’enregistrement du formulaire, afin qu’un motif cassé ou dangereux n’atteigne jamais une personne qui le remplit.',
+  'A regular expression the whole answer must match, read as JavaScript reads one with the u flag: \\p{L} is any letter, and a character outside the Basic Multilingual Plane is one character. Checked when the form is saved, so a broken or dangerous pattern never reaches a person filling the form in.':
+    'Une expression régulière à laquelle toute la réponse doit correspondre, lue comme JavaScript en lit une avec le drapeau u : \\p{L} est n’importe quelle lettre, et un caractère hors du plan multilingue de base est un seul caractère. Vérifiée à l’enregistrement du formulaire, afin qu’un motif cassé ou dangereux n’atteigne jamais une personne qui le remplit.',
   Format: 'Format',
   'Input mask': 'Masque de saisie',
   'The shape the answer is typed into, one character per position: `9` takes a digit, `a` a letter and `*` either, and any other character is written by the control rather than typed — `(999) 999-9999`. A backslash makes the next character one the control writes: `\\9`. The answer holds only what was typed into the positions, so `(999) 999-9999` stores `5551234567`, and an answer that leaves a position empty is refused. Needs spec version 4.':

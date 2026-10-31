@@ -1,4 +1,5 @@
 import { check } from 'recheck'
+import { PATTERN_FLAGS, anchoredPattern } from '@formancy/spec'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 
 /**
@@ -71,9 +72,10 @@ export async function unsafePatterns(schema: FormSchema): Promise<UnsafePattern[
   const unsafe: UnsafePattern[] = []
 
   for (const { path, pattern } of patternsIn(schema.model.fields, '')) {
-    // Anchored the same way the engine anchors it, so what is analysed is what
-    // will run. An unanchored analysis can miss a case the anchors create.
-    const diagnostics = await check(`^(?:${pattern})$`, '')
+    // Anchored and flagged as the engine runs it, from the definition the engine reads, so
+    // what is analysed is what will run. An unanchored analysis can miss a case the anchors
+    // create, and one without `u` read `\p{L}` as a p and passed `(\p{L}+)+` (0226).
+    const diagnostics = await check(anchoredPattern(pattern), PATTERN_FLAGS)
     if (diagnostics.status !== 'vulnerable') continue
 
     const complexity = diagnostics.complexity

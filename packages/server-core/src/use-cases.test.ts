@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'vitest'
+import { schemaHash } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core/authoring'
 import { exportCsv, setFormAccess, listForms, listSubmissions, listVersions, resolveForm, resumeDraft, saveDraft, startDraft } from './use-cases.js'
@@ -871,6 +872,32 @@ describe('patterns that backtrack are refused at publish', () => {
     expect(outcome).toMatchObject({ ok: false, kind: 'unsafe_pattern' })
     if (outcome.ok || outcome.kind !== 'unsafe_pattern') throw new Error('unreachable')
     expect(outcome.patterns[0]?.complexity).toBe('polynomial degree 2')
+  })
+
+  test('a pattern is analysed with the Unicode semantics the engine runs it with', async () => {
+    // Read without `u`, `\p{L}` is the letter p and a brace, and the analysis passed
+    // `(\p{L}+)+` as linear. The engine runs it with `u`, where it nests a quantifier over
+    // letters: measured on Node 22, 26 letters and a NUL held one match for 392 ms, four times
+    // as long for every two letters more.
+    const outcome = await publishForm(deps, { path: 'reg', schema: withPattern(String.raw`(\p{L}+)+`) })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'unsafe_pattern' })
+    if (outcome.ok || outcome.kind !== 'unsafe_pattern') throw new Error('unreachable')
+    expect(outcome.patterns[0]).toMatchObject({ path: 'code', complexity: 'exponential' })
+    expect(await deps.storage.getFormByPath('reg')).toBeUndefined()
+  })
+
+  // What finds a pattern an older release published: the analysis runs before the server
+  // compares the document with the one it holds, so the same document sent again is analysed
+  // again, where answering it as already current would have said it was fine.
+  test('a stored version whose pattern backtracks is refused when it is published again unchanged', async () => {
+    const schema = withPattern(String.raw`(\p{L}+)+`) as FormSchema
+    await deps.storage.publishVersion({
+      form: { id: 'old', path: 'reg', currentVersionId: null, accessSubmit: 'public', allowedOrigins: null },
+      version: { id: 'v-old', formId: 'old', version: 1, schema, schemaHash: schemaHash(schema) },
+    })
+
+    expect(await publishForm(deps, { path: 'reg', schema })).toMatchObject({ ok: false, kind: 'unsafe_pattern' })
   })
 
   test('an ordinary pattern publishes', async () => {
