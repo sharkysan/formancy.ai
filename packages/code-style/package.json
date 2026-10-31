@@ -1,6 +1,6 @@
 {
   "name": "@formancy/code-style",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "The ESLint rules and the Prettier format the formancy repositories share: one module, which each repository calls with its own paths.",
   "license": "Apache-2.0",
   "type": "module",

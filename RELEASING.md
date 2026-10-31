@@ -135,15 +135,15 @@ a release publishes with the token.
 
 **A package the registry has not seen** has no trusted publishing to set up, so its first
 release publishes it with the token, whatever the others use by then. `@formancy/code-style`
-is one: the registry answered 404 for it on 2026-10-30, and the first release after 0.11.0
-carries it. For that release the token must be one that may create a package in the
-`@formancy` scope, not only write the packages it names; and trusted publishing for the new
-package can be set up only after it. `@formancy/cli`, the last package new to the registry,
-was first published by 0.8.0's release on 2026-10-28; read from the registry on 2026-10-30, a
-version `0.0.0-stage`, described as "Temporary package placeholder for staged publishing",
-was published from the maintainer's account two minutes before it. Nothing in this repository
-makes that version or says why it was needed, so whether a new package needs one too is the
-maintainer's to say before the release that first publishes `@formancy/code-style`.
+is one: the registry answered 404 for it on 2026-10-31, and 0.12.0 publishes it first. For
+that release the token must be one that may create a package in the `@formancy` scope, not
+only write the packages it names; and trusted publishing for the new package can be set up
+only after it. `@formancy/cli`, the last package new to the registry, was first published by
+0.8.0's release on 2026-10-28; read from the registry on 2026-10-30, a version `0.0.0-stage`,
+described as "Temporary package placeholder for staged publishing", was published from the
+maintainer's account two minutes before it. Nothing in this repository makes that version or
+says why it was needed. **A new package needs no placeholder**, the maintainer said on
+2026-10-31: the release publishes it with the token as it publishes the others.
 
 ## The SBOM
 

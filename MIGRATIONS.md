@@ -366,7 +366,7 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
-## A pattern that backtracks with Unicode semantics is refused at publish (unreleased)
+## A pattern that backtracks with Unicode semantics is refused at publish (0.12.0)
 
 **If you run a server that has published forms with a `pattern`**, one of them may be a pattern
 that every release from `0.2.0` through `0.11.0` analysed without the `u` flag the engine runs it
@@ -379,7 +379,7 @@ rewritten. A pattern using `\p{…}`, `\P{…}` or `\u{…}` reads differently w
 likeliest, but it is not the only kind, so republish every form with a pattern rather than only
 those.
 
-## A host's interfaces declare `this: void` (unreleased)
+## A host's interfaces declare `this: void` (0.12.0)
 
 **If you implement `FieldBinding` or `UploadOptions` (React or Angular), core's `UploadQueue`,
 server-core's `ServerDeps` or `AuthDeps`, or the builder's `PromptRun`, `DraftRun`,
