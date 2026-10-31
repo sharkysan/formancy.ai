@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { check } from './check.js'
+import { compile } from './compile.js'
 import { parse } from './parse.js'
 import type { ExpressionKind } from './kinds.js'
 import type { VariableDeclarations } from './types.js'
@@ -72,6 +73,55 @@ describe('the function allow-list is a property of the expression kind', () => {
     expect(checkFor('items.filter(i, i.active).size() > 0', 'visible').ok).toBe(true)
     expect(checkFor('name.startsWith("a")', 'required').ok).toBe(true)
     expect(checkFor('name.trim().size() > 0', 'validate').ok).toBe(true)
+  })
+})
+
+/**
+ * A caller with nothing to capture the clock or a draw in (a report rendered twice from the same
+ * data must print the same thing) asks for neither, whatever its kind allows. Without this it
+ * could only find a call afterwards, by probing the source, and a call it missed changes what the
+ * same data gives.
+ */
+describe('a reproducible expression reads neither the clock nor a random source', () => {
+  function reproducibly(source: string, kind: ExpressionKind) {
+    const parsed = parse(source, { variables })
+    if (!parsed.ok) throw parsed.error
+    return check(parsed.ast, { kind, reproducible: true })
+  }
+
+  test.each([
+    ['now()', 'computed'],
+    ['today()', 'computed'],
+    ['random()', 'computed'],
+    ['now() > timestamp("2026-01-01T00:00:00Z")', 'visible'],
+  ] as const)('refuses %s in a %s expression, at the call', (source, kind) => {
+    const result = reproducibly(source, kind)
+    if (result.ok) throw new Error(`expected ${source} to be refused`)
+
+    expect(result.error.kind).toBe('policy')
+    expect(result.error.code).toBe('function_not_allowed')
+    expect(result.error.message).toBe(`${source.slice(0, source.indexOf('('))}() cannot be used in a reproducible ${kind} expression.`)
+    expect(result.error.position?.start).toBe(0)
+    expect(result.error.hint).toMatch(/clock or a random source/)
+  })
+
+  test('still allows everything else its kind allows, a value handed in included', () => {
+    expect(reproducibly('dec("1.50") * total', 'computed').ok).toBe(true)
+    expect(reproducibly('items.filter(i, i.active).size() > 0', 'visible').ok).toBe(true)
+    expect(reproducibly('timestamp("2026-01-01T00:00:00Z").getFullYear() == 2026', 'validate').ok).toBe(true)
+  })
+
+  test('is asked for: an expression of the same kind may read both otherwise', () => {
+    expect(checkFor('now()', 'computed').ok).toBe(true)
+    expect(checkFor('random()', 'computed').ok).toBe(true)
+    // And a kind's own refusal still says what the kind allows, not why reproducibility forbids it.
+    expect(rejection('random() > 0.5', 'visible').hint).toMatch(/^Allowed here: /)
+  })
+
+  test('is handed on by compile', () => {
+    const compiled = compile('today()', { kind: 'computed', variables: {}, reproducible: true })
+
+    expect(compiled.ok ? undefined : compiled.error.code).toBe('function_not_allowed')
   })
 })
 

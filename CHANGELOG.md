@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**An expression can be asked to be reproducible.** `compile` and `check` in
+`@formancy/expressions` take `reproducible: true`, which refuses `now()`, `today()` and `random()`
+whatever the kind allows, as `function_not_allowed` at the call, with the reason in the hint. A form
+captures all three with the submission, so it never needs this; a caller that renders the same
+values twice and must print the same thing has nothing to capture them in. Formancy Report found
+each call by re-spelling the source and compiling again, which a spelling it missed would get past
+([0228](docs/decisions/0228-an-expression-can-be-asked-to-be-reproducible.md)). No document can ask
+for it, and a form's rules compile as before.
+
 ## 0.12.0 — 2026-10-31
 
 **A minor release; the spec version stays 5.** `0.12.0` reads and writes what `0.11.0` does, so a

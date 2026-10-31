@@ -160,6 +160,22 @@ comparison, `&&`, `||`, `? :`, `in` and indexing work in every kind.
 `random` is the one a kind withholds: a `visible` or `required` rule that flipped on a coin toss
 would make a form behave differently each time it was opened, and unverifiable on the server.
 
+**A caller with nothing to capture them in can refuse the clock and chance.** A form captures
+`now`, `today` and `random` with the submission ([below](#nothing-ambient)), so replaying it gives
+what the person saw. A program that calls `@formancy/expressions` itself and must give the same
+answer for the same values every time, such as a report whose preview has to be the PDF, has
+nowhere to keep them. It compiles with `reproducible: true`, which refuses all three in any kind,
+at the call, with the reason in the hint
+([0228](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0228-an-expression-can-be-asked-to-be-reproducible.md)):
+
+```ts
+compile('total * dec("1.077")', { kind: 'computed', variables, reproducible: true }) // compiles
+compile('today()', { kind: 'computed', variables, reproducible: true }) // function_not_allowed
+```
+
+It is an option of the compiler, not something a document can say: a form's rules are compiled as
+their kind allows.
+
 A map an expression writes cannot hold the keys `constructor`, `prototype` or `__proto__`: the
 CEL library leaves them out of a literal, as a defence of its own, so `{"constructor": item.name}`
 is `{}`. A map it reads can — a group or a row with a field keyed `constructor` is read like any

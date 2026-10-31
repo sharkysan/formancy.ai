@@ -96,7 +96,8 @@ metered view of the values an expression reads, which hands the library an
 object holding its own `constructor` as a `Map`, since the library tells a map
 by that member — [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)), `kinds.ts`
 (the function allow-list per expression slot, so a `visible` expression cannot
-perform a lookup), `capabilities.ts` (the injected clock and randomness),
+perform a lookup, and the clock and chance a caller asking for a reproducible expression goes
+without, [0228](../decisions/0228-an-expression-can-be-asked-to-be-reproducible.md)), `capabilities.ts` (the injected clock and randomness),
 `references.ts` (the static variable extraction the dependency graph needs),
 `rewrite.ts` (replacing one data path with another in a condition) and
 `decimal.ts` (scaled-integer money, so `price * 0.19` is a type error and
