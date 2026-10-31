@@ -25,7 +25,8 @@
 > explicit offset (`apps/docs/src/themes.test.ts`). The decision itself — an editable
 > combobox, no combobox library, no positioning library — is untouched.
 
-- **Status:** accepted
+- **Status:** accepted; its active option scrolled into view by
+  [0227](0227-the-row-arrowed-to-is-scrolled-into-view.md)
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/react/src/typeahead-widget.test.tsx` and
