@@ -94,10 +94,10 @@ configuration.
 ## Where it comes from
 
 The module and its test, `src/code-style.mjs` and `src/code-style.test.mjs`,
-were written for Formancy Health (formancy.ai-health 0017) and are carried here
-byte for byte; the repositories that copied them pin this package in their place
-once it is released. The test is this package's suite. It lints a repository of
-its own, written to the system's temporary directory, and holds that each rule
+were written for Formancy Health (formancy.ai-health 0017) and moved here.
+Formancy Health and Formancy Data, which carried copies, pin this package exactly
+from 0.12.0, so a rule is changed here and reaches them by a release. The test is
+this package's suite. It lints a repository of its own, written to the system's temporary directory, and holds that each rule
 runs at error on the kind of file it is for and that each path does what it
 says. It does not hold that what a rule reports is a defect.
 

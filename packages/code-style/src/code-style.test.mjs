@@ -7,11 +7,11 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { EXTENSIONS, eslintConfig, prettierConfig } from './code-style.mjs'
 
 /**
- * The shared rules, as the package formancy.ai will publish holds them:
+ * The shared rules, as `@formancy/code-style` holds them:
  * that each rule runs, at error, on the kind of file it is for, and that
  * each path a repository passes does what it says.
  *
- * Copied byte for byte with code-style.mjs, so it names no path of any
+ * Published with code-style.mjs, so it names no path of any
  * repository. It lints a repository of its own instead, written under the
  * system's temporary directory and removed after: a tsconfig that types
  * `src/`, a .gitignore at its root and one in a directory, and the files

@@ -326,9 +326,10 @@ Do not restate these here; go and read them.
 - **One suite, N drivers**, and why element lookup is restricted to role and
   accessible name — [0033](docs/decisions/0033-one-suite-n-drivers.md) and
   [0034](docs/decisions/0034-accessible-name-only.md).
-- **The lint rules and the format** are `@formancy/code-style`'s, which the four formancy
-  repositories share: until the others pin it, a rule is changed in Formancy Health's module
-  first and copied into `packages/code-style/src` byte for byte, never changed here alone —
+- **The lint rules and the format** are `@formancy/code-style`'s, which the formancy
+  repositories share: a rule is changed in `packages/code-style/src`, here, and reaches
+  Formancy Health and Formancy Data, which pin the package exactly, by a release and a bump of
+  each pin —
   [0225](docs/decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md).
 - **TypeScript is pinned to `~6.0.3`** because Angular 22 requires
   `>=6.0 <6.1`; it lives in the workspace catalog once, with the reason beside

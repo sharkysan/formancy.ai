@@ -134,16 +134,22 @@ read from the registry on 2026-10-20, so it is worth setting up now; until it is
 a release publishes with the token.
 
 **A package the registry has not seen** has no trusted publishing to set up, so its first
-release publishes it with the token, whatever the others use by then. `@formancy/code-style`
-is one: the registry answered 404 for it on 2026-10-31, and 0.12.0 publishes it first. For
-that release the token must be one that may create a package in the `@formancy` scope, not
-only write the packages it names; and trusted publishing for the new package can be set up
-only after it. `@formancy/cli`, the last package new to the registry, was first published by
-0.8.0's release on 2026-10-28; read from the registry on 2026-10-30, a version `0.0.0-stage`,
-described as "Temporary package placeholder for staged publishing", was published from the
-maintainer's account two minutes before it. Nothing in this repository makes that version or
-says why it was needed. **A new package needs no placeholder**, the maintainer said on
-2026-10-31: the release publishes it with the token as it publishes the others.
+release publishes it with the token, whatever the others use by then. For that release the
+token must be one that may create a package in the `@formancy` scope, not only write the
+packages it names; and trusted publishing for the new package can be set up only after it.
+`@formancy/code-style` was the last: the registry answered 404 for it before the tag on
+2026-10-31, and 0.12.0's release published it that day. Its trusted publishing is not set up
+yet, so until it is, it publishes with the token.
+
+**A new package needs no placeholder published by hand: the registry makes one.** On a new
+package's first publish the registry lists a version `0.0.0-stage`, described as "Temporary
+package placeholder for staged publishing", under the token's account and with no
+attestation, before the release's own version. 0.12.0's run logged
+`@formancy/code-style@0.12.0` as published at 17:23:13 UTC, the second the registry created
+`0.0.0-stage`, and the registry listed `0.12.0` at 17:24:08, read from it on 2026-11-01.
+`@formancy/cli` has one too, from two minutes before 0.8.0's version on 2026-10-28, which
+this section once said nothing here explained. It is a prerelease below every release, so no
+pinned version or range a host asks for resolves to it, and `latest` names the release.
 
 ## The SBOM
 

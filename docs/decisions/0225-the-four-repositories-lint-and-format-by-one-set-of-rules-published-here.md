@@ -1,6 +1,9 @@
 # 0225 — The four formancy repositories lint and format by one set of rules, which this repository publishes as `@formancy/code-style` and is held to in CI; the change merges with a merge commit, so that blame can skip the format
 
-- **Status:** accepted
+- **Status:** accepted; Formancy Health and Formancy Data pin `@formancy/code-style` 0.12.0
+  exactly in place of their copies (formancy.ai-health #23 on 2026-10-31, formancy.ai-data #143
+  on 2026-11-01), so *Until the others pin it* below is over, and a rule is changed here and
+  reaches them by a release and a bump of each pin. Formancy Report lints with nothing yet.
 - **Date:** 2026-10-30
 - **Deciders:** Daniel Bacher
 - **Verified by:** the guards and the two gate steps, on 30 October 2026, each watched failing
