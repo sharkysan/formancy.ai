@@ -113,33 +113,59 @@ A preflight step checks the token authenticates before anything is built, and
 warns if the account enforces 2FA on writes, so this is a ten-second failure
 rather than an eight-minute one.
 
-### The OIDC warning is not a problem
+### Trusted publishing, which pnpm tries before the token
 
-pnpm tries npm's **trusted publishing** first and logs this when it is not
-configured:
+pnpm tries npm's **trusted publishing** first, and falls back to `NODE_AUTH_TOKEN`. Every
+published package trusts one publisher: a run of `release.yml` in `sharkysan/formancy.ai`, in
+the `npm` environment ([0230](docs/decisions/0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)),
+read back for each with `npm trust list` on 2026-11-01. Before then each release
+logged this and published with the token:
 
 ```
 [WARN] Skipped OIDC: ERR_PNPM_AUTH_TOKEN_EXCHANGE: Failed token exchange
 request with body message: Unknown error (status code 404)
 ```
 
-It then falls back to `NODE_AUTH_TOKEN`, which is the intended path today.
+No release has published through trusted publishing yet, so the token stays, and the step
+that checks it still fails a release without it, before anything is built. The next release
+shows whether the exchange works: its log without that warning, and the registry's record of
+who published each version, which for 0.12.0 is the maintainer's account:
 
-Trusted publishing is the better destination — it removes the token entirely,
-so there is no secret to rotate or leak — but it is configured per package on
-npmjs.com against a package that already exists. Every published `@formancy`
-package does, read from the registry on 2026-10-18, so that precondition is met.
-0.6.0, the first release through the `npm` environment, published on 2026-10-18,
-read from the registry on 2026-10-20, so it is worth setting up now; until it is,
-a release publishes with the token.
+```bash
+npm view @formancy/core@0.12.0 _npmUser
+```
+
+Once a release has, the token can go, and with it that step and the environment's secret; a
+package the registry has not seen then needs one for its first release (below). It has a
+date: npm's notice links a changelog of GitHub's, of 2026-07-31, by which a token that skips
+two-factor authentication is to lose direct publishing, with January 2027 as the target.
+
+npm trusts the workflow by its file name and the environment by its name, so renaming either
+makes a release a stranger to it. `apps/docs/src/npm-token-environment.test.ts` fails when the
+job that publishes is not in `release.yml`, does not name the environment, or cannot ask for
+an OIDC token; it cannot read what npm was told.
+
+**Setting it up for a package** takes an owner's npm login and npm 11 or later, on a Node
+version that npm supports:
+
+```bash
+npm trust github @formancy/<name> --file release.yml --repo sharkysan/formancy.ai --env npm --allow-publish
+npm trust list @formancy/<name>
+```
+
+Run it in a terminal. Each package asks for its own two-factor approval at a link the command
+prints, and the link lasts about five minutes: sixteen created at 18:44:07 on 2026-11-01
+expired, unapproved, at 18:49:19. Without a terminal the command fails `EOTP` rather than
+wait. npm reads the result back as `publish, stage publish`, although the command asked for
+publishing alone.
 
 **A package the registry has not seen** has no trusted publishing to set up, so its first
 release publishes it with the token, whatever the others use by then. For that release the
 token must be one that may create a package in the `@formancy` scope, not only write the
 packages it names; and trusted publishing for the new package can be set up only after it.
 `@formancy/code-style` was the last: the registry answered 404 for it before the tag on
-2026-10-31, and 0.12.0's release published it that day. Its trusted publishing is not set up
-yet, so until it is, it publishes with the token.
+2026-10-31, and 0.12.0's release published it that day. Its trusted publishing was set up
+with the others' on 2026-11-01.
 
 **A new package needs no placeholder published by hand: the registry makes one.** On a new
 package's first publish the registry lists a version `0.0.0-stage`, described as "Temporary

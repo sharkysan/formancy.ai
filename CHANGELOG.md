@@ -30,6 +30,15 @@ each call by re-spelling the source and compiling again, which a spelling it mis
 ([0228](docs/decisions/0228-an-expression-can-be-asked-to-be-reproducible.md)). No document can ask
 for it, and a form's rules compile as before.
 
+**Every package trusts the release workflow to publish it, by npm's trusted publishing.** Each
+published `@formancy` package trusts a run of `release.yml` in this repository's `npm`
+environment, set up on 2026-11-01, and pnpm tries that before the token. The token publishes
+without a one-time password, and a changelog of GitHub's, of 2026-07-31, gives January 2027 as the
+target for such a token to lose direct publishing. No release has published this way yet, so the
+token stays as the fallback until one has. The next release's log, and the registry's record of
+who published each version, which for 0.12.0 is the maintainer's account, say whether it did
+([0230](docs/decisions/0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)).
+
 ## 0.12.0 — 2026-10-31
 
 **A minor release; the spec version stays 5.** `0.12.0` reads and writes what `0.11.0` does, so a

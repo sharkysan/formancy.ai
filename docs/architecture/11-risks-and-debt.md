@@ -333,3 +333,9 @@ The `npm` environment's deployment policy
 setting of the same kind: `apps/docs/src/npm-token-environment.test.ts` holds that only
 jobs naming the environment read the token, and nothing here reads which refs the policy
 admits. Read from GitHub's API on 2026-10-18, it admits `v*` tags only.
+
+So is what npm trusts to publish each package
+([0230](../decisions/0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)): a run of
+`release.yml` in the `npm` environment, read back with `npm trust list` for every published
+package on 2026-11-01. The same test holds that the job which publishes keeps the file name and
+the environment npm was told, and nothing here reads what npm was told.

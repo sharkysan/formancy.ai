@@ -1,6 +1,6 @@
 # 0176 — The npm token is a secret of the `npm` environment, which only release tags reach
 
-- **Status:** accepted
+- **Status:** accepted; the fallback to npm's trusted publishing, which pnpm tries first, since [0230](0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)
 - **Date:** 2026-10-14
 - **Deciders:** Daniel Bacher
 - **Verified by:** `apps/docs/src/npm-token-environment.test.ts` — every job in every workflow
