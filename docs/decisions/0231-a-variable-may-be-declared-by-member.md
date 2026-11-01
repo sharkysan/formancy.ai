@@ -74,11 +74,11 @@ converts into a value of its own type, and the meter charges what that reads: me
 
 **What it does not do.** The engine does not declare a document's groups or repeater rows this
 way: they stay `map`, their members `dyn`. Declaring them by member would refuse a rule reading a
-member a group does not have, and a rule that compares a member with a value of another type,
-both of which publish today, the first with a warning; that would make documents valid today
-invalid, and what a reader accepts is the frozen version contract (`SAFETY-ANALYSIS.md`, B1a). Optional selection,
-`row.?amount`, is not in this parser, so a member absent from a value is an error when it runs,
-as a missing variable is; `has(row.amount)` asks.
+member a group does not have, and a rule that compares a member with a value of another type, both
+of which publish today, the first with a warning; that would make documents valid today invalid,
+and what a reader accepts is the frozen version contract (`SAFETY-ANALYSIS.md`, B1a). Optional
+selection, `row.?amount`, is not in this parser, so a member absent from a value is an error when
+it runs, as a missing variable is; `has(row.amount)` asks.
 
 ## Alternatives considered
 
