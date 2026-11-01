@@ -282,7 +282,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0173](0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md) | A NUL character names nothing, and a body with one is refused | accepted |
 | [0174](0174-the-builders-hosts-take-no-part-in-layout.md) | The builder's hosts take no part in layout, and the two builders are measured part by part | accepted |
 | [0175](0175-a-name-goes-into-a-header-encoded.md) | A name goes into a header encoded, and an error's reply drops a header that cannot be written | accepted |
-| [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted |
+| [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted; the token the fallback to trusted publishing since 0230 |
 | [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted; its active option scrolled into view by 0227 |
 | [0178](0178-the-rooms-palette-is-published.md) | The admin's palette is published, and the admin imports it like anybody else | accepted |
 | [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted; `errors` and `visible` at a list's own path, which it refused, let through by 0184 |
@@ -330,3 +330,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0227](0227-the-row-arrowed-to-is-scrolled-into-view.md) | The row arrowed to in a typeahead's list is scrolled into view, the page with it if it must | accepted |
 | [0228](0228-an-expression-can-be-asked-to-be-reproducible.md) | An expression can be asked to be reproducible, and then reads neither the clock nor a random source | accepted |
 | [0229](0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md) | A compiled program says which functions it calls and where its arithmetic is not exact | accepted |
+| [0230](0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md) | Every package trusts the release workflow, in the `npm` environment, to publish it | accepted |

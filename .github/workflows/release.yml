@@ -32,6 +32,11 @@ jobs:
     # deployment policy that admits `v*` tags alone (0176, REPO-METADATA.md).
     # apps/docs/src/npm-token-environment.test.ts fails when a job reads the
     # token without naming the environment.
+    #
+    # npm trusts this file and this environment by name: every package's
+    # trusted publisher is a run of release.yml in `npm`, which pnpm tries
+    # before the token (0230). Renaming either makes a release a stranger to
+    # npm; the same test fails when the publishing job leaves either.
     environment: npm
     permissions:
       contents: write # create the GitHub release

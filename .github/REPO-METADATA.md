@@ -76,6 +76,12 @@ The environment admits only `v*` tags, so the release job, which runs on a
 tag, gets the token, and a workflow on any other branch or tag that names the
 environment is refused before it starts.
 
+npm trusts the environment by its name too: every published package trusts a
+run of `release.yml` in the environment `npm` to publish it
+([0230](../docs/decisions/0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)).
+Renamed, it is a stranger to npm. That is a setting of the registry's, not of
+this repository's; `RELEASING.md` has the command that sets it.
+
 ```bash
 # The environment, with a deployment policy of its own rather than "any branch"
 gh api -X PUT repos/sharkysan/formancy.ai/environments/npm \

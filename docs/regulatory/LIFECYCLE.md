@@ -283,6 +283,15 @@ keystroke on a large form at ≈0.54 ms against a 1 ms budget, re-measured
   the tree can read: on 2026-10-18 it admits `v*` tags only, read back from GitHub's
   API after a rule admitting `main` as well, which no document recorded, was
   removed.
+- **The publisher npm trusts.** Every published package trusts a run of
+  `release.yml` in the `npm` environment to publish it, by npm's trusted
+  publishing, which pnpm tries before the token
+  ([0230](../decisions/0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)).
+  The same test fails when the job that publishes is not in `release.yml`, does
+  not name the environment, or cannot ask for an OIDC token; it failed on each.
+  What npm trusts is held by the registry and read back with `npm trust list`,
+  for every published package on 2026-11-01. No release has published through it
+  yet, so the token is what a release has been shown to publish with.
 - **Generated artefacts.** The ahead-of-time schema validator is committed and
   stamped with the hash of the schema it was generated from, so a stale artefact
   is detectable rather than silent ([0040](../decisions/0040-no-eval.md)).

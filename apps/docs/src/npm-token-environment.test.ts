@@ -53,6 +53,9 @@ function jobs(): Job[] {
 
 const readsToken = (job: Job): boolean => /secrets\.NPM_TOKEN\b/.test(job.body)
 const namesEnvironment = (job: Job): boolean => /^ {4}environment:\s*['"]?npm['"]?\s*$/m.test(job.body)
+// A command, not a comment about one: ci.yml's comments say what `npm publish` would ship.
+const publishes = (job: Job): boolean => /^(?!\s*#).*\b(?:pnpm|npm) publish\b/m.test(job.body)
+const mayAskForAnIdentity = (job: Job): boolean => /^ {6}id-token:\s*write\b/m.test(job.body)
 
 describe('the npm token', () => {
   // release.yml reads it; a reader that found no job reading it would report
@@ -74,5 +77,23 @@ describe('the npm token', () => {
       .map((job) => `${job.file}: ${job.name}`)
 
     expect(unguarded).toEqual([])
+  })
+})
+
+/**
+ * Every published package trusts one publisher: a run of `release.yml` in
+ * `sharkysan/formancy.ai`, in the `npm` environment (0230). npm holds that by
+ * name, and holds it where nothing in the tree can read it; what the tree can
+ * hold is the other half, that the job which publishes is the one npm was told
+ * of. Renamed, or out of the environment, or without an identity to show, it is
+ * a stranger to npm, and its publish falls back to the token while there is one
+ * and fails at the last step of a release once there is not.
+ */
+describe("npm's trusted publisher", () => {
+  test('is the only job that publishes: in release.yml, naming the npm environment, able to ask for an OIDC token', () => {
+    const publishing = jobs().filter(publishes)
+
+    expect(publishing.map((job) => job.file)).toEqual(['release.yml'])
+    expect(publishing.filter((job) => !namesEnvironment(job) || !mayAskForAnIdentity(job)).map((job) => `${job.file}: ${job.name}`)).toEqual([])
   })
 })
