@@ -176,6 +176,15 @@ compile('today()', { kind: 'computed', variables, reproducible: true }) // funct
 It is an option of the compiler, not something a document can say: a form's rules are compiled as
 their kind allows.
 
+**A compiled program says what it calls, and where its arithmetic is not exact.** Beside
+`references`, the paths it reads, a `Program` carries `calls`, each function it calls with the
+span of the call, and `inexact`, each place it computes through a double, named where the double
+is outermost, or divides integers, which drops the remainder
+([0229](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md)).
+`int(double("4.35") * 100.0)` is an `int` that evaluates to 434; its `inexact` names
+`double("4.35") * 100.0`. Both are read from the checked expression, so a value the checker types
+`dyn` is named in neither: declare the type of a value that must be exact.
+
 A map an expression writes cannot hold the keys `constructor`, `prototype` or `__proto__`: the
 CEL library leaves them out of a literal, as a defence of its own, so `{"constructor": item.name}`
 is `{}`. A map it reads can — a group or a row with a field keyed `constructor` is read like any

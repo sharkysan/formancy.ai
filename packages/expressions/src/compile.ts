@@ -4,6 +4,8 @@ import type { ExpressionKind } from './kinds.js'
 import type { StructuralLimits } from './limits.js'
 import { parse } from './parse.js'
 import type { ParsedExpression } from './parse.js'
+import { calledFunctions, inexactSteps } from './program-facts.js'
+import type { FunctionCall, InexactStep } from './program-facts.js'
 import { referencedPaths } from './references.js'
 import type { ResultType, VariableDeclarations } from './types.js'
 
@@ -28,6 +30,10 @@ export interface Program {
   readonly resultType: ResultType
   /** The variable paths this expression reads; see `referencedPaths`. */
   readonly references: readonly string[]
+  /** The functions it calls, each at its call; see `calledFunctions`. */
+  readonly calls: readonly FunctionCall[]
+  /** Where it computes through a double or divides integers; see `inexactSteps`. */
+  readonly inexact: readonly InexactStep[]
 }
 
 /** The internal view of a program; see `Program`. */
@@ -55,12 +61,16 @@ export function compile(source: string, options: CompileOptions): CompileOutcome
   const checked = check(parsed.ast, { kind: options.kind, reproducible: options.reproducible })
   if (!checked.ok) return checked
 
+  const ast = parsed.ast as ParsedExpression
   const program: CompiledProgram = {
     source,
     kind: options.kind,
     resultType: checked.type,
-    references: referencedPaths(parsed.ast),
-    parsed: parsed.ast as ParsedExpression,
+    references: referencedPaths(ast),
+    // After the check, which writes the types `inexactSteps` reads onto the nodes.
+    calls: calledFunctions(ast.node),
+    inexact: inexactSteps(ast.node),
+    parsed: ast,
     variables: options.variables,
   }
   return { ok: true, program }

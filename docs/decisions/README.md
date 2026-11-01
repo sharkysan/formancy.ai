@@ -329,3 +329,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0226](0226-a-pattern-is-analysed-as-it-runs.md) | A pattern is analysed as it runs, from the one definition of how it runs | accepted |
 | [0227](0227-the-row-arrowed-to-is-scrolled-into-view.md) | The row arrowed to in a typeahead's list is scrolled into view, the page with it if it must | accepted |
 | [0228](0228-an-expression-can-be-asked-to-be-reproducible.md) | An expression can be asked to be reproducible, and then reads neither the clock nor a random source | accepted |
+| [0229](0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md) | A compiled program says which functions it calls and where its arithmetic is not exact | accepted |
