@@ -64,4 +64,10 @@ Money is a `decimal` backed by scaled integers, and mixing it with plain numbers
 is a check-time error with a hint naming the fix — `price * 0.19` is refused,
 `price * dec("0.19")` is exact.
 
+A variable may be declared by member, `{ row: { amount: 'decimal', copies: 'int' } }`,
+so that `row.amount` is checked as a decimal and a member nobody declared is
+refused. Such a variable is read one member at a time: `row` in a list, a map,
+a branch or as the result is refused as `variable_read_whole`
+([0231](../../docs/decisions/0231-a-variable-may-be-declared-by-member.md)).
+
 Docs: `apps/docs` (Concepts → Logic and expressions).

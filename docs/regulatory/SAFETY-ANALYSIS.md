@@ -604,6 +604,11 @@ for the fields that exist. The other two type-check, because a member of a `map`
 is `dyn`, and they are the cases a rename inside a group leaves behind — inside a
 group the data path and the builder's tree path differ.
 
+`@formancy/expressions` can check a member by its own type, and refuse one nobody declared,
+when a caller declares the variable by member
+([0231](../decisions/0231-a-variable-may-be-declared-by-member.md)). The engine does not declare a
+group or a row that way, and that is the refusal the next paragraph says is not available.
+
 *Residual, and a manufacturer should read it as the main one here:* **a warning is
 not a refusal.** A document with such a rule is published, and the rule evaluates
 to nothing for the life of that immutable version. Refusing is not available: it

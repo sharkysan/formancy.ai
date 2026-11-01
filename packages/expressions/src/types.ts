@@ -22,8 +22,17 @@ export type DeclaredType =
   /** Use for a field that may be absent or null; CEL has no nullable scalars. */
   | 'dyn'
 
-/** The variables an expression may read, by path, with their declared type. */
-export type VariableDeclarations = Readonly<Record<string, DeclaredType>>
+/**
+ * A variable declared by member: each member with its own type, or declared by member itself
+ * (0231). `row: { amount: 'decimal', copies: 'int' }` checks `row.amount` as a decimal, refuses a
+ * member it does not name, and refuses `row` read whole, which would hand its members on as `dyn`.
+ */
+export interface MemberDeclarations {
+  readonly [member: string]: DeclaredType | MemberDeclarations
+}
+
+/** The variables an expression may read, by name, each with its declared type or its members'. */
+export type VariableDeclarations = Readonly<Record<string, DeclaredType | MemberDeclarations>>
 
 /**
  * The type an expression produced, as reported by `check`. Wider than

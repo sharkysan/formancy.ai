@@ -6,6 +6,7 @@
  * `@bufbuild/cel` or a fork is a one-file change rather than a migration.
  */
 import { Environment, ParseError, EvaluationError, TypeError as CelTypeError } from '@marcbachmann/cel-js'
+import type { ObjectSchema } from '@marcbachmann/cel-js'
 import { childNodes } from './ast.js'
 import type { CelNode } from './ast.js'
 import type { Meter } from './budget.js'
@@ -26,7 +27,7 @@ import { ExpressionError } from './errors.js'
 import type { ExpressionErrorKind, SourceSpan } from './errors.js'
 import { parserLimits } from './limits.js'
 import type { StructuralLimits } from './limits.js'
-import type { DeclaredType, ResultType, VariableDeclarations } from './types.js'
+import type { DeclaredType, MemberDeclarations, ResultType, VariableDeclarations } from './types.js'
 import { timestampToString } from './values.js'
 
 /** One evaluation pass: its frozen capabilities and its share of the budget. */
@@ -35,9 +36,20 @@ export interface EvaluationPass {
   readonly meter: Meter
 }
 
+/** A variable, or a member, declared by member: its path, and its members' names in order. */
+export interface DeclaredByMember {
+  readonly path: string
+  readonly members: readonly string[]
+}
+
 /** A parsed, reusable program. Parsing is the expensive step; evaluation is hot. */
 export interface CelProgram {
   readonly node: CelNode
+  /**
+   * What is declared by member, by the name of the type the checker gives it, which no value of
+   * any other type has: a node of one of these types is that variable or member read whole.
+   */
+  readonly declaredByMember: ReadonlyMap<string, DeclaredByMember>
   check(): CelCheckOutcome
   run(values: Record<string, unknown>, pass: EvaluationPass): unknown
 }
@@ -104,9 +116,15 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
   registerCapabilityFunctions(environment, current)
   registerMetering(environment, current)
 
+  const declaredByMember = new Map<string, DeclaredByMember>()
   if (spec.variables !== undefined) {
-    for (const [name, type] of Object.entries(spec.variables)) {
-      environment.registerVariable(name, CEL_TYPE_NAMES[type])
+    for (const [name, declared] of Object.entries(spec.variables)) {
+      if (typeof declared === 'string') {
+        environment.registerVariable(name, CEL_TYPE_NAMES[declared])
+      } else {
+        environment.registerVariable({ name, schema: celSchema(declared) })
+        collectDeclaredByMember(name, declared, declaredByMember)
+      }
     }
   }
 
@@ -116,6 +134,7 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
       instrumentForMetering(parsed.ast as unknown as SurgicalNode, environment)
       return {
         node: parsed.ast,
+        declaredByMember,
         check() {
           const result = parsed.check()
           if (!result.valid) return { valid: false, error: result.error }
@@ -133,6 +152,26 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
         },
       }
     },
+  }
+}
+
+/** The library's spelling of members declared by member: each member's type, or its own. */
+function celSchema(members: MemberDeclarations): ObjectSchema {
+  return Object.fromEntries(
+    Object.entries(members).map(([member, declared]) => [member, typeof declared === 'string' ? CEL_TYPE_NAMES[declared] : celSchema(declared)]),
+  )
+}
+
+/**
+ * The library names the type it makes for a variable declared by `schema` `$` and the
+ * variable's name, and a nested member's `$` and its path: `$row`, `$row.address`. Its 8.0.0 does,
+ * and `declared-members.test.ts` fails if a later one names them otherwise, because a whole read
+ * would then pass unseen.
+ */
+function collectDeclaredByMember(path: string, members: MemberDeclarations, into: Map<string, DeclaredByMember>): void {
+  into.set(`$${path}`, { path, members: Object.keys(members).sort() })
+  for (const [member, declared] of Object.entries(members)) {
+    if (typeof declared !== 'string') collectDeclaredByMember(`${path}.${member}`, declared, into)
   }
 }
 

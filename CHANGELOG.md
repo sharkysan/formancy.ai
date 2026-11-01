@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**A variable may be declared by member, so each member is checked as its own type.** In
+`@formancy/expressions`, a declaration may be an object of member declarations, nested as deep as
+the value: `{ row: { amount: 'decimal', copies: 'int' } }`. `row.amount` is then a decimal to the
+checker, a member the declaration does not name is refused with a hint naming those it does, and
+`row` read whole is refused as `variable_read_whole`, because in a list, a map or a branch it would
+hand its members on as `dyn`. When the expression runs, each member is converted as a variable of
+its type is. Declared as a `map`, every member was `dyn`: the checker passed `params.copies + "x"`
+and refused `row.amount == dec("1")`, so Formancy Report spliced each member into a flat variable
+and compiled again for every read (#259,
+[0231](docs/decisions/0231-a-variable-may-be-declared-by-member.md)). `MemberDeclarations` is
+exported. A form's groups and rows are declared as before, their members `dyn`.
+
 **A compiled program says which functions it calls and where its arithmetic is not exact.**
 Beside `references`, a `Program` from `@formancy/expressions` carries `calls`, each function it
 calls with the span of the call, and `inexact`, each place it computes through a double, named

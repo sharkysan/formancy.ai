@@ -1,6 +1,7 @@
 import { calledFunctionName, checkedTypeName, childNodes, isCelNode } from './ast.js'
 import type { CelNode, ExpressionAst } from './ast.js'
 import { translateCelError } from './cel.js'
+import type { DeclaredByMember } from './cel.js'
 import { decimalFromString } from './decimal.js'
 import { ExpressionError, withHint } from './errors.js'
 import { KIND_POLICIES, UNREPRODUCIBLE, reproducibleOf } from './kinds.js'
@@ -40,9 +41,13 @@ export function check(ast: ExpressionAst, options: CheckOptions): CheckOutcome {
   const outcome = parsed.program.check()
   if (!outcome.valid) {
     const error = translateCelError(outcome.error, parsed.source)
-    const hint = hintForTypeError(error.message, parsed, celErrorNode(outcome.error))
+    const offending = celErrorNode(outcome.error)
+    const hint = hintForDeclaredByMember(error.message, parsed, offending) ?? hintForTypeError(error.message, parsed, offending)
     return { ok: false, error: hint === undefined ? error : withHint(error, hint) }
   }
+
+  const wholeRead = findWholeRead(parsed.node, false, parsed.program.declaredByMember, parsed.source)
+  if (wholeRead !== undefined) return { ok: false, error: wholeRead }
 
   const badLiteral = findInvalidDecimalLiteral(parsed.node, parsed.source)
   if (badLiteral !== undefined) return { ok: false, error: badLiteral }
@@ -105,6 +110,73 @@ function findForbiddenCall(node: CelNode, policy: KindPolicy, asked: AskedFor, s
     if (forbidden !== undefined) return forbidden
   }
   return undefined
+}
+
+/**
+ * A node of the type the checker made for something declared by member is that thing read whole,
+ * unless a member is selected from it by name: `row.amount`, `row["amount"]`, `has(row.amount)`.
+ * Anywhere else, in a list, a map, a branch or the result, it would hand its members on as `dyn`,
+ * which declaring them by member is for not to happen (0231).
+ */
+function findWholeRead(node: CelNode, selected: boolean, declared: ReadonlyMap<string, DeclaredByMember>, source: string): ExpressionError | undefined {
+  const whole = declaredByMemberOf(node, declared)
+  if (whole !== undefined && !selected) {
+    return new ExpressionError({
+      kind: 'type',
+      code: 'variable_read_whole',
+      message: `${whole.path} is declared by member, so it is read one member at a time.`,
+      source,
+      position: { start: node.start, end: node.end },
+      hint: `Read one of its members: ${membersOf(whole)}.`,
+    })
+  }
+
+  for (const child of childNodes(node)) {
+    const found = findWholeRead(child, selectsAMemberOf(node, child), declared, source)
+    if (found !== undefined) return found
+  }
+  return undefined
+}
+
+/** Whether `node` selects a member of `operand` by its name, so that `operand` is not read whole. */
+function selectsAMemberOf(node: CelNode, operand: CelNode): boolean {
+  if (node.op !== '.' && node.op !== '[]') return false
+  const [from, key] = node.args as [unknown, unknown]
+  if (from !== operand) return false
+  return node.op === '.' || (isCelNode(key) && key.op === 'value' && typeof key.args === 'string')
+}
+
+/** What `node` is, if its type is one the checker made for something declared by member. */
+function declaredByMemberOf(node: CelNode, declared: ReadonlyMap<string, DeclaredByMember>): DeclaredByMember | undefined {
+  const type = checkedTypeName(node)
+  return type === undefined ? undefined : declared.get(type)
+}
+
+function membersOf(declared: DeclaredByMember): string {
+  return declared.members.map((member) => `${declared.path}.${member}`).join(', ')
+}
+
+/**
+ * The checker's refusals that something declared by member caused, made into advice: a member it
+ * does not declare, `No such key`, and an overload the type it made for a whole read has none of,
+ * whose message names that type, `$row`, and not the variable.
+ */
+function hintForDeclaredByMember(message: string, parsed: ParsedExpression, offending: CelNode | undefined): string | undefined {
+  const declared = parsed.program.declaredByMember
+  if (/^No such key: /.test(message) && offending !== undefined) {
+    // What a member was selected from is the selection's child of such a type, in `row.amont` as in `row["amont"]`.
+    const selectedFrom = childNodes(offending)
+      .map((child) => declaredByMemberOf(child, declared))
+      .find((entry) => entry !== undefined)
+    if (selectedFrom !== undefined) return `${selectedFrom.path} declares ${selectedFrom.members.join(', ')}.`
+  }
+
+  let named: DeclaredByMember | undefined
+  for (const [typeName, entry] of declared) {
+    // The longest named: `$row` is in `$row.address` too.
+    if (message.includes(typeName) && (named === undefined || entry.path.length > named.path.length)) named = entry
+  }
+  return named === undefined ? undefined : `${named.path} is declared by member, so it is read one member at a time: ${membersOf(named)}.`
 }
 
 /** The AST node the implementation attached to its type error, if it did. */

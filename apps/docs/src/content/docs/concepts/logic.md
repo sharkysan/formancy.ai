@@ -185,6 +185,24 @@ is outermost, or divides integers, which drops the remainder
 `double("4.35") * 100.0`. Both are read from the checked expression, so a value the checker types
 `dyn` is named in neither: declare the type of a value that must be exact.
 
+**A caller can declare a variable by member, so each member is checked as its own type.** A
+`map` makes every member `dyn` to the checker, so `params.copies + "x"` passes and
+`row.amount == dec("1")` is refused. Declared by member, `row.amount` is a decimal, a member the
+declaration does not name is refused with the ones it does, and `row` read whole, in a list, a
+map, a branch or as the result, is refused as `variable_read_whole`, because it would hand its
+members on as `dyn` ([0231](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0231-a-variable-may-be-declared-by-member.md)). When the expression runs, each member is converted as a variable of
+its type is, so an int member can arrive as a JSON number and a decimal one as a string:
+
+```ts
+const variables = { row: { amount: 'decimal', copies: 'int' }, params: { duplex: 'bool' } }
+compile('row.amount * dec("2")', { kind: 'computed', variables }) // compiles, a decimal
+compile('row.amont > dec("0")', { kind: 'computed', variables }) // No such key: amont, hint "row declares amount, copies."
+compile('[row].size()', { kind: 'computed', variables }) // variable_read_whole
+```
+
+The engine does not declare a form's groups or rows this way: their members stay `dyn`, because
+refusing what that lets through would make documents that publish today invalid.
+
 A map an expression writes cannot hold the keys `constructor`, `prototype` or `__proto__`: the
 CEL library leaves them out of a literal, as a defence of its own, so `{"constructor": item.name}`
 is `{}`. A map it reads can — a group or a row with a field keyed `constructor` is read like any
