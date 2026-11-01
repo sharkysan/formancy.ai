@@ -26,6 +26,7 @@ export type { CheckOptions, CheckOutcome } from './check.js'
 
 export { compile } from './compile.js'
 export type { CompileOptions, CompileOutcome, Program } from './compile.js'
+export type { FunctionCall, InexactStep } from './program-facts.js'
 
 export { evaluate } from './evaluate.js'
 export type { EvaluateOptions, EvaluationOutcome } from './evaluate.js'

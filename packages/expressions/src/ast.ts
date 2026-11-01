@@ -45,3 +45,24 @@ function collectNodes(value: unknown, into: CelNode[]): void {
     for (const item of value) collectNodes(item, into)
   }
 }
+
+/**
+ * The function a node calls, or undefined when it calls none: a call, `f(x)`, or a method,
+ * `x.f()`, macros among them. The kind's allow-list and the calls a program lists read this one
+ * answer, so what was let through and what is said to be called cannot disagree.
+ */
+export function calledFunctionName(node: CelNode): string | undefined {
+  if (node.op !== 'call' && node.op !== 'rcall') return undefined
+  const name = (node.args as [string, ...unknown[]])[0]
+  return typeof name === 'string' ? name : undefined
+}
+
+/**
+ * The static type the checker wrote onto a node, when it wrote one. Iteration
+ * variables of a comprehension are never checked as expressions, so the field
+ * can be absent; the caller has to treat "unknown" as "not provably wrong".
+ */
+export function checkedTypeName(node: CelNode): string | undefined {
+  const type = (node as { checkedType?: { name?: unknown } }).checkedType
+  return typeof type?.name === 'string' ? type.name : undefined
+}

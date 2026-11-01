@@ -98,7 +98,10 @@ by that member — [0185](../decisions/0185-an-answer-is-what-the-value-holds-as
 (the function allow-list per expression slot, so a `visible` expression cannot
 perform a lookup, and the clock and chance a caller asking for a reproducible expression goes
 without, [0228](../decisions/0228-an-expression-can-be-asked-to-be-reproducible.md)), `capabilities.ts` (the injected clock and randomness),
-`references.ts` (the static variable extraction the dependency graph needs),
+`references.ts` (the static variable extraction the dependency graph needs), `program-facts.ts`
+(the functions a checked program calls and where it computes through a double or divides
+integers, which a caller that must refuse either reads instead of probing the source,
+[0229](../decisions/0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md)),
 `rewrite.ts` (replacing one data path with another in a condition) and
 `decimal.ts` (scaled-integer money, so `price * 0.19` is a type error and
 `price * dec("0.19")` is required).

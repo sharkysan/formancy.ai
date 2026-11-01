@@ -1,4 +1,4 @@
-import { childNodes, isCelNode } from './ast.js'
+import { calledFunctionName, checkedTypeName, childNodes, isCelNode } from './ast.js'
 import type { CelNode, ExpressionAst } from './ast.js'
 import { translateCelError } from './cel.js'
 import { decimalFromString } from './decimal.js'
@@ -159,16 +159,6 @@ function operandNumericLiteral(node: CelNode, source: string): string | undefine
 }
 
 /**
- * The static type the checker wrote onto a node, when it wrote one. Iteration
- * variables of a comprehension are never checked as expressions, so the field
- * can be absent; the caller has to treat "unknown" as "not provably wrong".
- */
-function checkedTypeName(node: CelNode): string | undefined {
-  const type = (node as { checkedType?: { name?: unknown } }).checkedType
-  return typeof type?.name === 'string' ? type.name : undefined
-}
-
-/**
  * `price == discount` with `discount: dyn` — the pair types.ts recommends for
  * an optional money field — type-checks, and then the implementation's
  * universal equality answers `false` for two equal amounts. Equality is the
@@ -237,12 +227,6 @@ function findInvalidDecimalLiteral(node: CelNode, source: string): ExpressionErr
     if (invalid !== undefined) return invalid
   }
   return undefined
-}
-
-function calledFunctionName(node: CelNode): string | undefined {
-  if (node.op !== 'call' && node.op !== 'rcall') return undefined
-  const name = (node.args as [string, ...unknown[]])[0]
-  return typeof name === 'string' ? name : undefined
 }
 
 function describe(types: ReadonlySet<string>): string {

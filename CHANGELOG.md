@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**A compiled program says which functions it calls and where its arithmetic is not exact.**
+Beside `references`, a `Program` from `@formancy/expressions` carries `calls`, each function it
+calls with the span of the call, and `inexact`, each place it computes through a double, named
+where the double is outermost, or divides integers. `int(double("4.35") * 100.0)` is an `int`
+that evaluates to 434, and a caller could not tell it from an exact one; its `inexact` now names
+`double("4.35") * 100.0`. Formancy Report found such places by re-spelling the source and
+compiling again, which a change to an error code would have defeated without a word. Both are
+read from the checked expression, so a value typed `dyn` is named in neither
+([0229](docs/decisions/0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md)).
+`FunctionCall` and `InexactStep` are exported.
+
 **An expression can be asked to be reproducible.** `compile` and `check` in
 `@formancy/expressions` take `reproducible: true`, which refuses `now()`, `today()` and `random()`
 whatever the kind allows, as `function_not_allowed` at the call, with the reason in the hint. A form
