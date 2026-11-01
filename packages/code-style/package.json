@@ -21,8 +21,8 @@
   "//check:pkg": [
     "publint only, as for @formancy/themes: this package ships one JavaScript module",
     "and no types, so there is nothing for attw to resolve. Nothing here builds or",
-    "type-checks either: the module is published as it is written, byte for byte the",
-    "copy formancy.ai-health and formancy.ai-data carry until they pin this package."
+    "type-checks either: the module is published as it is written, and the formancy",
+    "repositories that once carried copies of it pin this package exactly."
   ],
   "dependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",

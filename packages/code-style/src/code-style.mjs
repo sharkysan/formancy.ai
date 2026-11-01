@@ -7,12 +7,14 @@ import { isAbsolute, resolve } from 'node:path'
 import tseslint from 'typescript-eslint'
 
 /**
- * The lint rules and the format the four formancy repositories share: what
- * formancy.ai will publish as `@formancy/code-style`, and until then this
- * file, copied byte for byte into each repository, which calls it with its
- * own paths and pins the package in its place once it is released
- * (formancy.ai-health 0017). Nothing here names a path of one repository;
- * a reason that holds for one alone is written where that one calls it.
+ * The lint rules and the format the formancy repositories share, published
+ * by formancy.ai as `@formancy/code-style`: formancy.ai lints itself with
+ * it from its workspace, and Formancy Health and Formancy Data pin a
+ * release exactly. Each calls it with its own paths. Written for Formancy
+ * Health (formancy.ai-health 0017) and moved here, where a rule is now
+ * changed, reaching the others by a release and a bump of each pin. Nothing
+ * here names a path of one repository; a reason that holds for one alone is
+ * written where that one calls it.
  *
  * The rules are @eslint/js's recommended set and typescript-eslint's
  * type-aware one, every rule `error` or `off`: a warning is a finding

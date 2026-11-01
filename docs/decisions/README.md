@@ -325,7 +325,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0222](0222-submissions-are-listed-a-page-at-a-time.md) | A form's submissions are listed a page at a time, from where the last page ended | accepted |
 | [0223](0223-responses-are-summarised-on-the-server.md) | A form's responses are summarised on the server, and the admin reads them a page at a time | accepted; reading every submission, superseded in part by 0224 |
 | [0224](0224-a-summary-is-counted-a-response-at-a-time.md) | A summary is counted a response at a time, and the server reads a page of them at once | accepted |
-| [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md) | The four formancy repositories lint and format by one set of rules, published here as `@formancy/code-style`, and CI fails a change that breaks either | accepted |
+| [0225](0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md) | The four formancy repositories lint and format by one set of rules, published here as `@formancy/code-style`, and CI fails a change that breaks either | accepted; Formancy Health and Formancy Data pin the package exactly from 0.12.0, so a rule is changed here |
 | [0226](0226-a-pattern-is-analysed-as-it-runs.md) | A pattern is analysed as it runs, from the one definition of how it runs | accepted |
 | [0227](0227-the-row-arrowed-to-is-scrolled-into-view.md) | The row arrowed to in a typeahead's list is scrolled into view, the page with it if it must | accepted |
 | [0228](0228-an-expression-can-be-asked-to-be-reproducible.md) | An expression can be asked to be reproducible, and then reads neither the clock nor a random source | accepted |

@@ -234,10 +234,10 @@ The lint rules and the format the formancy repositories share, as one module,
 its paths, `prettierConfig`, and `EXTENSIONS` and `FILES`, the files both tools read. It names
 no path of any repository; a reason that holds for one alone is written where that one calls
 it. The module and its test were written for Formancy Health (formancy.ai-health 0017) and
-are carried here byte for byte, and the test is the package's suite. This repository lints and
-formats itself with it from the workspace, and until Formancy Health and Formancy Data pin the
-released package in place of their copies, a rule is changed in Health's module first and
-copied here, never here alone ([0225](../decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
+moved here, and the test is the package's suite. This repository lints and formats itself with
+it from the workspace. Formancy Health and Formancy Data pin a released version exactly, in place
+of the copies they carried, so a rule is changed here and reaches them by a release and a bump
+of each pin ([0225](../decisions/0225-the-four-repositories-lint-and-format-by-one-set-of-rules-published-here.md)).
 
 It is published as it is written: JavaScript, with no build, no `typecheck` and no types, so
 `check:pkg` is publint alone, as for `themes`. Its dependencies are the rule sets and the
