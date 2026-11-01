@@ -16,10 +16,11 @@
     it runs, each `variable_read_whole`; the checker's own refusals of one passed to a function
     or compared, with the same hint, the nested member's named rather than the variable's; a
     comprehension variable of the same name let through.
-  - *evaluated, each member is bound as its declaration says*: an int member from a JSON number,
-    a decimal from a string, a nested member; a missing member and one of the wrong kind refused
-    by path, and a missing member declared by member asked for as a map of its members; null, a list and a string refused as the value; a map without a prototype accepted;
-    members named `constructor` and `__proto__` read as members.
+  - *evaluated, each member is bound as its declaration says*: an int member from a JSON number, a
+    decimal from a string, a nested member; a missing member and one of the wrong kind refused by
+    path, and a missing member declared by member asked for as a map of its members; null, a list
+    and a string refused as the value; a map without a prototype accepted; members named
+    `constructor` and `__proto__` read as members.
 
   Each part was broken on its own and a case failed: the gate removed (seven), any index taken
   for a member's (one), no index taken for one (two), the unknown-member hint removed (two), the
