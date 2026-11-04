@@ -18,6 +18,7 @@ import {
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
+import { pickupPointAddition } from './demo-addition.js'
 import { createBuilderSession, createDraftRun, createPromptRun, createRelay, createTranslationRun } from '@formancy/builder-core'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import { FormancyArrangeSurface } from '@formancy/builder-react'
@@ -484,7 +485,7 @@ export function App() {
                             >
                               <FormancyProvider engine={built.engine} key={source}>
                                 <ErrorSummary />
-                                <FormancyForm layout="web" review />
+                                <FormancyForm layout="web" review fieldAddition={pickupPointAddition} />
                               </FormancyProvider>
                             </form>
                           </section>

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common'
 import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject } from '@angular/core'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase } from './field-shell.js'
@@ -19,7 +20,7 @@ import { FormancyErrorText } from './error-text.js'
 @Component({
   selector: 'formancy-ranking-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyErrorText, FormancyTextPipe],
+  imports: [FormancyErrorText, FormancyTextPipe, NgTemplateOutlet],
   template: `
     <fieldset
       [id]="control().id"
@@ -102,6 +103,9 @@ import { FormancyErrorText } from './error-text.js'
       }
       @if (showError()) {
         <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
+      }
+      @if (addition(); as template) {
+        <div data-formancy-part="field-addition"><ng-container *ngTemplateOutlet="template; context: { $implicit: context.path, field: field }" /></div>
       }
     </fieldset>
   `,

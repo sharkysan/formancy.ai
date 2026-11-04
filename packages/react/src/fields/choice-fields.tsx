@@ -4,6 +4,7 @@ import { useField } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
 import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
+import { FieldAdditionSlot } from '../field-addition.js'
 import { TypeaheadSelectField } from './typeahead-field.js'
 
 /**
@@ -182,6 +183,7 @@ export function RadioGroupField({ path, label }: FieldComponentProps) {
         )
       })}
       {showError ? <ErrorText field={field} /> : null}
+      <FieldAdditionSlot path={path} />
     </fieldset>
   )
 }

@@ -7,6 +7,7 @@ import { errorSentence } from '@formancy/core/words'
 import { useFormEngine, useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import type { FieldBinding } from '../use-field.js'
+import { FieldAdditionSlot } from '../field-addition.js'
 
 /**
  * The pieces every control shares: the shell it renders inside, the prop shapes, and the few helpers more than one of them needs.
@@ -62,6 +63,13 @@ export interface FormancyFormProps {
    * step offers "Check your answers" in place of sending (0204). Off unless asked for.
    */
   review?: boolean
+  /**
+   * The host's own content under a field, by the field's path (a row's field by its own, as its
+   * wrapper's `data-formancy-field-path` says), or nothing: in the field's wrapper, after its
+   * label, description, control and error, as `data-formancy-part="field-addition"` (0233). A
+   * constant: a new function on every render redraws every field's addition.
+   */
+  fieldAddition?: (path: string) => ReactNode
   onSubmit?: (outcome: SubmitOutcome) => void
 }
 
@@ -105,6 +113,7 @@ export function FieldShell({ path, field, label, children }: { path: string; fie
       <Description field={field} />
       {children}
       {field.touched && field.errors.length > 0 ? <ErrorText field={field} /> : null}
+      <FieldAdditionSlot path={path} />
     </div>
   )
 }

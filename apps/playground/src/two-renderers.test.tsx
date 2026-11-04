@@ -185,3 +185,23 @@ describe('the Language switch', () => {
     }
   })
 })
+
+describe('what the playground, as a host, draws under a field', () => {
+  // Under the pickup point, the point the answer holds, by name and code (0233): in the field's
+  // own wrapper, in each renderer, and empty until a point is chosen, which a theme gives no room.
+  test('is the chosen pickup point, under that field, in both renderers', async () => {
+    await mounted()
+    const user = userEvent.setup()
+
+    for (const pane of [reactPane(), angularPane()]) {
+      const box = within(pane).getByRole('combobox', { name: 'Where to collect it' })
+      const addition = () => box.closest('[data-formancy-part="field"]')?.querySelector('[data-formancy-part="field-addition"]')
+      expect(addition()?.textContent?.trim() ?? '').toBe('')
+
+      await user.type(box, 'Bern')
+      await user.click(await within(pane).findByRole('option', { name: 'Bern Bahnhof' }, { timeout: 3_000 }))
+
+      await waitFor(() => expect(addition()?.textContent).toContain('Bern Bahnhof · p3'))
+    }
+  })
+})

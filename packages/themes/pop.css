@@ -93,6 +93,21 @@
   color: var(--fm-muted);
 }
 
+/* What a host draws under a field (0233): after everything the field says of itself, a row of
+   its own whether the field lays its parts in columns or wraps them, in the field's own type at
+   the size of its help. Its links and buttons are dressed as this theme's own quiet ones, below,
+   since a host may not style the paper. */
+[data-formancy-theme='pop'] [data-formancy-part='field-addition'] {
+  grid-column: 1 / -1;
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+}
+
+/* One with nothing in it, the summary of a choice not made yet, takes no room in the field. */
+[data-formancy-theme='pop'] [data-formancy-part='field-addition']:empty {
+  display: none;
+}
+
 /* A character count under a box with a limit (0203): quiet as the help text, its figures in
    columns so the line does not shimmer as they change. */
 [data-formancy-theme='pop'] [data-formancy-part='count'] {
@@ -866,7 +881,8 @@
 }
 
 
-[data-formancy-theme='pop'] [data-formancy-part='richtext'] a {
+[data-formancy-theme='pop'] [data-formancy-part='richtext'] a,
+[data-formancy-theme='pop'] [data-formancy-part='field-addition'] a {
   color: var(--fm-blue);
   text-decoration-thickness: 2px;
 }
@@ -1766,7 +1782,8 @@
 }
 
 [data-formancy-theme='pop'] [data-formancy-part='signature-clear'],
-[data-formancy-theme='pop'] [data-formancy-part='checkbox-retry'] {
+[data-formancy-theme='pop'] [data-formancy-part='checkbox-retry'],
+[data-formancy-theme='pop'] [data-formancy-part='field-addition'] button {
   align-self: center;
   padding: 0.5rem 0.875rem;
   min-block-size: 44px;
@@ -1780,6 +1797,7 @@
 }
 
 [data-formancy-theme='pop'] [data-formancy-part='signature-clear']:hover:not(:disabled),
+[data-formancy-theme='pop'] [data-formancy-part='field-addition'] button:hover:not(:disabled),
 [data-formancy-theme='pop'] [data-formancy-part='checkbox-retry']:hover:not(:disabled) {
   color: var(--fm-ink);
   border-color: var(--fm-ink);

@@ -2,6 +2,7 @@ import { useFormEngine } from '../context.js'
 import { useField } from '../use-field.js'
 import { Description, ErrorText, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
+import { FieldAdditionSlot } from '../field-addition.js'
 
 /**
  * One question asked of several rows ([0139](../../../../docs/decisions/0139-a-matrix-answers-one-question-per-row.md)).
@@ -67,6 +68,7 @@ export function MatrixField({ path, label }: FieldComponentProps) {
         ))}
       </div>
       {showError ? <ErrorText field={field} /> : null}
+      <FieldAdditionSlot path={path} />
     </fieldset>
   )
 }

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common'
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { optionsStatus } from '@formancy/core/words'
 import { FormancyTextPipe, injectFormText } from '../text.js'
@@ -174,7 +175,7 @@ export class FormancySelectField extends FieldComponentBase {
 @Component({
   selector: 'formancy-radio-group-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyErrorText, FormancyTextPipe],
+  imports: [FormancyErrorText, FormancyTextPipe, NgTemplateOutlet],
   template: `
     <!-- The field's control id on the group, as the rating, the ranking and the matrix
          carry it, and each radio keeps its own <id>:<value>: the error summary's link and
@@ -222,6 +223,9 @@ export class FormancySelectField extends FieldComponentBase {
       }
       @if (showError()) {
         <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
+      }
+      @if (addition(); as template) {
+        <div data-formancy-part="field-addition"><ng-container *ngTemplateOutlet="template; context: { $implicit: context.path, field: field }" /></div>
       }
     </fieldset>
   `,

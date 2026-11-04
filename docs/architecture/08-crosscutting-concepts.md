@@ -161,6 +161,12 @@ Three concentric mechanisms, each usable without the next:
    `data-formancy-part` and `data-state` hooks, so a Tailwind user writes
    `data-[state=invalid]:border-red-500`.
 
+Beside the three, a host may add content of its own **under** a field rather than replace it:
+`fieldAddition`, called with each field's path, draws what it returns as the last thing in the
+field's wrapper, in a `field-addition` part the themes dress, and nothing where it returns nothing
+([0233](../decisions/0233-a-host-may-add-content-under-a-field.md)). It is how a host shows what an answer points to without a stylesheet of its own
+reaching into the paper.
+
 **Zero CSS is about appearance, and one property crossed that line.** A control
 declares what it needs in order to *work*; a theme declares how it looks
 ([0101](../decisions/0101-a-control-is-operable-without-a-theme.md)). The test is

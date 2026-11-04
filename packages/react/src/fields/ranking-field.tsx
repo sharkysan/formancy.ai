@@ -3,6 +3,7 @@ import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { Description, ErrorText, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
+import { FieldAdditionSlot } from '../field-addition.js'
 
 /**
  * Options put in order ([0138](../../../../docs/decisions/0138-a-ranking-stores-the-order-chosen.md)).
@@ -146,6 +147,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
         </ul>
       )}
       {showError ? <ErrorText field={field} /> : null}
+      <FieldAdditionSlot path={path} />
     </fieldset>
   )
 }

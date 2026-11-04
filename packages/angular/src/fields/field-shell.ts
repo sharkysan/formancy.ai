@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common'
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
 import { inOptionOrder } from '@formancy/core'
 import { isImageSource } from '@formancy/spec'
@@ -8,6 +9,7 @@ import { injectEngine } from '../provide.js'
 import { injectFieldContext } from '../registry.js'
 import { injectSourcedOptions, sameValues, storedValues } from '../sourced-options.js'
 import { FormancyErrorText } from './error-text.js'
+import { injectFieldAddition } from '../field-addition.js'
 
 /**
  * The shell every control renders inside, and the base they all extend.
@@ -31,7 +33,7 @@ import { FormancyErrorText } from './error-text.js'
  *  describedby target. */
 @Component({
   selector: 'formancy-field-shell',
-  imports: [FormancyErrorText],
+  imports: [FormancyErrorText, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -47,6 +49,9 @@ import { FormancyErrorText } from './error-text.js'
       @if (showError()) {
         <p data-formancy-part="error" [id]="field().snapshot().props.error.id" [formancyErrorText]="field().snapshot()"></p>
       }
+      @if (addition(); as template) {
+        <div data-formancy-part="field-addition"><ng-container *ngTemplateOutlet="template; context: { $implicit: path(), field: field() }" /></div>
+      }
     </div>
   `,
 })
@@ -55,6 +60,8 @@ export class FormancyFieldShell {
   readonly label = input.required<string>()
   /** Inert here; read by tools outside the renderer. See FormancyLayout. */
   readonly path = input<string>('')
+  /** The host's content under the field, or nothing; see field-addition.ts. */
+  protected readonly addition = injectFieldAddition(() => this.path())
 
   protected readonly showError = computed(() => {
     const snapshot = this.field().snapshot()
@@ -67,6 +74,8 @@ export class FormancyFieldShell {
 export abstract class FieldComponentBase {
   protected readonly context = injectFieldContext()
   protected readonly field = injectField(this.context.path)
+  /** The host's content under the field, for the controls that draw their own fieldset (0233). */
+  protected readonly addition = injectFieldAddition(() => this.context.path)
   protected readonly control = computed(() => this.field.snapshot().props.control)
   protected readonly engine = injectEngine()
   /** The author's example for the empty box, in the form's language (0196); null for none. */
