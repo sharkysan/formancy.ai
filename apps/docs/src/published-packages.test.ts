@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
@@ -131,12 +131,15 @@ function publishedPackages(): Array<{
  * CSS counts: a theme's only consumer is a stylesheet or a side-effect import, and
  * leaving it out is half of what made this report a false positive.
  *
- * The install gate's fixture is not walked: see `CONSUMED_OUTSIDE_THE_WORKSPACE`.
+ * The install gate's fixture is not walked: see `CONSUMED_OUTSIDE_THE_WORKSPACE`. The
+ * self-import case below reads its packages' sources from here too, rather than walking them
+ * a second time.
  */
-let sources: ReadonlyArray<{ owner: string; text: string }> | undefined
-function allSources(): ReadonlyArray<{ owner: string; text: string }> {
+type Source = { owner: string; file: string; text: string }
+let sources: ReadonlyArray<Source> | undefined
+function allSources(): ReadonlyArray<Source> {
   if (sources !== undefined) return sources
-  const found: Array<{ owner: string; text: string }> = []
+  const found: Source[] = []
   const walk = (directory: string, owner: string): void => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.isDirectory()) {
@@ -145,7 +148,8 @@ function allSources(): ReadonlyArray<{ owner: string; text: string }> {
         continue
       }
       if (!/\.(ts|tsx|mts|css)$/.test(entry.name)) continue
-      found.push({ owner, text: readFileSync(join(directory, entry.name), 'utf8') })
+      const file = join(directory, entry.name)
+      found.push({ owner, file: file.slice(repo.length + 1).replaceAll('\\', '/'), text: readFileSync(file, 'utf8') })
     }
   }
   for (const group of ['packages', 'apps']) {
@@ -381,7 +385,7 @@ describe('how each published package is checked as a package', () => {
  * away from not holding, so the one line is what this checks.
  */
 describe('what a package imports from itself', () => {
-  /** Every workspace package, published or not, with its own name. */
+  /** Every workspace package, published or not, with its own name and its directory from the root. */
   const workspacePackages = (): Array<{ dir: string; name: string }> =>
     ['packages', 'apps'].flatMap((group) =>
       readdirSync(join(repo, group), { withFileTypes: true })
@@ -391,16 +395,30 @@ describe('what a package imports from itself', () => {
           try {
             const parsed = JSON.parse(readFileSync(file, 'utf8')) as { name?: string }
             if (parsed.name === undefined) return []
-            return [{ dir: join(repo, group, entry.name), name: parsed.name }]
+            return [{ dir: `${group}/${entry.name}`, name: parsed.name }]
           } catch {
             return []
           }
         }),
     )
 
-  /** Files under `dir` that name `self` in an import. */
+  /**
+   * The TypeScript under `dir`'s `src`. `@formancy/themes` ships stylesheets from its root and
+   * has no `src` at all, which is not an error: a package with no TypeScript cannot import
+   * anything, let alone itself.
+   */
+  const ownSource = (dir: string): Source[] => allSources().filter(({ file }) => file.startsWith(`${dir}/src/`) && /\.(ts|tsx|mts)$/.test(file))
+
+  /**
+   * The files under `dir`'s `src` that spell `self` at all, which an import of it has to: the
+   * only ones worth TypeScript's scanner. The scanner over every file, each read a second time,
+   * took the case below past its thirty seconds on a loaded CI runner (2026-11-04), at a fifth
+   * of a second locally.
+   */
+  const spelling = (dir: string, self: string): Source[] => ownSource(dir).filter(({ text }) => text.includes(self))
+
+  /** Files under `dir`'s `src` that name `self` in an import. */
   const selfImports = (dir: string, self: string): string[] => {
-    const found: string[] = []
     // The module specifiers the file actually imports, as TypeScript's own scanner reads
     // them — never text that looks like an import. A regular expression over the source
     // matched the import line `answersTypeScript` writes into a string, and the test
@@ -410,35 +428,21 @@ describe('what a package imports from itself', () => {
     const importsSelf = (text: string): boolean =>
       ts.preProcessFile(text, true, true).importedFiles.some(({ fileName }) => fileName === self || fileName.startsWith(`${self}/`))
 
-    const walk = (at: string): void => {
-      for (const entry of readdirSync(at, { withFileTypes: true })) {
-        if (entry.isDirectory()) {
-          if (['node_modules', 'dist', 'out-tsc'].includes(entry.name)) continue
-          walk(join(at, entry.name))
-          continue
-        }
-        if (!/\.(ts|tsx|mts)$/.test(entry.name)) continue
-        const file = join(at, entry.name)
-        if (importsSelf(readFileSync(file, 'utf8'))) {
-          found.push(file.slice(repo.length + 1).replaceAll('\\', '/'))
-        }
-      }
-    }
-    const source = join(dir, 'src')
-    // `@formancy/themes` ships stylesheets from its root and has no `src` at
-    // all, which is not an error — a package with no TypeScript cannot import
-    // anything, let alone itself.
-    if (!existsSync(source)) return found
-    walk(source)
-    return found
+    return spelling(dir, self)
+      .filter(({ text }) => importsSelf(text))
+      .map(({ file }) => file)
   }
 
-  test('is reading a real list of packages', () => {
+  test('is reading a real list of packages, and scanning real files of theirs', () => {
     // A guard on the guard: the assertion below is about absence, so an empty
     // walk would pass for ever.
     const all = workspacePackages()
     expect(all.length).toBeGreaterThan(15)
     expect(all.map(({ name }) => name)).toContain('@formancy/builder-core')
+    // And so would a scan that never ran: a prefix matching no path, or a filter that hands the
+    // scanner no file at all.
+    expect(ownSource('packages/builder-core').length).toBeGreaterThan(10)
+    expect(all.some(({ dir, name }) => spelling(dir, name).length > 0)).toBe(true)
   })
 
   test('and the answer is nothing, so no typecheck needs its own build output', () => {
