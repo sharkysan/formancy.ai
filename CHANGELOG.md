@@ -15,7 +15,9 @@ brackets #277 left open are answered: there is no register entry or VAT number; 
 other site for anything and keep no cookie, and in storage only the documentation's theme choice;
 Cloudflare delivers them, with a Network Error Logging header, and receives mail for
 info@formancy.ai by Email Routing, read from the live site on 2026-11-04; mail is kept while an
-enquiry needs it. `pnpm test:browser` now fails when a page keeps anything in the browser the
+enquiry needs it; and the demonstrations of Data, Report and Health at `/data/examples/`,
+`/report/` and `/health/` set no cookie, use no storage and request nothing but their own files,
+read the same day. `pnpm test:browser` now fails when a page keeps anything in the browser the
 privacy notice does not name, and when the notice does not name a key it allows
 ([0232](docs/decisions/0232-the-website-keeps-nothing-in-a-browser-the-privacy-notice-does-not-name.md)).
 

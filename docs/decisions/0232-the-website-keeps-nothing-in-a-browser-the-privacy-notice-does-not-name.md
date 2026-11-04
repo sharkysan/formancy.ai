@@ -49,8 +49,11 @@ have no script. Where mail is forwarded after Cloudflare is named only as the op
 mailbox.
 
 **What it does not do.** It is not a legal review, and claims none: the operator approved the
-pages. It checks no demo of Data, Report or Health, which run where each product's own repository
-says.
+pages. It opens none of the demonstrations of Data, Report and Health, which formancy.ai serves at
+`/data/examples/`, `/report/` and `/health/` from each product's own repository and whose own
+browser checks hold their requests; the notice states what was read of them on 2026-11-04, that
+none set a cookie, none of their bundles uses browser storage, and each requests only its own
+files.
 
 ## Alternatives considered
 
