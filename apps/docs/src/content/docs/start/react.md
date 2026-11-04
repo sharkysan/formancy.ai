@@ -125,6 +125,32 @@ A question the form asks and nobody answered is listed too, as *Not answered*, s
 mistake is seen; one a rule hides or disables is not asked and has no line
 ([0214](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0214-the-review-names-a-question-left-unanswered.md)).
 
+### Content of your own under a field
+
+`fieldAddition` draws something of yours under a field, inside the form: a summary of the record a
+lookup points to, a link that opens it. It is called with each field's path, a row's field by its
+own (the path its wrapper carries in `data-formancy-field-path`), and what it returns is drawn as
+the last thing in that field's wrapper, after its label, help, control and error, in a
+`data-formancy-part="field-addition"` the themes dress. Return nothing and nothing is drawn, not
+even the wrapper. The content renders inside the form, so it reads the field with `useField`
+([0233](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0233-a-host-may-add-content-under-a-field.md)):
+
+```tsx
+function Customer({ path }: { path: string }) {
+  const field = useField(path)
+  return field.value == null ? null : <a href={`/customers/${String(field.value)}`}>Open the customer</a>
+}
+
+const addition = (path: string) => (path === 'customer' ? <Customer path={path} /> : null)
+
+<FormancyForm fieldAddition={addition} />
+```
+
+Keep the function a constant, outside the component or in `useCallback`: a new one on every render
+redraws every field's addition. It adds no role and no name, and no control is described by it:
+your links and buttons carry their own names. In a matrix or a ranking, which are drawn as a
+fieldset disabled with its field, your controls are disabled with the field.
+
 ## The form's own words, in its language
 
 The questions are yours. The words around them — Next, Back, Submit, a repeater's Add and

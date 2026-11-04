@@ -125,6 +125,44 @@ would, goes to the problem if there is one, and otherwise shows every answer in 
 output. The React binding's `review` prop does the same, from the same list
 ([0204](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
 
+### Content of your own under a field
+
+`fieldAddition` draws a template of yours under a field, inside the form: a summary of the record
+a lookup points to, a link that opens it. It is called with each field's path, a row's field by
+its own (the path its wrapper carries in `data-formancy-field-path`), and the template it returns
+is drawn as the last thing in that field's wrapper, after its label, help, control and error, in a
+`data-formancy-part="field-addition"` the themes dress. Return nothing and nothing is drawn, not
+even the wrapper. The template is given the path and the field's binding, since a component cannot
+ask for a binding by a path that only arrives as its input ([0233](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0233-a-host-may-add-content-under-a-field.md)):
+
+```ts
+import { Component, viewChild } from '@angular/core'
+import type { TemplateRef } from '@angular/core'
+import { FormancyForm } from '@formancy/angular'
+import type { FormancyFieldAddition, FormancyFieldAdditionContext } from '@formancy/angular'
+
+@Component({
+  selector: 'app-order',
+  imports: [FormancyForm],
+  template: `
+    <formancy-form [fieldAddition]="addition" />
+    <ng-template #customer let-field="field">
+      @if (field.snapshot().value; as id) {
+        <a [href]="'/customers/' + id">Open the customer</a>
+      }
+    </ng-template>
+  `,
+})
+export class OrderComponent {
+  private readonly customer = viewChild<TemplateRef<FormancyFieldAdditionContext>>('customer')
+  protected readonly addition: FormancyFieldAddition = (path) => (path === 'customer' ? this.customer() : undefined)
+}
+```
+
+It adds no role and no name, and no control is described by it: your links and buttons carry their
+own names. In a matrix or a ranking, which are drawn as a fieldset disabled with its field, your
+controls are disabled with the field.
+
 ## Drive one field yourself
 
 `FormancyForm` is a convenience. Underneath, every field is a signal you can

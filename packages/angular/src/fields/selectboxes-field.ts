@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common'
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core'
 import { ticked } from '@formancy/core'
 import { optionsStatus } from '@formancy/core/words'
@@ -217,7 +218,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
 @Component({
   selector: 'formancy-select-boxes-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyErrorText, FormancyTagPickerField, FormancyTextPipe],
+  imports: [FormancyErrorText, FormancyTagPickerField, FormancyTextPipe, NgTemplateOutlet],
   template: `
     @if (tagpicker()) {
       <!-- A widget changes the CONTROL and nothing else: same field, same
@@ -280,6 +281,9 @@ export class FormancyTagPickerField extends FieldComponentBase {
       }
       @if (showError()) {
         <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
+      }
+      @if (addition(); as template) {
+        <div data-formancy-part="field-addition"><ng-container *ngTemplateOutlet="template; context: { $implicit: context.path, field: field }" /></div>
       }
     </fieldset>
     }

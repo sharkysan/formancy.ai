@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, LayoutNode } from '@formancy/spec'
@@ -7,6 +7,8 @@ import { injectWizard } from './wizard.js'
 import type { WizardBinding } from './wizard.js'
 import { injectEngine } from './provide.js'
 import { FormancyLayout } from './layout.js'
+import { FORMANCY_FIELD_ADDITION } from './field-addition.js'
+import type { FormancyFieldAddition } from './field-addition.js'
 import { FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
 import { FormancyTextPipe, injectFormText } from './text.js'
 import { FormancyReview } from './review.js'
@@ -32,6 +34,8 @@ export interface SubmitOutcome {
 @Component({
   selector: 'formancy-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // The host's additions, for the fields the registry creates below; see field-addition.ts.
+  providers: [{ provide: FORMANCY_FIELD_ADDITION, useFactory: () => inject(FormancyForm).fieldAddition }],
   imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyLayout, FormancyReview, FormancyTextPipe, NgTemplateOutlet],
   template: `
     <!-- What ends the form: sending it, or checking the answers first where it asks (0204). -->
@@ -124,6 +128,13 @@ export class FormancyForm {
    * step offers "Check your answers" in place of sending (0204). Off unless asked for.
    */
   readonly review = input(false)
+  /**
+   * The host's own content under a field, by the field's path (a row's field by its own, as its
+   * wrapper's `data-formancy-field-path` says), or nothing: a template drawn in the field's
+   * wrapper, after its label, description, control and error, as
+   * `data-formancy-part="field-addition"`, and given the path and the field's binding (0233).
+   */
+  readonly fieldAddition = input<FormancyFieldAddition>()
   readonly submitted = output<SubmitOutcome>()
 
   /** Whether the answers are being checked. */

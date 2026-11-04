@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**A host may add content of its own under a field.** `FormancyForm` in `@formancy/react` and
+`formancy-form` in `@formancy/angular` take `fieldAddition`, a function from a field's path to
+the host's content: a React node, or a template, which Angular gives the path and the field's
+binding. It is drawn as the last thing in the field's wrapper, after its label, help, control and
+error, as `data-formancy-part="field-addition"`, which every theme dresses, its links and buttons
+as the theme's own; nothing is drawn where it gives nothing, so a form without it is unchanged.
+Formancy Data shows the record a lookup points to under the lookup, where it had to put it in a
+strip above the form, since its host may not style the paper
+([0233](docs/decisions/0233-a-host-may-add-content-under-a-field.md)). The playground shows the
+chosen pickup point under its field. `FormancyFieldAddition`, `FormancyFieldAdditionContext`,
+`FORMANCY_FIELD_ADDITION` and `injectFieldAddition` are exported from `@formancy/angular`.
+
 **The legal notice and the privacy notice say what was checked, and are no longer drafts.** The
 brackets #277 left open are answered: there is no register entry or VAT number; the pages ask no
 other site for anything and keep no cookie, and in storage only the documentation's theme choice;

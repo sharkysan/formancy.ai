@@ -11,6 +11,7 @@ import { focusRow } from './focus-row.js'
 import type { RowFocus } from './focus-row.js'
 import { CheckAnswersButton, Review, SubmitButton, useReview } from './review.js'
 import { useWizard } from './use-wizard.js'
+import { FieldAdditionContext } from './field-addition.js'
 
 import { ComputedAnswerField } from './fields/computed-answer.js'
 import { DEFAULT_COMPONENTS } from './fields.js'
@@ -40,7 +41,11 @@ import type { FormancyFormProps, Registry } from './fields/internals.js'
  */
 export function FormancyForm(props: FormancyFormProps) {
   const engine = useFormEngine()
-  return engine.wizard() === undefined ? <FlatForm {...props} /> : <PagedForm {...props} />
+  return (
+    <FieldAdditionContext.Provider value={props.fieldAddition}>
+      {engine.wizard() === undefined ? <FlatForm {...props} /> : <PagedForm {...props} />}
+    </FieldAdditionContext.Provider>
+  )
 }
 
 function FlatForm(props: FormancyFormProps) {

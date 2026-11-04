@@ -168,6 +168,7 @@ Deliberately small, and structurally parallel:
 | A design system's registry | — | `material/src/` — `@formancy/angular/material`, Angular Material for the types it has an equivalent for, the default control for the rest ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |
 | File uploads, drawn | `fields/file-field.tsx` | `fields/file-field.ts`, `fields/file-thumbnail.ts` |
 | Options from a source ([§6.16](06-runtime-view.md)) | `options-source.ts`, `use-sourced-options.ts` | `options-source.ts`, `sourced-options.ts` |
+| A host's content under a field [0233](../decisions/0233-a-host-may-add-content-under-a-field.md) | `field-addition.tsx`, by context from `FormancyForm` | `field-addition.ts`, by injection token from `formancy-form`, the template given the field's binding |
 | Conformance driver | `conformance-driver.tsx` | `conformance-driver.ts` |
 
 Neither contains a CSS file. Both resolve labels through the engine rather than

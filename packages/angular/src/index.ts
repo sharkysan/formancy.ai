@@ -30,6 +30,8 @@ export {
 } from './fields.js'
 export { FormancyComponentOutlet, FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
 export { FormancyForm } from './form.js'
+export { FORMANCY_FIELD_ADDITION, injectFieldAddition } from './field-addition.js'
+export type { FormancyFieldAddition, FormancyFieldAdditionContext } from './field-addition.js'
 export { FormancyLayout } from './layout.js'
 export type { SubmitOutcome } from './form.js'
 export { FormancyErrorSummary } from './error-summary.js'

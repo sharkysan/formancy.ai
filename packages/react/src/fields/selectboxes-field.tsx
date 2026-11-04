@@ -7,6 +7,7 @@ import { useField } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
 import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps, ResolvedOption } from './internals.js'
+import { FieldAdditionSlot } from '../field-addition.js'
 
 /**
  * Many answers from a set, as checkboxes or as a tag picker.
@@ -343,6 +344,7 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
         </button>
       ) : null}
       {showError ? <ErrorText field={field} /> : null}
+      <FieldAdditionSlot path={path} />
     </fieldset>
   )
 }
