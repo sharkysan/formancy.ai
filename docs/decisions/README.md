@@ -332,3 +332,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0229](0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md) | A compiled program says which functions it calls and where its arithmetic is not exact | accepted |
 | [0230](0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md) | Every package trusts the release workflow, in the `npm` environment, to publish it | accepted |
 | [0231](0231-a-variable-may-be-declared-by-member.md) | A variable may be declared by member, and is then read one member at a time | accepted |
+| [0232](0232-the-website-keeps-nothing-in-a-browser-the-privacy-notice-does-not-name.md) | The website keeps nothing in a browser the privacy notice does not name | accepted |

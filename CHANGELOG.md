@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**The legal notice and the privacy notice say what was checked, and are no longer drafts.** The
+brackets #277 left open are answered: there is no register entry or VAT number; the pages ask no
+other site for anything and keep no cookie, and in storage only the documentation's theme choice;
+Cloudflare delivers them, with a Network Error Logging header, and receives mail for
+info@formancy.ai by Email Routing, read from the live site on 2026-11-04; mail is kept while an
+enquiry needs it. `pnpm test:browser` now fails when a page keeps anything in the browser the
+privacy notice does not name, and when the notice does not name a key it allows
+([0232](docs/decisions/0232-the-website-keeps-nothing-in-a-browser-the-privacy-notice-does-not-name.md)).
+
 **A variable may be declared by member, so each member is checked as its own type.** In
 `@formancy/expressions`, a declaration may be an object of member declarations, nested as deep as
 the value: `{ row: { amount: 'decimal', copies: 'int' } }`. `row.amount` is then a decimal to the

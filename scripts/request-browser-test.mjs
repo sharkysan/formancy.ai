@@ -41,6 +41,28 @@
  */
 
 /**
+ * What a page may keep in the visitor's browser, and nothing else (0232): the documentation's
+ * choice of a light or dark theme, which its theme keeps under this key. The privacy notice
+ * says so, and names nothing more, so a page that set a cookie, kept an answer in storage or
+ * opened a database would make it untrue.
+ */
+const KEEPS = new Set(['localStorage starlight-theme'])
+
+/** Every cookie, storage key and database a context holds after a page, read from each frame. */
+async function keptInBrowser(context, page) {
+  const kept = new Set((await context.cookies()).map((cookie) => `cookie ${cookie.name}`))
+  for (const each of page.frames()) {
+    const held = await each.evaluate(async () => [
+      ...Object.keys(localStorage).map((key) => `localStorage ${key}`),
+      ...Object.keys(sessionStorage).map((key) => `sessionStorage ${key}`),
+      ...(await indexedDB.databases()).map((database) => `IndexedDB ${database.name}`),
+    ])
+    for (const entry of held) kept.add(entry)
+  }
+  return [...kept].sort()
+}
+
+/**
  * The pages, and what each one has to have finished before its requests are counted.
  *
  * One of each kind the composed site serves: the landing page, the two pages beside it,
@@ -288,6 +310,13 @@ async function carryOne(page, found, { where, ask, word, fields, shows, between 
 
 export async function checkNoForeignRequests(browser, origin, check) {
   console.log('\nrequests to other sites')
+  // The notice names what may be kept, so a key allowed here and not named there is a page
+  // keeping something the visitor was not told of.
+  const notice = await (await fetch(`${origin}/privacy/`)).text()
+  for (const entry of KEEPS) {
+    const key = entry.split(' ').at(-1)
+    check(`the privacy notice names ${key}, which a page may keep`, notice.includes(key) ? null : `/privacy/ does not name ${key}`)
+  }
   for (const { path, label = path, settle, ownFaces, frame, editor, policy, clipboard } of PAGES) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     // The page's own origin only, as a browser grants it to the site a visitor is on.
@@ -323,6 +352,9 @@ export async function checkNoForeignRequests(browser, origin, check) {
 
       check(`${label} asks no other site for anything`, foreign.size === 0 ? null : `it asked ${[...foreign].sort().join(', ')}`)
       check(`and the recorder saw ${label} ask this one, so it was listening`, own.length > 0 ? null : 'no request reached the route at all')
+      const kept = await keptInBrowser(context, page)
+      const unnamed = kept.filter((entry) => !KEEPS.has(entry))
+      check(`and ${label} keeps nothing in the browser the privacy notice does not name`, unnamed.length === 0 ? null : `it kept ${unnamed.join(', ')}`)
       // What the settling found on the way: a step that did not happen is not a clean page.
       for (const [name, problem] of settled) check(name, problem)
       if (frame !== undefined) {
