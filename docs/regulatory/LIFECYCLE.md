@@ -229,6 +229,12 @@ Each gate exists for a reason that was paid for at least once:
   whether the playground's content security policy refuses a picture and a connection on
   another host. Committed before the fix and watched failing on `main` against Google Fonts
   and jsDelivr ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)).
+  Since 2026-11-04 it also reads, after each page, every cookie, storage key and IndexedDB
+  database the browser holds, and fails on one the privacy notice does not name, and on a key
+  it allows that `/privacy/` does not name
+  ([0232](../decisions/0232-the-website-keeps-nothing-in-a-browser-the-privacy-notice-does-not-name.md)).
+  With nothing allowed it failed on the documentation's theme key, and it named a cookie, a
+  session key and a database the built landing page was made to write.
   Since 2026-10-10 it also opens the playground a second time and carries a model's turn
   through its relay in each builder, React and then Angular — describe a change, copy the
   request with the clipboard granted to the page's own origin, paste an answer, review and
