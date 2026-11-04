@@ -61,4 +61,4 @@ export {
 } from './decimal.js'
 
 export type { ExpressionValue } from './values.js'
-export type { DeclaredType, ResultType, VariableDeclarations } from './types.js'
+export type { DeclaredType, MemberDeclarations, ResultType, VariableDeclarations } from './types.js'

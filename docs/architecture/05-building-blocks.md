@@ -106,6 +106,11 @@ integers, which a caller that must refuse either reads instead of probing the so
 `decimal.ts` (scaled-integer money, so `price * 0.19` is a type error and
 `price * dec("0.19")` is required).
 
+A variable may be declared by member, each member with its own type
+([0231](../decisions/0231-a-variable-may-be-declared-by-member.md)): `cel.ts` registers it as the
+library's `schema` and knows the name of the type the library makes for it, `check.ts` refuses it
+read whole, and `values.ts` binds each member as its declaration says.
+
 `references.ts` and `rewrite.ts` share one walk, in `chains.ts`, and that is the
 point of having them here rather than in the builder: what counts as a field and
 what is a local bound by a comprehension has to be **one** answer, because those

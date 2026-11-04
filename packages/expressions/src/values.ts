@@ -1,7 +1,7 @@
 import { Decimal, decimalFromString } from './decimal.js'
 import { ExpressionError } from './errors.js'
 import type { ValueLimits } from './limits.js'
-import type { DeclaredType, VariableDeclarations } from './types.js'
+import type { DeclaredType, MemberDeclarations, VariableDeclarations } from './types.js'
 
 /**
  * What an expression can be handed and what it gives back.
@@ -18,29 +18,62 @@ export type ExpressionValue = null | boolean | number | string | Decimal | reado
  * wants a bigint for `int` and refuses to guess at the rest, so the conversion
  * happens here, once, driven by what the field was declared to be.
  *
- * Only the declared top-level variables are converted. Values nested inside a
- * list or map stay as they are, because the declaration says nothing about
- * their shape; an expression reaching into a repeater row writes
- * `dec(row.price)` for money.
+ * The declared variables are converted, and the members of one declared by
+ * member, each as its own declaration says. Values nested inside a list or a
+ * map stay as they are, because the declaration says nothing about their
+ * shape; an expression reaching into a repeater row writes `dec(row.price)`
+ * for money.
  */
 export function bindValues(declarations: VariableDeclarations, values: Record<string, unknown>, source: string, limits: ValueLimits): Record<string, unknown> {
   const bound: Record<string, unknown> = {}
-  for (const [name, type] of Object.entries(declarations)) {
-    // The bag's own, so a declared `constructor` it lacks is missing, not `function Object` (0185).
-    const raw = Object.hasOwn(values, name) ? values[name] : undefined
-    if (raw === undefined) {
-      throw new ExpressionError({
-        kind: 'runtime',
-        code: 'missing_variable',
-        message: `No value was supplied for ${name}.`,
-        source,
-        hint: `Pass null for an empty field and declare it as dyn, or supply a ${type}.`,
-      })
-    }
+  for (const [name, declared] of Object.entries(declarations)) {
+    const raw = ownValue(values, name, name, declared, source)
     assertValueWithinLimits(name, raw, limits, 0, source)
-    bound[name] = bindValue(name, type, raw, source)
+    bound[name] = bindDeclared(name, declared, raw, source)
   }
   return bound
+}
+
+/** What `holder` holds under `key` as its own, so a declared `constructor` it lacks is missing, not `function Object` (0185). */
+function ownValue(holder: object, key: string, path: string, declared: DeclaredType | MemberDeclarations, source: string): unknown {
+  const raw = Object.hasOwn(holder, key) ? (holder as Record<string, unknown>)[key] : undefined
+  if (raw === undefined) {
+    throw new ExpressionError({
+      kind: 'runtime',
+      code: 'missing_variable',
+      message: `No value was supplied for ${path}.`,
+      source,
+      hint: `Pass null for an empty field and declare it as dyn, or supply ${typeof declared === 'string' ? `a ${declared}` : 'a map of its members'}.`,
+    })
+  }
+  return raw
+}
+
+function bindDeclared(path: string, declared: DeclaredType | MemberDeclarations, raw: unknown, source: string): unknown {
+  return typeof declared === 'string' ? bindValue(path, declared, raw, source) : bindMembers(path, declared, raw, source)
+}
+
+/**
+ * A value declared by member is a map of them, each bound as its own declaration says (0231).
+ * It is built as a plain object, which the meter wraps and charges as it does any other
+ * (`budget.ts`), each member defined rather than assigned, so that one named `__proto__` is a
+ * member and not the object's prototype.
+ */
+function bindMembers(path: string, members: MemberDeclarations, raw: unknown, source: string): Record<string, unknown> {
+  if (!isPlainObject(raw)) throw invalidValue(path, source, 'it is declared by member, so its value is a map of its members')
+  const bound: Record<string, unknown> = {}
+  for (const [member, declared] of Object.entries(members)) {
+    const memberPath = `${path}.${member}`
+    const value = bindDeclared(memberPath, declared, ownValue(raw, member, memberPath, declared, source), source)
+    Object.defineProperty(bound, member, { value, enumerable: true, writable: true, configurable: true })
+  }
+  return bound
+}
+
+function isPlainObject(value: unknown): value is object {
+  if (typeof value !== 'object' || value === null) return false
+  const prototype = Object.getPrototypeOf(value) as object | null
+  return prototype === Object.prototype || prototype === null
 }
 
 /**

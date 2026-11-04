@@ -331,3 +331,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0228](0228-an-expression-can-be-asked-to-be-reproducible.md) | An expression can be asked to be reproducible, and then reads neither the clock nor a random source | accepted |
 | [0229](0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md) | A compiled program says which functions it calls and where its arithmetic is not exact | accepted |
 | [0230](0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md) | Every package trusts the release workflow, in the `npm` environment, to publish it | accepted |
+| [0231](0231-a-variable-may-be-declared-by-member.md) | A variable may be declared by member, and is then read one member at a time | accepted |

@@ -184,6 +184,14 @@ member read out of it as it charges any read; held by `own-members.test.ts` ther
 leaves `__proto__`, `constructor` and `prototype` out of a map literal, as a defence of its own,
 so `{"constructor": 1}` evaluates to `{}` — measured on 2026-10-19, and not worked around.
 
+**formancy relies on the name it gives the type of a variable declared by `schema`.** Version
+8.0.0 names it `$` and the variable's name, and a nested member's `$` and its path, `$row.address`,
+and `@formancy/expressions` refuses a variable declared by member read whole by finding a node of
+that type anywhere but where a member is selected from it
+([0231](../decisions/0231-a-variable-may-be-declared-by-member.md)). A release naming it otherwise
+would let a whole read through unrefused; `declared-members.test.ts` fails if one does, measured
+by spelling the prefix otherwise, which failed ten of its cases.
+
 `recheck` decides whether a form's `pattern` may be published. It statically
 analyses each expression for catastrophic backtracking, which is the only
 moment that cost can be refused — a JavaScript regular expression cannot be
