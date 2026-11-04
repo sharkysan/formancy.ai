@@ -92,11 +92,23 @@ async function mountPlain(schema: FormSchema = form): Promise<void> {
 
 const wrapperOf = (path: string) => document.querySelector(`[data-formancy-part="field"][data-formancy-field-path="${path}"]`)
 const additions = () => [...document.querySelectorAll('[data-formancy-part="field-addition"]')]
-/** Every field's elements and attributes, without the comments Angular anchors its blocks with. */
+/**
+ * Every field's elements and attributes, without what Angular adds of its own: the comments it
+ * anchors its blocks with, and the attributes that scope a component's styles. Taken out of a copy
+ * of the tree rather than out of its text.
+ */
 const markup = () =>
-  [...document.querySelectorAll('[data-formancy-part="field"]')].map((field) =>
-    field.outerHTML.replace(/<!--[\s\S]*?-->/g, '').replace(/ _ng[a-z]+-[a-z0-9-]+=""/g, ''),
-  )
+  [...document.querySelectorAll('[data-formancy-part="field"]')].map((field) => {
+    const copy = field.cloneNode(true) as Element
+    const comments = document.createTreeWalker(copy, NodeFilter.SHOW_COMMENT)
+    const anchors: Node[] = []
+    while (comments.nextNode()) anchors.push(comments.currentNode)
+    for (const anchor of anchors) anchor.parentNode?.removeChild(anchor)
+    for (const element of [copy, ...copy.querySelectorAll('*')]) {
+      for (const name of element.getAttributeNames()) if (name.startsWith('_ng')) element.removeAttribute(name)
+    }
+    return copy.outerHTML
+  })
 
 describe('a field addition', () => {
   test('draws nothing where the host gives nothing, so the form is unchanged', async () => {
