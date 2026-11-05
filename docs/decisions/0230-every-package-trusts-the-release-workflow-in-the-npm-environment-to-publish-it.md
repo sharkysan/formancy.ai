@@ -1,6 +1,6 @@
 # 0230 — Every package trusts the release workflow, in the `npm` environment, to publish it
 
-- **Status:** accepted
+- **Status:** accepted; not yet used by a release, 0.13.0 included
 - **Date:** 2026-11-01
 - **Deciders:** Daniel Bacher
 - **Verified by:** `apps/docs/src/npm-token-environment.test.ts`, *npm's trusted publisher*: the
@@ -60,6 +60,12 @@ before anything is built. It does not show that the exchange works: no release h
 through it yet. The next release's log is what will, without pnpm's `Skipped OIDC` warning, and so
 is the registry's record of each version's publisher, which for 0.12.0 is the maintainer's
 account, `sharkysan`, read with `npm view @formancy/core@0.12.0 _npmUser` on 2026-11-01.
+
+> *Later, 2026-11-05 — a note, not a change to this decision.* 0.13.0's release did not publish
+> through it. Its log carries pnpm's `Skipped OIDC … (status code 404)` warning for every package,
+> on Node 22.23.4 and pnpm 12.4.2, and each was published with the token. The registry names
+> `sharkysan` as 0.13.0's publisher. The cause has not been found, so the token stays
+> ([`RELEASING.md`](../../RELEASING.md)).
 
 ## Alternatives considered
 
