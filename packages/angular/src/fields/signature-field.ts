@@ -33,7 +33,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
         <svg
           #surface
           data-formancy-part="signature-surface"
-          style="touch-action: none"
+          [style.touch-action]="'none'"
           [attr.viewBox]="viewBox()"
           role="img"
           [attr.aria-label]="context.label"
@@ -110,7 +110,10 @@ export class FormancySignatureField extends FieldComponentBase {
    * the four themes until now, which is why drawing worked everywhere the demo
    * was looked at and nowhere else; this package ships no CSS, so what the
    * control needs in order to *work* belongs to the control. Appearance -- a
-   * height, a border, a cursor -- is still the theme's.
+   * height, a border, a cursor -- is still the theme's. A style binding, not a
+   * `style` written in the template: Angular sets that as an attribute, which a
+   * content security policy with no 'unsafe-inline' refuses, and the binding goes
+   * through the CSSOM, which no policy governs (C4).
    *
    * This method is the fallback for a browser that did not honour the property,
    * which is the case that cannot be tested from here. Where it is honoured the

@@ -248,7 +248,15 @@ Each gate exists for a reason that was paid for at least once:
   every part found by `data-formancy-part` and its box relative to the builder pane required to
   be the same in both. Written before the fix and watched failing against formancy.ai as
   deployed, where the Angular builder's translation table sat in the narrow column
-  ([0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md)).
+  ([0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md)). Since 2026-11-05
+  it serves the composed site under the headers formancy.ai is served with, for its own
+  origin, and fails on anything their policies refuse, heard from every page any of its
+  modules opens. It also opens every page the site holds and searches the documentation. A
+  second, report-only policy on the playground, with no inline style, must hear only Monaco.
+  It checks that the `_headers` the build wrote is what the same rules state for formancy.ai.
+  Run first under one strict policy in report-only mode, to measure what each section needed,
+  it found two of the product's styles written where such a policy refuses them, and each
+  planted fault failed it ([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

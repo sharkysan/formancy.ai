@@ -364,3 +364,37 @@ describe('the toolbar commands the host actually calls', () => {
     expect(seen).toEqual([])
   })
 })
+
+describe('under a content security policy with no inline styles', () => {
+  test('mounting writes no stylesheet into the document, which such a policy refuses', () => {
+    // TipTap's default writes ProseMirror's base rules into a `<style>` through
+    // `innerHTML`. A page whose `style-src` has no 'unsafe-inline' refuses the element,
+    // and one requiring Trusted Types refuses the string, so the rules silently never
+    // apply: measured on the playground under a strict policy on 5 November 2026.
+    const element = document.createElement('div')
+    document.body.append(element)
+    const handle = createRichTextEditor({ value: 'Two  spaces.', element })
+
+    const stylesheets = document.querySelectorAll('style').length
+    handle.destroy()
+    element.remove()
+
+    expect(stylesheets).toBe(0)
+  })
+
+  test('and the surface keeps its white space through the CSSOM, which no policy governs', () => {
+    // The one rule of those that matters to this schema. Without it the surface
+    // collapses runs of spaces as they are typed, and a trailing space is drawn
+    // nowhere until the next letter arrives.
+    const element = document.createElement('div')
+    document.body.append(element)
+    const handle = createRichTextEditor({ value: 'Two  spaces.', element })
+
+    const surface = handle.editor.view.dom
+    const whiteSpace = surface.style.whiteSpace
+    handle.destroy()
+    element.remove()
+
+    expect(['pre-wrap', 'break-spaces']).toContain(whiteSpace)
+  })
+})

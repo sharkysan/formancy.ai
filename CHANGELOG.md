@@ -10,6 +10,34 @@ later.
 
 ## Unreleased
 
+**The Angular signature field and the TipTap editor write no style a strict content security
+policy refuses.** Both broke the claim that formancy needs no configuration under one. The
+first time a browser here was served such a policy and watched, two styles were refused:
+- **`@formancy/angular`'s signature surface** wrote `touch-action: none` in its template, which
+  Angular sets as an attribute. Refused, the surface was `touch-action: auto`, and only the
+  fallback that cancels each touch from a listener kept the page from panning. It is now a
+  style binding, written through the CSSOM.
+- **`@formancy/tiptap`** let TipTap write ProseMirror's base rules into a `<style>` through
+  `innerHTML`, so the editing surface collapsed runs of spaces as they were typed. The editor
+  is now made with `injectCSS: false`, and it sets the white space ProseMirror needs on the
+  surface through the CSSOM when it mounts. A page that relied on TipTap's injected
+  `.ProseMirror` rules no longer gets them. A theme cannot override the white space, since an
+  inline style outranks a stylesheet
+  ([0234](docs/decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)).
+
+**formancy.ai is served under a content security policy for each of its sections.** The site's
+pages, the Angular starter, the playground and the documentation each admit their own files by
+path, never `'self'`, and only what each was measured to need. Each refuses every connection,
+form and frame, but the documentation's search index and the starter framed by the site.
+Trusted Types are required on the site's pages and the starter. Every response also carries
+`nosniff`, no referrer, no camera, microphone or location, and `no-transform`, so that
+Cloudflare injects nothing the policies would then refuse. `pnpm build:web` writes them into
+`apps/site/dist/_headers`. `pnpm test:browser` serves the site under the same rules, opens every
+page the site holds, and fails on anything a policy refuses. It also fails on any inline style
+in the playground not written by Monaco, so the renderers, builders and editor are watched
+needing no policy to admit one
+([0234](docs/decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)).
+
 **A host may add content of its own under a field.** `FormancyForm` in `@formancy/react` and
 `formancy-form` in `@formancy/angular` take `fieldAddition`, a function from a field's path to
 the host's content: a React node, or a template, which Angular gives the path and the field's
