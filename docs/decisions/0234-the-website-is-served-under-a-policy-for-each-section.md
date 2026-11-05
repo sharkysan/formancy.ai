@@ -19,7 +19,8 @@
     alone. An address that is not an origin is refused. Paths match as Cloudflare matches them,
     and a header two rules set is joined, as it joins it. `_headers` refuses what Cloudflare
     would read otherwise. The built pages' inline scripts and styles are hashed per section,
-    data blocks and external files not, and a page no section serves is refused. Failed with
+    each read to the end tag a browser ends it at, data blocks and external files not, and a
+    page no section serves is refused. Failed with
     `'self'` in the playground's scripts, `https:` in the site's pictures, `'unsafe-inline'` in
     the site's scripts, the site connecting to itself, no `form-action`, the starter without
     Trusted Types, the playground framable, a later rule replacing a header, a splat needing a

@@ -233,12 +233,14 @@ export function inlineOf(site) {
       )
     }
     const html = readFileSync(file, 'utf8')
-    for (const [, attributes, text] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+    // A tag ends its name at white space, `/` or `>`, and an end tag at its `>`, whatever is
+    // before it: `</script foo>` closes a script, and `<script-x>` is no script.
+    for (const [, attributes, text] of html.matchAll(/<script(?=[\s/>])([^>]*)>([\s\S]*?)<\/script(?=[\s/>])[^>]*>/gi)) {
       if (/\ssrc\s*=/i.test(attributes)) continue
       const type = (/\stype\s*=\s*["']?([^"'\s>]*)/i.exec(attributes)?.[1] ?? '').toLowerCase()
       if (RUN.has(type)) inline[owners[0].name].scripts.add(sha256(text))
     }
-    for (const [, text] of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)) inline[owners[0].name].styles.add(sha256(text))
+    for (const [, text] of html.matchAll(/<style(?=[\s/>])[^>]*>([\s\S]*?)<\/style(?=[\s/>])[^>]*>/gi)) inline[owners[0].name].styles.add(sha256(text))
   }
   return Object.fromEntries(Object.entries(inline).map(([name, { scripts, styles }]) => [name, { scripts: [...scripts].sort(), styles: [...styles].sort() }]))
 }

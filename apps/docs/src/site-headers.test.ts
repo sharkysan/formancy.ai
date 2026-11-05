@@ -206,6 +206,16 @@ describe('the inline scripts and styles of the built pages', () => {
     })
   })
 
+  test('end where the browser ends them, at an end tag with white space or attributes in it', () => {
+    // HTML closes a script at `</script` followed by white space, `/` or `>`, whatever
+    // follows up to the `>`. Read to a later end tag instead, the hash would be of text
+    // the browser never runs, and the script it does run refused. And `<script-x>` is
+    // an element of its own, not a script.
+    page('index.html', '<script>one()</script\n foo><style>a{}</style\t><script-x>no()</script-x><script>two()</script>')
+
+    expect(inlineOf(site ?? '').site).toEqual({ scripts: [sha('one()'), sha('two()')].sort(), styles: [sha('a{}')] })
+  })
+
   test('refuse a page that no section serves, since it would be served under no policy', () => {
     page('index.html', '')
     page('pricing/index.html', '')
