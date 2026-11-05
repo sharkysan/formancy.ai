@@ -10,6 +10,37 @@ later.
 
 ## Unreleased
 
+## 0.13.0 — 2026-11-05
+
+**A minor release; the spec version stays 5.** `0.13.0` reads and writes what `0.12.0` does, so a
+document moves between the two either way and nothing migrates. A host may now draw content of its
+own under a field, in either renderer; Formancy Data shows there the record a lookup points to.
+`@formancy/expressions` gains three features Formancy Report had been working around: a variable may
+be declared by member, a program says which functions it calls and where its arithmetic is not
+exact, and an expression can be asked to refuse the clock and randomness. Two styles the product
+wrote where a strict content security policy refuses them now go through the CSSOM: the Angular
+signature surface's `touch-action`, which such a policy left to a fallback, and the TipTap editor's
+white space, without which its surface collapsed runs of spaces. formancy.ai is now served under a
+content security policy for each of its sections, and the browser gate fails on anything they
+refuse. It is the first release that may publish through npm's trusted publishing (0230). It is a
+minor release because a host can see it, where a breaking change lands before 1.0
+([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by choosing it**: one on `^0.12.0` keeps
+`0.12.0` until it moves to `^0.13.0`, and a server run from `compose.published.yaml` runs the tag
+`FORMANCY_VERSION` pins.
+
+**What a host sees change.** Nothing a host has written stops working, so
+[`MIGRATIONS.md`](MIGRATIONS.md) has no section for this release.
+
+- **`FormancyForm` and `formancy-form` take `fieldAddition`**, drawn last in a field's wrapper as
+  `data-formancy-part="field-addition"`; a form without it is unchanged (0233).
+- **A variable may be declared by member** in `@formancy/expressions`, and one so declared is
+  refused when read whole, as `variable_read_whole` (0231).
+- **A compiled program carries `calls` and `inexact`**, and **`compile` and `check` take
+  `reproducible`** (0229, 0228).
+- **`@formancy/tiptap` writes no `<style>` into the page.** A page that relied on TipTap's
+  injected `.ProseMirror` rules no longer gets them. The surface's white space is an inline style,
+  which a theme cannot override (0234).
+
 **The Angular signature field and the TipTap editor write no style a strict content security
 policy refuses.** Both broke the claim that formancy needs no configuration under one. The
 first time a browser here was served such a policy and watched, two styles were refused:
@@ -101,6 +132,40 @@ target for such a token to lose direct publishing. No release has published this
 token stays as the fallback until one has. The next release's log, and the registry's record of
 who published each version, which for 0.12.0 is the maintainer's account, say whether it did
 ([0230](docs/decisions/0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)).
+
+### What 0.13.0 knowingly does not have
+
+Everything 0.12.0 listed still holds. Among it:
+
+- **A default left alone is stored as the person's answer**, indistinguishable from one chosen
+  (0197; hazard A10).
+- **Nothing records that the person looked at the review** before sending (0204).
+- **A rule's message is said for its code wherever the field carries it**, and nothing checks a
+  message against its rule (0198; hazard D20).
+- **React's bundle is over its 4 kB budget**, and only core's budget is a gate (0208).
+- **A version stored with a field keyed `__proto__` cannot be opened**, and nothing finds such
+  versions for an operator (0185).
+- **Under Material, a field's description and its count sit outside the form field** (0211).
+- **The images published before `v0.9.0` keep only BuildKit's provenance** (0209).
+- **A computed field whose options come from a source is said by its stored value** (0216).
+- **A listing asked for no page is every submission** (0222; arc42 §11.2).
+- **A summary read while responses arrive counts a list that moved** (0224).
+- **Nothing is announced when a row is removed** (0219).
+- **A version stored before 0.12.0 is not analysed again until it is republished**, and nothing
+  searches the stored documents for a pattern that backtracks (0226).
+- **A tag picker's list has no row arrowed to**: Enter adds its first match, so a later match is
+  chosen by typing until it is first (0227).
+
+New, or found while making this release:
+
+- **A program does not record that it was compiled reproducibly**, so a caller handed one cannot
+  ask (0228).
+- **`calls` and `inexact` are read from the checked expression**, so a value typed `dyn` is named
+  in neither (0229).
+- **A document's groups and rows are declared as before**, their members `dyn`, so a rule reading
+  one is checked as it was (0231).
+- **That a field's addition takes a row of its own, and none when empty, is held by nothing** but
+  the rules themselves, since jsdom sees no CSS and the browser gate draws no addition (0233).
 
 ## 0.12.0 — 2026-10-31
 

@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.12.0`.** Everything below is true of that
+**This document describes version `0.13.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.12.0`, published to npm under the `@formancy` scope |
+| Package version | `0.13.0`, published to npm under the `@formancy` scope |
 | Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open: a construct needing one opens version `"6"`. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 to 0.12.0 read and write version 5 as 0.8.0 does, so the five read each other's documents |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 to 0.13.0 read and write version 5 as 0.8.0 does, so the six read each other's documents |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. From 0.9.0 the release also attests the image with GitHub's build provenance, verified with `gh attestation verify`; every earlier image carries BuildKit's provenance inside its index and none of GitHub's ([0209](../decisions/0209-the-image-carries-githubs-build-provenance.md)). There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -260,8 +260,22 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.12.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0` to `0.12.0` fix, so that one still running them knows what it is upgrading away from.
+manufacturer characterising `0.13.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` to `0.13.0` fix, so that one still running them knows what it is upgrading away from.
+
+**Under a content security policy whose `style-src` has no `'unsafe-inline'`, `0.4.0` to `0.12.0`
+draw the Angular signature surface without its `touch-action: none`, and `0.2.0` to `0.12.0` let
+the TipTap editor collapse runs of spaces.** The Angular surface wrote the property in its
+template, which Angular sets as an attribute that such a policy refuses; the surface is then
+`touch-action: auto`, and only the fallback that cancels each touch from a listener stops the
+page panning ([0101](../decisions/0101-a-control-is-operable-without-a-theme.md)). `@formancy/tiptap` let
+TipTap write ProseMirror's base rules into a `<style>` through `innerHTML`, which such a policy
+refuses, and Trusted Types refuse first. Both were found on 2026-11-05, the first time a browser
+here was served such a policy and watched; the releases before were not run under one. A page
+whose policy admits inline styles, or that sets none, is not affected. Fixed in `0.13.0`: both are
+set through the CSSOM, which no policy governs. Hazard C4 in
+[`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md).
 
 **Every release from `0.2.0` through `0.11.0` publishes a `pattern` that backtracks only with
 Unicode semantics.** The engine runs a pattern with the `u` flag, and the analysis that refuses one
@@ -607,7 +621,21 @@ engine since `0.7.0` refuses it, so its public read answers `200` and every subm
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
-**Found while making `0.12.0`, and not changed by it:**
+**Found while making `0.13.0`, and not changed by it:**
+
+- **A program does not record that it was compiled reproducibly**, so a caller handed one cannot
+  ask whether it was ([0228](../decisions/0228-an-expression-can-be-asked-to-be-reproducible.md)).
+- **`calls` and `inexact` are read from the checked expression**, so a value typed `dyn` is named
+  in neither, whatever it holds when the expression runs
+  ([0229](../decisions/0229-a-program-says-what-it-calls-and-where-it-is-not-exact.md)).
+- **A document's groups and repeater rows are declared as before**, their members `dyn`, so a rule
+  reading one is checked as it was; declaring them by member would refuse documents valid today
+  ([0231](../decisions/0231-a-variable-may-be-declared-by-member.md)).
+- **That a field's addition takes a row of its own, and none when empty, is held by nothing** but
+  the rules themselves: jsdom sees no CSS and the browser gate draws no addition
+  ([0233](../decisions/0233-a-host-may-add-content-under-a-field.md)).
+
+**Found while making `0.12.0`, and not changed by it or by `0.13.0`:**
 
 - **A version stored before `0.12.0` is not analysed again until it is republished**, and nothing
   searches the stored documents for a pattern that backtracks; republishing an unchanged document
@@ -616,7 +644,7 @@ stored documents for the key
   chosen by typing until it is first
   ([0227](../decisions/0227-the-row-arrowed-to-is-scrolled-into-view.md)).
 
-**Found while making `0.11.0`, and not changed by it or by `0.12.0`:**
+**Found while making `0.11.0`, and not changed by it or by a release since:**
 
 - **A listing asked for no page is every submission**, read into the server's memory to send it,
   so a client written before paging keeps working; only a signed-in caller with `submission.read`
@@ -723,7 +751,27 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.11.0
+### Characterised by this document, and new since 0.12.0
+
+`0.13.0` reads and writes `specVersion: "5"`, as `0.12.0` does, and adds no package, table,
+setting or route, and no third-party dependency. What a *host* sees is below; nothing a host has
+written must move, so [`MIGRATIONS.md`](../../MIGRATIONS.md) has no section for it.
+
+- **`FormancyForm` in `@formancy/react` and `formancy-form` in `@formancy/angular` take
+  `fieldAddition`**, the host's own content, drawn last in a field's wrapper as
+  `data-formancy-part="field-addition"`; `@formancy/angular` exports `FormancyFieldAddition`,
+  `FormancyFieldAdditionContext`, `FORMANCY_FIELD_ADDITION` and `injectFieldAddition` (0233).
+- **`@formancy/expressions` takes a variable declared by member**, an object of member
+  declarations, and refuses one so declared read whole, as `variable_read_whole`;
+  `MemberDeclarations` is exported (0231).
+- **A `Program` carries `calls` and `inexact`**, each function it calls and each place it computes
+  through a double or divides integers; `FunctionCall` and `InexactStep` are exported (0229).
+- **`compile` and `check` take `reproducible: true`**, which refuses `now()`, `today()` and
+  `random()` as `function_not_allowed` (0228).
+- **`@formancy/tiptap` writes no `<style>`**, and sets its surface's white space through the CSSOM
+  when it mounts; the Angular signature surface binds its `touch-action` (0234).
+
+### Characterised by an earlier version of this document, and new in 0.12.0
 
 `0.12.0` reads and writes `specVersion: "5"`, as `0.11.0` does, and adds no table, setting or
 route, and no third-party dependency of anything a form, a builder or the server runs. **One
