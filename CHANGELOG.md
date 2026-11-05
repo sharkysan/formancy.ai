@@ -14,8 +14,9 @@ later.
 policy refuses.** Both broke the claim that formancy needs no configuration under one. The
 first time a browser here was served such a policy and watched, two styles were refused:
 - **`@formancy/angular`'s signature surface** wrote `touch-action: none` in its template, which
-  Angular sets as an attribute, so the surface panned under a finger again. It is now a style
-  binding, written through the CSSOM.
+  Angular sets as an attribute. Refused, the surface was `touch-action: auto`, and only the
+  fallback that cancels each touch from a listener kept the page from panning. It is now a
+  style binding, written through the CSSOM.
 - **`@formancy/tiptap`** let TipTap write ProseMirror's base rules into a `<style>` through
   `innerHTML`, so the editing surface collapsed runs of spaces as they were typed. The editor
   is now made with `injectCSS: false`, and it sets the white space ProseMirror needs on the

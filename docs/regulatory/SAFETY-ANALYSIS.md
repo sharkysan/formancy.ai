@@ -1241,8 +1241,10 @@ no outbound request the library makes on its own.
 was served such a policy and watched
 ([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)). The Angular
 signature surface wrote `touch-action: none` as a `style` in its template, which Angular sets as
-an attribute and a `style-src` with no `'unsafe-inline'` refuses: the surface then pans under a
-finger, which is what [0101](../decisions/0101-a-control-is-operable-without-a-theme.md) fixed.
+an attribute and a `style-src` with no `'unsafe-inline'` refuses. The surface is then
+`touch-action: auto`, and only the fallback
+[0101](../decisions/0101-a-control-is-operable-without-a-theme.md) kept for a browser that ignores
+the property, which cancels each touch from a listener, stops the page panning.
 And `@formancy/tiptap` let TipTap write ProseMirror's base rules into a `<style>` through
 `innerHTML`, which the same policy refuses, and Trusted Types refuse first: the editing surface
 then collapses runs of spaces as they are typed. Both now go through the CSSOM.

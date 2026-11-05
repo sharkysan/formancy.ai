@@ -71,7 +71,8 @@ And two things in the product broke C4, both in the playground's own bundle:
 
 - **The Angular signature surface.** Its `style="touch-action: none"` was written in the
   template, which Angular sets as an attribute, so a policy with no `'unsafe-inline'` refuses
-  it. A finger then pans the page rather than signing, the failure 0101 fixed.
+  it. The surface is then `touch-action: auto`, and only the fallback 0101 kept, which cancels
+  each touch from a listener, stops the page panning.
 - **`@formancy/tiptap`.** TipTap's default writes ProseMirror's base rules into a `<style>`
   through `innerHTML`, which such a policy refuses, and Trusted Types refuse before it. The
   surface then collapses runs of spaces as they are typed.
