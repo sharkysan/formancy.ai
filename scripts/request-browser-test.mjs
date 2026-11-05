@@ -41,6 +41,13 @@
  */
 
 /**
+ * What the playground's policy is asked to refuse: a picture and a connection on another
+ * host, as a document pasted into it could ask for. `policy-browser-test.mjs` expects a
+ * refusal for each and none for anything else.
+ */
+export const PROBES = Object.freeze({ picture: 'https://pictures.invalid/option.png', connection: 'https://answers.invalid/' })
+
+/**
  * What a page may keep in the visitor's browser, and nothing else (0232): the documentation's
  * choice of a light or dark theme, which its theme keeps under this key. The privacy notice
  * says so, and names nothing more, so a page that set a cookie, kept an answer in storage or
@@ -405,29 +412,35 @@ export async function checkNoForeignRequests(browser, origin, check) {
          * without it, both would, and be aborted and named above.
          */
         const before = new Set(foreign)
-        const refused = await page.evaluate(async () => {
+        const refused = await page.evaluate(async (probes) => {
+          // By the page's own policy, as its `meta` states it, which holds a copy of the
+          // playground served anywhere. formancy.ai's header refuses both too (0234), so a
+          // refusal by either would pass with the page's own taken out.
+          const own = document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute('content')
           const violated = new Set()
-          document.addEventListener('securitypolicyviolation', (event) => violated.add(event.effectiveDirective))
+          document.addEventListener('securitypolicyviolation', (event) => {
+            if (event.originalPolicy === own) violated.add(event.effectiveDirective)
+          })
           const picture = new Image()
           const settled = new Promise((done) => {
             picture.onload = done
             picture.onerror = done
           })
-          picture.src = 'https://pictures.invalid/option.png'
+          picture.src = probes.picture
           document.body.append(picture)
           await settled
           picture.remove()
-          await fetch('https://answers.invalid/').catch(() => undefined)
+          await fetch(probes.connection).catch(() => undefined)
           await new Promise((done) => setTimeout(done, 100))
           return [...violated].sort()
-        })
+        }, PROBES)
         const leaked = [...foreign].filter((origin) => !before.has(origin))
         check(
-          'and its policy refuses a picture or a connection on another host before it is made',
+          'and its own policy refuses a picture or a connection on another host before it is made',
           leaked.length === 0 && refused.join(' ') === 'connect-src img-src'
             ? null
             : `${leaked.length === 0 ? 'nothing left the page' : `${leaked.join(', ')} reached the network`}, ` +
-                `and the policy reported ${refused.join(', ') || 'nothing'}`,
+                `and its own policy reported ${refused.join(', ') || 'nothing'}`,
         )
       }
     } finally {

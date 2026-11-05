@@ -106,6 +106,13 @@ would silently lose part of an answer the moment somebody used it.
 Nothing calls TipTap's `getHTML`. What crosses the boundary between the editor
 and the form is the stored grammar, in both directions.
 
+It also runs under a strict content security policy with no configuration. TipTap's
+default writes ProseMirror's base rules into a `<style>` element, which a `style-src`
+without `'unsafe-inline'` refuses, so `@formancy/tiptap` turns that off. It sets the one
+rule this schema needs, that the surface keeps its white space, on the surface itself,
+where no policy governs it. The cost is that a theme cannot override that rule: an inline
+style outranks a stylesheet.
+
 And the editor is still **untrusted**, because it runs in the browser: every link
 is re-checked against the same scheme list the parser uses on the way out, and
 the server re-parses the stored string regardless of what a client sends. A

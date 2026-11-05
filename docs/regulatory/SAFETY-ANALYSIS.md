@@ -1237,13 +1237,30 @@ than loaded from a `blob:` URL, so it needs no `img-src` at all
 ([0130](../decisions/0130-each-file-is-its-own-upload.md)); and there is no worker, no font and
 no outbound request the library makes on its own.
 
+**Two styles were not bindings until 2026-11-05**, both found the first time a browser here
+was served such a policy and watched
+([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)). The Angular
+signature surface wrote `touch-action: none` as a `style` in its template, which Angular sets as
+an attribute and a `style-src` with no `'unsafe-inline'` refuses: the surface then pans under a
+finger, which is what [0101](../decisions/0101-a-control-is-operable-without-a-theme.md) fixed.
+And `@formancy/tiptap` let TipTap write ProseMirror's base rules into a `<style>` through
+`innerHTML`, which the same policy refuses, and Trusted Types refuse first: the editing surface
+then collapses runs of spaces as they are typed. Both now go through the CSSOM.
+`packages/angular/src/new-types.test.ts` holds that the surface's style is not written as an
+attribute, and `packages/tiptap/src/rich-text-editor.test.ts` that the editor writes no
+`<style>` and keeps its white space; each failed on the code before.
+
 *Residual:* renderers emit the application's own markup. A consuming
-application that injects unsanitised HTML into a form is outside this boundary. The
-directives above are reasoned from what the code emits and asserted where a test can see
-it; **no browser in this repository has been served a strict CSP and observed**, because the
-one policy any page here sets is the playground's `img-src` and `connect-src` (C6), and none
-sets `style-src` or `script-src` ([§11](../architecture/11-risks-and-debt.md)).
-A manufacturer shipping under a policy should verify it against their own page.
+application that injects unsanitised HTML into a form is outside this boundary. Since
+2026-11-05 `pnpm test:browser` serves formancy.ai under its own policies and fails on any
+refusal. Neither renderer, builder nor editor in the playground writes an inline style: a
+second, report-only policy that admits none hears only Monaco. No section's policy has
+`'unsafe-eval'`. The React renderer runs under Trusted Types on the site's pages, and the
+Angular one under them in the starter. What that observes is Chromium, on the pages the gate
+opens, in the states it drives them to. The playground's own policy admits Monaco's inline
+styles, and neither it nor the documentation requires Trusted Types
+([§11](../architecture/11-risks-and-debt.md)). A manufacturer shipping under a policy should
+verify it against their own page.
 
 ### C5. A part-filled form is read or altered by a stranger
 
@@ -1313,7 +1330,11 @@ opens one of each kind of page the site serves with every request to another ori
 and named, and asks Chromium, from inside the playground, to fetch a picture and open a
 connection on another host: watched failing on `main` against Google Fonts and jsDelivr, and
 with the playground's policy taken out of the built page
-([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)).
+([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)). Since
+2026-11-05 formancy.ai also serves the playground a full policy by header, which admits
+pictures from the playground's own directory, `data:` and `blob:`, and refuses every
+connection; the gate fails on any refusal but those two
+([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)).
 
 *Residual:* nothing stops an author choosing a third-party address, and nothing tells
 the person filling the form in that one was chosen. A deployment that must not disclose

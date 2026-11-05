@@ -127,6 +127,13 @@ export function createRichTextEditor(options: RichTextEditorOptions): RichTextEd
   const editor = new Editor({
     ...(options.element === undefined ? {} : { element: options.element }),
     extensions: RICH_TEXT_EXTENSIONS,
+    // TipTap's default writes ProseMirror's base rules into a `<style>` through
+    // `innerHTML`, which a page with no 'unsafe-inline' in `style-src` refuses, and one
+    // requiring Trusted Types refuses before that. The rules then never apply and
+    // nothing says so. What this schema needs of them is set on the surface instead,
+    // once there is one: a host with no document never mounts the editor.
+    injectCSS: false,
+    onMount: ({ editor: mounted }) => keepWhiteSpace(mounted.view.dom),
     editable: options.editable ?? true,
     content: contentOf(options.value),
     editorProps: {
@@ -179,6 +186,25 @@ export function createRichTextEditor(options: RichTextEditorOptions): RichTextEd
     },
     destroy: () => editor.destroy(),
   }
+}
+
+/**
+ * What ProseMirror needs of the surface's CSS, set through the CSSOM.
+ *
+ * ProseMirror draws white space as the document holds it only where the surface
+ * preserves it: without this a run of spaces collapses as it is typed, and a trailing
+ * space is drawn nowhere. The CSSOM, because no content security policy governs it,
+ * the reason `@formancy/angular` sets its host's display the same way (0079). The
+ * rest of TipTap's base rules are for nodes and plugins this schema does not have.
+ * `break-spaces` after `pre-wrap`, as TipTap writes them, so a browser that does not
+ * know the second keeps the first.
+ */
+function keepWhiteSpace(surface: HTMLElement): void {
+  surface.style.position = 'relative'
+  surface.style.overflowWrap = 'break-word'
+  surface.style.whiteSpace = 'pre-wrap'
+  surface.style.whiteSpace = 'break-spaces'
+  surface.style.fontVariantLigatures = 'none'
 }
 
 /**

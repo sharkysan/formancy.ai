@@ -1,6 +1,6 @@
 # 0154 — The website makes no request to any other site, and a browser gate says so
 
-- **Status:** accepted
+- **Status:** accepted; extended by [0234](0234-the-website-is-served-under-a-policy-for-each-section.md)
 - **Date:** 2026-10-09
 - **Extends:** [0142](0142-the-angular-starter-is-dressed-in-materials-tokens.md), which had the
   starter load Roboto itself for this reason and left the rest of the site as it was;
@@ -174,3 +174,9 @@ repository's CSS, where nothing checks them against the files they describe.
 
 **A full content security policy on the playground.** Deferred, as above: it needs the inline
 styles moved or hashed first, and that is a change to the renderers, not to a page.
+
+> *Later, 2026-11-05 — extended by [0234](0234-the-website-is-served-under-a-policy-for-each-section.md).*
+> Every section of the site is now served under a full policy by header. Measured, the inline
+> styles were Monaco's, which the playground's policy admits, and two of the product's, which
+> it now writes through the CSSOM instead. The `meta` policy stays, for a copy of the
+> playground served elsewhere.

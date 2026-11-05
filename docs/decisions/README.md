@@ -260,7 +260,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0151](0151-a-group-placed-whole-is-drawn-as-its-fields.md) | A group placed whole is drawn as its fields | accepted |
 | [0152](0152-a-merged-branch-is-deleted.md) | A merged branch is deleted | accepted |
 | [0153](0153-a-file-is-received-by-one-request-at-a-time.md) | A file is received by one request at a time | accepted |
-| [0154](0154-the-website-makes-no-request-to-any-other-site.md) | The website makes no request to any other site, and a browser gate says so | accepted |
+| [0154](0154-the-website-makes-no-request-to-any-other-site.md) | The website makes no request to any other site, and a browser gate says so | accepted; extended by 0234 |
 | [0155](0155-the-object-store-is-timed-on-its-silence.md) | The object store is timed on its silence, not on the whole request | accepted |
 | [0156](0156-a-proxy-is-trusted-by-its-address.md) | A proxy is trusted by its address, and by nothing else | accepted |
 | [0157](0157-a-models-turn-can-be-stopped.md) | A model's turn can be stopped, and an unreachable model is not a document that failed | accepted; the playground’s stand-in dialog superseded by 0160; a pane going away stopping a run the host holds superseded in part by 0163 |
@@ -334,3 +334,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0231](0231-a-variable-may-be-declared-by-member.md) | A variable may be declared by member, and is then read one member at a time | accepted |
 | [0232](0232-the-website-keeps-nothing-in-a-browser-the-privacy-notice-does-not-name.md) | The website keeps nothing in a browser the privacy notice does not name | accepted |
 | [0233](0233-a-host-may-add-content-under-a-field.md) | A host may add content of its own under a field, inside the field's wrapper | accepted |
+| [0234](0234-the-website-is-served-under-a-policy-for-each-section.md) | The website is served under a content security policy for each of its sections, which the build writes and the browser gate serves it under | accepted |

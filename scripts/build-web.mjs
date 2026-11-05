@@ -22,9 +22,10 @@
 // of being wrong is a silently broken deployment and the check is one regex.
 
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { SITE_ORIGIN, headersFile, headersFor, inlineOf } from './site-headers.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const siteDist = join(root, 'apps', 'site', 'dist')
@@ -156,7 +157,6 @@ if (stray.length > 0) {
  * Astro skips its sitemap without a word when `site` is missing from its
  * config, so an absent one fails the build too.
  */
-const ORIGIN = 'https://formancy.ai'
 const locs = (file) => [...readFileSync(file, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
 
 const docsIndex = join(siteDist, 'docs', 'sitemap-index.xml')
@@ -164,8 +164,12 @@ if (!existsSync(docsIndex)) {
   throw new Error(`The documentation built no sitemap at ${docsIndex}. Astro skips it silently when ` + `\`site\` is not set in apps/docs/astro.config.mjs.`)
 }
 
-const expectedPages = [`${ORIGIN}/`, ...NESTED.filter((app) => app.listed).map((app) => `${ORIGIN}${app.base}`), ...PAGES.map((page) => `${ORIGIN}/${page}/`)]
-const expectedIndex = [`${ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex)]
+const expectedPages = [
+  `${SITE_ORIGIN}/`,
+  ...NESTED.filter((app) => app.listed).map((app) => `${SITE_ORIGIN}${app.base}`),
+  ...PAGES.map((page) => `${SITE_ORIGIN}/${page}/`),
+]
+const expectedIndex = [`${SITE_ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex)]
 
 for (const [file, expected] of [
   ['sitemap-pages.xml', expectedPages],
@@ -180,4 +184,14 @@ for (const [file, expected] of [
   }
 }
 
-console.log(`formancy.ai built: apps/site/dist, with ${NESTED.map((app) => app.base).join(' and ')}, ` + `and a sitemap that matches them`)
+/**
+ * The headers formancy.ai is served with (0234), where Cloudflare's static assets read
+ * them: `_headers`, at the root of the directory it serves. Written last, from the pages
+ * as they were built, since the documentation's inline scripts are admitted by their
+ * hashes; `inlineOf` refuses a page that no section of the site serves.
+ */
+writeFileSync(join(siteDist, '_headers'), headersFile(headersFor(SITE_ORIGIN, inlineOf(siteDist))))
+
+console.log(
+  `formancy.ai built: apps/site/dist, with ${NESTED.map((app) => app.base).join(' and ')}, ` + `a sitemap that matches them, and the headers it is served with`,
+)

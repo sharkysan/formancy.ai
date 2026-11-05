@@ -43,6 +43,7 @@ import { checkNoForeignRequests } from './request-browser-test.mjs'
 import { checkSuggestionsPlacement } from './suggestions-browser-test.mjs'
 import { checkActiveOptionInView } from './typeahead-browser-test.mjs'
 import { checkBuildersLayAlike } from './builders-layout-browser-test.mjs'
+import { REFUSALS, checkServedUnderItsPolicies, servedUnder } from './policy-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -63,7 +64,8 @@ const TYPES = {
 }
 
 /**
- * The built site over HTTP, on a port the operating system picks.
+ * The built site over HTTP, on a port the operating system picks, with the headers
+ * formancy.ai serves it with for that origin (0234).
  *
  * Hand-rolled rather than `vite preview`, for the reason `install-test.mjs`
  * builds its fixture out of real files: the thing being checked is what a host
@@ -71,8 +73,18 @@ const TYPES = {
  * lines and no dependency.
  */
 function serve(directory) {
+  let served
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost')
+    if (request.method === 'POST' && url.pathname === REFUSALS) {
+      let body = ''
+      request.on('data', (chunk) => (body += chunk))
+      request.on('end', () => {
+        served.heard(body)
+        response.writeHead(204).end()
+      })
+      return
+    }
     // `normalize` then a prefix check: a path with `..` in it must not escape the
     // directory even on a server only this script talks to.
     let file = join(directory, normalize(decodeURIComponent(url.pathname)))
@@ -85,12 +97,16 @@ function serve(directory) {
       response.writeHead(404, { 'content-type': 'text/plain' }).end(`no ${url.pathname}`)
       return
     }
-    response.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' })
+    response.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', ...served.headers(url.pathname) })
     createReadStream(file).pipe(response)
   })
 
   return new Promise((ready) => {
-    server.listen(0, '127.0.0.1', () => ready({ server, port: server.address().port }))
+    server.listen(0, '127.0.0.1', () => {
+      const port = server.address().port
+      served = servedUnder(directory, `http://127.0.0.1:${String(port)}`)
+      ready({ server, port, served })
+    })
   })
 }
 
@@ -122,7 +138,7 @@ async function run() {
     throw new Error('playwright is not installed — run `pnpm install`')
   }
 
-  const { server, port } = await serve(site)
+  const { server, port, served } = await serve(site)
   const origin = `http://127.0.0.1:${String(port)}`
   const url = `${origin}/playground/`
 
@@ -979,6 +995,8 @@ async function run() {
     }
 
     await checkMaterialDateButton(browser, origin, check)
+    // Last, so it has heard what every module above made the browser refuse.
+    await checkServedUnderItsPolicies(browser, origin, site, served, check)
   } finally {
     await browser.close()
     server.close()

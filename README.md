@@ -513,6 +513,19 @@ pnpm build:web                          # build command
 cd apps/site && npx wrangler deploy --assets=dist   --name=formancy-ai --compatibility-date=2026-09-18
 ```
 
+`pnpm build:web` also writes `apps/site/dist/_headers`, which Cloudflare's static assets
+read: a content security policy for each section of the site, each admitting that
+section's own files and what it was measured to need, and on every response `nosniff`,
+no referrer, no camera, microphone or location, and `no-transform`
+([0234](./docs/decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)).
+Another host has to send the same headers its own way. `pnpm test:browser` serves the site
+under them and fails on anything they refuse. Nothing reads what the live site sends, so
+read a response after a deploy:
+
+```bash
+curl -sI https://formancy.ai/playground/ | grep -i -e content-security -e nosniff -e no-transform
+```
+
 The playground is the one-screen demo: schema or builder on the left, the live
 form in the middle, the engine's actual state on the right. Under **Build**,
 *Fields*, *Arrangement*, *Rules* and *Translations* are views of one document —

@@ -2,7 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core'
 import { computeAccessibleName } from 'dom-accessibility-api'
 import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
-import { afterEach, beforeAll, describe, expect, test } from 'vitest'
+import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
@@ -759,6 +759,27 @@ describe('the signature field, which must behave as the React one does', () => {
     const surface = screen.getByRole('img', { name: /sign here/i })
 
     expect(surface.style.touchAction, 'the surface lets the browser treat a touch drag as a pan').toBe('none')
+  })
+
+  test('and declares it through the CSSOM, which a page with no inline styles still lets through', async () => {
+    /*
+     * A `style` written in the template is an attribute, which Angular sets with
+     * `setAttribute`, and a content security policy whose `style-src` has no
+     * 'unsafe-inline' refuses it: the surface is `auto` again, on exactly the pages the
+     * safety analysis says need no configuration (C4). Seen in Chromium on 5 November
+     * 2026, the playground served under such a policy. A binding is written with
+     * `style.setProperty`, which no policy governs. Both read back the same through
+     * `style`, so the case above cannot tell them apart.
+     */
+    const setAttribute = vi.spyOn(Element.prototype, 'setAttribute')
+    try {
+      await renderForm(engineFor(signing()))
+      const written = setAttribute.mock.calls.filter(([name]) => name.toLowerCase() === 'style')
+
+      expect(written, 'a style written as an attribute').toEqual([])
+    } finally {
+      setAttribute.mockRestore()
+    }
   })
 
   test('and prevents the pan itself, for a browser that did not honour that', async () => {
