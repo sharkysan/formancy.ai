@@ -126,14 +126,19 @@ logged this and published with the token:
 request with body message: Unknown error (status code 404)
 ```
 
-No release has published through trusted publishing yet, so the token stays, and the step
-that checks it still fails a release without it, before anything is built. The next release
-shows whether the exchange works: its log without that warning, and the registry's record of
-who published each version, which for 0.12.0 is the maintainer's account:
+**0.13.0, the first release after the publishers were set up, did not publish through it
+either.** Its run on 2026-11-05 logged the same warning for every package, on Node 22.23.4 and
+pnpm 12.4.2, and published each with the token. The registry records the maintainer's account,
+`sharkysan`, as 0.13.0's publisher, as it does for 0.12.0:
 
 ```bash
-npm view @formancy/core@0.12.0 _npmUser
+npm view @formancy/core@0.13.0 _npmUser
 ```
+
+Why the exchange answers 404 has not been found. So the token stays, and the step that checks
+it still fails a release without it, before anything is built. A release shows that the
+exchange works when its log has no such warning and the registry names no person as the
+publisher.
 
 Once a release has, the token can go, and with it that step and the environment's secret; a
 package the registry has not seen then needs one for its first release (below). It has a
