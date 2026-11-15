@@ -1295,3 +1295,43 @@ describe('republishing a document this form has already had', () => {
     expect(outcome).toMatchObject({ ok: true, version: 1 })
   })
 })
+
+describe('a date or time compared with text not written as its answers are', () => {
+  /*
+   * Published WITH A WARNING, as a rule reading a path no field provides is (0097, 0236).
+   * The condition editor wrote such a rule for every date and time through 0.13.0 (0235),
+   * so documents holding one are in use, and refusing it would make them invalid tomorrow.
+   * The warning is what tells their owner the rule holds at the wrong moment.
+   */
+  const departing = (cel: string): FormSchema =>
+    ({
+      specVersion: '5',
+      id: 'departing',
+      title: 'Departing',
+      model: {
+        fields: [
+          { key: 'departs', type: 'datetime', label: 'Departs' },
+          { key: 'note', type: 'text', label: 'Note' },
+        ],
+      },
+      logic: { rules: [{ target: 'note', kind: 'visible', cel }] },
+    }) as unknown as FormSchema
+
+  test('publishes, and says which rule, which field and what to write', async () => {
+    const outcome = await publishForm(deps, { path: 'departing', schema: departing('departs > "2026-10-08T10:30"') })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.warnings).toHaveLength(1)
+    expect(outcome.warnings[0]).toContain('"departs"')
+    expect(outcome.warnings[0]).toContain('"2026-10-08T10:30"')
+    // A warning that did not persist the version would be a refusal with a friendlier name.
+    expect((await resolveForm(deps, 'departing'))?.version).toBe(1)
+  })
+
+  test('and says nothing about an instant written as the answers are', async () => {
+    const outcome = await publishForm(deps, { path: 'departing-fine', schema: departing('departs > "2026-10-08T08:30:00Z"') })
+
+    expect(outcome).toMatchObject({ ok: true, warnings: [] })
+  })
+})

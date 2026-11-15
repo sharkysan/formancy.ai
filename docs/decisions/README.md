@@ -203,7 +203,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0094](0094-the-second-builder-reaches-parity.md) | The second builder reaches parity, and the drop geometry is shared rather than copied | accepted |
 | [0095](0095-one-schema-two-renderers.md) | One schema, two renderers, on one page — and an engine may be told its id namespace | accepted |
 | [0096](0096-two-builders-one-session.md) | Two builders over one session, and a package that could not be imported | accepted |
-| [0097](0097-a-publish-may-warn.md) | A publish may warn, because refusing would break the reader contract | accepted |
+| [0097](0097-a-publish-may-warn.md) | A publish may warn, because refusing would break the reader contract | accepted; extended by 0236 |
 | [0098](0098-the-cla-is-checked-in-the-repository.md) | The CLA is checked in the repository, not by a bot with a token | accepted |
 | [0099](0099-coverage-is-reported-per-package-and-never-gated.md) | Coverage is reported per package, and gated nowhere | accepted |
 | [0100](0100-a-pane-boundary-is-dragged.md) | A pane boundary is dragged, and the row's template is a custom property | accepted |
@@ -335,4 +335,5 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0232](0232-the-website-keeps-nothing-in-a-browser-the-privacy-notice-does-not-name.md) | The website keeps nothing in a browser the privacy notice does not name | accepted |
 | [0233](0233-a-host-may-add-content-under-a-field.md) | A host may add content of its own under a field, inside the field's wrapper | accepted |
 | [0234](0234-the-website-is-served-under-a-policy-for-each-section.md) | The website is served under a content security policy for each of its sections, which the build writes and the browser gate serves it under | accepted |
-| [0235](0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md) | A date and time in a condition is the instant its author chose, written as every answer is | accepted |
+| [0235](0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md) | A date and time in a condition is the instant its author chose, written as every answer is | accepted; extended by 0236 |
+| [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md) | A date or time compared with text not written as its answers are is named at publish, not refused | accepted |

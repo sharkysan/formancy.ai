@@ -9,5 +9,7 @@ export { expressionProblems, MIXED_NUMERIC_LITERAL_EXAMPLE } from './expression-
 export type { ExpressionProblem } from './expression-problems.js'
 export { runScenarios } from './scenarios.js'
 export type { FailureAbout, Scenario, ScenarioFailure, ScenarioOptions, ScenarioResult } from './scenarios.js'
+export { misshapenTemporalLiterals } from './temporal-literals.js'
+export type { MisshapenTemporalLiteral } from './temporal-literals.js'
 export { unknownReferences } from './unknown-paths.js'
 export type { UnknownReference } from './unknown-paths.js'

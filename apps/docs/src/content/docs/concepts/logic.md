@@ -352,6 +352,9 @@ with a date and time you write yourself has the same rule to follow: write the i
 in UTC, with seconds and `Z`. An older rule whose literal has neither is one to remove
 and add again
 ([0235](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
+A publish names each such rule in a warning, and any rule comparing a date or a time
+with text in another shape
+([0236](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
 
 ## Nothing ambient
 

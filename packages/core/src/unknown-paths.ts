@@ -59,12 +59,24 @@ export interface UnknownReference {
  * `items[].qty` and has to be rewritten before it can be looked up. `index` is a
  * number and names nothing.
  */
-const ROW_ITEM = 'item'
+export const ROW_ITEM = 'item'
 const ROW_INDEX = 'index'
 
 /** `items[0].qty` and `items[].qty` are the same field; the model writes the second. */
-function withoutRowNumbers(path: string): string {
+export function withoutRowNumbers(path: string): string {
   return path.replaceAll(/\[\d+\]/g, '[]')
+}
+
+/**
+ * The repeater a row rule belongs to, so `item.x` can be resolved: `items[]` for a rule on
+ * `items[].total`, nothing for a rule outside a row.
+ *
+ * Taken from the TARGET rather than guessed: a rule on `items[].total` is evaluated per row
+ * of `items`, and that is the only repeater its `item` can mean. Shared with the check of a
+ * temporal literal (0236), so the two cannot resolve one row read differently.
+ */
+export function rowScopeOf(target: string): string | undefined {
+  return target.includes('[]') ? `${target.slice(0, target.indexOf('[]'))}[]` : undefined
 }
 
 export function unknownReferences(schema: FormSchema): UnknownReference[] {
@@ -87,14 +99,7 @@ export function unknownReferences(schema: FormSchema): UnknownReference[] {
     // different words, helps nobody.
     if (!parsed.ok) continue
 
-    /*
-     * The repeater a row rule belongs to, so `item.x` can be resolved.
-     *
-     * Taken from the TARGET rather than guessed: a rule on `items[].total` is
-     * evaluated per row of `items`, and that is the only repeater its `item`
-     * can mean.
-     */
-    const rowScope = rule.target.includes('[]') ? `${rule.target.slice(0, rule.target.indexOf('[]'))}[]` : undefined
+    const rowScope = rowScopeOf(rule.target)
 
     const missing = new Set<string>()
     for (const read of referencedPaths(parsed.ast)) {

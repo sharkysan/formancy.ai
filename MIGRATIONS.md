@@ -373,12 +373,15 @@ compares the author's wall clock as though it were UTC: its literal has no secon
 `departs > "2026-10-08T10:30"`. It holds at the wrong moment, off by the author's offset from UTC
 on the day they wrote it, and one using *is* never holds
 ([0235](docs/decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
-Nothing finds such a rule for you, and nothing converts one, because the author's time zone was
-never recorded. Look for a comparison of a `datetime` field with a string of sixteen characters,
-or of nineteen without the `Z`, in each form's `logic.rules`. Remove each one and add it again in
-the editor, which now writes `departs > "2026-10-08T08:30:00Z"`. Then publish. The versions already
-published keep the rule they were published with, as every published version does. A rule
-written by hand in CEL is untouched by this release.
+Nothing converts such a rule, because the author's time zone was never recorded. Publishing finds
+one: after upgrading, publish each form again, and every such rule is a sentence in the `201`'s
+`warnings` naming the rule, the field and the literal
+([0236](docs/decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
+An unchanged document is published as the version it already is, and its warnings are said all
+the same. Remove each rule named and add it again in the editor, which now writes
+`departs > "2026-10-08T08:30:00Z"`, then publish. The versions already published keep the rule they
+were published with, as every published version does. The same warning names a rule written by
+hand that compares a date, a time or a date and time with text in another shape.
 
 ## A pattern that backtracks with Unicode semantics is refused at publish (0.12.0)
 
