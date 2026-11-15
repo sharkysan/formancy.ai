@@ -507,7 +507,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
  *
  * `__proto__` belongs to no one: an answer written under it replaces the object's
  * prototype, so a field keyed with it, or a matrix row valued with it, collected
- * answers no release ever stored. Refused although every version is frozen, because no
+ * answers no release ever stored. Refused although every released version is frozen, because no
  * document holding it ever worked (0185).
  */
 function reservedKeyErrors(schema: FormSchema): SchemaError[] {

@@ -381,7 +381,7 @@ again.
 
 ## Known pre-1.0 caveats
 
-- Every spec version is frozen; the PACKAGES are not. Their APIs will still change
+- Every released spec version is frozen; the PACKAGES are not. Their APIs will still change
   before 1.0, and those changes are documented here.
 - An asynchronous validator is not a property on a rule. It is `kind: "check"`, a rule kind
   in spec 3 that names a check the deployment answers

@@ -58,7 +58,7 @@ separately in your UI and the formancy backend.
 
 > **Status: beta, version 0.13.0.**
 >
-> **Every spec version is frozen.** Each only adds, so an older document
+> **Every released spec version is frozen; the newest is open and in no release yet.** Each only adds, so an older document
 > keeps working and its submissions keep their shape — upgrading is one line and
 > nothing rebinds ([0051](./docs/decisions/0051-spec-2-adds-types.md),
 > [0140](./docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).

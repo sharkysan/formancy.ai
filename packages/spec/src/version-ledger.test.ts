@@ -17,8 +17,8 @@ import { versionErrors } from './version-errors.js'
 /**
  * The freeze, for everything a document can say that is not a field type or a widget.
  *
- * Every version is frozen, so a construct the schema gains belongs to a version that does
- * not exist yet — and a frozen reader refuses a document carrying it, because the format is
+ * Every released version is frozen, so a construct the schema gains belongs to a version that
+ * is not released yet — and a frozen reader refuses a document carrying it, because the format is
  * closed. Field types and widgets were held to that by name (0140); properties, rule kinds
  * and layout kinds were gated one by one, each by a line somebody remembered to write. These
  * cases take what a document may say from the document schema itself, require each thing to
