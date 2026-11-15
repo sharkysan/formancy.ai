@@ -1,0 +1,191 @@
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
+import { createFormEngine } from '@formancy/core'
+import type { FieldDef, FormSchema } from '@formancy/spec'
+import { FormancyForm } from '../form.js'
+import { FormancyProvider } from '../context.js'
+
+/**
+ * A `time` or `datetime` with a `precision`, as a person types into it.
+ *
+ * What the digits mean, and what they are stored as, is `@formancy/spec`'s and is tested
+ * there. These cases are about the binding: that the control shows the answer in its own
+ * shape, writes only on the person's input, and leaves a field without a precision as the
+ * browser's own control.
+ */
+afterEach(() => {
+  cleanup()
+  vi.unstubAllEnvs()
+})
+
+const CLOCK = { now: () => 0, today: () => '2026-11-15', random: () => 0.5 }
+
+function mount(field: FieldDef, initialValue?: unknown, cel?: string): ReturnType<typeof createFormEngine> {
+  const schema: FormSchema = {
+    specVersion: '6',
+    id: 'log',
+    title: 'Log',
+    model: { fields: [field] },
+    ...(cel === undefined ? {} : { logic: { rules: [{ target: field.key, kind: 'computed', cel }] } }),
+  }
+  const engine = createFormEngine({
+    schema,
+    capabilities: CLOCK,
+    ...(initialValue === undefined ? {} : { initialValue }),
+  })
+  render(
+    <FormancyProvider engine={engine}>
+      <FormancyForm onSubmit={() => undefined} />
+    </FormancyProvider>,
+  )
+  return engine
+}
+
+const control = (): HTMLInputElement => screen.getByLabelText<HTMLInputElement>('At')
+const value = (engine: ReturnType<typeof createFormEngine>): unknown => engine.getFieldSnapshot(['at']).value
+
+describe('a time with a precision', () => {
+  test('an untouched supplied value shows every digit and is submitted byte for byte', () => {
+    // A control that rewrote what it was given on mount would change a stored answer nobody
+    // edited; a time of seven digits is the width a browser picker cannot hold at all.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, { at: '10:34:56.7890121' })
+
+    expect(control().value).toBe('10:34:56.7890121')
+    expect(control().type).toBe('text')
+    expect(value(engine)).toBe('10:34:56.7890121')
+  })
+
+  test('typing digits stores the time as the mask writes it', async () => {
+    // The answer is the time, not its digits: the mask's separators belong in what is stored.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    await userEvent.setup().type(control(), '140327415')
+
+    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('is offered as its shape, with a keypad', () => {
+    // The placeholder is the statement of the shape (0125), and a numeric keypad is the
+    // reason to have a mask of digits at all.
+    mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    expect(control().placeholder).toBe('__:__:__.___')
+    expect(control().inputMode).toBe('numeric')
+  })
+
+  test('clearing the control stores null', async () => {
+    // An empty control left as the partial text "" would read as a malformed answer and not
+    // as no answer, so a field that is not required would refuse a person who changed their mind.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+
+    await userEvent.setup().clear(control())
+
+    expect(value(engine)).toBeNull()
+  })
+
+  test('a supplied value of another width is shown, and is a shape error once touched', async () => {
+    // Stored as it was supplied is not the mask's to repair: a value at the wrong width must
+    // reach the engine's shape check, not be padded into one that passes.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.41' })
+
+    expect(control().value).toBe('14:03:27.41')
+    await userEvent.setup().type(control(), '{Backspace}')
+
+    expect(value(engine)).toBe('14:03:27.4')
+    expect(engine.submit().errors['at']).toContain('shape')
+  })
+
+  test('a value wider than its field shows as complete, and an edit drops the hidden digits', async () => {
+    // Accepted, and named in the safety analysis: the mask has no position for the extra
+    // digits. This pins it so that it changes on purpose rather than by accident.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.4155' })
+
+    expect(control().value).toBe('14:03:27.415')
+    await userEvent.setup().type(control(), '{Backspace}')
+
+    expect(value(engine)).toBe('14:03:27.41')
+  })
+
+  test('a paste of an instant with an offset is stored as the same instant, at the field width', () => {
+    // The mask reads digits and drops the rest; a pasted log timestamp would otherwise become
+    // a complete, valid answer moved by the sender's offset.
+    const engine = mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 })
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '2026-11-15T14:03:27.415+01:00' } })
+
+    expect(value(engine)).toBe('2026-11-15T13:03:27.415Z')
+  })
+
+  test('a paste a person could have typed goes through the mask', () => {
+    // Digits and separators in the mask's own places are typing; they must land as typing
+    // does, including the separators the mask writes itself.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '140327415' } })
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().value).toBe('14:03:27.415')
+  })
+
+  test('a paste that is neither is held as pasted, for the engine to refuse', () => {
+    // Dropping the characters the mask has no place for would make an answer out of text
+    // nobody typed; held, the shape error tells the person.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => 'noon-ish' } })
+
+    expect(value(engine)).toBe('noon-ish')
+    expect(engine.submit().errors['at']).toContain('shape')
+  })
+
+  test('a read-only field shows every digit, and a change writes nothing', () => {
+    // A computed answer is the engine's: a control that took the typing would watch the
+    // engine take it back, and one that hid digits would misreport what is stored.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, undefined, "'10:34:56.7890121'")
+
+    expect(control().readOnly).toBe(true)
+    expect(control().value).toBe('10:34:56.7890121')
+    fireEvent.change(control(), { target: { value: '10:34:56.78901219' } })
+    fireEvent.paste(control(), { clipboardData: { getData: () => '01:02:03.4560000' } })
+
+    expect(value(engine)).toBe('10:34:56.7890121')
+  })
+
+  test('a time without a precision is still the browser control', () => {
+    // The typed control is for a precision only; every existing form keeps its picker.
+    mount({ key: 'at', type: 'time', label: 'At' })
+
+    expect(control().type).toBe('time')
+  })
+})
+
+describe('a datetime with a precision', () => {
+  test('typed on the wall clock of New York, it is stored as UTC with the fraction unchanged', async () => {
+    // The zone moves whole seconds and never a fraction: a fraction passed through Date
+    // would be cut to milliseconds, and a stored answer would differ from the typed one.
+    vi.stubEnv('TZ', 'America/New_York')
+    const engine = mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 })
+
+    await userEvent.setup().type(control(), '20261115090327415')
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
+    expect(value(engine)).toBe('2026-11-15T14:03:27.415Z')
+  })
+
+  test('a stored instant is shown on the wall clock of the person', () => {
+    // Shown in UTC, the person would read an hour they did not type.
+    vi.stubEnv('TZ', 'America/New_York')
+    mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
+  })
+
+  test('a datetime without a precision is still the browser control', () => {
+    // As above, for the second control.
+    mount({ key: 'at', type: 'datetime', label: 'At' })
+
+    expect(control().type).toBe('datetime-local')
+  })
+})
