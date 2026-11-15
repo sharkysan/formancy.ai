@@ -335,3 +335,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0232](0232-the-website-keeps-nothing-in-a-browser-the-privacy-notice-does-not-name.md) | The website keeps nothing in a browser the privacy notice does not name | accepted |
 | [0233](0233-a-host-may-add-content-under-a-field.md) | A host may add content of its own under a field, inside the field's wrapper | accepted |
 | [0234](0234-the-website-is-served-under-a-policy-for-each-section.md) | The website is served under a content security policy for each of its sections, which the build writes and the browser gate serves it under | accepted |
+| [0235](0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md) | A date and time in a condition is the instant its author chose, written as every answer is | accepted |

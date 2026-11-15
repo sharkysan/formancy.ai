@@ -223,15 +223,46 @@ function mapGroup(draft: ConditionDraft, at: number, change: (group: RowGroup) =
  *
  * Narrowed by shape, a choice whose stored value is `"10"` became the number 10 and
  * was compared to a string field: a type error CEL catches at save, for a condition
- * the author built correctly. A number is a number only when the field is one, and a
- * yes-or-no is a boolean only when the field is a checkbox.
+ * the author built correctly. A number is a number only when the field is one, a
+ * yes-or-no is a boolean only when the field is a checkbox, and a date and time is
+ * an instant only when the field is one.
  */
 export function conditionOf(row: ConditionRow, fields: readonly ConditionField[]): Condition {
   const answer = kindOf(fields, row.field)
   if (!operatorTakesValue(row.operator)) return { field: row.field, operator: row.operator, answer }
-  const value: Condition['value'] =
-    answer === 'number' && row.text.trim() !== '' && !Number.isNaN(Number(row.text)) ? Number(row.text) : answer === 'boolean' ? row.text === 'true' : row.text
-  return { field: row.field, operator: row.operator, value, answer }
+  return { field: row.field, operator: row.operator, value: narrowed(answer, row.text), answer }
+}
+
+function narrowed(answer: AnswerKind, text: string): string | number | boolean {
+  if (answer === 'number') return text.trim() !== '' && !Number.isNaN(Number(text)) ? Number(text) : text
+  if (answer === 'boolean') return text === 'true'
+  if (answer === 'datetime') return instantOf(text)
+  return text
+}
+
+/**
+ * What `datetime-local` hands back: the author's own wall clock, to the minute or to the
+ * second, with no zone. `new Date` reads exactly that form as local time by the
+ * language's own rule. How it reads any other string is up to the engine, so nothing
+ * else is handed to it.
+ */
+const WALL_CLOCK = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/
+
+/**
+ * A date and time as the instant the author meant: their wall clock read in their own
+ * zone, now, and written as every answer is written, in UTC with seconds and `Z` (0067).
+ * The renderers convert a respondent's entry the same way, so an answer and a literal
+ * typed the same are equal, and both are the same width, so comparing them as text
+ * orders them in time.
+ *
+ * Now, because the zone is knowable only while the author is choosing. A literal kept
+ * as typed was compared as UTC wherever the author sat. Anything that is not a wall
+ * clock, an empty box included, stays as typed, as an empty number box does.
+ */
+function instantOf(text: string): string {
+  if (!WALL_CLOCK.test(text)) return text
+  const instant = new Date(text)
+  return Number.isNaN(instant.getTime()) ? text : `${instant.toISOString().slice(0, 19)}Z`
 }
 
 /** The draft as the structured condition stored beside its CEL. */

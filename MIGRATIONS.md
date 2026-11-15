@@ -366,6 +366,20 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A condition on a date and time written by the editor before this release (Unreleased)
+
+**If a form has a rule the builder's condition editor wrote on a `datetime` field**, the rule
+compares the author's wall clock as though it were UTC: its literal has no seconds and no `Z`,
+`departs > "2026-10-08T10:30"`. It holds at the wrong moment, off by the author's offset from UTC
+on the day they wrote it, and one using *is* never holds
+([0235](docs/decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
+Nothing finds such a rule for you, and nothing converts one, because the author's time zone was
+never recorded. Look for a comparison of a `datetime` field with a string of sixteen characters,
+or of nineteen without the `Z`, in each form's `logic.rules`. Remove each one and add it again in
+the editor, which now writes `departs > "2026-10-08T08:30:00Z"`. Then publish. The versions already
+published keep the rule they were published with, as every published version does. A rule
+written by hand in CEL is untouched by this release.
+
 ## A pattern that backtracks with Unicode semantics is refused at publish (0.12.0)
 
 **If you run a server that has published forms with a `pattern`**, one of them may be a pattern
