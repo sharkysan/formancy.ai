@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, viewChild } from '@angular/core'
 import type { TemplateRef } from '@angular/core'
-import { FormancyForm } from '@formancy/angular'
+import { FormancyForm, injectEngine } from '@formancy/angular'
 import type { FieldBinding, FormancyFieldAddition, FormancyFieldAdditionContext, FormancyFieldBeside, FormancyFieldBesideContext } from '@formancy/angular'
 import { PICKUP_POINTS } from './demo-capabilities.js'
+import { besideWords } from './demo-beside-words.js'
 import { CLEAR_GLYPH, OPEN_GLYPH } from './demo-glyphs.js'
 
 /**
@@ -38,7 +39,8 @@ import { CLEAR_GLYPH, OPEN_GLYPH } from './demo-glyphs.js'
   // Under the pickup point, the point the answer holds, as the React pane draws it
   // (`demo-addition.tsx`, 0233): the template is handed the field's binding, which is how a host
   // reads the field there. Beside the pickup point an Open and beside the country a Clear, as the
-  // React pane draws them (`demo-beside.tsx`, 0237), each unavailable while its field is empty.
+  // React pane draws them (`demo-beside.tsx`, 0237), each unavailable while its field is empty and
+  // named in the form's language.
   template: `
     <formancy-form layout="web" [review]="true" [fieldAddition]="addition" [fieldBeside]="beside" />
     <ng-template #chosenPoint let-field="field">
@@ -48,7 +50,7 @@ import { CLEAR_GLYPH, OPEN_GLYPH } from './demo-glyphs.js'
     </ng-template>
     <ng-template #openPoint let-field="field">
       @let point = pointOf(field.snapshot().value);
-      @let name = point === undefined ? 'Open the pickup point' : 'Open ' + point.label;
+      @let name = words.open(point?.label);
       <button type="button" [attr.aria-label]="name" [title]="name" [attr.aria-disabled]="point === undefined ? 'true' : null" (click)="open($event, point)">
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path [attr.d]="openGlyph" /></svg>
       </button>
@@ -56,8 +58,8 @@ import { CLEAR_GLYPH, OPEN_GLYPH } from './demo-glyphs.js'
     <ng-template #clearCountry let-field="field">
       <button
         type="button"
-        aria-label="Clear the country"
-        title="Clear the country"
+        [attr.aria-label]="words.clear"
+        [title]="words.clear"
         [attr.aria-disabled]="empty(field.snapshot().value) ? 'true' : null"
         (click)="clear(field)"
       >
@@ -73,6 +75,8 @@ export class AngularPreview {
 
   protected readonly openGlyph = OPEN_GLYPH
   protected readonly clearGlyph = CLEAR_GLYPH
+  /** In the engine's language, which is fixed for its lifetime, as this application is bootstrapped per engine. */
+  protected readonly words = besideWords(injectEngine().locale())
 
   /** Under the pickup point, and under nothing else. */
   protected readonly addition: FormancyFieldAddition = (path) => (path === 'deliveryPoint' ? this.chosenPoint() : undefined)

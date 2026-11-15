@@ -252,6 +252,27 @@ describe('what the playground, as a host, draws beside a field', () => {
     }
   })
 
+  // A host names its own buttons, and names them in the form's language: a button still called
+  // "Clear the country" beside a box labelled "Land" is a form half translated, which a host that
+  // copied the playground would ship. So, switched to German, both panes name both buttons in
+  // German, the Open by the point it opens once one is chosen.
+  test('names each button in the form’s language, in both renderers', async () => {
+    await mounted()
+    const user = userEvent.setup()
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'de')
+
+    for (const pane of [reactPane, angularPane]) {
+      const where = pane === reactPane ? 'React' : 'Angular'
+      const point = await within(pane()).findByRole('combobox', { name: 'Wo abholen' }, { timeout: 10_000 })
+      expect(within(pane()).queryByRole('button', { name: 'Abholort öffnen' }), `${where}: the Open while no point is chosen`).not.toBeNull()
+      expect(within(pane()).queryByRole('button', { name: 'Land löschen' }), `${where}: the Clear`).not.toBeNull()
+
+      await user.type(point, 'Bern')
+      await user.click(await within(pane()).findByRole('option', { name: 'Bern Bahnhof' }, { timeout: 3_000 }))
+      expect(await within(pane()).findByRole('button', { name: 'Bern Bahnhof öffnen' }), `${where}: the Open once one is`).toBeTruthy()
+    }
+  })
+
   // A button that did nothing once its field held an answer only looks like one: the Open moves the
   // keyboard to the point drawn under the field, as a host's Open moves it to the record it opens,
   // and the Clear takes the answer away, which the engine hears. And the Clear keeps the keyboard
