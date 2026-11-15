@@ -323,7 +323,7 @@ export function recognisedAnswer(type: TypedTemporalType, precision: number, tex
  * 1. **A time or an instant on its own is the answer**, wherever it lands and at any width and
  *    offset it is written: it says by itself what it means, so what it replaces is beside the
  *    point.
- * 2. **Text the mask could have been typed into is typing**: the whole text the field would
+ * 2. **Digits alone are typing**, and so is any text the mask could have been typed into: the whole text the field would
  *    hold, read as the same characters typed would be.
  * 3. **Anything else is ignored**, as a keystroke the mask cannot place changes nothing.
  *    Nothing is stored, so a combination of the pasted text and the field's own digits that
@@ -337,5 +337,7 @@ export function pasteOutcome(
   const answer = recognisedAnswer(type, precision, pasted)
   if (answer !== undefined) return { answer }
   const whole = `${before}${pasted}${after}`
+  // Digits carry no zone, so there is nothing to misread: the mask places them as the same keystrokes.
+  if (/^\d+$/.test(pasted.trim())) return { typed: whole }
   return couldBeTyped(type, precision, whole) ? { typed: whole } : { ignored: true }
 }

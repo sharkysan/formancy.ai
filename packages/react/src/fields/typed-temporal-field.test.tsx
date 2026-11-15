@@ -195,12 +195,12 @@ describe('a time with a precision', () => {
   })
 
   test('a paste that leaves a separator out of its place changes nothing', () => {
-    // 5 over the minutes makes "14:5:27.415", which no typing makes; read through the mask it
+    // "5:" over the minutes makes "14:5::27.415", which no typing makes; read through the mask it
     // would move every digit after it.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
     control().setSelectionRange(3, 5)
 
-    fireEvent.paste(control(), { clipboardData: { getData: () => '5' } })
+    fireEvent.paste(control(), { clipboardData: { getData: () => '5:' } })
 
     expect(control().value).toBe('14:03:27.415')
     expect(value(engine)).toBe('14:03:27.415')
@@ -231,15 +231,15 @@ describe('a time with a precision', () => {
     expect(control().value).toBe('09:15:00.000')
   })
 
-  test('a paste of one digit over a selected hour changes nothing', () => {
-    // "0" and ":03:27.415" puts the first colon after one digit; not a place the mask writes it.
+  test('a paste of one digit over a selected hour types as the key would', () => {
+    // Digits carry no zone: "0" there is what typing 0 over the hour does.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
     control().setSelectionRange(0, 2)
 
     fireEvent.paste(control(), { clipboardData: { getData: () => '0' } })
 
-    expect(control().value).toBe('14:03:27.415')
-    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().value).toBe('00:32:74.15')
+    expect(value(engine)).toBe('00:32:74.15')
   })
 
   test('a complete datetime pasted a digit keeps showing its answer', () => {

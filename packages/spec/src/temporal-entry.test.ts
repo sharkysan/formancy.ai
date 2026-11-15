@@ -701,14 +701,24 @@ describe('what a paste into a typed control means', () => {
   const CLOCK = '14:03:27.415'
   const place = (shown: string, from: number, to: number, pasted: string) => ({ before: shown.slice(0, from), pasted, after: shown.slice(to) })
 
-  test.each([
-    // A digit pasted after a complete time was stored where the control could not show it.
-    ['a digit at the end of a full time', 'time', CLOCK, 12, 12, '6'],
-    // One digit over the hour leaves "0:03:27.415", whose first colon the mask writes after two digits.
-    ['one digit over the hour', 'time', CLOCK, 0, 2, '0'],
-    ['a digit at the end of a full datetime', 'datetime', SHOWN, 23, 23, '9'],
-  ] as const)('%s is ignored, as a keystroke with no place is', (_name, type, shown, from, to, pasted) => {
+  test.each([] as const)('%s is ignored, as a keystroke with no place is', (_name, type, shown, from, to, pasted) => {
     expect(pasteOutcome(type, 3, place(shown, from, to, pasted))).toEqual({ ignored: true })
+  })
+
+  test.each([
+    // Digits carry no zone, so there is nothing to misread, and the mask places them as the
+    // same keystrokes: a digit after a full time was once held where the control could not show it.
+    ['a digit at the end of a full time', 'time', CLOCK, 12, 12, '6', '14:03:27.4156'],
+    ['a digit at the end of a full datetime', 'datetime', SHOWN, 23, 23, '9', '2026-11-15 09:03:27.4159'],
+    ['one digit over the hour, as typing it there is', 'time', CLOCK, 0, 2, '0', '0:03:27.415'],
+  ] as const)('%s is typing', (_name, type, shown, from, to, pasted, text) => {
+    expect(pasteOutcome(type, 3, place(shown, from, to, pasted))).toEqual({ typed: text })
+  })
+
+  test('a bare-digit log paste into an empty datetime is typing, read as local', () => {
+    // With no zone there is nothing to misread: these digits are the person's own clock exactly
+    // as if they had typed them.
+    expect(pasteOutcome('datetime', 3, place('', 0, 0, '20261115130327415'))).toEqual({ typed: '20261115130327415' })
   })
 
   test.each([
