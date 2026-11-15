@@ -342,6 +342,17 @@ have. A rule written by an earlier builder keeps the expression it was written w
 because the expression is what is stored; this table is how to recognise one
 ([0127](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0127-a-condition-nests-one-level.md)).
 
+**It also wrote a date and time as the author's own wall clock**, in every release
+through 0.13.0: `departs > "2026-10-08T10:30"`, which is what its local date-and-time
+box holds, compared as text with answers stored in UTC with seconds. Such a rule is
+off by the author's offset from UTC, and one using *is* never holds. The editor now
+writes the instant the author chose, read in their own zone and written as every
+answer is: `departs > "2026-10-08T08:30:00Z"`, from Zurich in October. A comparison
+with a date and time you write yourself has the same rule to follow: write the instant
+in UTC, with seconds and `Z`. An older rule whose literal has neither is one to remove
+and add again
+([0235](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
+
 ## Nothing ambient
 
 `now()`, `today()` and `random()` do not read a clock — they read values the

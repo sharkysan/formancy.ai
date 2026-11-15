@@ -62,6 +62,14 @@ that a caller can forget.
 It is what makes server replay a check rather than a second opinion, and it is
 also why the engine's tests never need to mock a clock.
 
+The builder is not the engine, and builder-core reads one thing from where it runs: the
+author's time zone, at the moment a date and time is typed into the condition editor. Only the
+instant goes into the rule, written as every answer is, so what the engine later compares is
+the same everywhere it runs
+([0235](../decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
+Its test pins the zone for each case, because a runner on UTC cannot tell a wall clock from an
+instant.
+
 ## 8.4 Validation, in three tiers
 
 | Tier | Where | Example |

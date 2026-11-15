@@ -545,6 +545,36 @@ answer, or with no data, is stored without it).
 - **A field shown again shows its default again**, including to somebody who cleared it, changed
   the answer that showed it and changed that back.
 
+### A11. A condition the builder wrote compares another moment than the one its author chose
+
+*How it arises:* an author compares a date-and-time field in the builder's condition editor.
+The editor's box holds the author's wall clock with no zone, and every release through `0.13.0`
+wrote that text into the rule as typed. Answers are instants in UTC with seconds, and a rule
+compares the two as text. So the rule held at the wrong moment, off by the author's offset from
+UTC, and a rule using *is* never held. A `visible` rule showed or hid its field at the wrong
+time, a `required` one asked or did not, and a `validate` one accepted what its author meant to
+refuse or refused what they meant to accept. Every gate passed it: the expression type-checks,
+and it decides something for every answer.
+
+*Constraint:* `conditionOf` in builder-core, which both builders' editors call, reads the
+editor's date and time as the author's wall clock in their own zone and writes the instant as
+every answer is written
+([0235](../decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
+Verified by `packages/builder-core/src/condition-draft.test.ts`, *a date and time compared*,
+which pins Zurich and New York and runs the rule through the engine. Observed failing before the
+change.
+
+*Residual:*
+
+- **A rule written by an earlier builder keeps the expression it was published with.** The
+  author's zone was never recorded, so nothing converts it, and nothing at publish reports it.
+  `MIGRATIONS.md` tells a deployment how to find and replace one.
+- **The zone is the author's machine's.** A builder in a browser set to another zone than the
+  author's wall clock writes that zone's instant, as a renderer stores a respondent's answer in
+  their browser's zone.
+- **A literal written by hand in CEL is compared as text as written.** A date and time in another
+  shape than the answers' compares wrongly, and nothing tells its author.
+
 ## B — Correct data is lost or altered
 
 ### B1. Answers are orphaned when a field is renamed

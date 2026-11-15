@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
+release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,
+`departs > "2026-10-08T10:30"`, and that was compared as text with answers stored in UTC with
+seconds. So such a rule was off by the author's offset from UTC, two hours in Zurich in October,
+and one using *is* never held for anybody. The editor now writes the instant the author chose,
+read in their own zone and written as every answer is, `departs > "2026-10-08T08:30:00Z"`, in both
+builders ([0235](docs/decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
+A rule an earlier builder wrote keeps its expression, because nothing recorded which zone it meant:
+[`MIGRATIONS.md`](MIGRATIONS.md) says how to find and replace one.
+
 ## 0.13.0 — 2026-11-05
 
 **A minor release; the spec version stays 5.** `0.13.0` reads and writes what `0.12.0` does, so a

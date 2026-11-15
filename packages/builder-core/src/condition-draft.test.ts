@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import { addGroup, addRow, conditionFields, conditionOf, emptyDraft, emptyRow, groupOf, removeFromDraft, setJoin, updateRow } from './condition-draft.js'
@@ -325,5 +325,94 @@ describe('what a draft compiles to, as the engine answers it', () => {
     expect(shownWhen(contains, { address: { city: 'Bern' } })).toBe(true)
     expect(shownWhen(without, { address: { city: 'Bern' } })).toBe(false)
     expect(shownWhen(without, {})).toBe(true)
+  })
+})
+
+/**
+ * A date and time is compared as the instant the author meant, wherever the author sits.
+ *
+ * The editor draws `datetime-local` for one, which hands back the author's own wall clock
+ * with no zone and no seconds: `2026-10-08T10:30`. Written into the rule as typed, it was
+ * compared as text with answers stored as UTC instants with seconds (`…T08:30:00Z`, 0067).
+ * So the rule was off by the author's offset, and `is` matched nothing, because no
+ * twenty-character answer equals a sixteen-character literal.
+ *
+ * Each case pins a zone. A runner on UTC would show only the width half of that.
+ */
+describe('a date and time compared', () => {
+  const trip: FormSchema = {
+    specVersion: '4',
+    id: 'trip',
+    title: 'Trip',
+    model: {
+      fields: [
+        { key: 'departs', type: 'datetime', label: 'Departs' },
+        { key: 'shown', type: 'text', label: 'Shown' },
+      ],
+    },
+  }
+  const tripFields = conditionFields(trip)
+  const CLOCK = { now: () => 0, today: () => '2026-10-09', random: () => 0.5 }
+
+  // Put back by name. `vi.unstubAllEnvs()` deletes TZ, and Node keeps the zone it was last
+  // given rather than returning to the one it started in (measured 2026-11-15, Node 24), so
+  // a case pinned to New York would otherwise leave the rest of the file in New York.
+  const started = Intl.DateTimeFormat().resolvedOptions().timeZone
+  afterEach(() => {
+    vi.stubEnv('TZ', started)
+    vi.unstubAllEnvs()
+  })
+
+  const shownWhen = (draft: ConditionDraft, departs: string): boolean =>
+    createFormEngine({
+      schema: { ...trip, logic: { rules: [{ target: 'shown', kind: 'visible', cel: compileGroup(groupOf(draft, tripFields)) }] } },
+      initialValue: { departs },
+      capabilities: CLOCK,
+    }).getFieldSnapshot(['shown']).visible
+
+  const after = (text: string): ConditionDraft => ({ join: 'all', items: [{ field: 'departs', operator: 'isAfter', text }] })
+
+  test('is written as the instant, at the width every answer has', () => {
+    // Written as typed, Zurich's 10:30 was compared as 10:30 UTC, two hours late, and New
+    // York's four hours early.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    expect(conditionOf({ field: 'departs', operator: 'isAfter', text: '2026-10-08T10:30' }, tripFields).value).toBe('2026-10-08T08:30:00Z')
+
+    vi.stubEnv('TZ', 'America/New_York')
+    expect(conditionOf({ field: 'departs', operator: 'isAfter', text: '2026-10-08T10:30' }, tripFields).value).toBe('2026-10-08T14:30:00Z')
+  })
+
+  test('so "is after" holds for an answer after it, and not for the moment itself', () => {
+    // Against `"2026-10-08T10:30"`, the answer at 09:00 UTC (11:00 in Zurich, after the 10:30
+    // the author typed) sorted before it and was not after, and the answer at the very moment
+    // was after it, because a string sorts after its own prefix.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+
+    expect(shownWhen(after('2026-10-08T10:30'), '2026-10-08T09:00:00Z')).toBe(true)
+    expect(shownWhen(after('2026-10-08T10:30'), '2026-10-08T08:31:00Z')).toBe(true)
+    expect(shownWhen(after('2026-10-08T10:30'), '2026-10-08T08:30:00Z')).toBe(false)
+  })
+
+  test('and "is" matches the answer the renderer stores for the same entry', () => {
+    // The renderer stores 10:30 typed in Zurich as `2026-10-08T08:30:00Z`. A literal of
+    // another width can equal no such answer, so the rule never held for anybody.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const draft: ConditionDraft = { join: 'all', items: [{ field: 'departs', operator: 'is', text: '2026-10-08T10:30' }] }
+
+    expect(shownWhen(draft, '2026-10-08T08:30:00Z')).toBe(true)
+    expect(shownWhen(draft, '2026-10-08T10:30:00Z')).toBe(false)
+  })
+
+  test('and an empty box stays empty rather than throwing', () => {
+    // `new Date('')` is an invalid date, and its `toISOString()` throws: converting what the
+    // control holds before anything is chosen would break the panel on its first draw.
+    expect(conditionOf({ field: 'departs', operator: 'isAfter', text: '' }, tripFields).value).toBe('')
+  })
+
+  test('and text shaped like a wall clock that names no moment stays as typed', () => {
+    // A thirteenth month has the shape and no instant. Without the check its invalid date
+    // reached `toISOString()`, which throws, for a draft composed through the API rather
+    // than through a browser's box.
+    expect(conditionOf({ field: 'departs', operator: 'isAfter', text: '2026-13-01T10:30' }, tripFields).value).toBe('2026-13-01T10:30')
   })
 })
