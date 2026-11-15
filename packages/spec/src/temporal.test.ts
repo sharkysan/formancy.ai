@@ -158,7 +158,7 @@ describe('the canonical shapes', () => {
     const widths: [TemporalFieldType, number | undefined][] = [
       ['time', undefined],
       ['datetime', undefined],
-      ...(['time', 'datetime'] as const).flatMap((t) => Array.from({ length: 10 }, (_, p) => [t, p] as const)),
+      ...(['time', 'datetime'] as const).flatMap((t) => Array.from({ length: 10 }, (_, p) => [t, p] satisfies [TemporalFieldType, number])),
     ]
     for (const [type, precision] of widths) {
       const shape = new RegExp(temporalShape(type, precision))
