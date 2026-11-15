@@ -56,17 +56,17 @@ function writtenAt(mask: string): { readonly literal: string; readonly after: nu
 
 /**
  * Whether a person could have typed this text into the field's mask: digits, no more of
- * them than the mask has positions, and otherwise only the characters the mask writes, in
- * its order, each at most once and never after the place it writes it. One may be left
- * out — `20261115 14:03` types as `2026-11-15 14:03` does — or come early, as the colon of
- * a bare `14:03` in a datetime does, which the mask drops. One after more digits than the
- * mask puts before it is late: it marks a part the mask has already written past.
+ * them than the mask has positions, and otherwise only the characters the mask writes,
+ * each exactly where it writes it — after as many digits as the mask puts before it — and
+ * at most once. One may be left out: `20261115 14:03` types as `2026-11-15 14:03` does.
+ * One anywhere else marks a place the mask does not have, so the mask would drop it and
+ * every digit after it would move: early, `1:15:23.456` became 11:52:34.56; late, an
+ * offset lost its sign and its digits became the fraction.
  *
  * It is what the mask may read as typing and what `storedFromTyped` holds. A zone, a
  * second space, a space after the stop or a digit too many is none of it, and nor is an
- * offset — in a time anywhere, since its mask writes no sign, and in a datetime after the
- * date, since its mask writes `-` only inside the date. Read as typing, its digits would
- * fill positions they do not belong in: an offset's sign dropped, and its digits the fraction.
+ * offset in a time, whose mask writes no sign, or one in a datetime after more than six
+ * digits, since its mask writes `-` only after the year's four and the month's two.
  */
 function couldBeTyped(type: TypedTemporalType, precision: number, text: string): boolean {
   const mask = temporalEntryMask(type, precision)
@@ -78,9 +78,9 @@ function couldBeTyped(type: TypedTemporalType, precision: number, text: string):
       digits += 1
       continue
     }
-    // The next place the mask writes it that the digits have not passed; the places
+    // The place the mask writes it after exactly these digits, not used yet; the places
     // skipped to reach it are characters left out.
-    const place = written.findIndex((at, index) => index >= next && at.literal === character && at.after >= digits)
+    const place = written.findIndex((at, index) => index >= next && at.literal === character && at.after === digits)
     if (place === -1) return false
     next = place + 1
   }
@@ -289,9 +289,12 @@ function answerPasted(type: TypedTemporalType, n: number, answer: string): strin
  * comma or a digit too many would otherwise become part of the answer or vanish from it,
  * and a log's instant would be stored complete, valid and moved by the person's offset:
  * at precision 4, `20261115140327-0100` as 14:03:27.0100 on the person's clock, the
- * offset's digits as the fraction. So no offset after a date reaches the mask, however the
- * date and the clock are written, and in a time none does. The whitespace around a paste
- * is not part of it: a copied log line brings its line break.
+ * offset's digits as the fraction. So no offset after a date with its four-digit year
+ * reaches the mask, however the date and the clock are written, and in a time none does.
+ * A sign after four digits or six sits where a datetime's mask writes its dashes —
+ * `261115-0100`, a year in two digits — and is read as the date's own; with only an
+ * offset's digits after it, that date is unfinished, which the shape refuses. The
+ * whitespace around a paste is not part of it: a copied log line brings its line break.
  */
 export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
   const answer = text.trim()
