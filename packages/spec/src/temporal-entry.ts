@@ -279,22 +279,16 @@ function answerPasted(type: TypedTemporalType, n: number, answer: string): strin
 }
 
 /**
- * What a pasted text means, decided before the mask reads any of it: a time or an instant
- * pasted whole, brought to the field's width where that is exact; undefined when it is
- * typing, which the control reads through the mask; and anything else held exactly as
- * pasted, which the shape check refuses.
+ * A whole text, as a paste was first read: the answer it names, undefined when a person
+ * could have typed it into this mask, and anything else held exactly as given, for the
+ * shape check to refuse. Whitespace around it is not part of it.
  *
- * The mask reads digits and drops everything else, so it is given a paste only when a
- * person could have typed it into this mask and it fits. A zone, an offset, a decimal
- * comma or a digit too many would otherwise become part of the answer or vanish from it,
- * and a log's instant would be stored complete, valid and moved by the person's offset:
- * at precision 4, `20261115140327-0100` as 14:03:27.0100 on the person's clock, the
- * offset's digits as the fraction. So no offset after a date with its four-digit year
- * reaches the mask, however the date and the clock are written, and in a time none does.
- * A sign after four digits or six sits where a datetime's mask writes its dashes —
- * `261115-0100`, a year in two digits — and is read as the date's own; with only an
- * offset's digits after it, that date is unfinished, which the shape refuses. The
- * whitespace around a paste is not part of it: a copied log line brings its line break.
+ * It is not how a control reads a paste, and it is not in the package's index: a control
+ * asks `pasteOutcome`, which ignores what this would hold rather than storing it, and judges
+ * the text the paste makes rather than the pasted text alone. It stays because its cases pin
+ * what `couldBeTyped` refuses, which is how `pasteOutcome` decides typing too: at precision
+ * 4, `20261115140327-0100` read as typing was stored complete and valid as 14:03:27.0100 on
+ * the person's clock, the offset's digits as the fraction.
  */
 export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
   const answer = text.trim()
@@ -304,10 +298,21 @@ export function pastedInstant(type: TypedTemporalType, precision: number, text: 
 }
 
 /**
- * The answer a pasted text names, or undefined when it names none: a time or an instant, at
- * any width and with any offset, brought to the field's width where that is exact. What
- * `pastedInstant` hands back unchanged because it understood nothing is not this; the
- * difference is what lets a control hold an unreadable paste rather than store it.
+ * The answer a pasted text names on its own, or undefined when it names none. Whitespace
+ * around it is not part of it: a copied log line brings its line break.
+ *
+ * - A time, `HH:MM:SS` and any number of digits after the seconds.
+ * - An instant: a date, a `T` or a space, a clock, any digits after the seconds, and its zone,
+ *   `Z` or an offset (`±HH:MM`, `±HHMM` or PostgreSQL's `±HH`; RFC 3339's lower-case letters
+ *   too). It is the same instant in UTC, its fraction copied, never passed through `Date`.
+ * - At the field's width where that is exact: fewer digits padded with zeros, more cut only
+ *   when every digit cut is a zero and there are no more than nine. Otherwise at its own
+ *   width, never rounded or cut, so the shape check refuses it and the person is told.
+ *
+ * None for anything else, among it a clock the stored shape refuses (25:00), an offset of a
+ * day or more, a day the calendar does not have, an instant whose year in UTC leaves
+ * 0000–9999, a time with a zone, and a date and clock with no zone, which are the person's
+ * own and for `pasteOutcome` to read as typing.
  */
 export function recognisedAnswer(type: TypedTemporalType, precision: number, text: string): string | undefined {
   return answerPasted(type, fractionDigits(precision), text.trim())
@@ -315,29 +320,40 @@ export function recognisedAnswer(type: TypedTemporalType, precision: number, tex
 
 /**
  * What a paste into a typed control means: an answer to store, typing to read through the
- * mask, or nothing at all.
+ * mask, or nothing at all. `before`, `selected` and `after` are the text the control shows,
+ * split by the selection the paste replaces; `pasted` is the clipboard's text, empty when it
+ * holds none.
  *
- * One decision here for every control, because `pastedInstant` judges a whole text and a
- * paste is rarely one (0091). Three outcomes, tried in order:
+ * One decision here for every control, so that React's, Angular's and Material's cannot read
+ * one paste three ways (0091). Tried in order:
  *
- * 1. **A time or an instant on its own is the answer**, wherever it lands and at any width and
- *    offset it is written: it says by itself what it means, so what it replaces is beside the
- *    point.
- * 2. **Digits alone are typing**, and so is any text the mask could have been typed into: the whole text the field would
- *    hold, read as the same characters typed would be.
- * 3. **Anything else is ignored**, as a keystroke the mask cannot place changes nothing.
+ * 0. **A paste that leaves the text as it was is ignored**: the same text over itself, or an
+ *    empty clipboard, or one holding only an image. Typing the same text changes nothing; read
+ *    by the mask as an edit, a change of nothing is a backspace, and a digit would go.
+ * 1. **A time or an instant on its own is the answer** (`recognisedAnswer`), wherever it lands:
+ *    it says by itself what it means, so what it replaces is beside the point.
+ * 2. **Digits alone are typing, when they fit**: the whole text the field would hold, provided
+ *    it has no more digits than the mask has positions. Digits carry no zone, so there is
+ *    nothing to misread, and the mask places them as the same keystrokes, even where that
+ *    leaves the field's own separators out of place: 0 over the hour of 14:03:27.415 types as
+ *    the key does. Digits that do not fit would be cut, and the rest stored complete and
+ *    accepted: an answer the paste does not denote.
+ * 3. **Any other text is typing if the mask could have been typed into it** (`couldBeTyped`):
+ *    digits that fit, and each of the mask's own characters only where it writes it.
+ * 4. **Anything else is ignored**, as a keystroke the mask cannot place changes nothing.
  *    Nothing is stored, so a combination of the pasted text and the field's own digits that
  *    nobody wrote, such as a fragment of an offset joined to a minute, can never be accepted.
  */
 export function pasteOutcome(
   type: TypedTemporalType,
   precision: number,
-  { before, pasted, after }: { readonly before: string; readonly pasted: string; readonly after: string },
+  { before, selected, pasted, after }: { readonly before: string; readonly selected: string; readonly pasted: string; readonly after: string },
 ): { answer: string } | { typed: string } | { ignored: true } {
+  if (pasted === selected) return { ignored: true }
   const answer = recognisedAnswer(type, precision, pasted)
   if (answer !== undefined) return { answer }
   const whole = `${before}${pasted}${after}`
-  // Digits carry no zone, so there is nothing to misread: the mask places them as the same keystrokes.
-  if (/^\d+$/.test(pasted.trim())) return { typed: whole }
+  const fits = digitsIn(whole).length <= slotCount(temporalEntryMask(type, precision))
+  if (fits && /^\d+$/.test(pasted.trim())) return { typed: whole }
   return couldBeTyped(type, precision, whole) ? { typed: whole } : { ignored: true }
 }

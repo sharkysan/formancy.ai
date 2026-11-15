@@ -22,8 +22,10 @@ import type { TypedTemporalType } from './temporal-entry.js'
 const accepts = (type: TypedTemporalType, precision: number, answer: string | null): boolean =>
   answer !== null && new RegExp(temporalShape(type, precision)).test(answer)
 
-// The paste path the controls take: the instant when the text is one, else the text
-// read through the mask as typed digits, which is where a zone can move an answer.
+// A whole text as `pastedInstant` reads it: the instant when the text is one, else the text
+// read through the mask as typed digits, which is where a zone can move an answer. A control
+// asks `pasteOutcome` instead, which ignores what this holds; these cases pin what is never
+// read as typing, which both decide through `couldBeTyped`.
 const pasteInto = (type: TypedTemporalType, precision: number, text: string): string | null =>
   pastedInstant(type, precision, text) ?? storedFromTyped(type, precision, editMasked(temporalEntryMask(type, precision), '', text).answer)
 
@@ -699,18 +701,51 @@ describe('what a paste into a typed control means', () => {
   const SHOWN = '2026-11-15 09:03:27.415'
   const INSTANT = '2026-11-15T13:03:27.415Z'
   const CLOCK = '14:03:27.415'
-  const place = (shown: string, from: number, to: number, pasted: string) => ({ before: shown.slice(0, from), pasted, after: shown.slice(to) })
+  const place = (shown: string, from: number, to: number, pasted: string) => ({
+    before: shown.slice(0, from),
+    selected: shown.slice(from, to),
+    pasted,
+    after: shown.slice(to),
+  })
 
-  test.each([] as const)('%s is ignored, as a keystroke with no place is', (_name, type, shown, from, to, pasted) => {
+  test.each([
+    // Read as an edit, a change of nothing is what the mask takes for a backspace, so the digit
+    // before the caret went: 0 over its own 0 stored 14:32:74.15.
+    ['0 pasted over a selected 0', 'time', CLOCK, 3, 4, '0'],
+    // An empty clipboard, or one holding only an image, pastes nothing; at caret 5 it stored 14:02:74.15.
+    ['an empty paste at the caret', 'time', CLOCK, 5, 5, ''],
+    ['an empty paste into an empty field', 'time', '', 0, 0, ''],
+    // A datetime's own clock pasted over itself lost its last digit.
+    ["a datetime's own clock over itself", 'datetime', SHOWN, 11, 23, '09:03:27.415'],
+    ['a whole datetime over itself', 'datetime', SHOWN, 0, 23, SHOWN],
+  ] as const)('%s changes nothing, as typing the same text does', (_name, type, shown, from, to, pasted) => {
+    vi.stubEnv('TZ', 'America/New_York')
     expect(pasteOutcome(type, 3, place(shown, from, to, pasted))).toEqual({ ignored: true })
   })
 
   test.each([
+    // Read as typing, the digits that do not fit were cut and the rest stored, complete and
+    // accepted: an answer the pasted text does not denote. Measured in Zurich, these stored
+    // 13:03:27, …T12:03:27.415Z and …T12:03:27Z.
+    ['nine digits into an empty time of whole seconds', 'time', 0, '', 0, 0, '130327415'],
+    ['twenty-one digits into an empty datetime', 'datetime', 3, '', 0, 0, '202611151303274151234'],
+    ['seventeen digits over a whole datetime of whole seconds', 'datetime', 0, '2026-11-15 14:03:27', 0, 19, '20261115130327415'],
+    ['twenty-one digits over a whole datetime', 'datetime', 3, SHOWN, 0, 23, '202611151303274151234'],
+    // With the field's own digits there is no room either; ignored, nothing is cut.
+    ['a digit at the end of a full time', 'time', 3, CLOCK, 12, 12, '6'],
+    ['a digit at the end of a full datetime', 'datetime', 3, SHOWN, 23, 23, '9'],
+  ] as const)('%s is ignored, never cut to fit', (_name, type, precision, shown, from, to, pasted) => {
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    expect(pasteOutcome(type, precision, place(shown, from, to, pasted))).toEqual({ ignored: true })
+  })
+
+  test.each([
     // Digits carry no zone, so there is nothing to misread, and the mask places them as the
-    // same keystrokes: a digit after a full time was once held where the control could not show it.
-    ['a digit at the end of a full time', 'time', CLOCK, 12, 12, '6', '14:03:27.4156'],
-    ['a digit at the end of a full datetime', 'datetime', SHOWN, 23, 23, '9', '2026-11-15 09:03:27.4159'],
+    // same keystrokes, even where that leaves the field's own colon after one digit.
     ['one digit over the hour, as typing it there is', 'time', CLOCK, 0, 2, '0', '0:03:27.415'],
+    // Exactly as many digits as the mask has positions: every one is placed and none is cut.
+    ['nine digits over a whole time', 'time', CLOCK, 0, 12, '140327415', '140327415'],
+    ['seventeen digits over a whole datetime', 'datetime', SHOWN, 0, 23, '20261115130327415', '20261115130327415'],
   ] as const)('%s is typing', (_name, type, shown, from, to, pasted, text) => {
     expect(pasteOutcome(type, 3, place(shown, from, to, pasted))).toEqual({ typed: text })
   })
@@ -761,7 +796,7 @@ describe('what a paste into a typed control means', () => {
     // "-01" is a sign the mask writes only after the year and month, so it has no place there;
     // stored it would be this clock at that offset, an instant the person never read.
     for (const offset of ['Z', '+01:00', '-01:00', '-01', '-0100']) {
-      expect(pasteOutcome('datetime', 3, { before: SHOWN, pasted: offset, after: '' }), offset).toEqual({ ignored: true })
+      expect(pasteOutcome('datetime', 3, place(SHOWN, 23, 23, offset)), offset).toEqual({ ignored: true })
     }
   })
 

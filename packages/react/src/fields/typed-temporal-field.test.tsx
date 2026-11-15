@@ -217,9 +217,10 @@ describe('a time with a precision', () => {
     expect(control().selectionStart).toBe(12)
   })
 
-  test('a digit pasted into a complete field is ignored, and a whole time replaces it', () => {
-    // Held, a digit after a complete time was stored where the control could not show it; a
-    // whole time says what it is, so it is the answer rather than digits merged into the old one.
+  test('a digit with no room in a complete field changes nothing, and a whole time replaces it', () => {
+    // Held, a digit after a complete time was stored where the control could not show it; read
+    // as typing, a digit that does not fit is cut. A whole time says what it is, so it is the
+    // answer rather than digits merged into the old one.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
     control().setSelectionRange(12, 12)
 
@@ -240,6 +241,45 @@ describe('a time with a precision', () => {
 
     expect(control().value).toBe('00:32:74.15')
     expect(value(engine)).toBe('00:32:74.15')
+  })
+
+  test('more digits than the field has room for change nothing, never cut into an answer', () => {
+    // Read as typing, the first six were stored as 13:03:27, complete and accepted, and the
+    // three after them dropped: an answer the paste did not denote.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 0 })
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '130327415' } })
+
+    expect(value(engine)).toBeUndefined()
+    expect(control().value).toBe('')
+  })
+
+  test.each([
+    // An empty clipboard, or one holding only an image, pastes nothing. Handed to the mask as an
+    // edit that changed nothing, it was read as a backspace: 14:02:74.15.
+    ['an empty paste at the caret', 5, 5, ''],
+    // The same, for the same text over itself: 14:32:74.15.
+    ['0 pasted over a selected 0', 3, 4, '0'],
+  ])('%s leaves a time as it was', (_name, from, to, pasted) => {
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(from, to)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => pasted } })
+
+    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test("a datetime's own clock pasted over itself leaves it as it was, in New York", () => {
+    // Read as an edit that changed nothing, it lost its last digit and stored an unfinished answer.
+    vi.stubEnv('TZ', 'America/New_York')
+    const engine = mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+    control().setSelectionRange(11, 23)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '09:03:27.415' } })
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
+    expect(value(engine)).toBe('2026-11-15T14:03:27.415Z')
   })
 
   test('a complete datetime pasted a digit keeps showing its answer', () => {

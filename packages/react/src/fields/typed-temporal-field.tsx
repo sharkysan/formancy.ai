@@ -45,12 +45,14 @@ export function TypedTemporalField({ path, label, type }: { path: string; label:
           if (field.readOnly) return
           const input = event.currentTarget
           const pasted = event.clipboardData.getData('text')
-          // What is shown before and after the selection, which is what the paste replaces.
-          const before = shown.slice(0, input.selectionStart ?? shown.length)
-          const after = shown.slice(input.selectionEnd ?? shown.length)
+          // What is shown before, in and after the selection, which is what the paste replaces.
+          const start = input.selectionStart ?? shown.length
+          const end = input.selectionEnd ?? shown.length
+          const before = shown.slice(0, start)
+          const after = shown.slice(end)
           event.preventDefault()
-          // Whether the paste is an answer or typing is `@formancy/spec`'s, for every control (0091).
-          const outcome = pasteOutcome(type, precision, { before, pasted, after })
+          // Whether the paste is an answer, typing or nothing is `@formancy/spec`'s, for every control (0091).
+          const outcome = pasteOutcome(type, precision, { before, selected: shown.slice(start, end), pasted, after })
           if ('answer' in outcome) {
             // When the answer shows as the text the field now holds, the control is written and
             // the caret placed before React renders, as typing leaves it; React would write the
@@ -65,6 +67,7 @@ export function TypedTemporalField({ path, label, type }: { path: string; label:
             const caret = before.length + pasted.length
             field.setValue(storedFromTyped(type, precision, applyMaskedEdit(input, mask, typed, outcome.typed, { caret, forward: false })))
           }
+          // Ignored, the default is prevented and nothing else happens, as for a key the mask cannot place.
         }}
         onBlur={() => field.touch()}
       />
