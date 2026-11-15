@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, relative } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, test } from 'vitest'
@@ -453,6 +453,15 @@ function templatesIn(source: ts.SourceFile): Array<{ text: string; line: number 
   return templates
 }
 
+/**
+ * A file as the repository names it, with `/` whatever the platform. On Windows `relative`
+ * answers with `\`, so the files the check claims to read were not found among the files it
+ * did read, and the check failed there although it read every one of them.
+ */
+function repoPath(path: string): string {
+  return relative(repo, path).split(sep).join('/')
+}
+
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name)
@@ -470,7 +479,7 @@ function parse(path: string): ts.SourceFile {
 /** Every word written into one file, as `file:line "text"`. */
 function literalWordsIn(path: string): string[] {
   const source = parse(path)
-  const name = relative(repo, path)
+  const name = repoPath(path)
   const found = [...wordsIn(source, source), ...templatesIn(source).flatMap(({ text, line }) => templateWords(text, line))]
   return found.sort((a, b) => a.line - b.line).map(({ line, text }) => `${name}:${String(line)} ${JSON.stringify(text.slice(0, 60))}`)
 }
@@ -491,7 +500,7 @@ describe('a word a renderer shows', () => {
   test('and the check reads the files it claims to, templates included', () => {
     // A check of absence is satisfied by one that read nothing. The form is where Next,
     // Back and Submit are drawn in each binding, and Material's group draws its own hint.
-    const names = files.map((path) => relative(repo, path))
+    const names = files.map(repoPath)
     expect(names).toEqual(
       expect.arrayContaining(['packages/react/src/form.tsx', 'packages/angular/src/form.ts', 'packages/angular/material/src/choice-fields.ts']),
     )
