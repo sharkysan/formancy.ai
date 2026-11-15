@@ -1,5 +1,5 @@
 import { validateHeaderValue } from 'node:http'
-import { dirname, join, relative } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, test } from 'vitest'
@@ -158,14 +158,17 @@ describe('every response header the server writes', () => {
     const sources = parsed.fileNames.filter((file) => !file.endsWith('.test.ts'))
     const program = ts.createProgram(sources, { ...parsed.options, noEmit: true })
     const checker = program.getTypeChecker()
-    const maker = join(here, 'header-values.ts')
+    // The file itself rather than its name: TypeScript spells a path with `/` and `join` with `\` on
+    // Windows, so compared by name no call there was ever made in header-values.ts.
+    const maker = program.getSourceFile(join(here, 'header-values.ts'))
+    if (maker === undefined) throw new Error('header-values.ts is not among the files the program read')
 
     const constant = (type: ts.Type): boolean => type.isLiteral() || (type.isUnion() && type.types.every((member) => member.isLiteral()))
     const made = (node: ts.Expression): boolean => {
       if (!ts.isCallExpression(node)) return false
       let symbol = checker.getSymbolAtLocation(node.expression)
       if (symbol !== undefined && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol)
-      return symbol?.declarations?.some((declaration) => declaration.getSourceFile().fileName === maker) ?? false
+      return symbol?.declarations?.some((declaration) => declaration.getSourceFile() === maker) ?? false
     }
     const safe = (node: ts.Expression): boolean => {
       if (made(node) || constant(checker.getTypeAtLocation(node))) return true
@@ -178,7 +181,9 @@ describe('every response header the server writes', () => {
     const unsafe: string[] = []
     for (const source of program.getSourceFiles()) {
       if (!sources.includes(source.fileName)) continue
-      const file = relative(here, source.fileName)
+      // With `/` whatever the platform: on Windows `relative` answers with `\`, and the files this
+      // claims to see were not found among the files it saw.
+      const file = relative(here, source.fileName).split(sep).join('/')
       const visit = (node: ts.Node): void => {
         if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
           const method = node.expression.name

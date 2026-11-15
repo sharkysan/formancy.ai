@@ -1,4 +1,4 @@
-import { dirname, join } from 'node:path'
+import { dirname, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, test } from 'vitest'
@@ -153,9 +153,11 @@ function engineOn(data: Record<string, unknown>) {
  * built spec exactly as it would in a consumer's project.
  */
 function compiles(values: unknown[]): boolean[] {
-  const here = dirname(fileURLToPath(import.meta.url))
-  const answersFile = join(here, '__agreement_answers.ts')
-  const casesFile = join(here, '__agreement_cases.ts')
+  // Named as TypeScript names a file, with `/`: on Windows `join` answers with `\`, so the
+  // compiler asked the host for files it did not hold, and every case failed to compile there.
+  const here = dirname(fileURLToPath(import.meta.url)).replaceAll(sep, '/')
+  const answersFile = `${here}/__agreement_answers.ts`
+  const casesFile = `${here}/__agreement_cases.ts`
   const sources = new Map([
     [answersFile, answersTypeScript(schema, { name: 'Answers' })],
     [
