@@ -1,6 +1,6 @@
 # 0235 — A date and time in a condition is the instant its author chose, written as every answer is
 
-- **Status:** accepted
+- **Status:** accepted; extended by [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md): a publish names such a rule in a warning
 - **Date:** 2026-11-15
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/condition-draft.test.ts`, *a date and time

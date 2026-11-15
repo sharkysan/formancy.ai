@@ -5,7 +5,7 @@ import type { SchemaError } from '@formancy/spec/validate'
 import type { ServerDeps } from './deps.js'
 import type { ResolvedForm } from './use-cases.js'
 import { createFormEngine } from '@formancy/core'
-import { expressionProblems, unknownReferences } from '@formancy/core/authoring'
+import { expressionProblems, misshapenTemporalLiterals, unknownReferences } from '@formancy/core/authoring'
 import { sourceNamesIn } from './options-membership.js'
 import { examplesThatStopHolding } from './examples.js'
 import type { AuditEntry } from './audit.js'
@@ -127,11 +127,13 @@ export async function publishForm(
    * A rule reading a path no field provides is a real defect — it evaluates to
    * nothing for the life of an immutable version — and refusing it is not
    * available: documents valid today would become invalid tomorrow, and what a
-   * reader accepts is the frozen version contract. Computed before the storage
-   * branches below so that every successful return carries the same answer,
-   * including the idempotent one.
+   * reader accepts is the frozen version contract. So is a date or time compared
+   * with text not written as its answers are, which holds at the wrong moment for
+   * the life of the version (0236). Computed before the storage branches below so
+   * that every successful return carries the same answer, including the
+   * idempotent one.
    */
-  const warnings = unknownReferences(schema).map((found) => found.message)
+  const warnings = [...unknownReferences(schema), ...misshapenTemporalLiterals(schema)].map((found) => found.message)
 
   // Before the schema is persisted, because after it is there is no way to
   // time out a regular expression that has already started matching.

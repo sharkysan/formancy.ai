@@ -562,18 +562,24 @@ every answer is written
 ([0235](../decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md)).
 Verified by `packages/builder-core/src/condition-draft.test.ts`, *a date and time compared*,
 which pins Zurich and New York and runs the rule through the engine. Observed failing before the
-change.
+change. And a publish names, as a warning, every rule comparing a date, a time or a date and time
+with a string literal not in its answers' shape, whoever wrote it
+([0236](../decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
+Verified by `packages/core/src/temporal-literals.test.ts` and, at the publish,
+`packages/server-core/src/use-cases.test.ts`. Both were observed failing before the change.
 
 *Residual:*
 
 - **A rule written by an earlier builder keeps the expression it was published with.** The
-  author's zone was never recorded, so nothing converts it, and nothing at publish reports it.
-  `MIGRATIONS.md` tells a deployment how to find and replace one.
+  author's zone was never recorded, so nothing converts it. A publish names it, but warns rather
+  than refuses, and only when its form is published again: a version nobody republishes is never
+  looked at. `MIGRATIONS.md` asks a deployment to republish each form.
 - **The zone is the author's machine's.** A builder in a browser set to another zone than the
   author's wall clock writes that zone's instant, as a renderer stores a respondent's answer in
   their browser's zone.
-- **A literal written by hand in CEL is compared as text as written.** A date and time in another
-  shape than the answers' compares wrongly, and nothing tells its author.
+- **Only a literal compared directly with the field is named.** One built by a function, passed
+  through `timestamp()`, held in a list for `in`, or a comparison of two fields, is compared as
+  written and named by nothing.
 
 ## B — Correct data is lost or altered
 

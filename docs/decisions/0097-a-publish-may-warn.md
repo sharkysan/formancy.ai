@@ -1,6 +1,6 @@
 # 0097 — A publish may warn, because refusing would break the reader contract
 
-- **Status:** accepted
+- **Status:** accepted; extended by [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md): a date or time compared with text not in its shape is warned about too
 - **Date:** 2026-10-04
 - **Extends:** [0093](0093-a-rule-follows-the-path-it-reads.md), which fixed this inside the
   builder and recorded the rest as residual. Constrained by

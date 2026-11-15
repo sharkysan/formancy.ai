@@ -20,6 +20,17 @@ builders ([0235](docs/decisions/0235-a-date-and-time-in-a-condition-is-the-insta
 A rule an earlier builder wrote keeps its expression, because nothing recorded which zone it meant:
 [`MIGRATIONS.md`](MIGRATIONS.md) says how to find and replace one.
 
+**Added: a publish names a date or time compared with text not written as its answers are.** A
+rule compares a temporal answer as text, which orders as time does only between strings of the
+answers' one shape. So `leave < "2026-1-5"`, `opens == "9:30"` or the editor's old
+`departs > "2026-10-08T10:30"` holds at the wrong moment, and `==` holds for nobody. Each such rule
+is now a sentence in the `201`'s `warnings`, naming the rule, the field, the literal and the shape.
+The form is published all the same, because refusing would make documents valid today invalid
+tomorrow
+([0236](docs/decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
+`@formancy/expressions` exports `comparedLiterals`, every place an expression compares a field with
+a string, and `@formancy/core/authoring` exports `misshapenTemporalLiterals`.
+
 ## 0.13.0 — 2026-11-05
 
 **A minor release; the spec version stays 5.** `0.13.0` reads and writes what `0.12.0` does, so a

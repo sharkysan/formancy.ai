@@ -331,10 +331,19 @@ the `409 already_published` you get for republishing an older version verbatim.
 ```
 
 The publish **succeeded** — the version is there and the form is live. The
-warnings are things worth checking that are not grounds to refuse, and there are
-two kinds: a rule whose condition reads a data path the model does not define,
-and an example the form keeps that held against the version it had and does not
-hold against this one ([below](#a-forms-examples)).
+warnings are things worth checking that are not grounds to refuse: a rule whose
+condition reads a data path the model does not define, a rule that compares a
+date, a time or a date and time with text not written as its answers are, and an
+example the form keeps that held against the version it had and does not hold
+against this one ([below](#a-forms-examples)).
+
+A rule compares a temporal answer as text, which orders as time does only between
+strings of the answers' one shape: `"9:30"` sorts after `"10:00"`, and
+`departs > "2026-10-08T10:30"` compares a local time with answers stored in UTC
+with seconds. The builder's condition editor wrote that last one for every date and
+time through 0.13.0, so a form published since then is worth publishing again to
+see whether it holds one
+([0236](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
 
 That rule evaluates to nothing, so it never does anything, and nothing else will
 ever tell you. An unknown *top-level* field is refused outright (`422`) because

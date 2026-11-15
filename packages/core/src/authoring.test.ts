@@ -9,7 +9,7 @@ import * as authoring from './authoring.js'
  * of it that a form never calls. They are `@formancy/core/authoring`, as a summary of responses
  * is `@formancy/core/summary` (0206).
  */
-const AUTHORING = ['expressionProblems', 'MIXED_NUMERIC_LITERAL_EXAMPLE', 'runScenarios', 'unknownReferences'] as const
+const AUTHORING = ['expressionProblems', 'MIXED_NUMERIC_LITERAL_EXAMPLE', 'misshapenTemporalLiterals', 'runScenarios', 'unknownReferences'] as const
 
 describe('what only an author’s tools run', () => {
   test('is not in the engine’s barrel, which every form loads', () => {
