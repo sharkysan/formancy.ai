@@ -98,7 +98,7 @@ describe('a time with a precision', () => {
     expect(control().inputMode).toBe('numeric')
   })
 
-  test('the authors example replaces the shape as the hint', async () => {
+  test("the author's example replaces the shape as the hint", async () => {
     // The author's example is the placeholder wherever there is one (0196); the shape is only
     // the fallback.
     await mount({ key: 'at', type: 'time', label: 'At', precision: 3, placeholder: 'e.g. 09:30:00.000' })

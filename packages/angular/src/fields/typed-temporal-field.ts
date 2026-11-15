@@ -10,10 +10,10 @@ import { applyMaskedEdit } from './masked-edit.js'
  * What a control that types a `time` or a `datetime` at its `precision` needs: the text to
  * show, the hint and keypad, and the two handlers.
  *
- * A function over a field rather than a base class, because two controls draw it, the
- * default one and Material's form field, and share nothing else: Material's markup is its
- * own and the logic is not. It holds no state of its own, only computed views of the
- * field's.
+ * A function over a field rather than logic in the component, so the handlers read as one
+ * unit away from the markup. It holds no state of its own, only computed views of the
+ * field's. Material draws no control of its own for it: a precision is the default
+ * control's there, as a mask is (0132).
  *
  * What the digits mean, and what they are stored as, is `@formancy/spec`'s, because five
  * controls type into it and must agree
@@ -22,23 +22,24 @@ import { applyMaskedEdit } from './masked-edit.js'
  * `TypedTemporalField`. Written only on the person's input, never on mount: an answer
  * somebody supplied and nobody touched is submitted byte for byte, whatever width it has.
  *
- * Call from an injection context, as the field is.
+ * `type` is the field's, taken as React's control takes it.
  */
-export function typedTemporalEntry(field: FieldBinding, authoredPlaceholder: Signal<string | null>) {
-  const type = computed<TypedTemporalType>(() => (field.snapshot().def.type === 'datetime' ? 'datetime' : 'time'))
+function typedTemporalEntry(field: FieldBinding, type: TypedTemporalType, authoredPlaceholder: Signal<string | null>) {
   const precision = computed(() => {
     const declared = field.snapshot().def.precision
     return typeof declared === 'number' ? declared : 0
   })
-  const mask = computed(() => temporalEntryMask(type(), precision()))
+  const mask = computed(() => temporalEntryMask(type, precision()))
   const typed = computed(() => {
     const value = field.snapshot().value
-    return typedFromStored(type(), precision(), typeof value === 'string' ? value : '')
+    return typedFromStored(type, precision(), typeof value === 'string' ? value : '')
   })
 
+  /** The answer in its shape: every digit it holds, whatever its width. */
+  const shown = computed(() => formatMasked(mask(), typed()))
+
   return {
-    /** The answer in its shape: every digit it holds, whatever its width. */
-    shown: computed(() => formatMasked(mask(), typed())),
+    shown,
     placeholder: computed(() => authoredPlaceholder() ?? maskPlaceholder(mask())),
     inputMode: computed(() => (maskIsNumeric(mask()) ? 'numeric' : null)),
 
@@ -46,7 +47,7 @@ export function typedTemporalEntry(field: FieldBinding, authoredPlaceholder: Sig
       const input = event.target as HTMLInputElement
       const forward = (event as InputEvent).inputType === 'deleteContentForward'
       const edited = applyMaskedEdit(input, mask(), typed(), input.value, { caret: input.selectionStart, forward })
-      field.setValue(storedFromTyped(type(), precision(), edited))
+      field.setValue(storedFromTyped(type, precision(), edited))
     },
 
     onPaste(event: ClipboardEvent): void {
@@ -55,20 +56,19 @@ export function typedTemporalEntry(field: FieldBinding, authoredPlaceholder: Sig
       if (field.snapshot().readOnly) return
       const input = event.target as HTMLInputElement
       const pasted = event.clipboardData?.getData('text') ?? ''
-      const shown = formatMasked(mask(), typed())
       // What is shown before, in and after the selection, which is what the paste replaces.
-      const start = input.selectionStart ?? shown.length
-      const end = input.selectionEnd ?? shown.length
-      const before = shown.slice(0, start)
-      const after = shown.slice(end)
+      const start = input.selectionStart ?? shown().length
+      const end = input.selectionEnd ?? shown().length
+      const before = shown().slice(0, start)
+      const after = shown().slice(end)
       event.preventDefault()
       // Whether the paste is an answer, typing or nothing is `@formancy/spec`'s, for every control (0091).
-      const outcome = pasteOutcome(type(), precision(), { before, selected: shown.slice(start, end), pasted, after })
+      const outcome = pasteOutcome(type, precision(), { before, selected: shown().slice(start, end), pasted, after })
       if ('answer' in outcome) {
         // When the answer shows as the text the field now holds, the control is written and
         // the caret placed before the binding renders, as typing leaves it; the binding would
         // write the same text and leave the caret at the end.
-        const text = formatMasked(mask(), typedFromStored(type(), precision(), outcome.answer))
+        const text = formatMasked(mask(), typedFromStored(type, precision(), outcome.answer))
         if (text === `${before}${pasted}${after}`) {
           input.value = text
           input.setSelectionRange(before.length + pasted.length, before.length + pasted.length)
@@ -76,7 +76,7 @@ export function typedTemporalEntry(field: FieldBinding, authoredPlaceholder: Sig
         field.setValue(outcome.answer)
       } else if ('typed' in outcome) {
         const caret = before.length + pasted.length
-        field.setValue(storedFromTyped(type(), precision(), applyMaskedEdit(input, mask(), typed(), outcome.typed, { caret, forward: false })))
+        field.setValue(storedFromTyped(type, precision(), applyMaskedEdit(input, mask(), typed(), outcome.typed, { caret, forward: false })))
       }
       // Ignored, the default is prevented and nothing else happens, as for a key the mask cannot place.
     },
@@ -118,5 +118,5 @@ export function typedTemporalEntry(field: FieldBinding, authoredPlaceholder: Sig
   `,
 })
 export class FormancyTypedTemporalField extends FieldComponentBase {
-  protected readonly entry = typedTemporalEntry(this.field, this.authoredPlaceholder)
+  protected readonly entry = typedTemporalEntry(this.field, this.field.snapshot().def.type === 'datetime' ? 'datetime' : 'time', this.authoredPlaceholder)
 }

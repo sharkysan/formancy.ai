@@ -74,7 +74,8 @@ export class FormancyDateField extends FieldComponentBase {
   `,
 })
 /**
- * A time of day, as `HH:MM`.
+ * A time of day, as `HH:MM`, when the field declares no `precision`; with one it is
+ * `FormancyTypedTemporalField`, typed into its own shape.
  *
  * `<input type="time">` gives the platform's picker, keyboard handling and locale
  * display — a 12-hour clock where the reader expects one — while its `value` is

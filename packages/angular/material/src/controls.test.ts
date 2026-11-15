@@ -216,6 +216,25 @@ describe('what Material cannot draw', () => {
     expect(document.querySelector('[data-formancy-field-path="a"]')).not.toBeNull()
   })
 
+  test('a time with a precision is the default control typed into its shape, and stores what is typed', async () => {
+    // A precision is Material's to hand back as a mask is (0132): a Material time input holds
+    // no seventh digit, and drawing one policy for a mask and another for this would leave a
+    // design system with two answers to one mask core.
+    const engine = await mount(form([{ key: 'a', type: 'time', label: 'A', precision: 3 }]))
+    const control = screen.getByLabelText<HTMLInputElement>('A')
+
+    expect(document.querySelector('mat-form-field')).toBeNull()
+    expect(control.type).toBe('text')
+    expect(control.placeholder).toBe('__:__:__.___')
+    for (const digit of '140327415') {
+      control.value += digit
+      control.setSelectionRange(control.value.length, control.value.length)
+      fireEvent.input(control, { inputType: 'insertText', data: digit })
+    }
+
+    expect(engine.getFieldSnapshot(['a']).value).toBe('14:03:27.415')
+  })
+
   test('a picture on an option is drawn by the default radio group', async () => {
     await mount(
       form([

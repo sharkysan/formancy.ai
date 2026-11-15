@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { MaterialFieldBase } from './base.js'
-import { FormancyMaterialTypedTimeField } from './typed-time-field.js'
 import { FormancyCharacterCount, FormancyErrorText } from '@formancy/angular'
 
 /**
@@ -66,7 +65,7 @@ import { FormancyCharacterCount, FormancyErrorText } from '@formancy/angular'
   `,
 })
 export class FormancyMaterialTextField extends MaterialFieldBase {
-  /** A mask or a scanner is the default control's: Material has neither. */
+  /** A mask or a scanner is the default control's: Material has neither. (A time's `precision` is the same case.) */
   protected readonly plain = computed(() => {
     const def = this.field.snapshot().def
     return def.mask === undefined && def.widget === undefined
@@ -233,9 +232,7 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
   template: `
-    @if (typed()) {
-      <ng-container *ngComponentOutlet="typedControl" />
-    } @else {
+    @if (plain()) {
       <mat-form-field [attr.data-formancy-field-path]="context.path">
         <mat-label>{{ context.label }}</mat-label>
         <input
@@ -262,13 +259,14 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
       @if (field.snapshot().description; as said) {
         <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
       }
+    } @else {
+      <ng-container *ngComponentOutlet="fallbackFor('time')" />
     }
   `,
 })
 export class FormancyMaterialTimeField extends MaterialFieldBase {
-  /** A `precision` is typed into its own shape, which no browser picker can hold; without one, the picker. */
-  protected readonly typed = computed(() => typeof this.field.snapshot().def.precision === 'number')
-  protected readonly typedControl = FormancyMaterialTypedTimeField
+  /** A `precision` is typed into its own shape, which no browser picker can hold: the default control's. */
+  protected readonly plain = computed(() => typeof this.field.snapshot().def.precision !== 'number')
 
   protected readonly text = computed(() => {
     const value = this.field.snapshot().value

@@ -24,8 +24,8 @@ import { DEFAULT_FIELD_COMPONENTS, injectEngine, injectField, injectFieldContext
  * twice and an error read out twice; so Material is given the engine's ids without the
  * error's, and adds that one itself — from a `mat-error` carrying the engine's error id.
  *
- * **The fallback.** Anything Material has no equivalent for — a mask, a scanner, a
- * typeahead, a rating — is drawn by the default control, through `fallback`, so a design
+ * **The fallback.** Anything Material has no equivalent for — a mask, a time's `precision`, a
+ * scanner, a typeahead, a rating — is drawn by the default control, through `fallback`, so a design
  * system never makes a feature disappear
  * ([0132](../../../../docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
  */

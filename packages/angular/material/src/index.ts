@@ -22,7 +22,7 @@ import {
  *
  * Only the types Material has an equivalent for; every other type keeps its default
  * control, and so does every variant of these that Material cannot draw — a mask, a
- * typeahead, a rating, a picture on an option.
+ * time's `precision`, a typeahead, a rating, a picture on an option.
  */
 export const FORMANCY_MATERIAL_CONTROLS = {
   text: FormancyMaterialTextField,
