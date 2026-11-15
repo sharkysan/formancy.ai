@@ -45,25 +45,28 @@ const slotCount = (mask: string): number => maskPositions(mask).filter((position
 
 /**
  * Whether a person could have typed this text into the field's mask: digits, no more of
- * them than the mask has positions, and otherwise only the characters a mask writes, each
- * no more often than the widest mask writes it — so a `.` after whole seconds is typing at
- * precision 0 too, and the digits decide. It is what the mask may read as typing and what
- * `storedFromTyped` holds; a zone, an offset, a second space or a digit too many is none
- * of it.
+ * them than the mask has positions, and otherwise only the characters the mask writes, in
+ * the order it writes them and each at most once — for a datetime at a precision, `-`,
+ * `-`, a space, `:`, `:`, `.`, any of them left out. It is what the mask may read as
+ * typing and what `storedFromTyped` holds. A zone, an offset, a second space, a space
+ * after the stop or a digit too many is none of it: read as typing, its digits would fill
+ * positions they do not belong in.
  */
 function couldBeTyped(type: TypedTemporalType, precision: number, text: string): boolean {
-  const written = new Map<string, number>()
-  for (const position of maskPositions(temporalEntryMask(type, TEMPORAL_PRECISION_MAX))) {
-    if ('literal' in position) written.set(position.literal, (written.get(position.literal) ?? 0) + 1)
-  }
+  const mask = temporalEntryMask(type, precision)
+  const written = maskPositions(mask).flatMap((position) => ('literal' in position ? [position.literal] : []))
+  let next = 0
   let digits = 0
   for (const character of text) {
-    const left = written.get(character) ?? 0
-    if (fitsSlot('digit', character)) digits += 1
-    else if (left > 0) written.set(character, left - 1)
-    else return false
+    if (fitsSlot('digit', character)) {
+      digits += 1
+      continue
+    }
+    while (next < written.length && written[next] !== character) next += 1
+    if (next === written.length) return false
+    next += 1
   }
-  return digits <= slotCount(temporalEntryMask(type, precision))
+  return digits <= slotCount(mask)
 }
 
 /** The stored shape of a datetime as a mask, so the mask core writes its separators too. */
@@ -155,6 +158,10 @@ function storedDigits(type: TypedTemporalType, stored: string): string | undefin
  * the person's own, and the first edit would store that local clock, shifted from the
  * instant the text names. Empty, the engine's shape error says why, and a keystroke
  * replaces it.
+ *
+ * One answer the engine accepts shows nothing too, a residual accepted rather than fixed,
+ * for the safety analysis to name: an instant whose year on the local clock leaves 0000–9999
+ * (9999-12-31T23:30:00Z in Zurich is 10000-01-01 there), which four digits cannot show.
  *
  * Only as many digits as the mask has positions: an instant wider than the field shows
  * what fits. Keeping the rest in the answer would hide them in it, and a deletion would

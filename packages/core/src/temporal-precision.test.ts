@@ -57,6 +57,20 @@ describe('an answer at its field’s precision', () => {
     expect(errorsFor({ type: 'time', precision: 7 }, '10:34:56.789')).toEqual(['shape'])
   })
 
+  // The shape is digits in places, so 30 February passed it: the typed control shows such an
+  // answer empty, and with no error the form submitted a day that does not exist.
+  test('a day that does not exist is a shape error on a field with a precision', () => {
+    expect(errorsFor({ precision: 0 }, '2026-02-30T10:00:00Z')).toEqual(['shape'])
+    expect(errorsFor({ precision: 3 }, '2027-02-29T10:00:00.415Z')).toEqual(['shape'])
+    expect(errorsFor({ precision: 3 }, '2028-02-29T10:00:00.415Z')).toBeUndefined()
+  })
+
+  // 0.13.0's behaviour, kept on purpose: a field without a precision is version 5's, whose shape
+  // never asked the calendar, and checking it now would refuse answers a frozen version accepts.
+  test('the same day on a field without a precision is not a shape error', () => {
+    expect(errorsFor({}, '2026-02-30T10:00:00Z')).toBeUndefined()
+  })
+
   // The bound still applies once the shape holds; a shape check that skipped it would unbound the field.
   test('an answer of the right width is still bounded', () => {
     const field = { precision: 3, earliest: '2026-10-08T10:00:00.000Z' }

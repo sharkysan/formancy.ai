@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { temporalAnyShape, temporalExample, temporalShape } from './temporal.js'
+import { temporalAnyShape, temporalDateExists, temporalExample, temporalShape } from './temporal.js'
 import { FIELD_TYPES, SPEC_1_FIELD_TYPES, TEMPORAL_SHAPES } from './types.js'
 import type { TemporalFieldType } from './types.js'
 import { validateSchema } from './validate.js'
@@ -270,5 +270,33 @@ describe('the bounds', () => {
     const errors = errorsFor(documentWith({ type: 'date', earliest: '2026-09-19' }, '1'))
     expect(errors.join('\n')).toMatch(/earliest/)
     expect(errors.join('\n')).toMatch(/specVersion "2"/)
+  })
+})
+
+describe('whether an answer in its shape names a day the calendar has', () => {
+  // The shape is digits in places, so 2026-02-30 passes it. A field with a precision refuses
+  // such a day on that check, or the control shows it empty, no error is raised, and the form
+  // submits a day that does not exist.
+  test.each(['2026-02-30', '2026-13-01', '2026-04-31', '2027-02-29', '2100-02-29', '2026-00-10', '2026-01-00'])('%s is no day', (date) => {
+    expect(temporalDateExists('date', date)).toBe(false)
+    expect(temporalDateExists('datetime', `${date}T10:00:00.415Z`)).toBe(false)
+  })
+
+  // 2028 is divisible by four and 2000 by 400; 2100, refused above, is divisible by 100 only.
+  test.each(['2028-02-29', '2000-02-29', '2026-12-31', '2026-04-30'])('%s is a day', (date) => {
+    expect(temporalDateExists('date', date)).toBe(true)
+    expect(temporalDateExists('datetime', `${date}T10:00:00Z`)).toBe(true)
+  })
+
+  test('a year below 100 is that year, not 19xx', () => {
+    // Date.UTC reads 0004 as 1904. Both are leap years, but the round trip then gives back
+    // 1904, and the fourth of a leap year's 29 Februaries would be refused.
+    expect(temporalDateExists('date', '0004-02-29')).toBe(true)
+    expect(temporalDateExists('date', '0003-02-29')).toBe(false)
+  })
+
+  test('a time names no day, so it always exists', () => {
+    // A time of day has no calendar to fail; refusing one here would refuse every time.
+    expect(temporalDateExists('time', '10:34:56.789')).toBe(true)
   })
 })

@@ -1,4 +1,13 @@
-import { ANSWER_KINDS, PATTERN_FLAGS, TEMPORAL_FIELD_TYPES, anchoredPattern, fitsAnswerShape, fitsMask, temporalShape } from '@formancy/spec'
+import {
+  ANSWER_KINDS,
+  PATTERN_FLAGS,
+  TEMPORAL_FIELD_TYPES,
+  anchoredPattern,
+  fitsAnswerShape,
+  fitsMask,
+  temporalDateExists,
+  temporalShape,
+} from '@formancy/spec'
 import type { FieldDef, FieldFormat, StoredFile, TemporalFieldType } from '@formancy/spec'
 import type { BuiltInErrorCode } from './error-codes.js'
 import { formatPath } from './path.js'
@@ -118,9 +127,15 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   //
   // `shape` rather than `pattern` as the code: `pattern` is the author's own regular
   // expression, and a message catalogue needs to tell these two apart.
+  //
+  // A field with a precision (spec 6) also refuses a day the calendar does not have, which
+  // the shape's digits let through: its typed control shows such an answer empty, so
+  // without the error a form would submit 30 February unseen. A field without one is
+  // 0.13.0's and unchanged, because widening a frozen version's check is what the precision
+  // design rules out.
   const shape = temporalShapeCheck(def)
   if (shape !== undefined && text !== undefined) {
-    if (!shape.test(text)) {
+    if (!shape.test(text) || (def.precision !== undefined && !temporalDateExists(def.type as TemporalFieldType, text))) {
       codes.push('shape')
     } else {
       if (def.earliest !== undefined && text < def.earliest) codes.push('earliest')

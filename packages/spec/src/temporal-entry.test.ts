@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import { editMasked, formatMasked } from './mask.js'
-import { temporalShape } from './temporal.js'
+import { temporalDateExists, temporalShape } from './temporal.js'
 import { pastedInstant, storedFromTyped, temporalEntryMask, typedFromStored } from './temporal-entry.js'
 import type { TypedTemporalType } from './temporal-entry.js'
 
@@ -219,9 +219,23 @@ describe('a datetime that is not an instant', () => {
   test('a stored instant on a day that does not exist shows nothing, not the day Date rolls to', () => {
     // 2026-02-30T10:00:00Z has the shape and is no instant. Shown as 2 March, the control
     // would display a day the answer does not hold; shown as its digits, it would read
-    // as a local clock it never was. Empty, the engine's shape error says why.
+    // as a local clock it never was. Empty, and the engine says shape, because a field
+    // with a precision refuses a day the calendar does not have.
     vi.stubEnv('TZ', 'Europe/Zurich')
     expect(typedFromStored('datetime', 0, '2026-02-30T10:00:00Z')).toBe('')
+    expect(temporalDateExists('datetime', '2026-02-30T10:00:00Z')).toBe(false)
+  })
+
+  test.each([
+    { zone: 'Europe/Zurich', stored: '9999-12-31T23:30:00Z' },
+    { zone: 'America/New_York', stored: '0000-01-01T03:00:00Z' },
+  ])('an instant whose local year has no four digits shows nothing, and is accepted: $stored in $zone', ({ zone, stored }) => {
+    // A residual accepted, for the safety analysis to name: the instant is real and in its shape, so
+    // the engine accepts it, but on this clock its year is 10000 or -0001, which the mask
+    // cannot show. Pinned, so that a change to either half is a decision and not a drift.
+    vi.stubEnv('TZ', zone)
+    expect(typedFromStored('datetime', 0, stored)).toBe('')
+    expect(accepts('datetime', 0, stored) && temporalDateExists('datetime', stored)).toBe(true)
   })
 
   test.each([
@@ -354,6 +368,7 @@ describe('a whole answer pasted', () => {
     // with no seconds to bring to a width.
     expect(pastedInstant('datetime', 3, '14:03')).toBeUndefined()
     expect(pastedInstant('datetime', 3, '2026-11-15 14:03:27.415')).toBeUndefined()
+    expect(pastedInstant('datetime', 3, '2026-11-15 14:03')).toBeUndefined()
     expect(pastedInstant('time', 3, '14:03')).toBeUndefined()
   })
 
@@ -444,9 +459,9 @@ describe('an instant pasted with an offset, or with more digits than any field',
   })
 
   test('with a digit the field cannot hold, it is the UTC instant at its own width', () => {
-    // Kept as pasted, the offset would make it a text typedFromStored shows as raw digits.
-    // In UTC at its own width, it is the same instant, the engine says shape, and the
-    // control shows it converted.
+    // Kept as pasted, with its offset, it could not have been typed, so the control would
+    // show it empty. In UTC at its own width, it is the same instant, the engine says
+    // shape, and the control shows it converted.
     vi.stubEnv('TZ', 'Europe/Zurich')
     const taken = pastedInstant('datetime', 3, '2026-11-15T14:03:27.415123+01:00')
     expect(taken).toBe('2026-11-15T13:03:27.415123Z')
@@ -510,6 +525,25 @@ describe('a paste that could not have been typed into the mask is held as pasted
     const stored = pasteInto('datetime', 0, '2026-11-15 14:03:27.415')
     expect(stored).toBe('2026-11-15 14:03:27.415')
     expect(accepts('datetime', 0, stored)).toBe(false)
+  })
+
+  test.each([
+    { precision: 4, text: '20261115 140327-0100', why: 'a space before a dash' },
+    { precision: 7, text: '20261115-140327.415 0100', why: 'a space after the stop' },
+  ])('written characters out of the order the mask writes them are held: $why', ({ precision, text }) => {
+    // Counted but not ordered, each passed as typing: the mask read their digits and, with
+    // exactly as many as it has positions, stored a complete instant whose fraction was the
+    // offset's digits — 14:03:27.0100 and 14:03:27.4150100 local, both accepted.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const stored = pasteInto('datetime', precision, text)
+    expect(stored).toBe(text)
+    expect(accepts('datetime', precision, stored)).toBe(false)
+  })
+
+  test('a stop pasted into a precision-0 field is held, as the mask writes none', () => {
+    // Read against the widest mask, 14:03:27. was typing at precision 0, and the stop was
+    // dropped without a word; the field's own mask has no place for it.
+    expect(pastedInstant('time', 0, '14:03:27.')).toBe('14:03:27.')
   })
 
   test('a written character more often than the mask writes it is held', () => {

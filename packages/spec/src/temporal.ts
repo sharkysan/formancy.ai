@@ -37,6 +37,21 @@ export function temporalAnyShape(type: TemporalFieldType): string {
   return `^${DATE}T${CLOCK}${SECONDS}${any}Z$`
 }
 
+/**
+ * Whether a `date` or `datetime` answer, already in its shape, names a day the calendar has.
+ * The shape is digits in places, so 2026-02-30 passes it. The parts go through `Date.UTC`
+ * and must come back as they went in, which `Date` does not refuse but moves (to 2 March);
+ * the year is set again, because `Date.UTC` reads 0–99 as 1900–1999. A `time` names no
+ * day, so it always does.
+ */
+export function temporalDateExists(type: TemporalFieldType, answer: string): boolean {
+  if (type === 'time') return true
+  const [year, month, day] = [Number(answer.slice(0, 4)), Number(answer.slice(5, 7)), Number(answer.slice(8, 10))]
+  const date = new Date(Date.UTC(year, month - 1, day))
+  date.setUTCFullYear(year, month - 1, day)
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
 /** An answer in that shape, for sentences: time p3 → "09:30:00.000", datetime absent → "2026-10-08T09:30:00Z". */
 export function temporalExample(type: TemporalFieldType, precision?: number): string {
   const n = fractionDigits(precision)
