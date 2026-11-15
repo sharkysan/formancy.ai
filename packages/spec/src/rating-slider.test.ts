@@ -40,9 +40,9 @@ const errorsOf = (schema: FormSchema): string[] => {
 
 describe('what version 4 is', () => {
   test('a version this package speaks, frozen, and no longer the one it writes', () => {
-    // Version 5 is open and is what a new document is written in (0194).
+    // Version 6 is open and is what a new document is written in.
     expect([...SPEC_VERSIONS]).toContain('4')
-    expect(CURRENT_SPEC_VERSION).toBe('5')
+    expect(CURRENT_SPEC_VERSION).toBe('6')
   })
 
   test('with a seam of its own, so the next version can tell what it added', () => {

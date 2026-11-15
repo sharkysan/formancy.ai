@@ -18,7 +18,7 @@ software, and neither is `latest`.
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
 | Package version | `0.13.0`, published to npm under the `@formancy` scope |
-| Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open: a construct needing one opens version `"6"`. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. Version `"6"` is open and in no release: the source writes it and it may still gain constructs. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
 | Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 to 0.13.0 read and write version 5 as 0.8.0 does, so the six read each other's documents |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. From 0.9.0 the release also attests the image with GitHub's build provenance, verified with `gh attestation verify`; every earlier image carries BuildKit's provenance inside its index and none of GitHub's ([0209](../decisions/0209-the-image-carries-githubs-build-provenance.md)). There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
@@ -35,13 +35,13 @@ submissions*, which is the artefact with real switching costs.
 > But a reader that speaks only one version cannot read a document written against a later
 > one — the failure is a validation error rather than a silent one
 > ([0051](../decisions/0051-spec-2-adds-types.md)). This document characterises the released
-> package, which writes version 5.
+> package, which writes version 5; the source writes version 6, which is open and in no release.
 >
 > **The data format is stable; the code is not.** Every released spec version — 1 to 5 — is
 > frozen, so a form document written against any of them, and the submissions stored against
 > it, keeps its shape ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). A
 > deployment pinned to any of them is characterising a settled format whatever the source
-> does next. The *packages* are pre-1.0 and their APIs will still change. A manufacturer
+> does next. Version 6 is open and is not a version to pin yet. The *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.
 

@@ -331,8 +331,8 @@ widget and the `check` and `skip` rule kinds
 option `image` properties ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). Version `"5"` is
 **frozen** as of 2026-10-27, first released with 0.8.0, and carries properties only — a field's
 `description`, `autocomplete`, `placeholder`, `default` and `shuffle`, an option's `exclusive` and
-`keepPlace`, and a rule's `message` ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). No version is open:
-a construct needing one opens version 6, `spec-version.test.ts` fails on a type that belongs to no
+`keepPlace`, and a rule's `message` ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version `"6"` is open
+and in no release; `spec-version.test.ts` fails on a type that belongs to no
 version's list, and `version-ledger.ts` does not compile with a property that has no version. Version 2 is
 a superset — it adds field types and layout kinds and removes nothing — so a
 version 1 document is also a valid version 2 document, while a version 1 reader

@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**Added: spec version 6 opens, with `precision` on a `time` or `datetime` field.** A form can now
+say how many digits follow the seconds in the answer, 0 to 9, counted as a database counts them in
+`timestamp(p)`, so that what is collected is what its storage keeps. Absent, nothing changes: a time
+is still `09:30` and a date and time still ends in whole seconds. Version 6 is open and in no
+release; `0.13.0` and earlier refuse a document using `precision` as a validation error, so upgrade
+the readers before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). The property is in the schema,
+the validator and the diff (a change to it is `field.changed` and lossy); the engine and the
+controls follow in the same release.
+
 **Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
 release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,
 `departs > "2026-10-08T10:30"`, and that was compared as text with answers stored in UTC with

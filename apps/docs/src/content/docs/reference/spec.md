@@ -1,5 +1,5 @@
 ---
-title: Spec reference (v5)
+title: Spec reference (v6)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
@@ -9,7 +9,7 @@ the source of truth — edit it, not this page.
 :::
 
 :::note
-This page describes spec version 5. Earlier versions are **frozen**: a
+This page describes spec version 6. Earlier versions are **frozen**: a
 document that validates against one keeps validating. A newer version only adds, and
 a reader of an older one refuses a document it cannot fully understand rather than
 dropping an answer from it. See [Versioning](/docs/concepts/versioning/) for how that
@@ -22,9 +22,9 @@ A formancy form. The document holds the data contract only: what the form collec
 
 ### `specVersion`
 
-required · one of `"1"`, `"2"`, `"3"`, `"4"`, `"5"` · default `"5"`
+required · one of `"1"`, `"2"`, `"3"`, `"4"`, `"5"`, `"6"` · default `"6"`
 
-**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties; version 5, which is open, a field's `description`. The default is the newest version, which is the one this package writes.
+**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties; version 5 the `description`, `autocomplete`, `placeholder`, `default` and `shuffle` field properties, an option's `exclusive` and `keepPlace`, and a `validate` rule's `message`; version 6, which is open, a `time` or `datetime` field's `precision`. The default is the newest version, which is the one this package writes.
 
 ### `id`
 
@@ -452,6 +452,12 @@ optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d$`
 
 **Latest allowed.** The latest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
+##### `precision`
+
+optional · integer · minimum 0 · maximum 9
+
+**Precision.** How many digits follow the seconds in the answer, from 0 to 9, counted as a database counts them in timestamp(p). Absent: a time is stored as 09:30 and a date and time as 2026-10-08T09:30:00Z, and the control is the browser's, to the minute. 0: a time is stored as 09:30:00 and a date and time as 2026-10-08T09:30:00Z, and the control is typed, to the second. 1 to 9: that many digits follow the seconds, always all of them and never abbreviated, as 09:30:00.123 or 2026-10-08T09:30:00.123Z. Submissions already stored are never converted, so changing it leaves an earlier answer in the width it was written in. Needs spec version 6.
+
 #### `datetime`
 
 ##### `earliest`
@@ -465,6 +471,12 @@ optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5
 optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
 
 **Latest allowed.** The latest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+##### `precision`
+
+optional · integer · minimum 0 · maximum 9
+
+**Precision.** How many digits follow the seconds in the answer, from 0 to 9, counted as a database counts them in timestamp(p). Absent: a time is stored as 09:30 and a date and time as 2026-10-08T09:30:00Z, and the control is the browser's, to the minute. 0: a time is stored as 09:30:00 and a date and time as 2026-10-08T09:30:00Z, and the control is typed, to the second. 1 to 9: that many digits follow the seconds, always all of them and never abbreviated, as 09:30:00.123 or 2026-10-08T09:30:00.123Z. Submissions already stored are never converted, so changing it leaves an earlier answer in the width it was written in. Needs spec version 6.
 
 #### `select`
 

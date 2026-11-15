@@ -4,9 +4,12 @@ description: A visual form builder for Angular and React. Conditional fields, va
 ---
 
 :::caution[Status: beta, version 0.13.0]
-formancy is beta software: **every spec version is frozen; the package APIs are not.**
+formancy is beta software: **every spec version but the newest is frozen; the package APIs
+are not.**
 
-`specVersion: "5"` — the newest, with a field's `description`, `autocomplete`, `placeholder`
+`specVersion: "6"` — the newest, **open**, with a `time` or `datetime` field's `precision` so far —
+is not in a release yet; write it once your installed packages speak it.
+`specVersion: "5"` — frozen, with a field's `description`, `autocomplete`, `placeholder`
 and `default`, a choice's `shuffle`, an option's `exclusive` and `keepPlace` and a rule's
 `message` — needs `0.8.0` or newer.
 `specVersion: "4"` — with the `ranking` and `matrix` field types, the `rating`

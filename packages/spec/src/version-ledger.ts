@@ -17,7 +17,7 @@ import type { LayoutNode } from './layout.js'
 import type { LogicRule, RuleKind } from './rules.js'
 
 /** A spec version, as the number the ledger compares. */
-export type SpecVersionNumber = 1 | 2 | 3 | 4 | 5
+export type SpecVersionNumber = 1 | 2 | 3 | 4 | 5 | 6
 
 /**
  * A field property's version: one number, or one per field type where the property
@@ -75,6 +75,7 @@ export const FIELD_PROPERTY_SINCE = {
   maxPoints: 3,
   earliest: 2,
   latest: 2,
+  precision: 6,
   min: 1,
   max: 1,
   step: 4,
