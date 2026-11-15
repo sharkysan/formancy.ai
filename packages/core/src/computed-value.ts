@@ -26,7 +26,30 @@ export function storableResult(def: FieldDef, result: unknown): { value: unknown
     return kind.shape === 'number' ? exactNumber(result) : undefined
   }
   if (result === null) return kind.nullable ? { value: null } : undefined
-  return fitsAnswerShape(kind.shape, result) ? { value: result } : undefined
+  if (!fitsAnswerShape(kind.shape, result)) return undefined
+  if (def.type === 'datetime' && def.precision !== undefined && typeof result === 'string') {
+    const padded = atPrecision(result, def.precision)
+    return padded === undefined ? undefined : { value: padded }
+  }
+  return { value: result }
+}
+
+/**
+ * A computed instant, brought to its field's width. The expressions package writes
+ * milliseconds, or no fraction at all, so a field of another width would hold an answer its
+ * own shape check refuses and nobody can type over.
+ *
+ * Padded with zeros, which adds no information and changes no instant. **Never rounded and
+ * never cut:** a digit that is not zero and does not fit means the field cannot hold what the
+ * rule computed, and not storing it is what a result of the wrong shape already gets (0189).
+ */
+function atPrecision(instant: string, precision: number): string | undefined {
+  const match = /^(.*?:\d{2})(?:\.(\d+))?Z$/.exec(instant)
+  if (match === null) return undefined
+  const [, whole = '', fraction = ''] = match
+  const kept = fraction.slice(0, precision)
+  if (/[1-9]/.test(fraction.slice(precision))) return undefined
+  return `${whole}${precision === 0 ? '' : `.${kept.padEnd(precision, '0')}`}Z`
 }
 
 function exactNumber(decimal: Decimal): { value: number } | undefined {
