@@ -5,7 +5,7 @@ import type { SchemaError } from '@formancy/spec/validate'
 import type { ServerDeps } from './deps.js'
 import type { ResolvedForm } from './use-cases.js'
 import { createFormEngine } from '@formancy/core'
-import { expressionProblems, misshapenTemporalLiterals, unknownReferences } from '@formancy/core/authoring'
+import { crossWidthComparisons, expressionProblems, misshapenTemporalLiterals, unknownReferences } from '@formancy/core/authoring'
 import { sourceNamesIn } from './options-membership.js'
 import { examplesThatStopHolding } from './examples.js'
 import type { AuditEntry } from './audit.js'
@@ -118,6 +118,17 @@ export async function publishForm(
       ok: false,
       kind: 'invalid_logic',
       message: problems.map((problem) => problem.message).join('\n'),
+    }
+  }
+
+  // A temporal answer compared across widths: refused where 0236's literals only warn, because
+  // no valid document could declare a precision before spec 6, so nothing valid becomes invalid.
+  const widths = crossWidthComparisons(schema)
+  if (widths.length > 0) {
+    return {
+      ok: false,
+      kind: 'invalid_logic',
+      message: widths.map((found) => found.message).join('\n'),
     }
   }
 

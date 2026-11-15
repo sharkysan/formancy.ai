@@ -123,6 +123,27 @@ describe('an answer that does not work', () => {
     expect(second.user).toContain('4.0')
   })
 
+  test('a comparison across widths is sent back with the way to fix it', async () => {
+    // Valid, type-checks and engine-opens, and then orders its answers wrongly as text; the
+    // loop exists to catch what publish would refuse (0237), and the model needs the remedy.
+    const wide = {
+      ...GOOD,
+      specVersion: '6',
+      model: {
+        fields: [...GOOD.model.fields, { key: 'opens', type: 'time', label: 'Opens', precision: 3 }, { key: 'note', type: 'text', label: 'Note' }],
+      },
+    }
+    const broken = { ...wide, logic: { rules: [{ target: 'note', kind: 'visible', cel: 'opens > "09:00"' }] } }
+    const fixed = { ...wide, logic: { rules: [{ target: 'note', kind: 'visible', cel: 'opens > "09:00:00.000"' }] } }
+    const ask = scripted(JSON.stringify(broken), JSON.stringify(fixed))
+
+    const result = await authorForm(ask, 'show the note after opening')
+
+    expect(result).toMatchObject({ ok: true, attempts: 2 })
+    const second = (ask as ReturnType<typeof vi.fn>).mock.calls[1]?.[0] as { user: string }
+    expect(second.user).toContain('timestamp(a) < timestamp(b)')
+  })
+
   test('a document the engine would not open is sent back in the engine’s words', async () => {
     // Used to pass this loop: valid against the schema, and the expression
     // check skips what the engine refuses. So a form with one misspelled field

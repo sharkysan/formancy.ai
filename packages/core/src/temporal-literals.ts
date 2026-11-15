@@ -1,7 +1,7 @@
 import { comparedLiterals, parse } from '@formancy/expressions'
 import { TEMPORAL_FIELD_TYPES, TEMPORAL_SHAPES, modelDataFields } from '@formancy/spec'
 import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@formancy/spec'
-import { ROW_ITEM, rowScopeOf, withoutRowNumbers } from './unknown-paths.js'
+import { inModel, rowScopeOf } from './unknown-paths.js'
 
 /**
  * Rules that compare a date, a time or a date and time with text not written as its answers are.
@@ -64,20 +64,15 @@ function isTemporal(type: FieldType): type is TemporalFieldType {
   return (TEMPORAL_FIELD_TYPES as readonly FieldType[]).includes(type)
 }
 
-/** The model path a read names in a rule whose row, if any, is `rowScope`. Outside a row, `item` is a name like any other. */
-function inModel(read: string, rowScope: string | undefined): string {
-  const path = withoutRowNumbers(read)
-  if (rowScope === undefined || (path !== ROW_ITEM && !path.startsWith(`${ROW_ITEM}.`))) return path
-  return `${rowScope}${path.slice(ROW_ITEM.length)}`
-}
-
 export function misshapenTemporalLiterals(schema: FormSchema): MisshapenTemporalLiteral[] {
   const rules = schema.logic?.rules ?? []
   if (rules.length === 0) return []
 
   const temporal = new Map<string, TemporalFieldType>()
   for (const { path, def } of modelDataFields(schema.model)) {
-    if (isTemporal(def.type)) temporal.set(path, def.type)
+    // A field that declares `precision` is not warned about: a literal at the wrong width
+    // there is refused at publish (0237), and saying it twice helps nobody.
+    if (isTemporal(def.type) && def.precision === undefined) temporal.set(path, def.type)
   }
   if (temporal.size === 0) return []
 

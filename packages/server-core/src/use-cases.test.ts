@@ -156,6 +156,33 @@ describe('publishForm', () => {
     expect(await resolveForm(deps, 'x')).toBeUndefined()
   })
 
+  test('refuses a rule comparing a temporal answer across widths, and persists nothing', async () => {
+    // Valid and engine-clean, and wrong for every answer: a precision-3 time against "09:00"
+    // orders as text. Published, it would be an immutable version that decides wrongly (0237).
+    const wide: FormSchema = {
+      specVersion: '6',
+      id: 'x',
+      title: 'X',
+      model: {
+        fields: [
+          { key: 'opens', type: 'time', precision: 3 },
+          { key: 'note', type: 'text' },
+        ],
+      },
+      logic: { rules: [{ target: 'note', kind: 'visible', cel: 'opens > "09:00"' }] },
+    }
+
+    const outcome = await publishForm(deps, { path: 'x', schema: wide })
+
+    expect(outcome.ok).toBe(false)
+    if (outcome.ok) return
+    expect(outcome.kind).toBe('invalid_logic')
+    if (outcome.kind !== 'invalid_logic') return
+    expect(outcome.message).toContain('"opens"')
+    expect(outcome.message).toContain('timestamp(a) < timestamp(b)')
+    expect(await resolveForm(deps, 'x')).toBeUndefined()
+  })
+
   test('publishes it once the literal has a decimal point', async () => {
     const fixed: FormSchema = {
       ...schema,
