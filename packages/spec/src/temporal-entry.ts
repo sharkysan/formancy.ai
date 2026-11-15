@@ -1,4 +1,4 @@
-import { fitsMask, formatMasked, maskPositions } from './mask.js'
+import { fitsMask, fitsSlot, formatMasked, maskPositions } from './mask.js'
 import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalShape } from './temporal.js'
 
 /**
@@ -40,11 +40,40 @@ export function temporalEntryMask(type: TypedTemporalType, precision: number): s
   return `${type === 'datetime' ? '9999-99-99 ' : ''}99:99:99${fractionMask(precision)}`
 }
 
+/** How many positions a mask has to type into. */
+const slotCount = (mask: string): number => maskPositions(mask).filter((position) => 'slot' in position).length
+
+/**
+ * Whether a person could have typed this text into the field's mask: digits, no more of
+ * them than the mask has positions, and otherwise only the characters a mask writes, each
+ * no more often than the widest mask writes it — so a `.` after whole seconds is typing at
+ * precision 0 too, and the digits decide. It is what the mask may read as typing and what
+ * `storedFromTyped` holds; a zone, an offset, a second space or a digit too many is none
+ * of it.
+ */
+function couldBeTyped(type: TypedTemporalType, precision: number, text: string): boolean {
+  const written = new Map<string, number>()
+  for (const position of maskPositions(temporalEntryMask(type, TEMPORAL_PRECISION_MAX))) {
+    if ('literal' in position) written.set(position.literal, (written.get(position.literal) ?? 0) + 1)
+  }
+  let digits = 0
+  for (const character of text) {
+    const left = written.get(character) ?? 0
+    if (fitsSlot('digit', character)) digits += 1
+    else if (left > 0) written.set(character, left - 1)
+    else return false
+  }
+  return digits <= slotCount(temporalEntryMask(type, precision))
+}
+
 /** The stored shape of a datetime as a mask, so the mask core writes its separators too. */
 const instantMask = (precision: number): string => `9999-99-99T99:99:99${fractionMask(precision)}`
 
 /** A UTC instant at any width, its whole seconds in six groups and its fraction in the seventh. */
 const INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z$/
+
+/** A time at any width, as it is stored and as it is pasted. */
+const TIME = /^(?<clock>\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?$/
 
 /** A wall clock to the second is fourteen digits, YYYYMMDDHHMMSS. */
 const WALL_DIGITS = 14
@@ -108,10 +137,24 @@ function localDigits(stored: string): string | undefined {
   return local === undefined ? undefined : `${local}${match[7] ?? ''}`
 }
 
+const digitsIn = (text: string): string => text.replace(/[^0-9]/g, '')
+
+/** A stored answer's digits as the mask shows them, at any width: an instant on the local clock, a time as it is. */
+function storedDigits(type: TypedTemporalType, stored: string): string | undefined {
+  if (type === 'datetime') return localDigits(stored)
+  return TIME.test(stored) ? digitsIn(stored) : undefined
+}
+
 /**
  * The mask answer (digits) to show for a stored answer: a datetime in local time, its
- * fraction copied. Anything that is not an instant — a held partial, a value at another
- * shape — shows as its own digits, so it is never blanked.
+ * fraction copied, at whatever width it was stored. A held partial — text a person could
+ * have typed, which is what `storedFromTyped` holds — shows as its own digits, so the
+ * person carries on where they were.
+ *
+ * Anything else shows nothing. As digits, a clock held at a foreign offset would read as
+ * the person's own, and the first edit would store that local clock, shifted from the
+ * instant the text names. Empty, the engine's shape error says why, and a keystroke
+ * replaces it.
  *
  * Only as many digits as the mask has positions: an instant wider than the field shows
  * what fits. Keeping the rest in the answer would hide them in it, and a deletion would
@@ -119,8 +162,8 @@ function localDigits(stored: string): string | undefined {
  */
 export function typedFromStored(type: TypedTemporalType, precision: number, stored: string): string {
   const mask = temporalEntryMask(type, precision)
-  const digits = (type === 'datetime' ? localDigits(stored) : undefined) ?? stored.replace(/[^0-9]/g, '')
-  return digits.slice(0, maskPositions(mask).filter((position) => 'slot' in position).length)
+  const digits = storedDigits(type, stored) ?? (couldBeTyped(type, precision, stored) ? digitsIn(stored) : '')
+  return digits.slice(0, slotCount(mask))
 }
 
 /**
@@ -149,7 +192,7 @@ export function storedFromTyped(type: TypedTemporalType, precision: number, type
  * evidently an instant, and one left to the mask would be read as the person's own clock.
  */
 const PASTED: Readonly<Record<TypedTemporalType, RegExp>> = {
-  time: /^(?<clock>\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?$/,
+  time: TIME,
   datetime: /^(?<date>\d{4}-\d{2}-\d{2})[Tt ](?<clock>\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?(?<zone>[Zz]|[+-]\d{2}(?::?\d{2})?)$/,
 }
 
@@ -169,46 +212,54 @@ function offsetMinutes(zone: string): number | undefined {
  * past 9999.
  */
 function inUtc(whole: string, offset: number): string | undefined {
-  const asIfUtc = instantAt(whole.replace(/[^0-9]/g, ''), UTC)
+  const asIfUtc = instantAt(digitsIn(whole), UTC)
   const utc = asIfUtc === undefined ? undefined : wallDigits(new Date(asIfUtc.getTime() - offset * 60_000), UTC)
   return utc === undefined ? undefined : formatMasked(instantMask(0), utc)
 }
 
 /**
- * A whole answer pasted in the stored shape at any width (a UTC instant from a log),
- * brought to the field's width only where that is exact; undefined when the text is no
- * time or instant at all, and the control then reads the paste through the mask.
+ * A time or an instant pasted whole, at the field's width where that is exact; undefined
+ * when the text is neither, or names one no stored text can say exactly.
  *
- * Read through the mask, an instant's digits would be taken as the person's own wall clock
- * and the answer moved by their offset, and a fraction wider than the field cut to fit it.
- * So an answer at any width is taken whole, and it keeps its meaning exactly:
- * - an instant with an offset is the same instant in UTC, its fraction copied;
- * - fewer digits after the seconds than the field declares are padded with zeros;
- * - more are cut, but only when every digit cut is a zero;
- * - otherwise it is kept at its own width, in UTC, never rounded or cut to fit, for the
+ * - An instant with an offset is the same instant in UTC, its fraction copied.
+ * - Fewer digits after the seconds than the field declares are padded with zeros.
+ * - More are cut, but only when every digit cut is a zero, and never past nine digits,
+ *   which no field has.
+ * - Otherwise it is kept at its own width, in UTC, never rounded or cut to fit, for the
  *   shape check to refuse and the control to show converted.
- *
- * Kept as pasted, for the shape check to refuse: more than nine digits after the seconds,
- * which no precision holds, and an offset no UTC text can say exactly. A time needs its
- * seconds: version 5's `HH:MM` is another shape, not a narrower width. The whitespace
- * around an answer is not part of it: a copied log line brings its line break, and refused
- * for that, the paste would land as local digits.
  */
-export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
-  const n = fractionDigits(precision)
-  const answer = text.trim()
+function answerPasted(type: TypedTemporalType, n: number, answer: string): string | undefined {
   const groups = PASTED[type].exec(answer)?.groups
   if (groups === undefined) return undefined
   const { date = '', clock = '', fraction = '', zone = '' } = groups
   const whole = type === 'datetime' ? `${date}T${clock}` : clock
   const suffix = type === 'datetime' ? 'Z' : ''
-  // The clock checked as the stored shape checks it, so 25:00 is no time and no instant.
-  if (!new RegExp(temporalShape(type, 0)).test(`${whole}${suffix}`)) return undefined
   const offset = offsetMinutes(zone)
-  if (offset === undefined) return undefined
-  if (fraction.length > TEMPORAL_PRECISION_MAX) return answer
-  const utc = offset === 0 ? whole : inUtc(whole, offset)
-  if (utc === undefined) return answer
-  const digits = /^0*$/.test(fraction.slice(n)) ? fraction.slice(0, n).padEnd(n, '0') : fraction
+  // The clock checked as the stored shape checks it, so 25:00 is no time and no instant.
+  if (offset === undefined || !new RegExp(temporalShape(type, 0)).test(`${whole}${suffix}`)) return undefined
+  // An instant's day through Date.UTC at every offset, Z included: 30 February is none.
+  const utc = type === 'datetime' ? inUtc(whole, offset) : whole
+  if (utc === undefined) return undefined
+  const exact = fraction.length <= TEMPORAL_PRECISION_MAX && /^0*$/.test(fraction.slice(n))
+  const digits = exact ? fraction.slice(0, n).padEnd(n, '0') : fraction
   return `${utc}${digits === '' ? '' : `.${digits}`}${suffix}`
+}
+
+/**
+ * What a pasted text means, decided before the mask reads any of it: a time or an instant
+ * pasted whole, brought to the field's width where that is exact; undefined when it is
+ * typing, which the control reads through the mask; and anything else held exactly as
+ * pasted, which the shape check refuses.
+ *
+ * The mask reads digits and drops everything else, so it is given a paste only when a
+ * person could have typed it into this mask and it fits. A zone, an offset, a decimal
+ * comma or a digit too many would otherwise become part of the answer or vanish from it,
+ * and a log's instant would be stored complete, valid and moved by the person's offset.
+ * The whitespace around a paste is not part of it: a copied log line brings its line break.
+ */
+export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
+  const answer = text.trim()
+  const taken = answerPasted(type, fractionDigits(precision), answer)
+  if (taken !== undefined) return taken
+  return couldBeTyped(type, precision, answer) ? undefined : answer
 }

@@ -85,6 +85,12 @@ describe('a time, typed exactly as it is stored', () => {
     expect(accepts('time', 3, stored)).toBe(false)
   })
 
+  test('a held partial time shows as its own digits, so the person carries on where they were', () => {
+    // 14:03:2 is no time at any width, only what the mask held. Shown as nothing, the
+    // half-typed answer would be lost on the next render of the control holding it.
+    expect(typedFromStored('time', 3, '14:03:2')).toBe('14032')
+  })
+
   test('a clock that does not exist is written as typed, for the shape check to refuse', () => {
     // The shape check is the engine's and the server's one verdict on a time. A second
     // one here, mapping 25:00 to anything, could disagree with it.
@@ -210,11 +216,31 @@ describe('a datetime that is not an instant', () => {
     expect(typedFromStored('datetime', 0, '2026-02-30 10:00:00')).toBe('20260230100000')
   })
 
-  test('a stored instant on a day that does not exist shows its digits, not the day Date rolls to', () => {
+  test('a stored instant on a day that does not exist shows nothing, not the day Date rolls to', () => {
     // 2026-02-30T10:00:00Z has the shape and is no instant. Shown as 2 March, the control
-    // would display a day the answer does not hold.
+    // would display a day the answer does not hold; shown as its digits, it would read
+    // as a local clock it never was. Empty, the engine's shape error says why.
     vi.stubEnv('TZ', 'Europe/Zurich')
-    expect(typedFromStored('datetime', 0, '2026-02-30T10:00:00Z')).toBe('20260230100000')
+    expect(typedFromStored('datetime', 0, '2026-02-30T10:00:00Z')).toBe('')
+  })
+
+  test.each([
+    { text: '2026-11-15T13:03:27.415+24:00', why: 'an offset no zone has' },
+    { text: '2026-11-15 14:03:27 +0100', why: "git's offset after a space" },
+    { text: '9999-12-31T23:30:00-01:00', why: 'an offset past year 9999' },
+    { text: 'hello', why: 'no clock at all' },
+  ])('text held as pasted shows nothing, never its digits as a local clock: $why', ({ text }) => {
+    // Shown as its digits, 14:03:27 +0100 would read as the person's own 14:03:27, and
+    // the first edit would store that local clock, shifted from the instant the text
+    // names. Empty, the engine's shape error says why, and a keystroke replaces it.
+    vi.stubEnv('TZ', 'America/New_York')
+    expect(typedFromStored('datetime', 3, text)).toBe('')
+  })
+
+  test('a time that could not have been typed shows nothing', () => {
+    // 14:03:27+01:00 is a clock with an offset a time has no place for; as digits it
+    // would show 14:03:27.010.
+    expect(typedFromStored('time', 3, '14:03:27+01:00')).toBe('')
   })
 })
 
@@ -321,24 +347,41 @@ describe('a whole answer pasted', () => {
     }
   })
 
-  test('text that is not an answer of the type at any width is left to the mask', () => {
-    // A fragment, or the typed shape (a local clock with a space), is not an instant;
-    // taken whole, it would be stored as text no shape accepts in place of what the
-    // mask makes of its digits. A time without seconds is version 5's shape, with no
-    // seconds to bring to a width.
+  test('text a person could have typed into the mask, and that fits it, is read as typing', () => {
+    // The typed shape is the person's own clock, and a fragment is the start of one.
+    // Taken whole, either would be held as text no shape accepts, in place of what the
+    // person would have got by typing it. A time without seconds is version 5's shape,
+    // with no seconds to bring to a width.
     expect(pastedInstant('datetime', 3, '14:03')).toBeUndefined()
     expect(pastedInstant('datetime', 3, '2026-11-15 14:03:27.415')).toBeUndefined()
     expect(pastedInstant('time', 3, '14:03')).toBeUndefined()
-    expect(pastedInstant('datetime', 3, 'hello')).toBeUndefined()
-    expect(pastedInstant('time', 3, 'hello')).toBeUndefined()
+  })
+
+  test.each([
+    { type: 'datetime', precision: 3, text: '2026-11-15 14:03:27.415', stored: '2026-11-15T13:03:27.415Z' },
+    { type: 'time', precision: 0, text: '14:03:27', stored: '14:03:27' },
+  ] as const)('so a typed-shape paste lands as the same keys would: $text', ({ type, precision, text, stored }) => {
+    // Held as pasted instead, the person's own clock, pasted, would be refused although
+    // typing it is accepted.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    expect(pasteInto(type, precision, text)).toBe(stored)
   })
 
   test('a clock past 23:59:59 is no answer, so nothing is padded onto it', () => {
     // Taken as an answer, 25:00:00 would come back as 25:00:00.000: three digits nobody
-    // pasted, on a time of day that does not exist. Left to the mask, it is held as typed.
+    // pasted, on a time of day that does not exist. A time is typed as it is stored, so
+    // the mask holds it as typed; an instant-shaped one is held as pasted.
     expect(pastedInstant('time', 3, '25:00:00')).toBeUndefined()
-    expect(pastedInstant('datetime', 3, '2026-11-15T25:00:00Z')).toBeUndefined()
-    expect(pastedInstant('datetime', 3, '2026-11-15T13:60:00+01:00')).toBeUndefined()
+    expect(pastedInstant('datetime', 3, '2026-11-15T25:00:00Z')).toBe('2026-11-15T25:00:00Z')
+    expect(pastedInstant('datetime', 3, '2026-11-15T13:60:00+01:00')).toBe('2026-11-15T13:60:00+01:00')
+  })
+
+  test('a day that does not exist, in UTC, is held as pasted rather than padded', () => {
+    // 2026-02-30T10:00:00Z has the stored shape, so padded to .000 it passed the shape
+    // check: a day nobody can have logged, accepted.
+    const stored = pasteInto('datetime', 3, '2026-02-30T10:00:00Z')
+    expect(stored).toBe('2026-02-30T10:00:00Z')
+    expect(accepts('datetime', 3, stored)).toBe(false)
   })
 
   test('a time in its stored shape is taken as it is', () => {
@@ -392,10 +435,12 @@ describe('an instant pasted with an offset, or with more digits than any field',
     expect(pastedInstant('datetime', 3, `2026-11-15T13:03:27.415${offset}`)).toBe('2026-11-15T13:03:27.415Z')
   })
 
-  test.each(['+24:00', '-24:00', '+01:60'])('an offset outside a day, or past 59 minutes, is no instant: %s', (offset) => {
-    // No zone is a day or more from UTC. Applied, the instant would be a day off; the
-    // text is not an instant, and the mask's reading of it is held as incomplete.
-    expect(pastedInstant('datetime', 3, `2026-11-15T13:03:27.415${offset}`)).toBeUndefined()
+  test.each(['+24:00', '-24:00', '+01:60', '+2400', '+24'])('an offset outside a day, or past 59 minutes, is held as pasted: %s', (offset) => {
+    // No zone is a day or more from UTC, so this is no instant to convert. Left to the
+    // mask, its digits filled every position: in Zurich it was stored as …T12:03:27.415Z,
+    // complete and shifted, and at precision 6 the offset's digits became the fraction.
+    const text = `2026-11-15T13:03:27.415${offset}`
+    expect(pastedInstant('datetime', 3, text)).toBe(text)
   })
 
   test('with a digit the field cannot hold, it is the UTC instant at its own width', () => {
@@ -410,14 +455,15 @@ describe('an instant pasted with an offset, or with more digits than any field',
   })
 
   test.each([
-    { type: 'datetime', text: '2026-11-15T13:03:27.4151234567Z' },
-    { type: 'datetime', text: '2026-11-15T14:03:27.4151234567+01:00' },
-    { type: 'time', text: '14:03:27.4151234567' },
-  ] as const)('with more than nine digits after the seconds it is kept as pasted: $text', ({ type, text }) => {
+    { type: 'datetime', text: '2026-11-15T13:03:27.4151234567Z', taken: '2026-11-15T13:03:27.4151234567Z' },
+    { type: 'datetime', text: '2026-11-15T14:03:27.4151234567+01:00', taken: '2026-11-15T13:03:27.4151234567Z' },
+    { type: 'time', text: '14:03:27.4151234567', taken: '14:03:27.4151234567' },
+  ] as const)('with more than nine digits after the seconds it is kept at its own width, in UTC: $text', ({ type, text, taken }) => {
     // No precision holds a tenth digit. Left to the mask, the instant's first digits were
-    // read as the local clock and the rest cut; kept, nothing moves and the engine says shape.
+    // read as the local clock and the rest cut. Kept, nothing moves and the engine says
+    // shape; in UTC rather than at its offset, the control shows it converted.
     vi.stubEnv('TZ', 'America/New_York')
-    expect(pasteInto(type, 9, text)).toBe(text)
+    expect(pasteInto(type, 9, text)).toBe(taken)
   })
 
   test('with an offset that takes it past year 9999, it is kept as pasted', () => {
@@ -430,6 +476,47 @@ describe('an instant pasted with an offset, or with more digits than any field',
     // Date would roll 30 February to 2 March before the offset was applied: an instant
     // nobody logged, written as Z and accepted.
     expect(pastedInstant('datetime', 0, '2026-02-30T10:00:00+01:00')).toBe('2026-02-30T10:00:00+01:00')
+  })
+})
+
+describe('a paste that could not have been typed into the mask is held as pasted', () => {
+  // Each of these was read through the mask as the person's own clock and stored complete,
+  // in a valid shape, and shifted: the mask reads digits and drops the rest, so a zone, an
+  // offset or a digit too many became part of the answer or vanished from it. The mask
+  // reads a paste only when a person could have typed it; anything else is held exactly
+  // as pasted, which the shape check refuses, at every precision.
+  test.each([
+    { type: 'datetime', text: '2026-11-15T13:03:27.415+24:00', why: 'an offset no zone has' },
+    { type: 'datetime', text: '2026-11-15 14:03:27 +0100', why: "git's offset after a space" },
+    { type: 'datetime', text: '2026-11-15T13:03:27,415Z', why: 'a decimal comma' },
+    { type: 'datetime', text: '2026-11-15T13:03:27.415Z[UTC]', why: 'a zone name after the Z' },
+    { type: 'datetime', text: '2026-11-15T14:03:27.415+01:00[Europe/Zurich]', why: 'a zone name after the offset' },
+    { type: 'datetime', text: '2026-11-15\t13:03:27.415Z', why: 'a tab for the T' },
+    { type: 'datetime', text: '2026-11-15\t14:03:27.415', why: 'a tab in a local clock' },
+    { type: 'time', text: '14:03:27+01:00', why: 'a time with an offset' },
+  ] as const)('$why: $text', ({ type, text }) => {
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    for (let precision = 0; precision <= 9; precision += 1) {
+      const stored = pasteInto(type, precision, text)
+      expect(stored, `${type} p${precision}`).toBe(text)
+      expect(accepts(type, precision, stored), `${type} p${precision}`).toBe(false)
+    }
+  })
+
+  test('a local clock with more digits than the field has positions is held, not cut to fit', () => {
+    // Read through a precision-0 mask, 2026-11-15 14:03:27.415 was cut to …:27 and stored
+    // complete: three digits the person pasted, dropped without a word.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const stored = pasteInto('datetime', 0, '2026-11-15 14:03:27.415')
+    expect(stored).toBe('2026-11-15 14:03:27.415')
+    expect(accepts('datetime', 0, stored)).toBe(false)
+  })
+
+  test('a written character more often than the mask writes it is held', () => {
+    // Two spaces cannot be typed into a mask that writes one. Read as digits, git's
+    // offset without its sign filled a precision-4 mask's fraction: 14:03:27.0100.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    expect(pasteInto('datetime', 4, '2026-11-15 14:03:27 0100')).toBe('2026-11-15 14:03:27 0100')
   })
 })
 
