@@ -34,7 +34,7 @@ const picture = (body: string): string =>
   )}`
 
 export const STARTER_SCHEMA = {
-  specVersion: '5',
+  specVersion: '6',
   id: 'order',
   title: 'Order',
   model: {
@@ -103,6 +103,12 @@ export const STARTER_SCHEMA = {
       // own wall clock and the answer records the moment — which is why the two
       // types are separate rather than one with a flag.
       { key: 'confirmedAt', type: 'datetime', label: { $t: 'confirmedAt' } },
+
+      // A precision (spec 6): digits after the seconds, so the control is typed as the
+      // answer is held. This instant is to the millisecond; the time of day below is to
+      // the second, with a bound at that width.
+      { key: 'dispatchedAt', type: 'datetime', label: { $t: 'dispatchedAt' }, precision: 3 },
+      { key: 'pickupTime', type: 'time', label: { $t: 'pickupTime' }, precision: 0, earliest: '08:00:00' },
 
       {
         key: 'items',
@@ -430,6 +436,8 @@ export const STARTER_SCHEMA = {
                 // renders a named layout, and a layout places what it names.
                 { kind: 'field', path: 'deliveryWindow' },
                 { kind: 'field', path: 'confirmedAt' },
+                { kind: 'field', path: 'dispatchedAt' },
+                { kind: 'field', path: 'pickupTime' },
               ],
             },
             { kind: 'field', path: 'items' },

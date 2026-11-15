@@ -1256,6 +1256,88 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a time or instant with a precision keeps the digits it was given, and refuses an entry that stops short',
+    description:
+      "A precision is how many digits follow the seconds, up to nine. The answer holds exactly the digits the field's width asks for, so an instant stored to the microsecond and a time of day stored to a tenth of a microsecond come back from a form that nobody touched byte for byte as they went in, rather than rounded to the millisecond a date object would keep. Digits typed into a time fill its positions in order and the answer is the time they spell. An entry that stops before its last position is refused with its own code, by the engine on both sides, so a renderer that padded it with zeros would be caught here.",
+    tags: ['validation'],
+    schema: {
+      specVersion: '6',
+      id: 'readings',
+      title: 'Readings',
+      model: {
+        fields: [
+          {
+            key: 'sentAt',
+            type: 'datetime',
+            label: 'Sent at',
+            precision: 6,
+          },
+          {
+            key: 'openedAt',
+            type: 'time',
+            label: 'Opened at',
+            precision: 7,
+          },
+          {
+            key: 'closedAt',
+            type: 'time',
+            label: 'Closed at',
+            precision: 3,
+          },
+        ],
+      },
+    },
+    initialValues: {
+      sentAt: '2026-11-15T14:03:27.123456Z',
+      openedAt: '08:03:27.1234567',
+    },
+    steps: [
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+          data: {
+            sentAt: '2026-11-15T14:03:27.123456Z',
+            openedAt: '08:03:27.1234567',
+          },
+        },
+      },
+      {
+        set: {
+          closedAt: '140327415',
+        },
+      },
+      {
+        expectValue: {
+          closedAt: '14:03:27.415',
+        },
+      },
+      {
+        expectNoErrors: true,
+      },
+      {
+        set: {
+          closedAt: '1403',
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'rejected',
+        },
+      },
+      {
+        expectErrors: {
+          closedAt: ['shape'],
+        },
+      },
+    ],
+  },
+  {
     name: 'a form written in message references renders in the default locale',
     description:
       'Labels may be references into the message catalogue rather than literal strings. Everything a person reads — field labels, radio option labels — must resolve before it reaches the page. THE RULE of this suite is that fields are found by accessible name, so a renderer that leaked a message id, or an object, fails every step below without needing an assertion of its own.',
