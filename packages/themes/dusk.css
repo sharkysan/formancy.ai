@@ -112,6 +112,46 @@
   display: none;
 }
 
+/* What a host draws beside a field's box (0237): one line, the box taking what the host's
+   content leaves, the two the same height. `min-inline-size: 0` here and on the box is what
+   lets a narrow screen shrink the box rather than push the row past the field. */
+[data-formancy-theme='dusk'] [data-formancy-part='field-control-row'] {
+  display: flex;
+  align-items: stretch;
+  min-inline-size: 0;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='field-control-row'] > :is(select, [data-formancy-part='typeahead-anchor']) {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+/* The typeahead's box is the text box inside the anchor, and a line box around it can be
+   taller than it is; laid out as a flex item it is exactly the anchor's height, which is the
+   row's. The list stays positioned against the anchor. */
+[data-formancy-theme='dusk'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] {
+  display: flex;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='field-beside'] {
+  display: flex;
+}
+
+/* A host's component that draws nothing leaves no gap: the box takes the whole row, with its
+   own corners, since the rule below squares them only when something is beside it. */
+[data-formancy-theme='dusk'] [data-formancy-part='field-beside']:empty {
+  display: none;
+}
+
+/* One well cut into the surface, the box and what is beside it: the box's end corners
+   square, and the button below continues its fill and its shadow, parted from it by a
+   hairline only. */
+[data-formancy-theme='dusk'] [data-formancy-part='field-control-row']:has(> [data-formancy-part='field-beside']:not(:empty)) > select,
+[data-formancy-theme='dusk'] [data-formancy-part='field-control-row']:has(> [data-formancy-part='field-beside']:not(:empty)) > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead'] {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
 /* A character count under a box with a limit (0203): quiet as the help text, its figures in
    columns so the line does not shimmer as they change. */
 [data-formancy-theme='dusk'] [data-formancy-part='count'] {
@@ -1752,6 +1792,60 @@
 [data-formancy-theme='dusk'] [data-formancy-part='checkbox-retry']:hover:not(:disabled) {
   color: var(--fm-text);
   border-color: var(--fm-signal);
+}
+
+/* A button beside a field's box (0237) is the end of the box's well, not a button of its own
+   pressed against it: the box's height, its fill and the shadow on its upper inside edge, the
+   box's corners at its end, and a hairline of the edge colour where the two meet. In the
+   muted ink, answering the pointer as the quiet buttons do and the keyboard as the box does.
+   Its content is centred, and an icon in it is the size of the box's text and drawn in the
+   button's colour, so a host's icon needs no styling of its own. */
+[data-formancy-theme='dusk'] [data-formancy-part='field-beside'] button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 44px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1px solid transparent;
+  border-inline-start-color: var(--fm-edge);
+  border-radius: 0;
+  border-start-end-radius: var(--fm-radius);
+  border-end-end-radius: var(--fm-radius);
+  background-color: var(--fm-control);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 35%);
+  color: var(--fm-muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {
+  color: var(--fm-text);
+  border-color: var(--fm-signal);
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='field-beside'] button:focus-visible {
+  outline: none;
+  border-color: var(--fm-signal);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--fm-signal) 18%, transparent),
+    0 0 24px -4px color-mix(in srgb, var(--fm-signal) 55%, transparent);
+}
+
+/* Unavailable either way a host says so: `disabled`, or `aria-disabled`, which keeps the
+   button in the keyboard's order. Only the glyph fades, so the well stays whole. */
+[data-formancy-theme='dusk'] [data-formancy-part='field-beside'] button:is(:disabled, [aria-disabled='true']) {
+  color: color-mix(in srgb, var(--fm-muted) 45%, var(--fm-control));
+  cursor: not-allowed;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='field-beside'] svg {
+  flex: none;
+  inline-size: 1em;
+  block-size: 1em;
+  fill: currentColor;
 }
 
 /* ---------------------------------------------------------------- tag picker */

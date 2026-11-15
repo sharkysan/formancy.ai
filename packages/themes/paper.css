@@ -105,6 +105,37 @@
   display: none;
 }
 
+/* What a host draws beside a field's line (0237): one line, the box taking what the host's
+   content leaves, the two the same height, so the line each draws under itself is one line.
+   `min-inline-size: 0` here and on the box is what lets a narrow screen shrink the box rather
+   than push the row past the field. */
+[data-formancy-theme='paper'] [data-formancy-part='field-control-row'] {
+  display: flex;
+  align-items: stretch;
+  min-inline-size: 0;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field-control-row'] > :is(select, [data-formancy-part='typeahead-anchor']) {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+/* The typeahead's box is the text box inside the anchor, and a line box around it can be
+   taller than it is; laid out as a flex item it is exactly the anchor's height, which is the
+   row's. The list stays positioned against the anchor. */
+[data-formancy-theme='paper'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] {
+  display: flex;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field-beside'] {
+  display: flex;
+}
+
+/* A host's component that draws nothing leaves no gap: the box takes the whole row. */
+[data-formancy-theme='paper'] [data-formancy-part='field-beside']:empty {
+  display: none;
+}
+
 /* A character count under a box with a limit (0203): a margin note, its figures in columns. */
 [data-formancy-theme='paper'] [data-formancy-part='count'] {
   margin: 0.25rem 0 0;
@@ -1735,6 +1766,58 @@
 [data-formancy-theme='paper'] [data-formancy-part='checkbox-retry']:hover:not(:disabled) {
   color: var(--fm-ink);
   border-color: var(--fm-accent);
+}
+
+/* A button beside a field's line (0237) is written on the same line, not framed beside it:
+   no frame and no fill, only the box's own rule under it, so the line runs under both. In the
+   muted ink, answering the pointer as the quiet buttons do and the keyboard as the line does,
+   thickening in the accent over a wash. Its content is centred, and an icon in it is the size
+   of the box's text and drawn in the button's colour, so a host's icon needs no styling of
+   its own. */
+[data-formancy-theme='paper'] [data-formancy-part='field-beside'] button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 44px;
+  margin: 0;
+  padding: 0 0.5rem;
+  border: 0;
+  border-block-end: 1.5px solid var(--fm-ink);
+  border-radius: 0;
+  background-color: transparent;
+  color: var(--fm-muted);
+  font: inherit;
+  font-family: var(--fm-serif);
+  font-size: 1.1875rem;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {
+  color: var(--fm-ink);
+  border-block-end-color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field-beside'] button:focus-visible {
+  outline: none;
+  border-block-end: 2.5px solid var(--fm-accent);
+  background-color: color-mix(in srgb, var(--fm-accent) 7%, transparent);
+}
+
+/* Unavailable either way a host says so: `disabled`, or `aria-disabled`, which keeps the
+   button in the keyboard's order. Only the glyph fades, so the line stays unbroken. */
+[data-formancy-theme='paper'] [data-formancy-part='field-beside'] button:is(:disabled, [aria-disabled='true']) {
+  color: color-mix(in srgb, var(--fm-muted) 45%, transparent);
+  cursor: not-allowed;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field-beside'] svg {
+  flex: none;
+  inline-size: 1em;
+  block-size: 1em;
+  fill: currentColor;
 }
 
 /* ---------------------------------------------------------------- tag picker */
