@@ -226,29 +226,40 @@ describe('a datetime that is not an instant', () => {
     expect(temporalDateExists('datetime', '2026-02-30T10:00:00Z')).toBe(false)
   })
 
+  test('a stored instant at a second past 23:59:59 shows nothing, not the hour Date rolls to', () => {
+    // The day is asked of the calendar, which knows no clock; Date reads 25:00 as 01:00
+    // the next day, so without the clock checked the control would show 16 November.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    expect(typedFromStored('datetime', 0, '2026-11-15T25:00:00Z')).toBe('')
+    expect(typedFromStored('datetime', 0, '2026-11-15T13:60:00Z')).toBe('')
+  })
+
   test.each([
     { zone: 'Europe/Zurich', stored: '9999-12-31T23:30:00Z' },
     { zone: 'America/New_York', stored: '0000-01-01T03:00:00Z' },
   ])('an instant whose local year has no four digits shows nothing, and is accepted: $stored in $zone', ({ zone, stored }) => {
-    // A residual accepted, for the safety analysis to name: the instant is real and in its shape, so
-    // the engine accepts it, but on this clock its year is 10000 or -0001, which the mask
-    // cannot show. Pinned, so that a change to either half is a decision and not a drift.
+    // A residual accepted, for the safety analysis to name: on this clock its year is 10000
+    // or -0001, which the mask cannot show. Here, that the shape and the calendar — the
+    // checks the engine makes of it — both pass it; that the engine accepts it is core's
+    // temporal-precision.test.ts. Pinned, so a change to either half is a decision.
     vi.stubEnv('TZ', zone)
     expect(typedFromStored('datetime', 0, stored)).toBe('')
     expect(accepts('datetime', 0, stored) && temporalDateExists('datetime', stored)).toBe(true)
   })
 
   test.each([
-    { text: '2026-11-15T13:03:27.415+24:00', why: 'an offset no zone has' },
-    { text: '2026-11-15 14:03:27 +0100', why: "git's offset after a space" },
-    { text: '9999-12-31T23:30:00-01:00', why: 'an offset past year 9999' },
-    { text: 'hello', why: 'no clock at all' },
-  ])('text held as pasted shows nothing, never its digits as a local clock: $why', ({ text }) => {
+    { precision: 3, text: '2026-11-15T13:03:27.415+24:00', why: 'an offset no zone has' },
+    { precision: 3, text: '2026-11-15 14:03:27 +0100', why: "git's offset after a space" },
+    { precision: 3, text: '9999-12-31T23:30:00-01:00', why: 'an offset past year 9999' },
+    { precision: 3, text: 'hello', why: 'no clock at all' },
+    { precision: 4, text: '20261115140327-0100', why: 'an offset after a clock written without separators' },
+  ])('text held as pasted shows nothing, never its digits as a local clock: $why', ({ precision, text }) => {
     // Shown as its digits, 14:03:27 +0100 would read as the person's own 14:03:27, and
     // the first edit would store that local clock, shifted from the instant the text
-    // names. Empty, the engine's shape error says why, and a keystroke replaces it.
+    // names; at precision 4, 20261115140327-0100 showed as 14:03:27.0100, the offset as
+    // the fraction. Empty, the engine's shape error says why, and a keystroke replaces it.
     vi.stubEnv('TZ', 'America/New_York')
-    expect(typedFromStored('datetime', 3, text)).toBe('')
+    expect(typedFromStored('datetime', precision, text)).toBe('')
   })
 
   test('a time that could not have been typed shows nothing', () => {
@@ -370,6 +381,19 @@ describe('a whole answer pasted', () => {
     expect(pastedInstant('datetime', 3, '2026-11-15 14:03:27.415')).toBeUndefined()
     expect(pastedInstant('datetime', 3, '2026-11-15 14:03')).toBeUndefined()
     expect(pastedInstant('time', 3, '14:03')).toBeUndefined()
+  })
+
+  test.each([
+    { precision: 3, text: '2026-11-15 14:03:27', why: 'stopped at the seconds' },
+    { precision: 3, text: '2026-11-15 14', why: 'stopped at the hour' },
+    { precision: 3, text: '20261115 14:03:27.415', why: 'the dashes left out' },
+    { precision: 3, text: '20261115140327415', why: 'digits alone' },
+    { precision: 0, text: '2026-11-15 14:03:27', why: 'complete at precision 0' },
+  ])('a written character may be left out, and a fragment stops anywhere: $why', ({ precision, text }) => {
+    // A rule on where each written character sits that also refused one left out, or a
+    // text that stops short, would hold what the same keys type, and the person would be
+    // refused a paste of the answer they could type.
+    expect(pastedInstant('datetime', precision, text)).toBeUndefined()
   })
 
   test.each([
@@ -518,12 +542,15 @@ describe('a paste that could not have been typed into the mask is held as pasted
     }
   })
 
-  test('a local clock with more digits than the field has positions is held, not cut to fit', () => {
+  test.each([
+    { text: '2026-11-15 14:03:27.415', why: 'with a stop the mask does not write' },
+    { text: '20261115140327415', why: 'as digits alone, where only their count tells' },
+  ])('a local clock with more digits than the field has positions is held, not cut to fit: $why', ({ text }) => {
     // Read through a precision-0 mask, 2026-11-15 14:03:27.415 was cut to …:27 and stored
     // complete: three digits the person pasted, dropped without a word.
     vi.stubEnv('TZ', 'Europe/Zurich')
-    const stored = pasteInto('datetime', 0, '2026-11-15 14:03:27.415')
-    expect(stored).toBe('2026-11-15 14:03:27.415')
+    const stored = pasteInto('datetime', 0, text)
+    expect(stored).toBe(text)
     expect(accepts('datetime', 0, stored)).toBe(false)
   })
 
@@ -540,17 +567,59 @@ describe('a paste that could not have been typed into the mask is held as pasted
     expect(accepts('datetime', precision, stored)).toBe(false)
   })
 
+  test.each([
+    { zone: 'Europe/Zurich', precision: 4, text: '20261115140327-0100' },
+    { zone: 'America/New_York', precision: 4, text: '20261115140327-0100' },
+    { zone: 'Europe/Zurich', precision: 2, text: '20261115140327-01' },
+    { zone: 'America/New_York', precision: 2, text: '20261115140327-01' },
+  ])('a dash after the place the mask writes one is held, in $zone: $text', ({ zone, precision, text }) => {
+    // The instant is 15:03:27Z. Read as typing, the offset's sign was dropped and its
+    // digits became the fraction: …T13:03:27.0100Z in Zurich and …T19:03:27.0100Z in New
+    // York, complete and accepted. No order catches a lone dash, since the mask writes one
+    // first; only where it sits does — after the seconds, where the mask writes none.
+    vi.stubEnv('TZ', zone)
+    const stored = pasteInto('datetime', precision, text)
+    expect(stored).toBe(text)
+    expect(accepts('datetime', precision, stored)).toBe(false)
+  })
+
+  test('an offset after the date is never read as typing, however the date and clock are written', () => {
+    // The claim the code makes of an offset, checked over its spellings: one form that
+    // reached the mask would have its sign dropped and its digits read as the person's
+    // clock or its fraction. A time's mask writes no sign at all, so there any offset is.
+    const offsets = ['-01', '-0100', '-01:00', '+01', '+0100', '+01:00', ' -0100', ' +0100', 'Z']
+    const clocks = ['14', '1403', '14:03', '140327', '14:03:27', '140327415', '140327.415', '14:03:27.415']
+    for (let precision = 0; precision <= 9; precision += 1) {
+      for (const offset of offsets) {
+        for (const clock of clocks) {
+          expect(pastedInstant('time', precision, `${clock}${offset}`), `time p${precision}: ${clock}${offset}`).toBeDefined()
+          for (const date of ['2026-11-15', '20261115']) {
+            for (const between of ['', ' ', 'T']) {
+              const text = `${date}${between}${clock}${offset}`
+              expect(pastedInstant('datetime', precision, text), `datetime p${precision}: ${text}`).toBeDefined()
+            }
+          }
+        }
+      }
+    }
+  })
+
   test('a stop pasted into a precision-0 field is held, as the mask writes none', () => {
     // Read against the widest mask, 14:03:27. was typing at precision 0, and the stop was
     // dropped without a word; the field's own mask has no place for it.
     expect(pastedInstant('time', 0, '14:03:27.')).toBe('14:03:27.')
   })
 
-  test('a written character more often than the mask writes it is held', () => {
+  test.each([
+    { precision: 4, text: '2026-11-15 14:03:27 0100', why: "git's offset without its sign, after a second space" },
+    { precision: 3, text: '2026-11-15 14:03:27..415', why: 'a second stop, where the mask writes one' },
+  ])('a written character more often than the mask writes it is held: $why', ({ precision, text }) => {
     // Two spaces cannot be typed into a mask that writes one. Read as digits, git's
-    // offset without its sign filled a precision-4 mask's fraction: 14:03:27.0100.
+    // offset without its sign filled a precision-4 mask's fraction: 14:03:27.0100. A
+    // second stop sits where the mask writes its one, so only the count holds it; read
+    // as typing, the mask dropped it without a word and stored the rest as complete.
     vi.stubEnv('TZ', 'Europe/Zurich')
-    expect(pasteInto('datetime', 4, '2026-11-15 14:03:27 0100')).toBe('2026-11-15 14:03:27 0100')
+    expect(pasteInto('datetime', precision, text)).toBe(text)
   })
 })
 

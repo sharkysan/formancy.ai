@@ -1,5 +1,5 @@
 import { fitsMask, fitsSlot, formatMasked, maskPositions } from './mask.js'
-import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalShape } from './temporal.js'
+import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalDateExists, temporalShape } from './temporal.js'
 
 /**
  * Typed entry for a `time` or a `datetime` with a `precision`: the mask a person types the
@@ -43,18 +43,34 @@ export function temporalEntryMask(type: TypedTemporalType, precision: number): s
 /** How many positions a mask has to type into. */
 const slotCount = (mask: string): number => maskPositions(mask).filter((position) => 'slot' in position).length
 
+/** Each character a mask writes, and how many positions come before it: `9999-99` writes `-` after four. */
+function writtenAt(mask: string): { readonly literal: string; readonly after: number }[] {
+  const written: { literal: string; after: number }[] = []
+  let after = 0
+  for (const position of maskPositions(mask)) {
+    if ('slot' in position) after += 1
+    else written.push({ literal: position.literal, after })
+  }
+  return written
+}
+
 /**
  * Whether a person could have typed this text into the field's mask: digits, no more of
  * them than the mask has positions, and otherwise only the characters the mask writes, in
- * the order it writes them and each at most once — for a datetime at a precision, `-`,
- * `-`, a space, `:`, `:`, `.`, any of them left out. It is what the mask may read as
- * typing and what `storedFromTyped` holds. A zone, an offset, a second space, a space
- * after the stop or a digit too many is none of it: read as typing, its digits would fill
- * positions they do not belong in.
+ * its order, each at most once and never after the place it writes it. One may be left
+ * out — `20261115 14:03` types as `2026-11-15 14:03` does — or come early, as the colon of
+ * a bare `14:03` in a datetime does, which the mask drops. One after more digits than the
+ * mask puts before it is late: it marks a part the mask has already written past.
+ *
+ * It is what the mask may read as typing and what `storedFromTyped` holds. A zone, a
+ * second space, a space after the stop or a digit too many is none of it, and nor is an
+ * offset — in a time anywhere, since its mask writes no sign, and in a datetime after the
+ * date, since its mask writes `-` only inside the date. Read as typing, its digits would
+ * fill positions they do not belong in: an offset's sign dropped, and its digits the fraction.
  */
 function couldBeTyped(type: TypedTemporalType, precision: number, text: string): boolean {
   const mask = temporalEntryMask(type, precision)
-  const written = maskPositions(mask).flatMap((position) => ('literal' in position ? [position.literal] : []))
+  const written = writtenAt(mask)
   let next = 0
   let digits = 0
   for (const character of text) {
@@ -62,9 +78,11 @@ function couldBeTyped(type: TypedTemporalType, precision: number, text: string):
       digits += 1
       continue
     }
-    while (next < written.length && written[next] !== character) next += 1
-    if (next === written.length) return false
-    next += 1
+    // The next place the mask writes it that the digits have not passed; the places
+    // skipped to reach it are characters left out.
+    const place = written.findIndex((at, index) => index >= next && at.literal === character && at.after >= digits)
+    if (place === -1) return false
+    next = place + 1
   }
   return digits <= slotCount(mask)
 }
@@ -72,75 +90,83 @@ function couldBeTyped(type: TypedTemporalType, precision: number, text: string):
 /** The stored shape of a datetime as a mask, so the mask core writes its separators too. */
 const instantMask = (precision: number): string => `9999-99-99T99:99:99${fractionMask(precision)}`
 
-/** A UTC instant at any width, its whole seconds in six groups and its fraction in the seventh. */
-const INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z$/
+/** A UTC instant at any width: its whole seconds, and its fraction. */
+const INSTANT = /^(?<whole>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?Z$/
 
 /** A time at any width, as it is stored and as it is pasted. */
 const TIME = /^(?<clock>\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?$/
+
+/** A datetime's whole seconds as the stored shape checks them, so 25:00 and 13:60 are no instant. */
+const WHOLE_SECONDS = new RegExp(temporalShape('datetime', 0))
 
 /** A wall clock to the second is fourteen digits, YYYYMMDDHHMMSS. */
 const WALL_DIGITS = 14
 
 type Wall = readonly [year: number, month: number, day: number, hour: number, minute: number, second: number]
 
+const digitsIn = (text: string): string => text.replace(/[^0-9]/g, '')
+
+/** Fourteen digits as the six parts of a wall clock. */
+function wallOf(digits: string): Wall {
+  const part = (from: number, to: number): number => Number(digits.slice(from, to))
+  return [part(0, 4), part(4, 6), part(6, 8), part(8, 10), part(10, 12), part(12, 14)]
+}
+
 /**
- * One zone's reading of a wall clock: the runtime's own, which the person types in, or
- * UTC, which is stored. One record each, because the same check runs in both directions.
+ * A zone's reading of a date as a wall clock: the runtime's own, which the person types in,
+ * or UTC, which is stored. Each direction reads one of them and writes the other.
  */
-interface Zone {
-  readonly instant: (...wall: Wall) => Date
-  readonly wall: (date: Date) => Wall
-}
+type Zone = (date: Date) => Wall
 
-// Both constructors read a year 0-99 as 1900-1999, so the date is set again, which reads
-// the year as given; for any other wall clock that exists, setting it again changes nothing.
-const LOCAL: Zone = {
-  instant: (year, month, day, hour, minute, second) => {
-    const date = new Date(year, month - 1, day, hour, minute, second)
-    date.setFullYear(year, month - 1, day)
-    return date
-  },
-  wall: (date) => [date.getFullYear(), date.getMonth() + 1, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()],
-}
+const LOCAL: Zone = (date) => [date.getFullYear(), date.getMonth() + 1, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()]
 
-const UTC: Zone = {
-  instant: (year, month, day, hour, minute, second) => {
-    const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
-    date.setUTCFullYear(year, month - 1, day)
-    return date
-  },
-  wall: (date) => [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()],
-}
+const UTC: Zone = (date) => [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()]
 
 /** A date's wall clock in a zone as fourteen digits; undefined when its year has no four. */
 function wallDigits(date: Date, zone: Zone): string | undefined {
-  const [year, ...rest] = zone.wall(date)
+  const [year, ...rest] = zone(date)
   if (year < 0 || year > 9999) return undefined
   return [String(year).padStart(4, '0'), ...rest.map((part) => String(part).padStart(2, '0'))].join('')
 }
 
+// Both constructors below read a year 0-99 as 1900-1999, so the date is set again, which
+// reads the year as given; for any other wall clock that exists, setting it again changes nothing.
+
 /**
- * The instant whose wall clock in a zone reads these fourteen digits, or undefined when
- * none does. `Date` does not refuse 30 February or a skipped hour, it moves them — to 2
- * March, to 03:30 — so the instant is only the answer when its own wall clock gives the
- * digits back.
+ * The instant whose local wall clock reads these fourteen digits, or undefined when none
+ * does. `Date` does not refuse 30 February or a skipped hour, it moves them — to 2 March,
+ * to 03:30 — so the instant is only the answer when its own wall clock gives the digits
+ * back. Which hours a zone skips only the runtime knows, so here the round trip is the check.
  */
-function instantAt(wall: string, zone: Zone): Date | undefined {
-  const part = (from: number, to: number): number => Number(wall.slice(from, to))
-  const date = zone.instant(part(0, 4), part(4, 6), part(6, 8), part(8, 10), part(10, 12), part(12, 14))
-  return wallDigits(date, zone) === wall ? date : undefined
+function localInstant(digits: string): Date | undefined {
+  const [year, month, day, hour, minute, second] = wallOf(digits)
+  const date = new Date(year, month - 1, day, hour, minute, second)
+  date.setFullYear(year, month - 1, day)
+  return wallDigits(date, LOCAL) === digits ? date : undefined
+}
+
+/**
+ * The instant a datetime's whole seconds, `YYYY-MM-DDTHH:MM:SS`, name in UTC; undefined when
+ * there is none: a second past 23:59:59, or a day the calendar does not have. UTC skips no
+ * hour, so with the clock in range the day is the only question, and it is asked of
+ * `temporalDateExists`, as the engine asks it: the control and the engine's shape error
+ * cannot disagree about which days there are.
+ */
+function utcInstant(whole: string): Date | undefined {
+  if (!WHOLE_SECONDS.test(`${whole}Z`) || !temporalDateExists('datetime', whole)) return undefined
+  const [year, month, day, hour, minute, second] = wallOf(digitsIn(whole))
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
+  date.setUTCFullYear(year, month - 1, day)
+  return date
 }
 
 /** A stored instant's digits on the local wall clock, its fraction copied; undefined when it is no instant. */
 function localDigits(stored: string): string | undefined {
-  const match = INSTANT.exec(stored)
-  if (match === null) return undefined
-  const instant = instantAt(match.slice(1, 7).join(''), UTC)
+  const { whole, fraction = '' } = INSTANT.exec(stored)?.groups ?? {}
+  const instant = whole === undefined ? undefined : utcInstant(whole)
   const local = instant === undefined ? undefined : wallDigits(instant, LOCAL)
-  return local === undefined ? undefined : `${local}${match[7] ?? ''}`
+  return local === undefined ? undefined : `${local}${fraction}`
 }
-
-const digitsIn = (text: string): string => text.replace(/[^0-9]/g, '')
 
 /** A stored answer's digits as the mask shows them, at any width: an instant on the local clock, a time as it is. */
 function storedDigits(type: TypedTemporalType, stored: string): string | undefined {
@@ -186,7 +212,7 @@ export function storedFromTyped(type: TypedTemporalType, precision: number, type
   const mask = temporalEntryMask(type, precision)
   if (typed === '') return null
   if (type === 'time' || !fitsMask(mask, typed)) return formatMasked(mask, typed)
-  const instant = instantAt(typed.slice(0, WALL_DIGITS), LOCAL)
+  const instant = localInstant(typed.slice(0, WALL_DIGITS))
   const utc = instant === undefined ? undefined : wallDigits(instant, UTC)
   if (utc === undefined) return formatMasked(mask, typed)
   return `${formatMasked(instantMask(precision), `${utc}${typed.slice(WALL_DIGITS)}`)}Z`
@@ -219,7 +245,7 @@ function offsetMinutes(zone: string): number | undefined {
  * past 9999.
  */
 function inUtc(whole: string, offset: number): string | undefined {
-  const asIfUtc = instantAt(digitsIn(whole), UTC)
+  const asIfUtc = utcInstant(whole)
   const utc = asIfUtc === undefined ? undefined : wallDigits(new Date(asIfUtc.getTime() - offset * 60_000), UTC)
   return utc === undefined ? undefined : formatMasked(instantMask(0), utc)
 }
@@ -244,7 +270,7 @@ function answerPasted(type: TypedTemporalType, n: number, answer: string): strin
   const offset = offsetMinutes(zone)
   // The clock checked as the stored shape checks it, so 25:00 is no time and no instant.
   if (offset === undefined || !new RegExp(temporalShape(type, 0)).test(`${whole}${suffix}`)) return undefined
-  // An instant's day through Date.UTC at every offset, Z included: 30 February is none.
+  // An instant's day asked of the calendar at every offset, Z included: 30 February is none.
   const utc = type === 'datetime' ? inUtc(whole, offset) : whole
   if (utc === undefined) return undefined
   const exact = fraction.length <= TEMPORAL_PRECISION_MAX && /^0*$/.test(fraction.slice(n))
@@ -261,8 +287,11 @@ function answerPasted(type: TypedTemporalType, n: number, answer: string): strin
  * The mask reads digits and drops everything else, so it is given a paste only when a
  * person could have typed it into this mask and it fits. A zone, an offset, a decimal
  * comma or a digit too many would otherwise become part of the answer or vanish from it,
- * and a log's instant would be stored complete, valid and moved by the person's offset.
- * The whitespace around a paste is not part of it: a copied log line brings its line break.
+ * and a log's instant would be stored complete, valid and moved by the person's offset:
+ * at precision 4, `20261115140327-0100` as 14:03:27.0100 on the person's clock, the
+ * offset's digits as the fraction. So no offset after a date reaches the mask, however the
+ * date and the clock are written, and in a time none does. The whitespace around a paste
+ * is not part of it: a copied log line brings its line break.
  */
 export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
   const answer = text.trim()

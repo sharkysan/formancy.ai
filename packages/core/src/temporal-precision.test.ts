@@ -65,6 +65,16 @@ describe('an answer at its field’s precision', () => {
     expect(errorsFor({ precision: 3 }, '2028-02-29T10:00:00.415Z')).toBeUndefined()
   })
 
+  // A residual accepted, for the safety analysis to name: in Zurich the first is 10000-01-01 and in
+  // New York the second is -0001-12-31, so the typed control shows each empty, yet each is a real
+  // instant in its shape. An engine that refused what the control cannot show would refuse an
+  // answer of the right width on a day that exists. The control's half is pinned in spec's
+  // temporal-entry.test.ts; this is the engine's, so a change to either is a decision.
+  test('an instant whose local year has no four digits is still an answer', () => {
+    expect(errorsFor({ precision: 0 }, '9999-12-31T23:30:00Z')).toBeUndefined()
+    expect(errorsFor({ precision: 0 }, '0000-01-01T03:00:00Z')).toBeUndefined()
+  })
+
   // 0.13.0's behaviour, kept on purpose: a field without a precision is version 5's, whose shape
   // never asked the calendar, and checking it now would refuse answers a frozen version accepts.
   test('the same day on a field without a precision is not a shape error', () => {
