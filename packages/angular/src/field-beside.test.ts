@@ -59,6 +59,27 @@ const form: FormSchema = {
       // A source this deployment does not have: the select draws a sentence in its box's place.
       { key: 'depot', type: 'select', label: 'Depot', optionsSource: 'depots' },
       { key: 'name', type: 'text', label: 'Name' },
+      // The four controls that draw a fieldset of their own rather than a box.
+      { key: 'size', type: 'radio', label: 'Size', options: [{ value: 's', label: 'Small' }] },
+      { key: 'extras', type: 'selectboxes', label: 'Extras', options: [{ value: 'tape', label: 'Tape' }] },
+      { key: 'rating', type: 'matrix', label: 'Rating', rows: [{ value: 'speed', label: 'Speed' }], options: [{ value: 'good', label: 'Good' }] },
+      {
+        key: 'order',
+        type: 'ranking',
+        label: 'Order',
+        options: [
+          { value: 'fast', label: 'Fast' },
+          { value: 'cheap', label: 'Cheap' },
+        ],
+      },
+      // A select in a row, which the host knows by the row's own path.
+      {
+        key: 'lines',
+        type: 'repeater',
+        label: 'Lines',
+        minItems: 1,
+        fields: [{ key: 'parcel', type: 'select', label: 'Parcel', options: [{ value: 'box', label: 'Box' }] }],
+      },
     ],
   },
 }
@@ -156,7 +177,9 @@ const tabbables = () =>
 
 describe('content beside a field’s control', () => {
   // A host that gives none, or gives nothing for a path, changes no form: not an empty row, and
-  // not an attribute, so a form drawn today is drawn the same.
+  // not an attribute, so a form drawn today is drawn the same. Both forms draw their boxes
+  // through the `@else` that draws the box alone, so the two agreeing would not see that branch
+  // wrap or reorder the box: the elements each field had before the row existed are named too.
   test('draws nothing where the host gives nothing, so the form is unchanged', async () => {
     await mountPlain()
     const without = markup()
@@ -166,8 +189,10 @@ describe('content beside a field’s control', () => {
     await mount(() => undefined)
 
     expect(document.querySelector('[data-formancy-part="field-control-row"]')).toBeNull()
-    expect(without).toHaveLength(4)
+    expect(without).toHaveLength(9)
     expect(markup()).toEqual(without)
+    expect(partsOf(wrapperOf('country'))).toEqual(['label', 'select', 'select-status'])
+    expect(partsOf(wrapperOf('point'))).toEqual(['label', 'typeahead-anchor', 'typeahead-status'])
   })
 
   // The row holds the box and the host's content and nothing else: a status region or an error
@@ -199,22 +224,36 @@ describe('content beside a field’s control', () => {
   })
 
   // A text field, a fieldset or a select whose source is missing has no single box on a line of
-  // its own to join a button to; asked for one, a host would draw content nobody places.
+  // its own to join a button to; asked for one, a host would draw content nobody places. Each
+  // of the four fieldsets is in the form, and every control inherits the question from the
+  // base they share, so none of them can start asking unseen.
   test('is asked for by the select and the typeahead alone', async () => {
     await mount(() => undefined)
 
     // Once per path, in the order the fields are drawn, however often a field is drawn again.
-    expect([...new Set(asked)]).toEqual(['country', 'point'])
+    expect([...new Set(asked)]).toEqual(['country', 'point', 'lines[0].parcel'])
+  })
+
+  // A host keys its content on the path a field's wrapper carries. A row's select asked by its
+  // template's path, `lines[].parcel`, would be given the same content in every row, and a
+  // button there would open one record from all of them.
+  test('is asked for by a row’s select by the row’s own path, and drawn in that row', async () => {
+    await mount((path) => (path === 'lines[0].parcel' ? 'open' : undefined))
+
+    expect(partsOf(rowOf('lines[0].parcel'))).toEqual(['select', 'field-beside'])
+    expect(rowOf('lines[0].parcel')?.querySelector('select')).toBe(screen.getByRole('combobox', { name: 'Parcel' }))
+    expect(besideOf(screen.getByRole('button', { name: 'Open lines[0].parcel' }))).toBe(rowOf('lines[0].parcel'))
   })
 
   // Angular's counterpart of React's `useField(path)`: a component cannot ask for a binding by a
   // path that only arrives as its input, so the template is handed it, and a button that opens
   // the chosen record reads the answer there.
   test('reads the field’s value through the binding its template is given', async () => {
-    await mount(() => 'chosen', { country: 'CH' })
+    await mount(() => 'chosen', { country: 'CH', lines: [{ parcel: 'box' }] })
 
     expect(besideOf(screen.getByText('Chosen: CH'))).toBe(rowOf('country'))
     expect(besideOf(screen.getByText('Chosen: nothing'))).toBe(rowOf('point'))
+    expect(besideOf(screen.getByText('Chosen: box'))).toBe(rowOf('lines[0].parcel'))
   })
 
   // The control is described by its description and its error, as before: a button beside it,
@@ -229,7 +268,7 @@ describe('content beside a field’s control', () => {
     await mount(() => 'open')
 
     const parts = [...document.querySelectorAll('[data-formancy-part="field-control-row"], [data-formancy-part="field-beside"]')]
-    expect(parts).toHaveLength(4)
+    expect(parts).toHaveLength(6)
     for (const part of parts) {
       expect(part.getAttribute('role')).toBeNull()
       expect(part.getAttribute('aria-label')).toBeNull()
@@ -260,8 +299,26 @@ describe('content beside a field’s control', () => {
   test('is empty, for a theme to hide, where the host’s template draws nothing', async () => {
     await mount(() => 'nothing')
 
-    expect(besides()).toHaveLength(2)
+    expect(besides()).toHaveLength(3)
     for (const beside of besides()) expect(beside.matches(':empty')).toBe(true)
+  })
+
+  // A host with something to draw only once the field holds an answer, as a button that opens
+  // the chosen record, draws it from inside its template: giving a template for one answer and
+  // none for another would draw the box again each time, and take the keyboard from the person
+  // choosing in it.
+  test('keeps the box while what the host draws beside it comes and goes', async () => {
+    const settle = await mount(() => 'nothing')
+    const box = screen.getByRole('combobox', { name: 'Country' })
+    box.focus()
+    expect(screen.queryByText('Chosen')).toBeNull()
+
+    fireEvent.change(box, { target: { value: 'DE' } })
+    await settle()
+
+    expect(besideOf(screen.getByText('Chosen'))).toBe(rowOf('country'))
+    expect(screen.getByRole('combobox', { name: 'Country' })).toBe(box)
+    expect(document.activeElement).toBe(box)
   })
 
   // The template is given the field's own path and its live binding, not a copy taken when the

@@ -147,6 +147,9 @@ export class FormancyForm {
    * typeahead, the two wrapped in `data-formancy-part="field-control-row"` and the content in
    * `data-formancy-part="field-beside"`, and given the path and the field's binding (0237). No
    * other control draws it, and a field the host gives nothing is drawn exactly as without it.
+   * A template for a path that had none, or none for a path that had one, draws the box again,
+   * and a person in it loses the keyboard: to show nothing for a while, give a template that
+   * draws nothing, which keeps the box.
    */
   readonly fieldBeside = input<FormancyFieldBeside>()
   readonly submitted = output<SubmitOutcome>()
