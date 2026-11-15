@@ -205,3 +205,84 @@ describe('what the playground, as a host, draws under a field', () => {
     }
   })
 })
+
+describe('what the playground, as a host, draws beside a field', () => {
+  /*
+   * Beside the pickup point an Open, as a host draws one for the record a lookup points to, and
+   * beside the country a Clear (0237): each a button on the box's own line, after the box, which a
+   * theme draws with the box as one field. The row has no role and no name by design, so where the
+   * button sits is read from the DOM by the parts a theme selects on, starting from the button and
+   * the box found by role and name.
+   */
+  const rowHolding = (button: HTMLElement): HTMLElement | null => {
+    const beside = button.parentElement
+    if (beside?.getAttribute('data-formancy-part') !== 'field-beside') return null
+    const row = beside.parentElement
+    return row?.getAttribute('data-formancy-part') === 'field-control-row' ? row : null
+  }
+  /** The row's children by part, or by tag where a child is the select itself. */
+  const parts = (row: HTMLElement | null): string[] => [...(row?.children ?? [])].map((child) => child.getAttribute('data-formancy-part') ?? child.tagName)
+
+  // Without the option passed in either pane, no row is drawn there and the feature is documented
+  // and seen nowhere; a row around something other than the box, or a button outside it, is the
+  // place a theme cannot join to the box. And each button is unavailable while its field is empty,
+  // not missing, so the box keeps its width when an answer is picked.
+  test('is a button joined to the pickup point’s box and to the country’s, in both renderers', async () => {
+    await mounted()
+    const user = userEvent.setup()
+
+    for (const pane of [reactPane(), angularPane()]) {
+      const where = pane === reactPane() ? 'React' : 'Angular'
+      const point = within(pane).getByRole('combobox', { name: 'Where to collect it' })
+      const country = within(pane).getByRole('combobox', { name: 'Country' })
+
+      const open = within(pane).getByRole('button', { name: 'Open the pickup point' })
+      const clear = within(pane).getByRole('button', { name: 'Clear the country' })
+      expect(parts(rowHolding(open)), `${where}: the pickup point's row`).toEqual(['typeahead-anchor', 'field-beside'])
+      expect(rowHolding(open)?.firstElementChild, `${where}: the pickup point's box`).toBe(point.closest('[data-formancy-part="typeahead-anchor"]'))
+      expect(parts(rowHolding(clear)), `${where}: the country's row`).toEqual(['SELECT', 'field-beside'])
+      expect(rowHolding(clear)?.firstElementChild, `${where}: the country's box`).toBe(country)
+      expect([open.getAttribute('aria-disabled'), clear.getAttribute('aria-disabled')], `${where}: both while empty`).toEqual(['true', 'true'])
+
+      await user.type(point, 'Bern')
+      await user.click(await within(pane).findByRole('option', { name: 'Bern Bahnhof' }, { timeout: 3_000 }))
+      const opened = await within(pane).findByRole('button', { name: 'Open Bern Bahnhof' })
+      expect(opened, `${where}: the same button, named for the point`).toBe(open)
+      expect(opened.hasAttribute('aria-disabled'), `${where}: available once a point is chosen`).toBe(false)
+    }
+  })
+
+  // A button that did nothing once its field held an answer only looks like one: the Open moves the
+  // keyboard to the point drawn under the field, as a host's Open moves it to the record it opens,
+  // and the Clear takes the answer away, which the engine hears. And the Clear keeps the keyboard
+  // as the field empties: a button that left the keyboard's order as it became unavailable would
+  // drop the keyboard to the page.
+  test('does what it says once its field holds an answer, and keeps the keyboard, in both renderers', async () => {
+    await mounted()
+    const user = userEvent.setup()
+
+    for (const pane of [reactPane(), angularPane()]) {
+      const where = pane === reactPane() ? 'React' : 'Angular'
+      const point = within(pane).getByRole('combobox', { name: 'Where to collect it' })
+      const country = within(pane).getByRole<HTMLSelectElement>('combobox', { name: 'Country' })
+
+      await user.type(point, 'Bern')
+      await user.click(await within(pane).findByRole('option', { name: 'Bern Bahnhof' }, { timeout: 3_000 }))
+      await user.click(await within(pane).findByRole('button', { name: 'Open Bern Bahnhof' }))
+      await waitFor(() => expect(document.activeElement?.textContent, `${where}: the Open moves the keyboard to the point`).toBe('Bern Bahnhof · p3'))
+      expect(document.activeElement?.closest('[data-formancy-part="field-addition"]'), `${where}: under the field`).toBe(
+        point.closest('[data-formancy-part="field"]')?.querySelector('[data-formancy-part="field-addition"]'),
+      )
+
+      const clear = within(pane).getByRole('button', { name: 'Clear the country' })
+      await user.selectOptions(country, 'CH')
+      await waitFor(() => expect(clear.hasAttribute('aria-disabled'), `${where}: available once a country is chosen`).toBe(false))
+      expect(within(pane).queryByRole('textbox', { name: 'Canton' })).not.toBeNull()
+      await user.click(clear)
+      await waitFor(() => expect(country.value, `${where}: the Clear empties the country`).toBe(''))
+      await waitFor(() => expect(within(pane).queryByRole('textbox', { name: 'Canton' }), `${where}: and the engine heard it`).toBeNull())
+      expect(clear.getAttribute('aria-disabled'), `${where}: unavailable again`).toBe('true')
+      expect(document.activeElement, `${where}: the keyboard stays on the Clear`).toBe(clear)
+    }
+  })
+})

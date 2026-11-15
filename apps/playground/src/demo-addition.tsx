@@ -4,16 +4,18 @@ import { PICKUP_POINTS } from './demo-capabilities.js'
 /**
  * What the playground draws under the pickup point: the point the answer holds, by name and by
  * code, as a host shows the record a lookup points to under it (0233). Read from the field, as any
- * host component reads one; nothing until a point is chosen, which a theme draws as no room.
+ * host component reads one; nothing until a point is chosen, which a theme draws as no room. It
+ * takes the keyboard from a script and not from Tab, so the Open beside the field
+ * (`demo-beside.tsx`) can move the keyboard to it.
  */
 function ChosenPoint({ path }: { path: string }) {
   const field = useField(path)
   const point = PICKUP_POINTS.find((each) => each.value === field.value)
   if (point === undefined) return null
   return (
-    <>
+    <span className="chosen-point" tabIndex={-1}>
       {point.label} · <code>{point.value}</code>
-    </>
+    </span>
   )
 }
 
