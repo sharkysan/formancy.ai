@@ -37,6 +37,15 @@ export default defineConfig({
      * performance gate in `pnpm bench`, not by this number.
      */
     testTimeout: RENDER_TIMEOUT_MS,
+    /*
+     * Child processes, not the Analog plugin's `vmThreads` default. A worker thread has its
+     * own copy of `process.env`, so `vi.stubEnv('TZ', …)` never reaches the clock there: the
+     * typed datetime control is shown on the wall clock of the person, and a test that pins a
+     * zone and silently reads the machine's own passes or fails by where it is run. Measured:
+     * under `vmThreads` a `Date` stayed in the machine's zone after the stub; under `forks` it
+     * moved.
+     */
+    pool: 'forks',
     include: ['src/**/*.test.ts', 'material/src/**/*.test.ts'],
     environment: 'jsdom',
     passWithNoTests: true,

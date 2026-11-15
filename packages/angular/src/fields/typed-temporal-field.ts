@@ -1,0 +1,122 @@
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
+import type { Signal } from '@angular/core'
+import { formatMasked, maskIsNumeric, maskPlaceholder, pasteOutcome, storedFromTyped, temporalEntryMask, typedFromStored } from '@formancy/spec'
+import type { TypedTemporalType } from '@formancy/spec'
+import type { FieldBinding } from '../field.js'
+import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
+import { applyMaskedEdit } from './masked-edit.js'
+
+/**
+ * What a control that types a `time` or a `datetime` at its `precision` needs: the text to
+ * show, the hint and keypad, and the two handlers.
+ *
+ * A function over a field rather than a base class, because two controls draw it, the
+ * default one and Material's form field, and share nothing else: Material's markup is its
+ * own and the logic is not. It holds no state of its own, only computed views of the
+ * field's.
+ *
+ * What the digits mean, and what they are stored as, is `@formancy/spec`'s, because five
+ * controls type into it and must agree
+ * ([0091](../../../../docs/decisions/0091-a-second-builder-is-a-binding.md)); this is the
+ * Angular binding of it, shaped like the text field's masked branch (0125) and like React's
+ * `TypedTemporalField`. Written only on the person's input, never on mount: an answer
+ * somebody supplied and nobody touched is submitted byte for byte, whatever width it has.
+ *
+ * Call from an injection context, as the field is.
+ */
+export function typedTemporalEntry(field: FieldBinding, authoredPlaceholder: Signal<string | null>) {
+  const type = computed<TypedTemporalType>(() => (field.snapshot().def.type === 'datetime' ? 'datetime' : 'time'))
+  const precision = computed(() => {
+    const declared = field.snapshot().def.precision
+    return typeof declared === 'number' ? declared : 0
+  })
+  const mask = computed(() => temporalEntryMask(type(), precision()))
+  const typed = computed(() => {
+    const value = field.snapshot().value
+    return typedFromStored(type(), precision(), typeof value === 'string' ? value : '')
+  })
+
+  return {
+    /** The answer in its shape: every digit it holds, whatever its width. */
+    shown: computed(() => formatMasked(mask(), typed())),
+    placeholder: computed(() => authoredPlaceholder() ?? maskPlaceholder(mask())),
+    inputMode: computed(() => (maskIsNumeric(mask()) ? 'numeric' : null)),
+
+    onInput(event: Event): void {
+      const input = event.target as HTMLInputElement
+      const forward = (event as InputEvent).inputType === 'deleteContentForward'
+      const edited = applyMaskedEdit(input, mask(), typed(), input.value, { caret: input.selectionStart, forward })
+      field.setValue(storedFromTyped(type(), precision(), edited))
+    },
+
+    onPaste(event: ClipboardEvent): void {
+      // The engine ignores a write to a read-only field, but the control would still be
+      // rewritten to digits that are not stored.
+      if (field.snapshot().readOnly) return
+      const input = event.target as HTMLInputElement
+      const pasted = event.clipboardData?.getData('text') ?? ''
+      const shown = formatMasked(mask(), typed())
+      // What is shown before, in and after the selection, which is what the paste replaces.
+      const start = input.selectionStart ?? shown.length
+      const end = input.selectionEnd ?? shown.length
+      const before = shown.slice(0, start)
+      const after = shown.slice(end)
+      event.preventDefault()
+      // Whether the paste is an answer, typing or nothing is `@formancy/spec`'s, for every control (0091).
+      const outcome = pasteOutcome(type(), precision(), { before, selected: shown.slice(start, end), pasted, after })
+      if ('answer' in outcome) {
+        // When the answer shows as the text the field now holds, the control is written and
+        // the caret placed before the binding renders, as typing leaves it; the binding would
+        // write the same text and leave the caret at the end.
+        const text = formatMasked(mask(), typedFromStored(type(), precision(), outcome.answer))
+        if (text === `${before}${pasted}${after}`) {
+          input.value = text
+          input.setSelectionRange(before.length + pasted.length, before.length + pasted.length)
+        }
+        field.setValue(outcome.answer)
+      } else if ('typed' in outcome) {
+        const caret = before.length + pasted.length
+        field.setValue(storedFromTyped(type(), precision(), applyMaskedEdit(input, mask(), typed(), outcome.typed, { caret, forward: false })))
+      }
+      // Ignored, the default is prevented and nothing else happens, as for a key the mask cannot place.
+    },
+  }
+}
+
+/**
+ * A `time` or a `datetime` that declares a `precision`, typed into its own shape.
+ *
+ * The browser's pickers hold minutes, or milliseconds at best, so they cannot show or keep
+ * a seventh digit: a field with a precision is typed instead, into the mask
+ * `@formancy/spec` derives from it. `FormancyTimeField` and `FormancyDateTimeField` draw
+ * this when the field declares one and are otherwise the browser's control.
+ */
+@Component({
+  selector: 'formancy-typed-temporal-field',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyFieldShell],
+  template: `
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+      <!-- Read-only, never disabled, so a computed answer is still reached and read (0181). -->
+      <input
+        type="text"
+        [id]="control().id"
+        [attr.name]="control().name"
+        [attr.aria-invalid]="control()['aria-invalid']"
+        [attr.aria-required]="control()['aria-required']"
+        [attr.aria-describedby]="control()['aria-describedby']"
+        [disabled]="control().disabled === true"
+        [readOnly]="field.snapshot().readOnly"
+        [value]="entry.shown()"
+        [attr.placeholder]="entry.placeholder()"
+        [attr.inputmode]="entry.inputMode()"
+        (input)="entry.onInput($event)"
+        (paste)="entry.onPaste($event)"
+        (blur)="field.touch()"
+      />
+    </formancy-field-shell>
+  `,
+})
+export class FormancyTypedTemporalField extends FieldComponentBase {
+  protected readonly entry = typedTemporalEntry(this.field, this.authoredPlaceholder)
+}

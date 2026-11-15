@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { MaterialFieldBase } from './base.js'
+import { FormancyMaterialTypedTimeField } from './typed-time-field.js'
 import { FormancyCharacterCount, FormancyErrorText } from '@formancy/angular'
 
 /**
@@ -230,37 +231,45 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-time-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
   template: `
-    <mat-form-field [attr.data-formancy-field-path]="context.path">
-      <mat-label>{{ context.label }}</mat-label>
-      <input
-        matInput
-        type="time"
-        [id]="control().id"
-        [attr.name]="control().name"
-        [attr.min]="earliest()"
-        [attr.max]="latest()"
-        [required]="field.snapshot().required"
-        [disabled]="field.snapshot().disabled"
-        [readonly]="field.snapshot().readOnly"
-        [errorStateMatcher]="matcher"
-        [aria-describedby]="describedBy() ?? ''"
-        [value]="text()"
-        (input)="onInput($event)"
-        (blur)="field.touch()"
-      />
-      <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
-    </mat-form-field>
-    <!-- The field's help text under the box, at the id the box's describedby names (0194),
-         outside the form field as the count is: Material's own hint hides while an error
-         shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
-    @if (field.snapshot().description; as said) {
-      <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+    @if (typed()) {
+      <ng-container *ngComponentOutlet="typedControl" />
+    } @else {
+      <mat-form-field [attr.data-formancy-field-path]="context.path">
+        <mat-label>{{ context.label }}</mat-label>
+        <input
+          matInput
+          type="time"
+          [id]="control().id"
+          [attr.name]="control().name"
+          [attr.min]="earliest()"
+          [attr.max]="latest()"
+          [required]="field.snapshot().required"
+          [disabled]="field.snapshot().disabled"
+          [readonly]="field.snapshot().readOnly"
+          [errorStateMatcher]="matcher"
+          [aria-describedby]="describedBy() ?? ''"
+          [value]="text()"
+          (input)="onInput($event)"
+          (blur)="field.touch()"
+        />
+        <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
+      </mat-form-field>
+      <!-- The field's help text under the box, at the id the box's describedby names (0194),
+           outside the form field as the count is: Material's own hint hides while an error
+           shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
     }
   `,
 })
 export class FormancyMaterialTimeField extends MaterialFieldBase {
+  /** A `precision` is typed into its own shape, which no browser picker can hold; without one, the picker. */
+  protected readonly typed = computed(() => typeof this.field.snapshot().def.precision === 'number')
+  protected readonly typedControl = FormancyMaterialTypedTimeField
+
   protected readonly text = computed(() => {
     const value = this.field.snapshot().value
     return typeof value === 'string' ? value : ''

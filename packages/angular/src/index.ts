@@ -5,6 +5,9 @@ export type { FormancyOptions } from './provide.js'
 export { FormancyTextPipe, injectFormText } from './text.js'
 export { FormancyErrorText } from './fields/error-text.js'
 export { FormancyCharacterCount } from './fields/character-count.js'
+// What a design system's own time control needs to type a `precision`, so it binds the one
+// decision spec makes about the digits rather than making it again (0091).
+export { typedTemporalEntry } from './fields/typed-temporal-field.js'
 export { FormancyReview } from './review.js'
 export type { FormText, FormWordId, FormWordValues, FormWords, FormWordsByLocale } from '@formancy/core/words'
 export { injectField } from './field.js'
