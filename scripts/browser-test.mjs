@@ -42,6 +42,7 @@ import { checkMaterialDateButton } from './material-date-browser-test.mjs'
 import { checkNoForeignRequests } from './request-browser-test.mjs'
 import { checkSuggestionsPlacement } from './suggestions-browser-test.mjs'
 import { checkActiveOptionInView } from './typeahead-browser-test.mjs'
+import { checkSelectArrow } from './select-arrow-browser-test.mjs'
 import { checkBuildersLayAlike } from './builders-layout-browser-test.mjs'
 import { REFUSALS, checkServedUnderItsPolicies, servedUnder } from './policy-browser-test.mjs'
 
@@ -214,6 +215,7 @@ async function run() {
     await checkArrangeGaps(browser, url, check)
     await checkSuggestionsPlacement(browser, url, check)
     await checkActiveOptionInView(browser, url, check)
+    await checkSelectArrow(browser, url, check)
     await checkBuildersLayAlike(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })

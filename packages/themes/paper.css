@@ -211,18 +211,31 @@
   background-attachment: local;
 }
 
-[data-formancy-theme='paper'] [data-formancy-part='field'] select {
+/* `:not([multiple])` is this rule's weight as well as its meaning. The rule
+   every control shares weighs an attribute through `:is()`, which outweighed a
+   bare `select`: its `padding` took back the room kept for the arrow (#345). A
+   multiple select is a list box, with no arrow to draw. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] select:not([multiple]) {
   appearance: none;
   padding-inline-end: 1.75rem;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--fm-ink) 50%),
     linear-gradient(-45deg, transparent 50%, var(--fm-ink) 50%);
   background-position:
-    calc(100% - 0.6875rem) 55%,
-    calc(100% - 0.375rem) 55%;
+    right 0.6875rem top 55%,
+    right 0.375rem top 55%;
   background-size: 0.3125rem 0.3125rem;
   background-repeat: no-repeat;
   cursor: pointer;
+}
+
+/* And the other reading order. CSS has no logical `background-position`, so the
+   arrow's side is named again, each triangle as far from the left as the other
+   was from the right; the room kept for it is logical and moves on its own. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] select:not([multiple]):dir(rtl) {
+  background-position:
+    left 0.375rem top 55%,
+    left 0.6875rem top 55%;
 }
 
 [data-formancy-theme='paper'] [data-formancy-part='field'] input[type='file'] {

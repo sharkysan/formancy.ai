@@ -31,6 +31,17 @@ tomorrow
 `@formancy/expressions` exports `comparedLiterals`, every place an expression compares a field with
 a string, and `@formancy/core/authoring` exports `misshapenTemporalLiterals`.
 
+**Fixed: a select in a shipped theme looked like a text box**, in every release through `0.13.0`.
+Each theme takes the platform's arrow off a select and draws its own, with room kept for it at the
+end of the line. But the rule every control shares outweighed the select's own, because `:is()`
+weighs as much as its heaviest branch, an attribute. In Blueprint it took the drawn arrow away, so
+a select gave no sign that it opens, and typing into it as into a text box changes the choice. In
+every theme it gave back the room kept for the arrow, so a long choice ran under it. The select's
+rule now outweighs it, and right to left each theme draws the arrow at the left, where its room
+moves to; no theme did before (hazard D7a, [#345](https://github.com/sharkysan/formancy.ai/issues/345)).
+A host stylesheet that restyles a theme's select arrow needs a selector at least as strong as the
+theme's, which is now one attribute stronger: `[data-formancy-theme] [data-formancy-part='field'] select:not([multiple])`.
+
 ## 0.13.0 — 2026-11-05
 
 **A minor release; the spec version stays 5.** `0.13.0` reads and writes what `0.12.0` does, so a
