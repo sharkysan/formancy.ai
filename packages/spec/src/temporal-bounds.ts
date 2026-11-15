@@ -1,4 +1,4 @@
-import { TEMPORAL_PRECISION_MAX, temporalExample, temporalShape } from './temporal.js'
+import { TEMPORAL_PRECISION_MAX, temporalDateExists, temporalExample, temporalShape } from './temporal.js'
 import { schemaError } from './schema-errors.js'
 import type { SchemaError } from './schema-errors.js'
 import type { FieldDef, TemporalFieldType } from './types.js'
@@ -6,7 +6,8 @@ import type { FieldDef, TemporalFieldType } from './types.js'
 const TEMPORAL_TYPES: readonly string[] = ['date', 'time', 'datetime']
 
 /**
- * A bound written at a width other than its field's.
+ * A bound written at a width other than its field's, or on a field with a precision, on a day
+ * the calendar does not have.
  *
  * The schema cannot see a field's `precision` from inside a bound, so it lets a bound be
  * written at any width the type has; this is the check that holds it to the one width its
@@ -28,7 +29,11 @@ export function temporalBoundErrors(field: FieldDef, path: string): SchemaError[
   const errors: SchemaError[] = []
   for (const bound of ['earliest', 'latest'] as const) {
     const value = field[bound]
-    if (value !== undefined && !shape.test(value)) errors.push(schemaError(`${path}/${bound}`, 'bounds.width', { expected }))
+    if (value === undefined) continue
+    if (!shape.test(value)) errors.push(schemaError(`${path}/${bound}`, 'bounds.width', { expected }))
+    // As the engine checks an answer: a field with a precision refuses a day the calendar does
+    // not have, so a bound on one is no answer it could have. One without is 0.13.0's, unchanged.
+    else if (precision !== undefined && !temporalDateExists(type, value)) errors.push(schemaError(`${path}/${bound}`, 'bounds.noSuchDay', { bound: value }))
   }
   return errors
 }

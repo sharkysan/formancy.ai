@@ -73,3 +73,36 @@ describe('a bound at the wrong width', () => {
     expect(() => errorsOf(formWith({ precision: 12, earliest: '09:00' }))).not.toThrow()
   })
 })
+
+/**
+ * A field with a precision refuses an answer on a day the calendar does not have (`shape`), so a
+ * bound on such a day is no answer the field could have: its typed entry shows it empty, and a
+ * `default` there stops the form opening. Its digits are all in their places, so the width check
+ * alone lets it through.
+ */
+describe('a bound on a field with a precision', () => {
+  // 30 February at the field's width: the case the width check passed.
+  test('on a day that does not exist is refused, naming the bound', () => {
+    expect(errorsOf(formWith({ type: 'datetime', precision: 3, earliest: '2026-02-30T00:00:00.000Z' }))).toMatchObject([
+      { path: '/model/fields/0/earliest', code: 'bounds.noSuchDay', values: { bound: '2026-02-30T00:00:00.000Z' } },
+    ])
+  })
+
+  // The other bound, and a month the calendar has none of, so neither path is left unchecked.
+  test('in a month that does not exist is refused on latest', () => {
+    expect(errorsOf(formWith({ type: 'datetime', precision: 0, latest: '2026-13-01T00:00:00Z' }))).toMatchObject([
+      { path: '/model/fields/0/latest', code: 'bounds.noSuchDay' },
+    ])
+  })
+
+  // A check that read the calendar wrongly would refuse a leap day, and with it every bound in it.
+  test('on 29 February of a leap year passes', () => {
+    expect(errorsOf(formWith({ type: 'datetime', precision: 3, earliest: '2028-02-29T00:00:00.000Z' }))).toEqual([])
+  })
+
+  // A field without a precision accepts 30 February as an answer, as 0.13.0 did, so refusing its
+  // bound would turn a valid version-5 document invalid.
+  test('is not looked at on a field without a precision', () => {
+    expect(errorsOf(formWith({ type: 'datetime', earliest: '2026-02-30T00:00:00Z' }, '5'))).toEqual([])
+  })
+})

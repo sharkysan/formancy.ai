@@ -2,7 +2,7 @@ import { comparedFields, comparedLiterals, parse } from '@formancy/expressions'
 import type { ExpressionAst } from '@formancy/expressions'
 import { TEMPORAL_FIELD_TYPES, modelDataFields, temporalExample, temporalShape } from '@formancy/spec'
 import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@formancy/spec'
-import { inModel, rowScopeOf } from './unknown-paths.js'
+import { ROW_ITEM, inModel, rowScopeOf } from './unknown-paths.js'
 
 /**
  * Rules that compare a temporal answer with something of another width (spec 6, 0237).
@@ -98,7 +98,7 @@ function literalProblems(ast: ExpressionAst, rowScope: string | undefined, field
       literal: compared.literal,
       message:
         compared.literal === ''
-          ? emptyLiteralMessage(about, path)
+          ? emptyLiteralMessage(about, path, compared.path, rowScope)
           : `${ruleOf(about)} compares "${path}", which declares precision ${String(field.precision)}, with "${compared.literal}", which is not at that width. ` +
             `A rule compares the two as text, so it orders them wrongly and no answer equals it. ` +
             `${REMEDY} At this field’s width the literal is written like "${temporalExample(field.type, field.precision)}".`,
@@ -112,11 +112,27 @@ function literalProblems(ast: ExpressionAst, rowScope: string | undefined, field
  * an unanswered field holds null, so the rule is always true (0236). No width fixes it, so the
  * message gives the idiom that does, not the three remedies for a literal that meant a time.
  */
-function emptyLiteralMessage(about: About, path: string): string {
+function emptyLiteralMessage(about: About, path: string, read: string, rowScope: string | undefined): string {
   return (
     `${ruleOf(about)} compares "${path}" with the empty text "". An unanswered field holds null, not "", so this does not ask whether it was answered. ` +
-    `To ask that, write \`has(${path})\` or \`${path} != null\`.`
+    `To ask that, write \`${answeredTest(read, rowScope)}\`.`
   )
+}
+
+/**
+ * The test that asks whether a field was answered, on the read as the rule wrote it, so that it
+ * can be copied into the rule: `item.at` in a row, never the model's `legs[].at`, which is no
+ * expression. The logic guide's table is the reason for each case:
+ *
+ * - **Inside a group, `has()`.** Reading a member of a group nobody answered fails, and a rule
+ *   that fails shows its field, so `!= null` there fails rather than answering.
+ * - **At the top of the form, `!= null`.** `has()` takes only a member, so `has(opens)` does not
+ *   compile.
+ * - **In a row, `!= null`.** A row presents every key, so `has(item.at)` is always true.
+ */
+function answeredTest(read: string, rowScope: string | undefined): string {
+  const inRow = rowScope !== undefined && read.startsWith(`${ROW_ITEM}.`)
+  return !inRow && read.includes('.') && !read.includes('[') ? `has(${read})` : `${read} != null`
 }
 
 /** Two temporal fields compared, where either declares a precision and their shapes differ. */

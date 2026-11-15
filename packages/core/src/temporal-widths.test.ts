@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { compile } from '@formancy/expressions'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { crossWidthComparisons } from './temporal-widths.js'
 import { misshapenTemporalLiterals } from './temporal-literals.js'
@@ -38,6 +39,9 @@ const trip = (rules: LogicRule[]): FormSchema => ({
 })
 
 const visible = (cel: string, target = 'note'): LogicRule => ({ target, kind: 'visible', cel })
+
+/** Each expression a message offers, as code: what an author copies into the rule. */
+const offered = (message: string | undefined): string[] => [...(message ?? '').matchAll(/`([^`]+)`/g)].map((match) => match[1]!)
 
 describe('a literal compared with a field that declares precision', () => {
   test('is reported when it is not at the field’s width, with the three remedies', () => {
@@ -135,9 +139,40 @@ describe('what else is and is not a cross-width comparison', () => {
 
     expect(rest).toEqual([])
     expect(found?.literal).toBe('')
-    expect(found?.message).toContain('has(opens)')
-    expect(found?.message).toContain('opens != null')
+    // `has()` takes only a member, so `has(opens)` does not compile: at the top of the form
+    // the way to ask is `!= null`, and a message offering both sent the author to a refusal.
+    expect(offered(found?.message)).toEqual(['opens != null'])
     expect(found?.message).not.toContain('timestamp(a)')
+  })
+
+  test('in a row rule, the empty literal is answered with the read the rule wrote, and the test a row answers', () => {
+    // `has(legs[].at)` is no expression at all, and `has(item.at)` is always true in a row,
+    // which presents every key: the one test that asks there is `!= null`, on `item.at`.
+    const [found] = crossWidthComparisons(trip([visible('item.at != ""', 'legs[].at')]))
+
+    expect(offered(found?.message)).toEqual(['item.at != null'])
+  })
+
+  test('inside a group, the empty literal is answered with `has()`', () => {
+    // Reading a member of a group nobody answered fails, and a rule that fails shows its
+    // field (fail open), so `stay.at != null` would be wrong there; `has()` answers.
+    const schema = trip([visible('stay.at != ""')])
+    schema.model.fields.push({ key: 'stay', type: 'group', fields: [{ key: 'at', type: 'time', label: 'At', precision: 3 }] })
+
+    expect(offered(crossWidthComparisons(schema)[0]?.message)).toEqual(['has(stay.at)'])
+  })
+
+  test('each way the empty literal message offers compiles as the rule it would replace', () => {
+    // A sentence naming an idiom the parser refuses is a second refusal, at the next publish.
+    const schema = trip([visible('opens != ""'), visible('item.at != ""', 'legs[].at'), visible('stay.at != ""')])
+    schema.model.fields.push({ key: 'stay', type: 'group', fields: [{ key: 'at', type: 'time', label: 'At', precision: 3 }] })
+    const idioms = crossWidthComparisons(schema).flatMap(({ message }) => offered(message))
+
+    expect(idioms).toHaveLength(3)
+    for (const idiom of idioms) {
+      const compiled = compile(idiom, { kind: 'visible', variables: { opens: 'dyn', item: 'dyn', stay: 'dyn' } })
+      expect(compiled.ok, idiom).toBe(true)
+    }
   })
 
   test('a datetime without precision and one at precision 0 share a shape and are not reported', () => {
