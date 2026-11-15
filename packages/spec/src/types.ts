@@ -1,4 +1,5 @@
 import type { AutocompleteToken } from './autocomplete.js'
+import { temporalShape } from './temporal.js'
 import type { FieldWidget } from './widgets.js'
 /**
  * The formancy form schema.
@@ -218,11 +219,11 @@ export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
  */
 export const TEMPORAL_SHAPES = {
   /** `YYYY-MM-DD`, ten characters. Unchanged — version 1 fixed it. */
-  date: '^\\d{4}-\\d{2}-\\d{2}$',
+  date: temporalShape('date'),
   /** `HH:MM`, five characters, 24-hour. No seconds, no zone, no `24:00`. */
-  time: '^(?:[01]\\d|2[0-3]):[0-5]\\d$',
+  time: temporalShape('time'),
   /** `YYYY-MM-DDTHH:MM:SSZ`, twenty characters. Seconds and `Z` mandatory. */
-  datetime: '^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$',
+  datetime: temporalShape('datetime'),
 } as const satisfies Partial<Record<FieldType, string>>
 
 /** The field types whose answer is one of the shapes above. */

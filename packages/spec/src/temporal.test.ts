@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 
+import { temporalAnyShape, temporalExample, temporalShape } from './temporal.js'
 import { FIELD_TYPES, SPEC_1_FIELD_TYPES, TEMPORAL_SHAPES } from './types.js'
+import type { TemporalFieldType } from './types.js'
 import { validateSchema } from './validate.js'
 
 /**
@@ -111,16 +113,109 @@ describe('the canonical shapes', () => {
     expect(pattern.test(value)).toBe(ok)
   })
 
-  test('string order is chronological order, which is the point of the shapes', () => {
-    // The property the whole design exists to buy. Asserted so that widening a
-    // pattern later fails here rather than silently making a bound wrong.
-    const times = ['23:59', '09:30', '00:00', '10:00']
-    expect([...times].sort()).toEqual(['00:00', '09:30', '10:00', '23:59'])
+  test('each type and precision accepts its own width and refuses its neighbours', () => {
+    // A shape that also accepted the next width would let a bound at one width through on a
+    // field of another, and the text comparison would be wrong with no error.
+    const widths = [undefined, ...Array.from({ length: 10 }, (_, i) => i)]
+    for (const type of ['time', 'datetime'] as const) {
+      widths.forEach((p, i) => {
+        const shape = new RegExp(temporalShape(type, p))
+        expect(temporalExample(type, p)).toMatch(shape)
+        for (const q of [widths[i - 1], widths[i + 1]]) {
+          if (i === 0 && q === undefined) continue
+          const neighbour = temporalExample(type, q)
+          // On a datetime, absent and 0 are one shape, so neither refuses the other.
+          if (neighbour === temporalExample(type, p)) continue
+          expect(neighbour).not.toMatch(shape)
+        }
+      })
+    }
+  })
 
-    const instants = ['2026-09-19T08:00:00Z', '2025-12-31T23:59:59Z', '2026-09-19T07:59:59Z']
-    expect([...instants].sort()).toEqual(['2025-12-31T23:59:59Z', '2026-09-19T07:59:59Z', '2026-09-19T08:00:00Z'])
+  test('answers of one width sort as text in the order they happen', () => {
+    // The property the whole design exists to buy, asserted for every width: widening a
+    // pattern later fails here rather than silently making a bound wrong. Instants cross
+    // 09:xx to 10:xx, a day, a year and a millisecond, so an unpadded field misorders.
+    const base = Date.UTC(2025, 11, 31, 8, 59, 59, 0)
+    const steps = [0, 1, 7, 999, 1000, 61_000, 3_600_000, 3_661_001, 7_200_000, 86_400_000]
+    const instants = [...steps, ...steps.map((s) => s + 400 * 86_400_000 + 3)].map((s) => new Date(base + s))
+    expect(instants).toHaveLength(20)
+    const widths: [TemporalFieldType, number | undefined][] = [
+      ['time', undefined],
+      ['datetime', undefined],
+      ...(['time', 'datetime'] as const).flatMap((t) => Array.from({ length: 10 }, (_, p) => [t, p] as const)),
+    ]
+    for (const [type, precision] of widths) {
+      const shape = new RegExp(temporalShape(type, precision))
+      const texts = instants.map((d) => format(d, type, precision))
+      // A time wraps at midnight, so only the instants within one day are ordered by it.
+      const ordered = type === 'time' ? texts.slice(0, 8) : texts
+      for (const t of ordered) expect(t).toMatch(shape)
+      expect([...ordered].reverse().sort()).toEqual(ordered)
+    }
+  })
+
+  test('answers of two widths do not', () => {
+    // The same instant at two widths is two strings, and the longer one sorts first because
+    // '.' < 'Z'. A bound at one width compared with an answer at another is therefore wrong,
+    // which is why a bound must be written at its field's width.
+    expect('2026-10-08T10:34:56.000Z' < '2026-10-08T10:34:56Z').toBe(true)
+  })
+
+  test('the version-5 shapes are the absent case', () => {
+    // TEMPORAL_SHAPES is public API; if the function drifts from it, version-5 documents
+    // are validated against a pattern nobody published.
+    for (const type of ['date', 'time', 'datetime'] as const) expect(TEMPORAL_SHAPES[type]).toBe(temporalShape(type))
+  })
+
+  test('date ignores precision', () => {
+    // A date has no time of day; a precision on it must not change its shape.
+    expect(temporalShape('date', 5)).toBe(temporalShape('date'))
+    expect(temporalExample('date', 5)).toBe('2026-10-08')
+  })
+
+  test.each([-1, 10, 1.5, Number.NaN])('precision %s is refused', (precision) => {
+    // Outside 0..9 there is no shape; returning one would validate documents no reader can parse.
+    expect(() => temporalShape('time', precision)).toThrow(RangeError)
+    expect(() => temporalExample('datetime', precision)).toThrow(RangeError)
+  })
+
+  test.each([
+    ['time', undefined, '09:30'],
+    ['time', 0, '09:30:00'],
+    ['time', 3, '09:30:00.000'],
+    ['datetime', undefined, '2026-10-08T09:30:00Z'],
+    ['datetime', 0, '2026-10-08T09:30:00Z'],
+    ['datetime', 9, '2026-10-08T09:30:00.000000000Z'],
+  ] as const)('the example for %s at %s is %s', (type, precision, example) => {
+    // The sentences quote these; a wrong example teaches the author a shape that is refused.
+    expect(temporalExample(type, precision)).toBe(example)
+  })
+
+  test('the any-width shape admits every width of its type and nothing else', () => {
+    // A bound is checked against this before its field is known; too narrow refuses a valid
+    // bound, too wide admits another type's value.
+    for (const type of ['time', 'datetime'] as const) {
+      const any = new RegExp(temporalAnyShape(type))
+      for (const p of [undefined, ...Array.from({ length: 10 }, (_, i) => i)]) expect(temporalExample(type, p)).toMatch(any)
+    }
+    expect('09:30').not.toMatch(new RegExp(temporalAnyShape('datetime')))
+    expect('2026-10-08T09:30:00Z').not.toMatch(new RegExp(temporalAnyShape('time')))
+    expect('09:30:00.0000000000').not.toMatch(new RegExp(temporalAnyShape('time')))
   })
 })
+
+/** One instant in the shape of a type and precision, written independently of the code under test. */
+function format(d: Date, type: TemporalFieldType, precision: number | undefined): string {
+  const iso = d.toISOString() // 2026-10-08T09:30:00.123Z
+  const clock = iso.slice(11, 16)
+  if (type === 'time') {
+    if (precision === undefined) return clock
+    return precision === 0 ? iso.slice(11, 19) : `${iso.slice(11, 19)}.${iso.slice(20, 23).padEnd(precision, '0').slice(0, precision)}`
+  }
+  const head = iso.slice(0, 19)
+  return precision === undefined || precision === 0 ? `${head}Z` : `${head}.${iso.slice(20, 23).padEnd(precision, '0').slice(0, precision)}Z`
+}
 
 describe('the bounds', () => {
   test.each(['date', 'time', 'datetime'])('%s accepts earliest and latest', (type) => {

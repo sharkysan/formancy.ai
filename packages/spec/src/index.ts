@@ -14,6 +14,7 @@ export {
   TEMPORAL_FIELD_TYPES,
   TEMPORAL_SHAPES,
 } from './types.js'
+export { TEMPORAL_PRECISION_MAX, temporalAnyShape, temporalExample, temporalShape } from './temporal.js'
 export { FIELD_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 export { PAGE_TARGETED_RULE_KINDS, RULE_KINDS } from './rules.js'
 export { SPEC_1_LAYOUT_KINDS, LAYOUT_LEAF_KINDS, layoutChildren, layoutNodeShows } from './layout.js'
