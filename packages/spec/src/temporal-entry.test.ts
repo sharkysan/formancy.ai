@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import { editMasked, formatMasked } from './mask.js'
 import { temporalDateExists, temporalShape } from './temporal.js'
-import { pastedInstant, storedFromTyped, temporalEntryMask, typedFromStored } from './temporal-entry.js'
+import { pastedInstant, pasteOutcome, storedFromTyped, temporalEntryMask, typedFromStored } from './temporal-entry.js'
 import type { TypedTemporalType } from './temporal-entry.js'
 
 /**
@@ -692,5 +692,39 @@ describe('conversions a probe checked once, pinned', () => {
     vi.stubEnv('TZ', 'Europe/Zurich')
     expect(storedFromTyped('datetime', 3, '19650615113015250')).toBe('1965-06-15T10:30:15.250Z')
     expect(typedFromStored('datetime', 3, '1965-06-15T10:30:15.250Z')).toBe('19650615113015250')
+  })
+})
+
+describe('what a paste into a typed control means', () => {
+  const whole = (type: TypedTemporalType, precision: number, pasted: string) => pasteOutcome(type, precision, { before: '', pasted, after: '' })
+
+  test.each([
+    // A digit pasted after a complete time was held at its own width, and the control showed the
+    // old text over an answer with a digit nobody could see; typing it changes nothing.
+    ['a digit at the end of a complete time', 'time', '14:03:27.415', '6', '', '14:03:27.4156'],
+    // A whole time pasted into the end of one made 14:03:27.41509:15:00.000, held, and the control blank.
+    ['a whole time at the end of a complete time', 'time', '14:03:27.415', '09:15:00.000', '', '14:03:27.41509:15:00.000'],
+    // The same for a datetime, where the held text showed as nothing at all.
+    ['a digit at the end of a complete datetime', 'datetime', '2026-11-15 09:03:27.415', '9', '', '2026-11-15 09:03:27.4159'],
+    // A selection replaced by one digit left the hour as `0:03:27.415`, which is no shape the mask reads.
+    ['one digit over a selected hour', 'time', '', '0', ':03:27.415', '0:03:27.415'],
+  ] as const)('%s is typing', (_name, type, before, pasted, after, text) => {
+    expect(pasteOutcome(type, 3, { before, pasted, after })).toEqual({ typed: text })
+  })
+
+  test('a zone-carrying instant pasted after a date is the instant, never local digits', () => {
+    // The mask would drop the Z and read 13:03:27.415123 as the person's own clock, moving the
+    // instant by their offset (Review focus 1).
+    expect(pasteOutcome('datetime', 3, { before: '2026-11-15 ', pasted: '13:03:27.415123Z', after: '' })).toEqual({
+      answer: '2026-11-15T13:03:27.415123Z',
+    })
+  })
+
+  test('a whole paste is judged as it always was', () => {
+    // Only a partial paste changed: a whole instant is stored, held text is held for the shape check,
+    // and what could have been typed is read as typing.
+    expect(whole('datetime', 3, '2026-11-15T14:03:27.415+01:00')).toEqual({ answer: '2026-11-15T13:03:27.415Z' })
+    expect(whole('time', 3, 'noon-ish')).toEqual({ answer: 'noon-ish' })
+    expect(whole('time', 3, '140327415')).toEqual({ typed: '140327415' })
   })
 })

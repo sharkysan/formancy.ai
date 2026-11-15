@@ -1,5 +1,5 @@
 import { fitsMask, fitsSlot, formatMasked, maskPositions } from './mask.js'
-import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalDateExists, temporalShape } from './temporal.js'
+import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalAnyShape, temporalDateExists, temporalShape } from './temporal.js'
 
 /**
  * Typed entry for a `time` or a `datetime` with a `precision`: the mask a person types the
@@ -301,4 +301,33 @@ export function pastedInstant(type: TypedTemporalType, precision: number, text: 
   const taken = answerPasted(type, fractionDigits(precision), answer)
   if (taken !== undefined) return taken
   return couldBeTyped(type, precision, answer) ? undefined : answer
+}
+
+/**
+ * What a paste into a typed control means: an answer to store, or text to read as typing.
+ *
+ * One decision here for every control, because `pastedInstant` judges a whole text and a
+ * paste is rarely one. Into the middle or the end of what is shown, a paste that `pastedInstant`
+ * holds — a digit after a complete time, a clock where there already is one, a selected hour
+ * replaced by one digit — would be stored as held text and the control would show nothing, or
+ * show the old text over an answer with digits nobody could see. Typing the same characters
+ * changes nothing, so it is read as typing.
+ *
+ * - A paste that replaces the whole of the text is judged as `pastedInstant` judges it.
+ * - A paste into part of it is an answer only when it makes one in the field's own shape, or an
+ *   instant in UTC at any width, which a zone must never turn into local digits; otherwise it is
+ *   typing, and the mask drops what it cannot place.
+ */
+export function pasteOutcome(
+  type: TypedTemporalType,
+  precision: number,
+  { before, pasted, after }: { readonly before: string; readonly pasted: string; readonly after: string },
+): { answer: string } | { typed: string } {
+  const text = `${before}${pasted}${after}`
+  const instant = pastedInstant(type, precision, text)
+  if (instant === undefined) return { typed: text }
+  if (before === '' && after === '') return { answer: instant }
+  const ownShape = new RegExp(temporalShape(type, precision)).test(instant)
+  const anyInstant = type === 'datetime' && new RegExp(temporalAnyShape('datetime')).test(instant)
+  return ownShape || anyInstant ? { answer: instant } : { typed: text }
 }

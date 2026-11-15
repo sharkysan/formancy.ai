@@ -15,7 +15,7 @@ export {
   TEMPORAL_SHAPES,
 } from './types.js'
 export { TEMPORAL_PRECISION_MAX, temporalAnyShape, temporalDateExists, temporalExample, temporalShape } from './temporal.js'
-export { pastedInstant, storedFromTyped, temporalEntryMask, typedFromStored } from './temporal-entry.js'
+export { pastedInstant, pasteOutcome, storedFromTyped, temporalEntryMask, typedFromStored } from './temporal-entry.js'
 export type { TypedTemporalType } from './temporal-entry.js'
 export { FIELD_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 export { PAGE_TARGETED_RULE_KINDS, RULE_KINDS } from './rules.js'

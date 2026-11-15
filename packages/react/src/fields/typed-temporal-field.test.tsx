@@ -14,8 +14,13 @@ import { FormancyProvider } from '../context.js'
  * shape, writes only on the person's input, and leaves a field without a precision as the
  * browser's own control.
  */
+// Put back by name. `vi.unstubAllEnvs()` deletes TZ, and Node keeps the zone it was last given
+// rather than returning to the one it started in, so a case pinned to New York would leave the
+// rest of the file in New York (as builder-core's condition-draft.test.ts does).
+const started = Intl.DateTimeFormat().resolvedOptions().timeZone
 afterEach(() => {
   cleanup()
+  vi.stubEnv('TZ', started)
   vi.unstubAllEnvs()
 })
 
@@ -151,6 +156,88 @@ describe('a time with a precision', () => {
     fireEvent.paste(control(), { clipboardData: { getData: () => '01:02:03.4560000' } })
 
     expect(value(engine)).toBe('10:34:56.7890121')
+  })
+
+  test('a paste into a read-only field leaves the control as it was', () => {
+    // The engine ignores the write, so only the control can go wrong: without the guard in
+    // onPaste a typeable paste rewrites the control to digits that are not stored.
+    mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, undefined, "'10:34:56.7890121'")
+    control().setSelectionRange(0, control().value.length)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '0102034560000' } })
+
+    expect(control().value).toBe('10:34:56.7890121')
+  })
+
+  test('a paste over a selection in the middle replaces only the selection', () => {
+    // Judged as the whole text it makes, not as the pasted piece alone: 59 alone is no time.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(3, 5)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '59' } })
+
+    expect(value(engine)).toBe('14:59:27.415')
+    expect(control().value).toBe('14:59:27.415')
+  })
+
+  test('a paste read as typing leaves the caret after what was pasted', () => {
+    // The control is rewritten before React renders so the caret can be placed; a caret thrown
+    // to the end would make the next keystroke land in the wrong place.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(3, 5)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '5' } })
+
+    expect(control().value).toBe('14:52:74.15')
+    expect(control().selectionStart).toBe(4)
+    expect(value(engine)).toBe('14:52:74.15')
+  })
+
+  test('a paste completes a partial answer as typing would', () => {
+    // The pasted tail joined to what was shown must read as the rest of one time.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:0' })
+    control().setSelectionRange(4, 4)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '3:27.415' } })
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().selectionStart).toBe(12)
+  })
+
+  test('a paste into a complete field changes what typing would, and nothing else', () => {
+    // Held as pasted, a digit after a complete time was stored where the control could not
+    // show it, and a clock pasted after one blanked the control.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(12, 12)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '6' } })
+    expect(value(engine)).toBe('14:03:27.415')
+    fireEvent.paste(control(), { clipboardData: { getData: () => '09:15:00.000' } })
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().value).toBe('14:03:27.415')
+  })
+
+  test('a paste of one digit over a selected hour is read as typing', () => {
+    // `0` and `:03:27.415` is no shape; it was held and the control went blank.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(0, 2)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '0' } })
+
+    expect(control().value).not.toBe('')
+    expect(value(engine)).toBe('00:32:74.15')
+  })
+
+  test('a complete datetime pasted a digit keeps showing its answer', () => {
+    // Same blanking, for the control whose held text shows as nothing.
+    vi.stubEnv('TZ', 'America/New_York')
+    mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+    control().setSelectionRange(23, 23)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '9' } })
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
   })
 
   test('a time without a precision is still the browser control', () => {

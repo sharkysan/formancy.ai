@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
+import { answerFromText, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { CharacterCount } from './character-count.js'
 import { useScanner } from '../scanning.js'
-import { FieldShell, usePlaceholder } from './internals.js'
+import { FieldShell, applyMaskedEdit, usePlaceholder } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 /**
@@ -21,7 +21,7 @@ import type { FieldComponentProps } from './internals.js'
  * the accessibility floor and the fallback at once, so it is what is always there
  * and the scan button is what is sometimes added. With no scanner supplied the
  * markup is the default control exactly, because a Scan button that opens nothing is
- * worse than no button ([0071](../../../docs/decisions/0071-a-scanner-is-supplied-not-built.md)).
+ * worse than no button ([0071](../../../../docs/decisions/0071-a-scanner-is-supplied-not-built.md)).
  */
 export function TextField({ path, label }: FieldComponentProps) {
   const field = useField(path)
@@ -41,7 +41,7 @@ export function TextField({ path, label }: FieldComponentProps) {
    * Structural rather than careful: the parameter is a `string`, so there is no path
    * from the camera to `setValue` that could store something typing could not. That
    * is the line a widget may never cross — it changes how a field looks, never what
-   * it collects ([0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md)).
+   * it collects ([0065](../../../../docs/decisions/0065-a-widget-is-authored-not-registered.md)).
    */
   const commit = (text: string): void =>
     // `<input type="text">` runs the platform's value sanitiser on everything that reaches
@@ -50,7 +50,7 @@ export function TextField({ path, label }: FieldComponentProps) {
     // payload is several lines. Applying the control's own rule here is what makes a scanned
     // answer byte-identical to a typed one rather than merely similar, which is the line a
     // widget may not cross
-    // ([0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md)).
+    // ([0065](../../../../docs/decisions/0065-a-widget-is-authored-not-registered.md)).
     //
     // Not a second validator -- `pattern` stays the engine's -- and not taste: jsdom does
     // not implement the sanitiser either, so nothing here notices unless it is asserted.
@@ -121,17 +121,7 @@ export function TextField({ path, label }: FieldComponentProps) {
           }
           const input = event.target
           const forward = (event.nativeEvent as InputEvent).inputType === 'deleteContentForward'
-          const edit = editMasked(mask, answer, input.value, {
-            caret: input.selectionStart,
-            direction: forward ? 'forward' : 'backward',
-          })
-          // Written to the control before React renders, so the caret can be placed in
-          // the text it belongs to: React would write the same text a moment later and
-          // leave the caret at its end. (A refused character React removes by itself,
-          // restoring the controlled value — measured, not assumed.)
-          input.value = formatMasked(mask, edit.answer)
-          input.setSelectionRange(edit.caret, edit.caret)
-          commit(edit.answer)
+          commit(applyMaskedEdit(input, mask, answer, input.value, { caret: input.selectionStart, forward }))
         }}
         onBlur={() => field.touch()}
       />
