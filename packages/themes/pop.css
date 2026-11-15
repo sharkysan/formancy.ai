@@ -130,8 +130,9 @@
 }
 
 /* Lifted, the row is a stacking context of its own, and the typeahead's list inside it could
-   only rise within it: a positioned box in a later field would draw over the open list. So
-   the row rises as far as the list did. */
+   only rise within it: a positioned box in a later field would draw over the open list, as
+   the playground's tag picker under the pickup point did. So the row rises as far as the
+   list did. */
 [data-formancy-theme='pop'] [data-formancy-part='field-control-row']:has(:focus-visible) {
   z-index: 20;
   translate: -2px -2px;
@@ -1933,6 +1934,14 @@
   font: inherit;
   font-size: 1rem;
   cursor: pointer;
+}
+
+/* An invalid box's wash runs on under the button, the row casting the pink shadow under both.
+   The field is named in `:where()`, so the rule weighs what the button's own does and the
+   pointer's and the keyboard's rules, which say the button is the one meant, are drawn over
+   it. */
+[data-formancy-theme='pop'] :where([data-formancy-part='field'][data-state='invalid']) [data-formancy-part='field-beside'] button {
+  background-color: var(--fm-invalid-wash);
 }
 
 [data-formancy-theme='pop'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {

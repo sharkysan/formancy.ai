@@ -1851,6 +1851,15 @@
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
+/* An invalid field's mark runs on across the button: the frame red round the pair and the
+   wash under both, rather than a red box with a grey stub at its end. The field is named in
+   `:where()`, so the rule weighs what the button's own does and the pointer's and the
+   keyboard's rules, which say the button is the one meant, are drawn over it. */
+[data-formancy-theme='blueprint'] :where([data-formancy-part='field'][data-state='invalid']) [data-formancy-part='field-beside'] button {
+  border-color: var(--fm-invalid);
+  background-color: var(--fm-invalid-wash);
+}
+
 [data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {
   color: var(--fm-ink);
   border-color: var(--fm-signal);

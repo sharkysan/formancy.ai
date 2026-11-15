@@ -152,6 +152,19 @@
   border-end-end-radius: 0;
 }
 
+/* An invalid field's faint halo goes round the row, with the box's corners, and not round the
+   box and the button each: two halos overlapped at the join and drew a band across the box's
+   end. The red edge is still each one's, the button's drawn below. */
+[data-formancy-theme='dusk'] [data-formancy-part='field'][data-state='invalid'] [data-formancy-part='field-control-row'] {
+  border-radius: var(--fm-radius);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fm-invalid) 14%, transparent);
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='field'][data-state='invalid'] [data-formancy-part='field-control-row'] > select,
+[data-formancy-theme='dusk'] [data-formancy-part='field'][data-state='invalid'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead'] {
+  box-shadow: none;
+}
+
 /* A character count under a box with a limit (0203): quiet as the help text, its figures in
    columns so the line does not shimmer as they change. */
 [data-formancy-theme='dusk'] [data-formancy-part='count'] {
@@ -1819,6 +1832,18 @@
   font-size: 0.9375rem;
   cursor: pointer;
   transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+/* An invalid field's red edge goes round the button too, as round the box, the line between
+   the two the box's own, and the button gives up its inner shadow as the box does; the halo
+   round both is the row's. The field is named in `:where()`, so the rule weighs what the
+   button's own does and the pointer's and the keyboard's rules, which say the button is the
+   one meant, are drawn over it: the keyboard's ring would otherwise be lost under the red
+   edge. */
+[data-formancy-theme='dusk'] :where([data-formancy-part='field'][data-state='invalid']) [data-formancy-part='field-beside'] button {
+  border-color: var(--fm-invalid);
+  border-inline-start-color: transparent;
+  box-shadow: none;
 }
 
 [data-formancy-theme='dusk'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {

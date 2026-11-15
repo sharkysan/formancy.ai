@@ -1795,6 +1795,14 @@
     background-color 160ms ease;
 }
 
+/* An invalid line turns vermilion under the button as under the box, so the correction runs
+   the length of the line. The field is named in `:where()`, so the rule weighs what the
+   button's own does and the pointer's and the keyboard's rules, which say the button is the
+   one meant, are drawn over it. */
+[data-formancy-theme='paper'] :where([data-formancy-part='field'][data-state='invalid']) [data-formancy-part='field-beside'] button {
+  border-block-end-color: var(--fm-invalid);
+}
+
 [data-formancy-theme='paper'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {
   color: var(--fm-ink);
   border-block-end-color: var(--fm-accent);
