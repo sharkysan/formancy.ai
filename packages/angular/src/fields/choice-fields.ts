@@ -62,7 +62,7 @@ export class FormancyCheckboxField extends FieldComponentBase {
 @Component({
   selector: 'formancy-select-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell, FormancyTypeaheadSelect, FormancyTextPipe],
+  imports: [FormancyFieldShell, FormancyTypeaheadSelect, FormancyTextPipe, NgTemplateOutlet],
   template: `
     @if (remote.unavailable()) {
       <!-- The document names a source this deployment does not have. Unlike a missing
@@ -86,27 +86,37 @@ export class FormancyCheckboxField extends FieldComponentBase {
       <formancy-typeahead-select />
     } @else {
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-      <select
-        [id]="control().id"
-        [attr.name]="control().name"
-        [attr.autocomplete]="field.snapshot().def.autocomplete ?? null"
-        [attr.aria-invalid]="control()['aria-invalid']"
-        [attr.aria-required]="control()['aria-required']"
-        [attr.aria-describedby]="control()['aria-describedby']"
-        [disabled]="control().disabled === true"
-        (change)="onChange($event)"
-        (focus)="onFocus()"
-        (blur)="field.touch()"
-      >
-        <!-- The empty option is the unanswered state; without it the browser
-             silently pre-selects the first real option, which the engine never
-             heard about. Selectedness is bound per option because a select's
-             value property is only settable once its options exist. -->
-        <option value="" [selected]="selected() === ''"></option>
-        @for (option of offered(); track option.value) {
-          <option [value]="option.value" [selected]="selected() === option.value">{{ option.label }}</option>
-        }
-      </select>
+      <!-- The box, written once and drawn either alone, as it always was, or first in a row
+           with what the host puts beside it (0237). The row holds the box alone: the status
+           region below says what the list leaves out, under the box, not beside it. -->
+      <ng-template #box>
+        <select
+          [id]="control().id"
+          [attr.name]="control().name"
+          [attr.autocomplete]="field.snapshot().def.autocomplete ?? null"
+          [attr.aria-invalid]="control()['aria-invalid']"
+          [attr.aria-required]="control()['aria-required']"
+          [attr.aria-describedby]="control()['aria-describedby']"
+          [disabled]="control().disabled === true"
+          (change)="onChange($event)"
+          (focus)="onFocus()"
+          (blur)="field.touch()"
+        >
+          <!-- The empty option is the unanswered state; without it the browser
+               silently pre-selects the first real option, which the engine never
+               heard about. Selectedness is bound per option because a select's
+               value property is only settable once its options exist. -->
+          <option value="" [selected]="selected() === ''"></option>
+          @for (option of offered(); track option.value) {
+            <option [value]="option.value" [selected]="selected() === option.value">{{ option.label }}</option>
+          }
+        </select>
+      </ng-template>
+      @if (beside(); as template) {
+        <div data-formancy-part="field-control-row"><ng-container *ngTemplateOutlet="box" /><div data-formancy-part="field-beside"><ng-container *ngTemplateOutlet="template; context: { $implicit: context.path, field: field }" /></div></div>
+      } @else {
+        <ng-container *ngTemplateOutlet="box" />
+      }
       <!-- Only a sourced select has anything to say: that its source failed, that it
            answers only a search, or what its list leaves out, in words for a list nobody
            can type into. Never the error region, which carries the engine's verdict -- a
