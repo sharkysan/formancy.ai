@@ -1906,6 +1906,42 @@ measured in a browser by hand: no gate renders a stylesheet, so nothing will mea
 again. This is D4a's residual — appearance is reviewed, not verified — reaching a
 different kind of defect than layout.
 
+### D7a. A control that offers choices looks like one that takes typing
+
+*How it arises:* D7's mechanism, reaching a select. Each appearance takes the platform's arrow
+off a select (`appearance: none`) and draws its own as a background, with room kept for it at
+the end of the line. But the shared group `:is(input, select, textarea, [data-formancy-part='richtext-surface'])`
+weighs one attribute more than `select`, so wherever both rules set a property the group's wins.
+In the Blueprint appearance its `background` took the drawn arrow away, so a select was a box
+with a value in it and nothing to say it opens. In every appearance its `padding` gave back the
+room kept for the arrow, so a long choice ran under it. Right to left, the arrow stayed at the
+right, because a background is placed at a named side, while the room for it moved to the left.
+Measured in Chromium on `0.13.0`: `background-image: none` and 10px of padding at each end in
+Blueprint, and equal padding at both ends in all four appearances.
+
+*Severity:* lower than D7's, because the control is the one it looks like in every way but
+its look. It opens on a click and from the keyboard, and the accessibility tree names it a
+combobox, so assistive technology is unaffected and the axe runs pass. What breaks is sighted
+use. A person who takes the box for a text field may read the value shown as fixed. Or they
+may type into it, and a select answers typing by choosing the first option that starts with
+the letters typed, so the value can change to one they did not mean. Right to left, the arrow
+covered the first letters of the choice shown.
+
+*Constraint:* the select's own rule weighs `select:not([multiple])`, one step above the group.
+Neither renderer draws a select that takes several, so this leaves out none drawn today. Each
+appearance names the arrow's side again for `:dir(rtl)`. `scripts/select-arrow-browser-test.mjs`,
+in `pnpm test:browser`, puts each appearance in turn on the playground's form in both renderers,
+left to right and then right to left. It fails unless every enabled single select has a
+background image and each of its layers lies inside the padding at the select's end, with both
+positions resolved by the browser. It was observed failing before the change in all four
+appearances: left to right first, and right to left once the room was restored. Unlike D7's
+numbers, these are measured again on every run.
+
+*Residual:* a disabled select still loses its arrow in the Blueprint and Dusk appearances,
+through their disabled rule's `background`. That is left as it is, since a disabled select
+cannot open. The check reads the selects on one demo schema in Chromium. A host's own
+stylesheet can still outweigh an appearance's rule, and nothing here can see that.
+
 ### D8. A field renders on a different step from the one it was authored on
 
 *How it arises:* a page is a wizard step and pages are transparent for data, so a form

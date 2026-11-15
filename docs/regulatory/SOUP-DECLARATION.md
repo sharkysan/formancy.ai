@@ -1107,7 +1107,7 @@ requiring an accessibility conformance statement must perform that work.
 **Appearance is largely reviewed, not verified.** jsdom implements no layout and resolves
 no media queries, so almost no test here can ask where a box is. Defects of both kinds —
 where a box sits, and what a control's state looks like — have shipped and been found by
-somebody opening a page rather than by a gate; hazards D4a, D4b, D4c and D7 have them by
+somebody opening a page rather than by a gate; hazards D4a, D4b, D4c, D7 and D7a have them by
 name.
 
 **The exception is `pnpm test:browser`**, which loads the composed site in Chromium at four
@@ -1118,8 +1118,9 @@ both renderers, at its own shape and within the theme's size. It covers the two 
 that produced D4a's third instance and D4c, a file field's thumbnail, and since then the
 checks `scripts/browser-test.mjs` imports by name: the templates gallery and the Angular page
 drawn in the landing page's shell, both builders laid out alike (D4a), a drop between two nodes
-on the preview, the Material starter's date button, where the relay's suggestions sit, and that
-no page asks another host for anything (C6). Nothing else of appearance: no pixel baselines by
+on the preview, the Material starter's date button, where the relay's suggestions sit, a
+select's arrow inside the room it keeps under every theme and in both reading orders (D7a), and
+that no page asks another host for anything (C6). Nothing else of appearance: no pixel baselines by
 choice, one engine rather than Safari, and one demo schema rather than the conformance suite. A manufacturer relying on visual correctness must still
 verify it in the browsers it ships to.
 
