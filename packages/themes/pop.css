@@ -115,8 +115,9 @@
    The row is the object here, not the box: it casts the hard shadow, with the box's corners,
    so the shadow lies under the pair and never between them, and it is the row that lifts
    under the pointer and lifts further, its shadow blue, while anything in it has the
-   keyboard. The shadow falls towards the end of the line, so it is named again for the other
-   reading order: CSS has no logical box-shadow. */
+   keyboard. Cast the way every box in this theme casts one, in both reading orders: a shadow
+   is cast by a light, and a light does not move with the language. A row whose shadow was
+   named again for right to left fell left beside boxes whose shadows fall right. */
 [data-formancy-theme='pop'] [data-formancy-part='field-control-row'] {
   display: flex;
   align-items: stretch;
@@ -128,10 +129,6 @@
     box-shadow 120ms ease;
 }
 
-[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:dir(rtl) {
-  box-shadow: -4px 4px 0 var(--fm-ink);
-}
-
 /* Lifted, the row is a stacking context of its own, and the typeahead's list inside it could
    only rise within it: a positioned box in a later field would draw over the open list. So
    the row rises as far as the list did. */
@@ -141,18 +138,9 @@
   box-shadow: 6px 6px 0 var(--fm-blue);
 }
 
-[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:has(:focus-visible):dir(rtl) {
-  translate: 2px -2px;
-  box-shadow: -6px 6px 0 var(--fm-blue);
-}
-
 /* An invalid box's pink shadow, which wins over the keyboard's as it does on a box alone. */
 [data-formancy-theme='pop'] [data-formancy-part='field'][data-state='invalid'] [data-formancy-part='field-control-row'] {
   box-shadow: 4px 4px 0 var(--fm-pink);
-}
-
-[data-formancy-theme='pop'] [data-formancy-part='field'][data-state='invalid'] [data-formancy-part='field-control-row']:dir(rtl) {
-  box-shadow: -4px 4px 0 var(--fm-pink);
 }
 
 /* After the invalid rules on purpose: the pointer's lift outweighs an invalid shadow on a box
@@ -160,11 +148,6 @@
 [data-formancy-theme='pop'] [data-formancy-part='field-control-row']:hover:not(:has(:focus-visible)) {
   translate: -1px -1px;
   box-shadow: 5px 5px 0 var(--fm-ink);
-}
-
-[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:hover:not(:has(:focus-visible)):dir(rtl) {
-  translate: 1px -1px;
-  box-shadow: -5px 5px 0 var(--fm-ink);
 }
 
 /* A disabled box casts no shadow, and the row around it none either. Last, for the same
