@@ -22,6 +22,11 @@ import type { TypedTemporalType } from './temporal-entry.js'
 const accepts = (type: TypedTemporalType, precision: number, answer: string | null): boolean =>
   answer !== null && new RegExp(temporalShape(type, precision)).test(answer)
 
+// The paste path the controls take: the instant when the text is one, else the text
+// read through the mask as typed digits, which is where a zone can move an answer.
+const pasteInto = (type: TypedTemporalType, precision: number, text: string): string | null =>
+  pastedInstant(type, precision, text) ?? storedFromTyped(type, precision, editMasked(temporalEntryMask(type, precision), '', text).answer)
+
 // Put back by name. `vi.unstubAllEnvs()` deletes TZ, and Node keeps the zone it was last
 // given rather than returning to the one it started in (measured 2026-11-15, Node 24), so
 // a case pinned to New York would otherwise leave the rest of the file in New York.
@@ -239,11 +244,6 @@ describe('an answer wider than the mask', () => {
 })
 
 describe('a whole answer pasted', () => {
-  // The paste path the controls take: the instant when the text is one, else the text
-  // read through the mask as typed digits, which is where a zone can move an answer.
-  const pasteInto = (type: TypedTemporalType, precision: number, text: string): string | null =>
-    pastedInstant(type, precision, text) ?? storedFromTyped(type, precision, editMasked(temporalEntryMask(type, precision), '', text).answer)
-
   test('a UTC instant from a log is taken as that instant', () => {
     // Review focus 1. Read through the mask, its digits would be taken as the person's
     // local clock and the answer moved by their offset.
@@ -304,7 +304,7 @@ describe('a whole answer pasted', () => {
     const sameInstant = (text: string, taken: string): boolean => {
       const [a, b] = [text.replace(/Z$/, ''), taken.replace(/Z$/, '')]
       const tail = a.startsWith(b) ? a.slice(b.length) : b.startsWith(a) ? b.slice(a.length) : undefined
-      return tail !== undefined && /^.?0*$/.test(tail)
+      return tail !== undefined && /^\.?0*$/.test(tail)
     }
     for (const type of ['time', 'datetime'] as const) {
       for (let width = 0; width <= 9; width += 1) {
@@ -329,12 +329,107 @@ describe('a whole answer pasted', () => {
     expect(pastedInstant('datetime', 3, '14:03')).toBeUndefined()
     expect(pastedInstant('datetime', 3, '2026-11-15 14:03:27.415')).toBeUndefined()
     expect(pastedInstant('time', 3, '14:03')).toBeUndefined()
+    expect(pastedInstant('datetime', 3, 'hello')).toBeUndefined()
+    expect(pastedInstant('time', 3, 'hello')).toBeUndefined()
+  })
+
+  test('a clock past 23:59:59 is no answer, so nothing is padded onto it', () => {
+    // Taken as an answer, 25:00:00 would come back as 25:00:00.000: three digits nobody
+    // pasted, on a time of day that does not exist. Left to the mask, it is held as typed.
+    expect(pastedInstant('time', 3, '25:00:00')).toBeUndefined()
+    expect(pastedInstant('datetime', 3, '2026-11-15T25:00:00Z')).toBeUndefined()
+    expect(pastedInstant('datetime', 3, '2026-11-15T13:60:00+01:00')).toBeUndefined()
   })
 
   test('a time in its stored shape is taken as it is', () => {
     // A time has no zone, so its stored shape is its typed one, and the paste means what
     // it says in every control alike.
     expect(pastedInstant('time', 3, '14:03:27.415')).toBe('14:03:27.415')
+  })
+})
+
+describe('an instant pasted with an offset, or with more digits than any field', () => {
+  test.each(['Europe/Zurich', 'America/New_York', 'Asia/Kathmandu'])('is the same instant in UTC, wherever it is pasted: %s', (zone) => {
+    // Review focus 1. An offset is the log saying which clock it read. Refused, the paste
+    // fell to the mask, whose digits are the person's own clock: in New York this one was
+    // stored as 19:03:27Z, six hours off, complete and in a valid shape.
+    vi.stubEnv('TZ', zone)
+    expect(pasteInto('datetime', 3, '2026-11-15T14:03:27.415+01:00')).toBe('2026-11-15T13:03:27.415Z')
+  })
+
+  test.each([
+    { text: '2026-11-15T00:30:00-05:00', taken: '2026-11-15T05:30:00Z' },
+    { text: '2026-11-15T21:30:00-05:00', taken: '2026-11-16T02:30:00Z' },
+    { text: '2026-11-15T00:30:00+01:00', taken: '2026-11-14T23:30:00Z' },
+    { text: '2026-12-31T23:30:00-01:00', taken: '2027-01-01T00:30:00Z' },
+  ])('carries the offset across a day or a year: $text', ({ text, taken }) => {
+    // An offset applied to the clock alone, without carrying into the date, would keep
+    // the pasted day and land a day off, at a valid-looking hour.
+    expect(pastedInstant('datetime', 0, text)).toBe(taken)
+  })
+
+  test.each([
+    { form: 'a space for the T', text: '2026-11-15 13:03:27.415Z' },
+    { form: 'a lower-case t and z', text: '2026-11-15t13:03:27.415z' },
+    { form: 'an offset in hours alone', text: '2026-11-15 14:03:27.415+01' },
+    { form: 'an offset without its colon', text: '2026-11-15T14:03:27.415+0100' },
+  ])('written with $form, it is still that instant', ({ text }) => {
+    // RFC 3339 allows the first two and PostgreSQL prints the third. Each is evidently an
+    // instant; refused, its digits fell to the mask as the person's own clock, and in New
+    // York the answer was stored five or six hours off.
+    vi.stubEnv('TZ', 'America/New_York')
+    expect(pasteInto('datetime', 3, text)).toBe('2026-11-15T13:03:27.415Z')
+  })
+
+  test('an offset that is not a whole hour is applied to the minute', () => {
+    // Kathmandu logs at +05:45; read in whole hours, every instant would be 45 minutes off.
+    expect(pastedInstant('datetime', 3, '2026-11-15T18:48:27.415+05:45')).toBe('2026-11-15T13:03:27.415Z')
+  })
+
+  test.each(['+00:00', '-00:00'])('an offset of %s is UTC, written as Z', (offset) => {
+    // The stored form has one spelling for UTC. Kept as +00:00, the same instant would
+    // be refused as shape.
+    expect(pastedInstant('datetime', 3, `2026-11-15T13:03:27.415${offset}`)).toBe('2026-11-15T13:03:27.415Z')
+  })
+
+  test.each(['+24:00', '-24:00', '+01:60'])('an offset outside a day, or past 59 minutes, is no instant: %s', (offset) => {
+    // No zone is a day or more from UTC. Applied, the instant would be a day off; the
+    // text is not an instant, and the mask's reading of it is held as incomplete.
+    expect(pastedInstant('datetime', 3, `2026-11-15T13:03:27.415${offset}`)).toBeUndefined()
+  })
+
+  test('with a digit the field cannot hold, it is the UTC instant at its own width', () => {
+    // Kept as pasted, the offset would make it a text typedFromStored shows as raw digits.
+    // In UTC at its own width, it is the same instant, the engine says shape, and the
+    // control shows it converted.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const taken = pastedInstant('datetime', 3, '2026-11-15T14:03:27.415123+01:00')
+    expect(taken).toBe('2026-11-15T13:03:27.415123Z')
+    expect(accepts('datetime', 3, taken ?? null)).toBe(false)
+    expect(typedFromStored('datetime', 3, taken!)).toBe('20261115140327415')
+  })
+
+  test.each([
+    { type: 'datetime', text: '2026-11-15T13:03:27.4151234567Z' },
+    { type: 'datetime', text: '2026-11-15T14:03:27.4151234567+01:00' },
+    { type: 'time', text: '14:03:27.4151234567' },
+  ] as const)('with more than nine digits after the seconds it is kept as pasted: $text', ({ type, text }) => {
+    // No precision holds a tenth digit. Left to the mask, the instant's first digits were
+    // read as the local clock and the rest cut; kept, nothing moves and the engine says shape.
+    vi.stubEnv('TZ', 'America/New_York')
+    expect(pasteInto(type, 9, text)).toBe(text)
+  })
+
+  test('with an offset that takes it past year 9999, it is kept as pasted', () => {
+    // 9999-12-31T23:30-01:00 is 10000-01-01T00:30Z, which four digits cannot write. Cut to
+    // four, it would be another instant in a valid shape.
+    expect(pastedInstant('datetime', 0, '9999-12-31T23:30:00-01:00')).toBe('9999-12-31T23:30:00-01:00')
+  })
+
+  test('on a day that does not exist, it is kept as pasted', () => {
+    // Date would roll 30 February to 2 March before the offset was applied: an instant
+    // nobody logged, written as Z and accepted.
+    expect(pastedInstant('datetime', 0, '2026-02-30T10:00:00+01:00')).toBe('2026-02-30T10:00:00+01:00')
   })
 })
 

@@ -142,32 +142,73 @@ export function storedFromTyped(type: TypedTemporalType, precision: number, type
   return `${formatMasked(instantMask(precision), `${utc}${typed.slice(WALL_DIGITS)}`)}Z`
 }
 
-/** Every width an answer of the type can be pasted at: 0 to 9 digits after the seconds. */
-const PASTE_WIDTHS = Array.from({ length: TEMPORAL_PRECISION_MAX + 1 }, (_, width) => width)
+/**
+ * An answer as a paste may carry it: the clock, any number of digits after the seconds,
+ * and for an instant its date and the zone it was read in. RFC 3339 also writes the T as a
+ * space and both letters in lower case, and PostgreSQL writes an offset as `±HH`; each is
+ * evidently an instant, and one left to the mask would be read as the person's own clock.
+ */
+const PASTED: Readonly<Record<TypedTemporalType, RegExp>> = {
+  time: /^(?<clock>\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?$/,
+  datetime: /^(?<date>\d{4}-\d{2}-\d{2})[Tt ](?<clock>\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?(?<zone>[Zz]|[+-]\d{2}(?::?\d{2})?)$/,
+}
+
+/** A zone as minutes east of UTC, Z and ±00:00 being 0; undefined for an offset of a day or more, or past 59 minutes. */
+function offsetMinutes(zone: string): number | undefined {
+  if (zone === '' || zone === 'Z' || zone === 'z') return 0
+  const hours = Number(zone.slice(1, 3))
+  const minutes = zone.length > 3 ? Number(zone.slice(-2)) : 0
+  if (hours > 23 || minutes > 59) return undefined
+  return (zone.startsWith('-') ? -1 : 1) * (hours * 60 + minutes)
+}
+
+/**
+ * Whole seconds read at an offset, as the same instant's whole seconds in UTC: the parts
+ * through `Date.UTC`, then the offset in whole minutes, so no fraction and no string ever
+ * reaches `Date`. Undefined when no UTC text says it: a day that does not exist, or a year
+ * past 9999.
+ */
+function inUtc(whole: string, offset: number): string | undefined {
+  const asIfUtc = instantAt(whole.replace(/[^0-9]/g, ''), UTC)
+  const utc = asIfUtc === undefined ? undefined : wallDigits(new Date(asIfUtc.getTime() - offset * 60_000), UTC)
+  return utc === undefined ? undefined : formatMasked(instantMask(0), utc)
+}
 
 /**
  * A whole answer pasted in the stored shape at any width (a UTC instant from a log),
  * brought to the field's width only where that is exact; undefined when the text is no
- * answer of the type at all, and the control then reads the paste through the mask.
+ * time or instant at all, and the control then reads the paste through the mask.
  *
  * Read through the mask, an instant's digits would be taken as the person's own wall clock
  * and the answer moved by their offset, and a fraction wider than the field cut to fit it.
  * So an answer at any width is taken whole, and it keeps its meaning exactly:
+ * - an instant with an offset is the same instant in UTC, its fraction copied;
  * - fewer digits after the seconds than the field declares are padded with zeros;
  * - more are cut, but only when every digit cut is a zero;
- * - otherwise it is kept at its own width, never rounded or cut to fit, for the shape
- *   check to refuse and the control to show converted.
+ * - otherwise it is kept at its own width, in UTC, never rounded or cut to fit, for the
+ *   shape check to refuse and the control to show converted.
  *
- * A time needs its seconds: version 5's `HH:MM` is another shape, not a narrower width. The
- * whitespace around an answer is not part of it: a copied log line brings its line break,
- * and refused for that, the paste would land as local digits.
+ * Kept as pasted, for the shape check to refuse: more than nine digits after the seconds,
+ * which no precision holds, and an offset no UTC text can say exactly. A time needs its
+ * seconds: version 5's `HH:MM` is another shape, not a narrower width. The whitespace
+ * around an answer is not part of it: a copied log line brings its line break, and refused
+ * for that, the paste would land as local digits.
  */
 export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
   const n = fractionDigits(precision)
   const answer = text.trim()
-  if (!PASTE_WIDTHS.some((width) => new RegExp(temporalShape(type, width)).test(answer))) return undefined
-  const zone = type === 'datetime' ? 'Z' : ''
-  const [whole = '', fraction = ''] = answer.slice(0, answer.length - zone.length).split('.')
-  if (!/^0*$/.test(fraction.slice(n))) return answer
-  return `${whole}${n === 0 ? '' : `.${fraction.slice(0, n).padEnd(n, '0')}`}${zone}`
+  const groups = PASTED[type].exec(answer)?.groups
+  if (groups === undefined) return undefined
+  const { date = '', clock = '', fraction = '', zone = '' } = groups
+  const whole = type === 'datetime' ? `${date}T${clock}` : clock
+  const suffix = type === 'datetime' ? 'Z' : ''
+  // The clock checked as the stored shape checks it, so 25:00 is no time and no instant.
+  if (!new RegExp(temporalShape(type, 0)).test(`${whole}${suffix}`)) return undefined
+  const offset = offsetMinutes(zone)
+  if (offset === undefined) return undefined
+  if (fraction.length > TEMPORAL_PRECISION_MAX) return answer
+  const utc = offset === 0 ? whole : inUtc(whole, offset)
+  if (utc === undefined) return answer
+  const digits = /^0*$/.test(fraction.slice(n)) ? fraction.slice(0, n).padEnd(n, '0') : fraction
+  return `${utc}${digits === '' ? '' : `.${digits}`}${suffix}`
 }
