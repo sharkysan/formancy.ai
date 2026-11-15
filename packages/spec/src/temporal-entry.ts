@@ -1,5 +1,5 @@
 import { fitsMask, formatMasked, maskPositions } from './mask.js'
-import { fractionDigits, temporalShape } from './temporal.js'
+import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalShape } from './temporal.js'
 
 /**
  * Typed entry for a `time` or a `datetime` with a `precision`: the mask a person types the
@@ -142,15 +142,32 @@ export function storedFromTyped(type: TypedTemporalType, precision: number, type
   return `${formatMasked(instantMask(precision), `${utc}${typed.slice(WALL_DIGITS)}`)}Z`
 }
 
+/** Every width an answer of the type can be pasted at: 0 to 9 digits after the seconds. */
+const PASTE_WIDTHS = Array.from({ length: TEMPORAL_PRECISION_MAX + 1 }, (_, width) => width)
+
 /**
- * A whole answer pasted in the stored shape (a UTC instant from a log), taken as it is;
- * undefined otherwise, and the control reads the paste through the mask.
+ * A whole answer pasted in the stored shape at any width (a UTC instant from a log),
+ * brought to the field's width only where that is exact; undefined when the text is no
+ * answer of the type at all, and the control then reads the paste through the mask.
  *
  * Read through the mask, an instant's digits would be taken as the person's own wall clock
- * and the answer moved by their offset. The whitespace around it is not part of it: a
- * copied log line brings its line break, and refused for that, it would land as local digits.
+ * and the answer moved by their offset, and a fraction wider than the field cut to fit it.
+ * So an answer at any width is taken whole, and it keeps its meaning exactly:
+ * - fewer digits after the seconds than the field declares are padded with zeros;
+ * - more are cut, but only when every digit cut is a zero;
+ * - otherwise it is kept at its own width, never rounded or cut to fit, for the shape
+ *   check to refuse and the control to show converted.
+ *
+ * A time needs its seconds: version 5's `HH:MM` is another shape, not a narrower width. The
+ * whitespace around an answer is not part of it: a copied log line brings its line break,
+ * and refused for that, the paste would land as local digits.
  */
 export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
+  const n = fractionDigits(precision)
   const answer = text.trim()
-  return new RegExp(temporalShape(type, precision)).test(answer) ? answer : undefined
+  if (!PASTE_WIDTHS.some((width) => new RegExp(temporalShape(type, width)).test(answer))) return undefined
+  const zone = type === 'datetime' ? 'Z' : ''
+  const [whole = '', fraction = ''] = answer.slice(0, answer.length - zone.length).split('.')
+  if (!/^0*$/.test(fraction.slice(n))) return answer
+  return `${whole}${n === 0 ? '' : `.${fraction.slice(0, n).padEnd(n, '0')}`}${zone}`
 }
