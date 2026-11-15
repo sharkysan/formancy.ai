@@ -4,6 +4,7 @@ import { temporalAnyShape, temporalExample, temporalShape } from './temporal.js'
 import { FIELD_TYPES, SPEC_1_FIELD_TYPES, TEMPORAL_SHAPES } from './types.js'
 import type { TemporalFieldType } from './types.js'
 import { validateSchema } from './validate.js'
+import schema from '../formancy.schema.json' with { type: 'json' }
 
 /**
  * `time` and `datetime`, and the `earliest`/`latest` bounds.
@@ -83,10 +84,24 @@ describe('the two types', () => {
 })
 
 describe('the canonical shapes', () => {
-  test('are published as patterns, so the schema and the engine cannot disagree', () => {
-    // Two closed descriptions of one rule is the drift this repository keeps
-    // finding, so the pattern is declared once and read by both.
-    expect(Object.keys(TEMPORAL_SHAPES).sort()).toEqual(['date', 'datetime', 'time'])
+  test("the schema's bound patterns are the shape function's", () => {
+    // Two closed descriptions of one rule is the drift this repository keeps finding, so
+    // the JSON Schema's six bound patterns are compared with the function that owns them:
+    // a hand-written one that stops matching it fails here instead of refusing a bound
+    // the width check would have named.
+    const patterns: Record<string, string[]> = { date: [], time: [], datetime: [] }
+    type Branch = { if?: { properties?: { type?: { const?: string } } }; then?: { properties?: Record<string, { pattern?: string }> } }
+    for (const branch of (schema.$defs.field as unknown as { allOf: Branch[] }).allOf) {
+      const type = branch.if?.properties?.type?.const
+      if (type === undefined || !(type in patterns)) continue
+      for (const bound of ['earliest', 'latest']) {
+        const pattern = branch.then?.properties?.[bound]?.pattern
+        if (pattern !== undefined) patterns[type]!.push(pattern)
+      }
+    }
+    for (const type of ['date', 'time', 'datetime'] as const) {
+      expect(patterns[type], type).toEqual([temporalAnyShape(type), temporalAnyShape(type)])
+    }
   })
 
   test.each([

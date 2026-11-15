@@ -19,6 +19,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
   'grid.columnTwice': 'Deux colonnes affichent toutes deux « {field} ». Une réponse ne peut pas remplir deux colonnes.',
   'bounds.crossed':
     'La borne inférieure « {earliest} » vient après la borne supérieure « {latest} » : aucune réponse ne pourrait donc être acceptée. Inversez-les, ou supprimez-en une.',
+  'bounds.width':
+    'Cette borne n’est pas écrite comme les réponses du champ, et une borne est comparée à une réponse comme du texte : elle serait donc mal ordonnée. Écrivez-la comme « {expected} », avec le même nombre de chiffres après les secondes.',
   'key.taken': 'Un autre champ utilise déjà la clé « {key} ». Une clé désigne une réponse : deux champs ne peuvent donc pas la partager.',
   'key.reserved': '« {key} » est réservé : c’est ainsi qu’une ligne de répétition porte son identité, si bien qu’aucun champ ne peut s’appeler ainsi.',
   'key.unstorable':

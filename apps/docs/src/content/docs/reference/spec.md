@@ -442,13 +442,13 @@ optional · string · pattern `^\d{4}-\d{2}-\d{2}$`
 
 ##### `earliest`
 
-optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d$`
+optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,9})?)?$`
 
 **Earliest allowed.** The earliest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
 ##### `latest`
 
-optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d$`
+optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,9})?)?$`
 
 **Latest allowed.** The latest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
@@ -462,13 +462,13 @@ optional · integer · minimum 0 · maximum 9
 
 ##### `earliest`
 
-optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
+optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?Z$`
 
 **Earliest allowed.** The earliest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
 ##### `latest`
 
-optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
+optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?Z$`
 
 **Latest allowed.** The latest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
