@@ -51,8 +51,17 @@ export function TypedTemporalField({ path, label, type }: { path: string; label:
           event.preventDefault()
           // Whether the paste is an answer or typing is `@formancy/spec`'s, for every control (0091).
           const outcome = pasteOutcome(type, precision, { before, pasted, after })
-          if ('answer' in outcome) field.setValue(outcome.answer)
-          else {
+          if ('answer' in outcome) {
+            // When the answer shows as the text the field now holds, the control is written and
+            // the caret placed before React renders, as typing leaves it; React would write the
+            // same text and leave the caret at the end.
+            const text = formatMasked(mask, typedFromStored(type, precision, outcome.answer))
+            if (text === `${before}${pasted}${after}`) {
+              input.value = text
+              input.setSelectionRange(before.length + pasted.length, before.length + pasted.length)
+            }
+            field.setValue(outcome.answer)
+          } else {
             const caret = before.length + pasted.length
             field.setValue(storedFromTyped(type, precision, applyMaskedEdit(input, mask, typed, outcome.typed, { caret, forward: false })))
           }

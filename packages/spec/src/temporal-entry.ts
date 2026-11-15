@@ -1,5 +1,5 @@
 import { fitsMask, fitsSlot, formatMasked, maskPositions } from './mask.js'
-import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalAnyShape, temporalDateExists, temporalShape } from './temporal.js'
+import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalDateExists, temporalShape } from './temporal.js'
 
 /**
  * Typed entry for a `time` or a `datetime` with a `precision`: the mask a person types the
@@ -298,36 +298,50 @@ function answerPasted(type: TypedTemporalType, n: number, answer: string): strin
  */
 export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
   const answer = text.trim()
-  const taken = answerPasted(type, fractionDigits(precision), answer)
+  const taken = recognisedAnswer(type, precision, answer)
   if (taken !== undefined) return taken
   return couldBeTyped(type, precision, answer) ? undefined : answer
+}
+
+/**
+ * The answer a pasted text names, or undefined when it names none: a time or an instant, at
+ * any width and with any offset, brought to the field's width where that is exact. What
+ * `pastedInstant` hands back unchanged because it understood nothing is not this; the
+ * difference is what lets a control hold an unreadable paste rather than store it.
+ */
+export function recognisedAnswer(type: TypedTemporalType, precision: number, text: string): string | undefined {
+  return answerPasted(type, fractionDigits(precision), text.trim())
 }
 
 /**
  * What a paste into a typed control means: an answer to store, or text to read as typing.
  *
  * One decision here for every control, because `pastedInstant` judges a whole text and a
- * paste is rarely one. Into the middle or the end of what is shown, a paste that `pastedInstant`
- * holds — a digit after a complete time, a clock where there already is one, a selected hour
- * replaced by one digit — would be stored as held text and the control would show nothing, or
- * show the old text over an answer with digits nobody could see. Typing the same characters
- * changes nothing, so it is read as typing.
+ * paste is rarely one (0091). It is decided by the pasted text itself:
  *
- * - A paste that replaces the whole of the text is judged as `pastedInstant` judges it.
- * - A paste into part of it is an answer only when it makes one in the field's own shape, or an
- *   instant in UTC at any width, which a zone must never turn into local digits; otherwise it is
- *   typing, and the mask drops what it cannot place.
+ * - **Text with any character the mask does not write is never typing.** A `T`, a `Z`, an
+ *   offset's sign, a letter: the mask would drop it and read the rest as the person's own
+ *   clock, moving an instant by their offset. If the pasted text alone is a time or an
+ *   instant it is the answer, wherever it lands, replacing what was there. Otherwise the
+ *   whole text is held as it would read, for the shape check to refuse, and never
+ *   reinterpreted: a `Z` after a local clock is not that clock in UTC.
+ * - **Digits and the mask's own characters are typing**, read through the mask as the same
+ *   characters typed would be, so a digit after a complete time changes nothing. The
+ *   exception is a whole replacement, judged as `pastedInstant` judges it, and a partial
+ *   paste that makes an answer in the field's shape naming a day that exists.
  */
 export function pasteOutcome(
   type: TypedTemporalType,
   precision: number,
   { before, pasted, after }: { readonly before: string; readonly pasted: string; readonly after: string },
 ): { answer: string } | { typed: string } {
-  const text = `${before}${pasted}${after}`
-  const instant = pastedInstant(type, precision, text)
-  if (instant === undefined) return { typed: text }
+  const whole = `${before}${pasted}${after}`
+  const written = new Set(writtenAt(temporalEntryMask(type, precision)).map((at) => at.literal))
+  const alien = [...pasted.trim()].some((character) => !fitsSlot('digit', character) && !written.has(character))
+  if (alien) return { answer: recognisedAnswer(type, precision, pasted) ?? whole }
+  const instant = pastedInstant(type, precision, whole)
+  if (instant === undefined) return { typed: whole }
   if (before === '' && after === '') return { answer: instant }
-  const ownShape = new RegExp(temporalShape(type, precision)).test(instant)
-  const anyInstant = type === 'datetime' && new RegExp(temporalAnyShape('datetime')).test(instant)
-  return ownShape || anyInstant ? { answer: instant } : { typed: text }
+  const real = new RegExp(temporalShape(type, precision)).test(instant) && temporalDateExists(type, instant)
+  return real ? { answer: instant } : { typed: whole }
 }

@@ -134,9 +134,9 @@ describe('a time with a precision', () => {
     expect(control().value).toBe('14:03:27.415')
   })
 
-  test('a paste that is neither is held as pasted, for the engine to refuse', () => {
+  test('a paste with characters the mask does not write is held as pasted, for the engine to refuse', () => {
     // Dropping the characters the mask has no place for would make an answer out of text
-    // nobody typed; held, the shape error tells the person.
+    // nobody typed; held, the shape error tells the person. Such text is never typing.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
 
     fireEvent.paste(control(), { clipboardData: { getData: () => 'noon-ish' } })
@@ -169,6 +169,18 @@ describe('a time with a precision', () => {
     expect(control().value).toBe('10:34:56.7890121')
   })
 
+  test('a whole instant pasted over part of a filled datetime replaces the answer, in New York', () => {
+    // The mask dropped the Z and stored the shown clock's digits, five hours from the instant.
+    vi.stubEnv('TZ', 'America/New_York')
+    const engine = mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+    control().setSelectionRange(0, 4)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '2026-11-15T13:03:27.415Z' } })
+
+    expect(value(engine)).toBe('2026-11-15T13:03:27.415Z')
+    expect(control().value).toBe('2026-11-15 08:03:27.415')
+  })
+
   test('a paste over a selection in the middle replaces only the selection', () => {
     // Judged as the whole text it makes, not as the pasted piece alone: 59 alone is no time.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
@@ -178,6 +190,8 @@ describe('a time with a precision', () => {
 
     expect(value(engine)).toBe('14:59:27.415')
     expect(control().value).toBe('14:59:27.415')
+    // The caret stays after the paste, as typing leaves it.
+    expect(control().selectionStart).toBe(5)
   })
 
   test('a paste read as typing leaves the caret after what was pasted', () => {
