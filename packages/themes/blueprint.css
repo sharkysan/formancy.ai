@@ -1828,9 +1828,9 @@
 
 /* A button beside a field's box (0237) is the end of the box's frame, not a button of its
    own pressed against it: the box's height, the paper behind it, the same rule, the box's
-   corners at its end. In the muted ink, answering the pointer as the quiet buttons do and the
-   keyboard as the box does. Its content is centred, and an icon in it is the size of the
-   box's text and drawn in the button's colour, so a host's icon needs no styling of its own. */
+   corners at its end. In the muted ink. Its content is centred, and an icon in it is the size
+   of the box's text and drawn in the button's colour, so a host's icon needs no styling of its
+   own. */
 [data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button {
   display: flex;
   align-items: center;
@@ -1848,7 +1848,7 @@
   font: inherit;
   font-size: 0.9375rem;
   cursor: pointer;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: color 120ms ease, border-color 120ms ease;
 }
 
 /* An invalid field's mark runs on across the button: the frame red round the pair and the
@@ -1860,15 +1860,20 @@
   background-color: var(--fm-invalid-wash);
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {
+/* The pointer and the keyboard are answered by a ring in the signal colour inside the button's
+   own edge, all the way round. Its start has no edge of its own, the line there being the
+   box's, so an edge coloured as a quiet button's is would stop at three sides, and a halo as
+   the box's would cross onto the box. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true'], :focus-visible) {
   color: var(--fm-ink);
-  border-color: var(--fm-signal);
+  outline: 1px solid var(--fm-signal);
+  outline-offset: -1px;
 }
 
 [data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button:focus-visible {
-  outline: none;
-  border-color: var(--fm-signal);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fm-signal) 22%, transparent);
+  color: var(--fm-ink);
+  outline: 2px solid var(--fm-signal);
+  outline-offset: -2px;
 }
 
 /* Unavailable either way a host says so: `disabled`, or `aria-disabled`, which keeps the
