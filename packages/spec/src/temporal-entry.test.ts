@@ -708,19 +708,64 @@ describe('what a paste into a typed control means', () => {
     after: shown.slice(to),
   })
 
+  const SELECTIONS = [
+    ['at the start', 0, 0],
+    ['over the date', 0, 10],
+    ['over the year', 0, 4],
+    ['over all but the last digit', 0, 22],
+    ['over the hour', 11, 13],
+    ['over the clock', 11, 23],
+    ['at the end', 23, 23],
+  ] as const
+
+  const TIME_SELECTIONS = [
+    ['at the caret', 5, 5],
+    ['over the whole time', 0, 12],
+    ['over the seconds', 6, 12],
+    ['over the minutes', 3, 5],
+    ['over the hour', 0, 2],
+    ['at the end', 12, 12],
+  ] as const
+
+  // An empty clipboard, or one holding only an image, gives the control '' to paste. Read as
+  // typing, the text left by an empty paste over a selection was the selection deleted: over
+  // the whole time React stored null, and over the seconds 14:03. At a caret the text was
+  // unchanged, which the mask reads as a backspace: at caret 5 React stored 14:02:74.15.
+  // Deleting is the Delete key's; a paste of nothing does nothing.
+  test.each(TIME_SELECTIONS)('an empty paste %s of a time is ignored', (_where, from, to) => {
+    expect(pasteOutcome('time', 3, place(CLOCK, from, to, ''))).toEqual({ ignored: true })
+  })
+
+  test.each(SELECTIONS)('an empty paste %s of a datetime is ignored', (_where, from, to) => {
+    // Over the clock it was typing the date alone, 2026-11-15; over all but the last digit, a lone 5.
+    vi.stubEnv('TZ', 'America/New_York')
+    expect(pasteOutcome('datetime', 3, place(SHOWN, from, to, ''))).toEqual({ ignored: true })
+  })
+
+  test('whitespace alone is a paste of nothing, and an empty field takes nothing from it', () => {
+    // A space over the datetime's own space and clock left the date, typeable and unfinished:
+    // the clock erased by a paste. Around a paste whitespace is not part of it, so alone it is none.
+    expect(pasteOutcome('datetime', 3, place(SHOWN, 10, 23, ' '))).toEqual({ ignored: true })
+    expect(pasteOutcome('time', 3, place(CLOCK, 0, 12, '\n'))).toEqual({ ignored: true })
+    expect(pasteOutcome('time', 3, place('', 0, 0, ''))).toEqual({ ignored: true })
+  })
+
   test.each([
-    // Read as an edit, a change of nothing is what the mask takes for a backspace, so the digit
-    // before the caret went: 0 over its own 0 stored 14:32:74.15.
+    // Handed to the mask as typing, the text is unchanged, which the mask reads as a backspace,
+    // so the digit before the caret went: 0 over its own 0 stored 14:32:74.15.
     ['0 pasted over a selected 0', 'time', CLOCK, 3, 4, '0'],
-    // An empty clipboard, or one holding only an image, pastes nothing; at caret 5 it stored 14:02:74.15.
-    ['an empty paste at the caret', 'time', CLOCK, 5, 5, ''],
-    ['an empty paste into an empty field', 'time', '', 0, 0, ''],
     // A datetime's own clock pasted over itself lost its last digit.
     ["a datetime's own clock over itself", 'datetime', SHOWN, 11, 23, '09:03:27.415'],
     ['a whole datetime over itself', 'datetime', SHOWN, 0, 23, SHOWN],
-  ] as const)('%s changes nothing, as typing the same text does', (_name, type, shown, from, to, pasted) => {
+  ] as const)('%s, typing that changes no text, is ignored', (_name, type, shown, from, to, pasted) => {
     vi.stubEnv('TZ', 'America/New_York')
     expect(pasteOutcome(type, 3, place(shown, from, to, pasted))).toEqual({ ignored: true })
+  })
+
+  test('a time pasted over the same text shown is still the answer', () => {
+    // A stored value wider than the field shows as the same text: 14:03:27.4155 as 14:03:27.415.
+    // Ignored as a change of nothing, the paste left the hidden digit, and the shape error with it.
+    expect(pasteOutcome('time', 3, place(CLOCK, 0, 12, CLOCK))).toEqual({ answer: CLOCK })
   })
 
   test.each([
@@ -769,16 +814,6 @@ describe('what a paste into a typed control means', () => {
     // Merged, its digits would be pushed through the mask into an answer nobody wrote.
     expect(pasteOutcome('time', 3, place(CLOCK, 3, 5, '09:15:00.000'))).toEqual({ answer: '09:15:00.000' })
   })
-
-  const SELECTIONS = [
-    ['at the start', 0, 0],
-    ['over the date', 0, 10],
-    ['over the year', 0, 4],
-    ['over all but the last digit', 0, 22],
-    ['over the hour', 11, 13],
-    ['over the clock', 11, 23],
-    ['at the end', 23, 23],
-  ] as const
 
   describe.each(['Europe/Zurich', 'America/New_York'])('in %s', (zone) => {
     test.each(SELECTIONS)('an instant pasted %s is the answer, never local digits', (_where, from, to) => {

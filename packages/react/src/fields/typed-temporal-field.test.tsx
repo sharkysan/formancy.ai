@@ -255,10 +255,13 @@ describe('a time with a precision', () => {
   })
 
   test.each([
-    // An empty clipboard, or one holding only an image, pastes nothing. Handed to the mask as an
-    // edit that changed nothing, it was read as a backspace: 14:02:74.15.
+    // An empty clipboard, or one holding only an image, gives '' to paste. At a caret the text was
+    // unchanged, which the mask reads as a backspace: 14:02:74.15.
     ['an empty paste at the caret', 5, 5, ''],
-    // The same, for the same text over itself: 14:32:74.15.
+    // Over a selection it was the selection deleted: null, and 14:03. Deleting is the Delete key's.
+    ['an empty paste over the whole time', 0, 12, ''],
+    ['an empty paste over the seconds', 6, 12, ''],
+    // The same text over itself, typed, was unchanged text and a backspace too: 14:32:74.15.
     ['0 pasted over a selected 0', 3, 4, '0'],
   ])('%s leaves a time as it was', (_name, from, to, pasted) => {
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
@@ -268,6 +271,18 @@ describe('a time with a precision', () => {
 
     expect(control().value).toBe('14:03:27.415')
     expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('a time pasted over the same text shown replaces a stored value wider than the field', () => {
+    // 14:03:27.4155 shows as 14:03:27.415. Ignored as a change of nothing, the paste of what the
+    // person reads left the hidden digit stored, and the shape error with it.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.4155' })
+    control().setSelectionRange(0, 12)
+
+    fireEvent.paste(control(), { clipboardData: { getData: () => '14:03:27.415' } })
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().value).toBe('14:03:27.415')
   })
 
   test("a datetime's own clock pasted over itself leaves it as it was, in New York", () => {

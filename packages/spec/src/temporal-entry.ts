@@ -327,20 +327,24 @@ export function recognisedAnswer(type: TypedTemporalType, precision: number, tex
  * One decision here for every control, so that React's, Angular's and Material's cannot read
  * one paste three ways (0091). Tried in order:
  *
- * 0. **A paste that leaves the text as it was is ignored**: the same text over itself, or an
- *    empty clipboard, or one holding only an image. Typing the same text changes nothing; read
- *    by the mask as an edit, a change of nothing is a backspace, and a digit would go.
  * 1. **A time or an instant on its own is the answer** (`recognisedAnswer`), wherever it lands:
- *    it says by itself what it means, so what it replaces is beside the point.
- * 2. **Digits alone are typing, when they fit**: the whole text the field would hold, provided
+ *    it says by itself what it means, so what it replaces is beside the point. That holds over
+ *    the same text too: a stored value wider than the field can show as the very text pasted
+ *    over it, and the paste then stores what the person reads.
+ * 2. **A paste of nothing is ignored, and so is any other text pasted over itself.** Nothing is
+ *    an empty clipboard, one holding only an image, or whitespace alone. Read as typing, nothing
+ *    over a selection deleted it, which is the Delete key's job; and where the text was left as
+ *    it was — nothing at a caret, or the same text over itself — the mask read the edit as a
+ *    backspace, so a digit went.
+ * 3. **Digits alone are typing, when they fit**: the whole text the field would hold, provided
  *    it has no more digits than the mask has positions. Digits carry no zone, so there is
  *    nothing to misread, and the mask places them as the same keystrokes, even where that
  *    leaves the field's own separators out of place: 0 over the hour of 14:03:27.415 types as
  *    the key does. Digits that do not fit would be cut, and the rest stored complete and
  *    accepted: an answer the paste does not denote.
- * 3. **Any other text is typing if the mask could have been typed into it** (`couldBeTyped`):
+ * 4. **Any other text is typing if the mask could have been typed into it** (`couldBeTyped`):
  *    digits that fit, and each of the mask's own characters only where it writes it.
- * 4. **Anything else is ignored**, as a keystroke the mask cannot place changes nothing.
+ * 5. **Anything else is ignored**, as a keystroke the mask cannot place changes nothing.
  *    Nothing is stored, so a combination of the pasted text and the field's own digits that
  *    nobody wrote, such as a fragment of an offset joined to a minute, can never be accepted.
  */
@@ -349,9 +353,9 @@ export function pasteOutcome(
   precision: number,
   { before, selected, pasted, after }: { readonly before: string; readonly selected: string; readonly pasted: string; readonly after: string },
 ): { answer: string } | { typed: string } | { ignored: true } {
-  if (pasted === selected) return { ignored: true }
   const answer = recognisedAnswer(type, precision, pasted)
   if (answer !== undefined) return { answer }
+  if (pasted.trim() === '' || pasted === selected) return { ignored: true }
   const whole = `${before}${pasted}${after}`
   const fits = digitsIn(whole).length <= slotCount(temporalEntryMask(type, precision))
   if (fits && /^\d+$/.test(pasted.trim())) return { typed: whole }
