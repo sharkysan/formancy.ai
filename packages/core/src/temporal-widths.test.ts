@@ -124,3 +124,49 @@ describe('in a row rule', () => {
     expect(crossWidthComparisons(trip([visible('item.at < "x"')]))).toEqual([])
   })
 })
+
+describe('what else is and is not a cross-width comparison', () => {
+  test('an empty literal is refused, and the message says how to ask whether it was answered', () => {
+    // `opens != ""` is the usual "was answered" test and is wrong: an unanswered field holds
+    // null, so the rule is always true. Only a version-6 document can declare a precision, so
+    // refusing invalidates nothing already published (0097, 0236). The message must give the
+    // idiom that works, not three width remedies for a literal that never meant a time.
+    const [found, ...rest] = crossWidthComparisons(trip([visible('opens != ""')]))
+
+    expect(rest).toEqual([])
+    expect(found?.literal).toBe('')
+    expect(found?.message).toContain('has(opens)')
+    expect(found?.message).toContain('opens != null')
+    expect(found?.message).not.toContain('timestamp(a)')
+  })
+
+  test('a datetime without precision and one at precision 0 share a shape and are not reported', () => {
+    // Both are whole seconds. A later change to the shape function that told them apart would
+    // silently refuse a comparison that orders correctly.
+    const schema = trip([visible('plain < zero')])
+    schema.model.fields.push({ key: 'zero', type: 'datetime', label: 'Zero', precision: 0 })
+    expect(crossWidthComparisons(schema)).toEqual([])
+  })
+
+  test('a literal on the left is reported as one on the right is', () => {
+    // Reading only the right-hand side would let `"09:00" < opens` publish.
+    expect(crossWidthComparisons(trip([visible('"09:00" < opens')]))).toHaveLength(1)
+  })
+
+  test('every comparison operator is seen, not only the ordering ones', () => {
+    // `==` is the one that holds for nobody; a check on `<` alone would miss it.
+    for (const operator of ['>=', '<=', '==', '!=']) {
+      expect(crossWidthComparisons(trip([visible(`opens ${operator} "09:00"`)]))).toHaveLength(1)
+    }
+  })
+
+  test('two fields compared through `item` in a row rule resolve to their model path', () => {
+    // Unresolved, `item.at` names no field and a cross-width pair inside a row publishes.
+    const schema = trip([visible('item.at < fine', 'legs[].at')])
+    const [found] = crossWidthComparisons(schema)
+    // `fine` is precision 3 like legs[].at, so make the widths differ.
+    expect(found).toBeUndefined()
+    const differing = trip([visible('item.at < finer', 'legs[].at')])
+    expect(crossWidthComparisons(differing)[0]?.paths).toEqual(['legs[].at', 'finer'])
+  })
+})
