@@ -52,6 +52,27 @@ const form: FormSchema = {
       // A source this deployment does not have: the select draws a sentence in its box's place.
       { key: 'depot', type: 'select', label: 'Depot', optionsSource: 'depots' },
       { key: 'name', type: 'text', label: 'Name' },
+      // The four controls that draw a fieldset of their own rather than a box.
+      { key: 'size', type: 'radio', label: 'Size', options: [{ value: 's', label: 'Small' }] },
+      { key: 'extras', type: 'selectboxes', label: 'Extras', options: [{ value: 'tape', label: 'Tape' }] },
+      { key: 'rating', type: 'matrix', label: 'Rating', rows: [{ value: 'speed', label: 'Speed' }], options: [{ value: 'good', label: 'Good' }] },
+      {
+        key: 'order',
+        type: 'ranking',
+        label: 'Order',
+        options: [
+          { value: 'fast', label: 'Fast' },
+          { value: 'cheap', label: 'Cheap' },
+        ],
+      },
+      // A select in a row, which the host knows by the row's own path.
+      {
+        key: 'lines',
+        type: 'repeater',
+        label: 'Lines',
+        minItems: 1,
+        fields: [{ key: 'parcel', type: 'select', label: 'Parcel', options: [{ value: 'box', label: 'Box' }] }],
+      },
     ],
   },
 }
@@ -77,7 +98,9 @@ const besides = () => [...document.querySelectorAll('[data-formancy-part="field-
 
 describe('content beside a field’s control', () => {
   // A host that gives none, or gives nothing for a path, changes no form: not an empty row, and
-  // not an attribute, so a form drawn today is drawn the same.
+  // not an attribute, so a form drawn today is drawn the same. Both forms draw their boxes
+  // through the row's way of drawing nothing, so the two agreeing would not see that way wrap
+  // or reorder the box: the elements each field had before the row existed are named too.
   test('draws nothing where the host gives nothing, so the form is unchanged', () => {
     const { container, unmount } = mount()
     const without = container.innerHTML
@@ -87,6 +110,8 @@ describe('content beside a field’s control', () => {
 
     expect(document.querySelector('[data-formancy-part="field-control-row"]')).toBeNull()
     expect(given).toBe(without)
+    expect(partsOf(wrapperOf('country'))).toEqual(['label', 'select', 'select-status'])
+    expect(partsOf(wrapperOf('point'))).toEqual(['label', 'typeahead-anchor', 'typeahead-status'])
   })
 
   // The row holds the box and the host's content and nothing else: a status region or an error
@@ -118,7 +143,8 @@ describe('content beside a field’s control', () => {
   })
 
   // A text field, a fieldset or a select whose source is missing has no single box on a line of
-  // its own to join a button to; asked for one, a host would draw content nobody places.
+  // its own to join a button to; asked for one, a host would draw content nobody places. Each
+  // of the four fieldsets is in the form, so none of them can start asking unseen.
   test('is asked for by the select and the typeahead alone', () => {
     const asked: string[] = []
     mount((path) => {
@@ -127,7 +153,20 @@ describe('content beside a field’s control', () => {
     })
 
     // Once per path, in the order the fields are drawn: a source's answer draws the select again.
-    expect([...new Set(asked)]).toEqual(['country', 'point'])
+    expect([...new Set(asked)]).toEqual(['country', 'point', 'lines[0].parcel'])
+  })
+
+  // A host keys its content on the path a field's wrapper carries. A row's select asked by its
+  // template's path, `lines[].parcel`, would be given the same content in every row, and a
+  // button there would open one record from all of them.
+  test('is asked for by a row’s select by the row’s own path, and drawn in that row', () => {
+    mount((path) => (path === 'lines[0].parcel' ? open(path) : undefined))
+
+    expect(partsOf(rowOf('lines[0].parcel'))).toEqual(['select', 'field-beside'])
+    expect(rowOf('lines[0].parcel')?.querySelector('select')).toBe(screen.getByRole('combobox', { name: 'Parcel' }))
+    expect(screen.getByRole('button', { name: 'Open lines[0].parcel' }).closest('[data-formancy-part="field-beside"]')?.parentElement).toBe(
+      rowOf('lines[0].parcel'),
+    )
   })
 
   // The content is the host's, and reads the field as any host component does: a button that
@@ -138,10 +177,11 @@ describe('content beside a field’s control', () => {
       return <span>Chosen: {typeof field.value === 'string' ? field.value : 'nothing'}</span>
     }
 
-    mount((path) => <Chosen path={path} />, form, { country: 'CH' })
+    mount((path) => <Chosen path={path} />, form, { country: 'CH', lines: [{ parcel: 'box' }] })
 
     expect(screen.getByText('Chosen: CH').closest('[data-formancy-part="field-beside"]')?.parentElement).toBe(rowOf('country'))
     expect(screen.getByText('Chosen: nothing').closest('[data-formancy-part="field-beside"]')?.parentElement).toBe(rowOf('point'))
+    expect(screen.getByText('Chosen: box').closest('[data-formancy-part="field-beside"]')?.parentElement).toBe(rowOf('lines[0].parcel'))
   })
 
   // The control is described by its description and its error, as before: a button beside it,
@@ -155,7 +195,7 @@ describe('content beside a field’s control', () => {
     mount(open)
 
     const parts = [...document.querySelectorAll('[data-formancy-part="field-control-row"], [data-formancy-part="field-beside"]')]
-    expect(parts).toHaveLength(4)
+    expect(parts).toHaveLength(6)
     for (const part of parts) {
       expect(part.getAttribute('role')).toBeNull()
       expect(part.getAttribute('aria-label')).toBeNull()
@@ -170,10 +210,15 @@ describe('content beside a field’s control', () => {
     const user = userEvent.setup()
     mount(open)
 
-    screen.getByRole('combobox', { name: 'Country' }).focus()
-    await user.tab()
+    for (const [control, button] of [
+      ['Country', 'Open country'],
+      ['Pickup point', 'Open point'],
+    ] as const) {
+      screen.getByRole('combobox', { name: control }).focus()
+      await user.tab()
 
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open country' }))
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: button }))
+    }
   })
 
   // The renderer cannot tell a component that draws nothing from one that draws something, so
@@ -186,7 +231,29 @@ describe('content beside a field’s control', () => {
 
     mount(() => <Nothing />)
 
-    expect(besides()).toHaveLength(2)
+    expect(besides()).toHaveLength(3)
     for (const beside of besides()) expect(beside.matches(':empty')).toBe(true)
+  })
+
+  // A host with something to draw only once the field holds an answer, as a button that opens
+  // the chosen record, draws it from inside the place beside: giving content for one answer and
+  // none for another would draw the box again each time, and take the keyboard from the person
+  // choosing in it.
+  test('keeps the box while what the host draws beside it comes and goes', async () => {
+    const user = userEvent.setup()
+    function OnceChosen({ path }: { path: string }) {
+      const field = useField(path)
+      return typeof field.value === 'string' ? <button type="button">Open {path}</button> : null
+    }
+    mount((path) => <OnceChosen path={path} />)
+    await screen.findByRole('option', { name: 'Germany' })
+    const box = screen.getByRole('combobox', { name: 'Country' })
+    box.focus()
+
+    await user.selectOptions(box, 'DE')
+
+    expect(await screen.findByRole('button', { name: 'Open country' })).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Country' })).toBe(box)
+    expect(document.activeElement).toBe(box)
   })
 })

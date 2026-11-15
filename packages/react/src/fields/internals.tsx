@@ -76,7 +76,9 @@ export interface FormancyFormProps {
    * wrapped in `data-formancy-part="field-control-row"` and the content in
    * `data-formancy-part="field-beside"` (0237). No other control draws it, and a field the host
    * gives nothing is drawn exactly as without it. A constant: a new function on every render
-   * redraws every row.
+   * redraws every row. Content for a path that had none, or none for a path that had some, draws
+   * the box again, and a person in it loses the keyboard: to show nothing for a while, give
+   * content that draws nothing, which keeps the box.
    */
   fieldBeside?: (path: string) => ReactNode
   onSubmit?: (outcome: SubmitOutcome) => void
