@@ -134,15 +134,15 @@ describe('a time with a precision', () => {
     expect(control().value).toBe('14:03:27.415')
   })
 
-  test('a paste with characters the mask does not write is held as pasted, for the engine to refuse', () => {
+  test('a paste the mask has no place for changes nothing', () => {
     // Dropping the characters the mask has no place for would make an answer out of text
-    // nobody typed; held, the shape error tells the person. Such text is never typing.
+    // nobody typed; ignored, the field is as it was, as it is for a letter typed.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
 
     fireEvent.paste(control(), { clipboardData: { getData: () => 'noon-ish' } })
 
-    expect(value(engine)).toBe('noon-ish')
-    expect(engine.submit().errors['at']).toContain('shape')
+    expect(value(engine)).toBeUndefined()
+    expect(control().value).toBe('')
   })
 
   test('a read-only field shows every digit, and a change writes nothing', () => {
@@ -191,20 +191,19 @@ describe('a time with a precision', () => {
     expect(value(engine)).toBe('14:59:27.415')
     expect(control().value).toBe('14:59:27.415')
     // The caret stays after the paste, as typing leaves it.
-    expect(control().selectionStart).toBe(5)
+    expect(control().selectionStart).toBe(6)
   })
 
-  test('a paste read as typing leaves the caret after what was pasted', () => {
-    // The control is rewritten before React renders so the caret can be placed; a caret thrown
-    // to the end would make the next keystroke land in the wrong place.
+  test('a paste that leaves a separator out of its place changes nothing', () => {
+    // 5 over the minutes makes "14:5:27.415", which no typing makes; read through the mask it
+    // would move every digit after it.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
     control().setSelectionRange(3, 5)
 
     fireEvent.paste(control(), { clipboardData: { getData: () => '5' } })
 
-    expect(control().value).toBe('14:52:74.15')
-    expect(control().selectionStart).toBe(4)
-    expect(value(engine)).toBe('14:52:74.15')
+    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('14:03:27.415')
   })
 
   test('a paste completes a partial answer as typing would', () => {
@@ -218,9 +217,9 @@ describe('a time with a precision', () => {
     expect(control().selectionStart).toBe(12)
   })
 
-  test('a paste into a complete field changes what typing would, and nothing else', () => {
-    // Held as pasted, a digit after a complete time was stored where the control could not
-    // show it, and a clock pasted after one blanked the control.
+  test('a digit pasted into a complete field is ignored, and a whole time replaces it', () => {
+    // Held, a digit after a complete time was stored where the control could not show it; a
+    // whole time says what it is, so it is the answer rather than digits merged into the old one.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
     control().setSelectionRange(12, 12)
 
@@ -228,19 +227,19 @@ describe('a time with a precision', () => {
     expect(value(engine)).toBe('14:03:27.415')
     fireEvent.paste(control(), { clipboardData: { getData: () => '09:15:00.000' } })
 
-    expect(value(engine)).toBe('14:03:27.415')
-    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('09:15:00.000')
+    expect(control().value).toBe('09:15:00.000')
   })
 
-  test('a paste of one digit over a selected hour is read as typing', () => {
-    // `0` and `:03:27.415` is no shape; it was held and the control went blank.
+  test('a paste of one digit over a selected hour changes nothing', () => {
+    // "0" and ":03:27.415" puts the first colon after one digit; not a place the mask writes it.
     const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
     control().setSelectionRange(0, 2)
 
     fireEvent.paste(control(), { clipboardData: { getData: () => '0' } })
 
-    expect(control().value).not.toBe('')
-    expect(value(engine)).toBe('00:32:74.15')
+    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('14:03:27.415')
   })
 
   test('a complete datetime pasted a digit keeps showing its answer', () => {

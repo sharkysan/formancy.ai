@@ -696,69 +696,98 @@ describe('conversions a probe checked once, pinned', () => {
 })
 
 describe('what a paste into a typed control means', () => {
-  const whole = (type: TypedTemporalType, precision: number, pasted: string) => pasteOutcome(type, precision, { before: '', pasted, after: '' })
-
-  test.each([
-    // A digit pasted after a complete time was held at its own width, and the control showed the
-    // old text over an answer with a digit nobody could see; typing it changes nothing.
-    ['a digit at the end of a complete time', 'time', '14:03:27.415', '6', '', '14:03:27.4156'],
-    // A whole time pasted into the end of one made 14:03:27.41509:15:00.000, held, and the control blank.
-    ['a whole time at the end of a complete time', 'time', '14:03:27.415', '09:15:00.000', '', '14:03:27.41509:15:00.000'],
-    // The same for a datetime, where the held text showed as nothing at all.
-    ['a digit at the end of a complete datetime', 'datetime', '2026-11-15 09:03:27.415', '9', '', '2026-11-15 09:03:27.4159'],
-    // A selection replaced by one digit left the hour as `0:03:27.415`, which is no shape the mask reads.
-    ['one digit over a selected hour', 'time', '', '0', ':03:27.415', '0:03:27.415'],
-  ] as const)('%s is typing', (_name, type, before, pasted, after, text) => {
-    expect(pasteOutcome(type, 3, { before, pasted, after })).toEqual({ typed: text })
-  })
-
   const SHOWN = '2026-11-15 09:03:27.415'
   const INSTANT = '2026-11-15T13:03:27.415Z'
+  const CLOCK = '14:03:27.415'
+  const place = (shown: string, from: number, to: number, pasted: string) => ({ before: shown.slice(0, from), pasted, after: shown.slice(to) })
 
   test.each([
-    ['at the start', '', SHOWN],
-    ['over the date', '', ' 09:03:27.415'],
-    ['over the year', '', '-11-15 09:03:27.415'],
-    ['over all but the last digit', '', '5'],
-    ['over the hour', '2026-11-15 ', ':03:27.415'],
-  ])('a whole instant pasted %s is the answer, never local digits', (_where, before, after) => {
-    // Unreadable as one text with the rest of the field, it went to the mask, which dropped the Z
-    // and stored the shown clock's digits, moved by the person's offset (New York: 18:03, or
-    // the next day's 01:26 with the hour selected).
-    vi.stubEnv('TZ', 'America/New_York')
-    expect(pasteOutcome('datetime', 3, { before, pasted: INSTANT, after })).toEqual({ answer: INSTANT })
+    // A digit pasted after a complete time was stored where the control could not show it.
+    ['a digit at the end of a full time', 'time', CLOCK, 12, 12, '6'],
+    // One digit over the hour leaves "0:03:27.415", whose first colon the mask writes after two digits.
+    ['one digit over the hour', 'time', CLOCK, 0, 2, '0'],
+    ['a digit at the end of a full datetime', 'datetime', SHOWN, 23, 23, '9'],
+  ] as const)('%s is ignored, as a keystroke with no place is', (_name, type, shown, from, to, pasted) => {
+    expect(pasteOutcome(type, 3, place(shown, from, to, pasted))).toEqual({ ignored: true })
   })
 
-  test('PostgreSQL writes the offset as +0000, which is the same instant', () => {
-    // Its own spelling of the zone must not be the one that falls through to typing.
-    vi.stubEnv('TZ', 'America/New_York')
-    expect(pasteOutcome('datetime', 3, { before: '', pasted: '2026-11-15 13:03:27.415+0000', after: SHOWN })).toEqual({ answer: INSTANT })
+  test.each([
+    // 59 over the minutes is whole text of one time; read alone it is no time.
+    ['59 over the minutes', CLOCK, 3, 5, '59', '14:59:27.415'],
+    // The pasted tail joined to what was shown reads as the rest of one time.
+    ['a tail completing a partial time', '14:0', 4, 4, '3:27.415', '14:03:27.415'],
+  ] as const)('%s is typing', (_name, shown, from, to, pasted, text) => {
+    expect(pasteOutcome('time', 3, place(shown, from, to, pasted))).toEqual({ typed: text })
+  })
+
+  test('a whole time pasted into the middle of a filled time is that time, not a merge', () => {
+    // Merged, its digits would be pushed through the mask into an answer nobody wrote.
+    expect(pasteOutcome('time', 3, place(CLOCK, 3, 5, '09:15:00.000'))).toEqual({ answer: '09:15:00.000' })
+  })
+
+  const SELECTIONS = [
+    ['at the start', 0, 0],
+    ['over the date', 0, 10],
+    ['over the year', 0, 4],
+    ['over all but the last digit', 0, 22],
+    ['over the hour', 11, 13],
+    ['over the clock', 11, 23],
+    ['at the end', 23, 23],
+  ] as const
+
+  describe.each(['Europe/Zurich', 'America/New_York'])('in %s', (zone) => {
+    test.each(SELECTIONS)('an instant pasted %s is the answer, never local digits', (_where, from, to) => {
+      // It said which instant it was; read through the mask the zone was dropped and the shown
+      // clock's digits stored instead, hours from the instant, or on another day altogether.
+      // PostgreSQL writes the offset as +00, or -05 west of UTC, with a space for the T.
+      vi.stubEnv('TZ', zone)
+      for (const text of [INSTANT, '2026-11-15 13:03:27.415+00', '2026-11-15 12:03:27.415-01', '2026-11-15 08:03:27.415-05', '2026-11-15T14:03:27.415+01:00']) {
+        expect(pasteOutcome('datetime', 3, place(SHOWN, from, to, text)), text).toEqual({ answer: INSTANT })
+      }
+    })
+  })
+
+  test('an offset pasted after a local clock is ignored, not read at that offset', () => {
+    // "-01" is a sign the mask writes only after the year and month, so it has no place there;
+    // stored it would be this clock at that offset, an instant the person never read.
+    for (const offset of ['Z', '+01:00', '-01:00', '-01', '-0100']) {
+      expect(pasteOutcome('datetime', 3, { before: SHOWN, pasted: offset, after: '' }), offset).toEqual({ ignored: true })
+    }
+  })
+
+  test.each([
+    // Fragments of an offset joined to the field's digits became one nobody wrote.
+    ['a fragment ending in an offset over a minute digit', 'datetime', SHOWN, 15, 16, '3:27-01'],
+    ['an unfinished offset over twenty-one characters', 'datetime', SHOWN, 0, 21, '2026-11-15 13:03:27-'],
+    ['an offset of a day', 'datetime', SHOWN, 11, 23, '13:03:27.415-24:00'],
+    ['a zone after a date split by the paste', 'datetime', '2026-11-1', 9, 9, '6T13:03:27.415Z'],
+    ['a zone after the start of a time', 'time', '14:0', 4, 4, '3:27.415Z'],
+  ] as const)('%s is ignored', (_name, type, shown, from, to, pasted) => {
+    expect(pasteOutcome(type, 3, place(shown, from, to, pasted))).toEqual({ ignored: true })
+  })
+
+  test('an instant whose year passes 9999 once converted is ignored, not stored as local digits', () => {
+    // 9999-12-31 23:30 at -01:00 is year 10000 in UTC, which no stored text can say.
+    expect(pasteOutcome('datetime', 3, place(SHOWN, 11, 23, '9999-12-31 23:30:00.000-01:00'))).toEqual({ ignored: true })
+  })
+
+  test('a T-and-Z clock over the clock in Tokyo is ignored, never the local date as a UTC date', () => {
+    // A clock with a zone and no date is no instant; held, it came out complete and accepted.
+    vi.stubEnv('TZ', 'Asia/Tokyo')
+    expect(pasteOutcome('datetime', 3, place(SHOWN, 11, 23, 'T13:03:27.415Z'))).toEqual({ ignored: true })
   })
 
   test('a fraction of ten digits is kept as UTC at its own width, over a selection', () => {
     // It matched no shape the mask or the field has, and was read as ten typed digits.
     const long = '2026-11-15T13:03:27.4151234567Z'
-    expect(pasteOutcome('datetime', 3, { before: '', pasted: long, after: ' 09:03:27.415' })).toEqual({ answer: long })
+    expect(pasteOutcome('datetime', 3, place(SHOWN, 10, 23, long))).toEqual({ answer: long })
   })
 
-  test.each([
-    ['a clock with an offset of a day', 'datetime', '2026-11-15 ', '13:03:27.415+24:00', ''],
-    ['an instant whose year passes 9999 once converted', 'datetime', '', '9999-12-31T23:30:00-01:00', ' 09:03:27.415'],
-    ['a zone after the start of a time', 'time', '14:0', '3:27.415Z', ''],
-    ['a Z after a complete local clock', 'datetime', SHOWN, 'Z', ''],
-    ['an offset after a complete local clock', 'datetime', SHOWN, '+01:00', ''],
-    ['a day that does not exist, split by the paste', 'datetime', '2026-02-2', '9T14:03:27.415Z', ''],
-  ] as const)('%s is held as it reads, never as local digits', (_name, type, before, pasted, after) => {
-    // The mask would drop the zone and keep the digits; held, the shape check refuses it and the
-    // person is told, rather than given an instant they did not paste.
-    expect(pasteOutcome(type, 3, { before, pasted, after })).toEqual({ answer: `${before}${pasted}${after}` })
-  })
-
-  test('a whole paste is judged as it always was', () => {
-    // Only a partial paste changed: a whole instant is stored, held text is held for the shape check,
-    // and what could have been typed is read as typing.
-    expect(whole('datetime', 3, '2026-11-15T14:03:27.415+01:00')).toEqual({ answer: '2026-11-15T13:03:27.415Z' })
-    expect(whole('time', 3, 'noon-ish')).toEqual({ answer: 'noon-ish' })
-    expect(whole('time', 3, '140327415')).toEqual({ typed: '140327415' })
+  test('a whole paste is judged as it always was, and what is neither is now ignored', () => {
+    expect(pasteOutcome('datetime', 3, place('', 0, 0, '2026-11-15T14:03:27.415+01:00'))).toEqual({ answer: '2026-11-15T13:03:27.415Z' })
+    expect(pasteOutcome('time', 3, place('', 0, 0, '140327415'))).toEqual({ typed: '140327415' })
+    // Held, "noon-ish" was a shape error the person was told about; ignored, the field simply
+    // does not take it, as it does not take the letter typed. The accepted cost.
+    expect(pasteOutcome('time', 3, place('', 0, 0, 'noon-ish'))).toEqual({ ignored: true })
   })
 })

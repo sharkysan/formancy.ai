@@ -61,7 +61,7 @@ export function TypedTemporalField({ path, label, type }: { path: string; label:
               input.setSelectionRange(before.length + pasted.length, before.length + pasted.length)
             }
             field.setValue(outcome.answer)
-          } else {
+          } else if ('typed' in outcome) {
             const caret = before.length + pasted.length
             field.setValue(storedFromTyped(type, precision, applyMaskedEdit(input, mask, typed, outcome.typed, { caret, forward: false })))
           }
