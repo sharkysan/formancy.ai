@@ -5,6 +5,7 @@ import { useSourcedOptions } from '../use-sourced-options.js'
 import { Description, ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 import { FieldAdditionSlot } from '../field-addition.js'
+import { FieldControlRow } from '../field-beside.js'
 import { TypeaheadSelectField } from './typeahead-field.js'
 
 /**
@@ -96,36 +97,40 @@ export function SelectField({ path, label }: FieldComponentProps) {
 
   return (
     <FieldShell path={path} field={field} label={label}>
-      {/* Setting `value` on the select works only because React applies it
-          AFTER the option children render; a select's value property is
-          settable once its options exist. Angular binds [selected] per option
-          for the same reason — the explicit form of the same contract. */}
-      <select
-        {...field.controlProps}
-        // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
-        autoComplete={field.def.autocomplete}
-        value={typeof field.value === 'string' ? field.value : ''}
-        onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.value)}
-        // A failed source is asked again when the person moves to the field. Focus
-        // comes before every way of opening a native select, by pointer or by keyboard,
-        // and it is the person's own act: not a timer, which would load a source that
-        // is down and speak in a live region on a schedule. Only after a failure, so a
-        // select is not refetched on every visit.
-        onFocus={() => {
-          if (remote?.failed === true) remote.retry()
-        }}
-        onBlur={() => field.touch()}
-      >
-        {/* The empty option is the unanswered state; without it the browser
-            silently pre-selects the first real option, which the engine never
-            heard about. */}
-        <option value="" />
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      {/* The box alone in the row, where a host draws something beside it (0237): the
+          status region below says what the list leaves out, under the box, not beside it. */}
+      <FieldControlRow path={path}>
+        {/* Setting `value` on the select works only because React applies it
+            AFTER the option children render; a select's value property is
+            settable once its options exist. Angular binds [selected] per option
+            for the same reason — the explicit form of the same contract. */}
+        <select
+          {...field.controlProps}
+          // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
+          autoComplete={field.def.autocomplete}
+          value={typeof field.value === 'string' ? field.value : ''}
+          onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.value)}
+          // A failed source is asked again when the person moves to the field. Focus
+          // comes before every way of opening a native select, by pointer or by keyboard,
+          // and it is the person's own act: not a timer, which would load a source that
+          // is down and speak in a live region on a schedule. Only after a failure, so a
+          // select is not refetched on every visit.
+          onFocus={() => {
+            if (remote?.failed === true) remote.retry()
+          }}
+          onBlur={() => field.touch()}
+        >
+          {/* The empty option is the unanswered state; without it the browser
+              silently pre-selects the first real option, which the engine never
+              heard about. */}
+          <option value="" />
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </FieldControlRow>
       {/* Only a sourced select has anything to say: what its list leaves out, that
           its source answers only a search, or that the source could not be reached.
           Never the error region, which carries the engine's verdict — a source being

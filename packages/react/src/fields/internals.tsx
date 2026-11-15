@@ -70,6 +70,15 @@ export interface FormancyFormProps {
    * constant: a new function on every render redraws every field's addition.
    */
   fieldAddition?: (path: string) => ReactNode
+  /**
+   * The host's own content beside a field's control, on the control's line, by the field's path
+   * (a row's field by its own), or nothing: after the box of a select or a typeahead, the two
+   * wrapped in `data-formancy-part="field-control-row"` and the content in
+   * `data-formancy-part="field-beside"` (0237). No other control draws it, and a field the host
+   * gives nothing is drawn exactly as without it. A constant: a new function on every render
+   * redraws every row.
+   */
+  fieldBeside?: (path: string) => ReactNode
   onSubmit?: (outcome: SubmitOutcome) => void
 }
 
