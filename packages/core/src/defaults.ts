@@ -112,7 +112,7 @@ export function refusedDefault(model: FormModel, computed: ReadonlySet<string>):
 
 /*
  * How an answer to a time or an instant with a precision is written, as the validator and the
- * publish say it for a bound and a literal (0237): `shape` alone leaves the width to be found out.
+ * publish say it for a bound and a literal (0238): `shape` alone leaves the width to be found out.
  * On an instant `shape` is also a day the calendar does not have, so the day is asked for too. A
  * field without a precision is 0.13.0's, its refusal with it.
  */

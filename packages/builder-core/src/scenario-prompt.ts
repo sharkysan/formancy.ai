@@ -111,7 +111,7 @@ export const EXAMPLE_SCENARIO: Scenario = {
  *
  * The temporal ones are each type's shape on a field without a precision; `scenario-prompt.test.ts`
  * runs them through the engine as answers, so a shape that changed fails there. A field with
- * a precision has a width of its own, and the list of fields says it beside the field (0237).
+ * a precision has a width of its own, and the list of fields says it beside the field (0238).
  */
 export const ANSWER_EXAMPLES: Partial<Record<FieldType, unknown>> = {
   number: 42,
@@ -275,7 +275,7 @@ function inventory(document: FormSchema): string {
     } else if (LIST_VALUED.has(field.type)) {
       parts.push('a list')
     } else if ((field.type === 'time' || field.type === 'datetime') && field.precision !== undefined) {
-      // The answers by type are version 5's shapes; a field with a precision has its own width (0237).
+      // The answers by type are version 5's shapes; a field with a precision has its own width (0238).
       parts.push(`an answer like ${JSON.stringify(temporalExample(field.type, field.precision))}`)
     }
     return parts.join(', ')

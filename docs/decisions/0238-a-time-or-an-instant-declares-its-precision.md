@@ -1,4 +1,4 @@
-# 0237 — A time or an instant declares its precision, and every answer to it has that width
+# 0238 — A time or an instant declares its precision, and every answer to it has that width
 
 - **Status:** accepted
 - **Date:** 2026-11-16

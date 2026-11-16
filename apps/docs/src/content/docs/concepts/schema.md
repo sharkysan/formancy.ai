@@ -140,7 +140,7 @@ A `time` answer is `09:30`, and a `datetime` answer ends in whole seconds behind
 shows minutes. Where a minute is too coarse — a test run's start and end and the steps between, a
 reading from a device's log — a field declares `precision`: how many digits follow the seconds,
 0 to 9, counted as a database counts them in `timestamp(p)`. Spec version 6
-([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+([0238](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 ```jsonc
 { "key": "startedAt", "type": "datetime", "label": "Started", "precision": 3 },  // "2026-10-08T09:30:00.123Z"

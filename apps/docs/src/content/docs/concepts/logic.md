@@ -392,7 +392,7 @@ would turn the rule round.
 whatever the precisions of `steps[].at` and `startedAt` are, and if they differ it compares wrongly.
 Give the fields a list rule compares one precision, or, for two dates and times, compare them
 with `timestamp()`. The condition editor writes no list rule, so only one written by hand meets
-this ([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+this ([0238](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 ## Nothing ambient
 

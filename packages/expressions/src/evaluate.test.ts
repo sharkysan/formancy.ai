@@ -62,7 +62,7 @@ describe('evaluate', () => {
 
   // The library's known anomaly, pinned: `timestamp()` keeps three digits after the seconds and
   // cuts the rest, so two instants a microsecond apart are equal to it, and .7899 is .789, not
-  // .790. 0237, the `precision` description in the schema, `concepts/logic.md`, the CHANGELOG and
+  // .790. 0238, the `precision` description in the schema, `concepts/logic.md`, the CHANGELOG and
   // SOUP-DECLARATION.md say so; a cel-js release that compares finer, or rounds, fails here.
   test('compares timestamps to the millisecond, cutting the rest, as the documents say', () => {
     const answers: CompileOptions = { kind: 'visible', variables: { a: 'dyn', b: 'dyn' } }

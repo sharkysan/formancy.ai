@@ -121,7 +121,7 @@ export const FORM_WORDS = {
   'error.uuid': 'Enter an identifier of 32 hexadecimal digits in five groups.',
   /**
    * `{format}` is the stored form a date, time or date and time takes: in letters for a field
-   * without a precision, and as an answer at its width for one with a precision (0237).
+   * without a precision, and as an answer at its width for one with a precision (0238).
    */
   'error.shape': 'Enter it as {format}.',
   /** An instant on a field with a precision, which refuses a day the calendar does not have as `shape` too. */

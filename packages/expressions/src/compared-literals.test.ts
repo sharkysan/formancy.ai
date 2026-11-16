@@ -82,7 +82,7 @@ describe('comparedFields', () => {
   })
 
   test('gives none through a comprehension’s variable', () => {
-    // The named limit, decided in 0237: `s` is bound by `all`, so `s.at` is no field, and the
+    // The named limit, decided in 0238: `s` is bound by `all`, so `s.at` is no field, and the
     // pair with `startedAt` goes unseen. Seeing it means teaching this package what the
     // variable stands for, which 0236 declined on purpose.
     expect(fieldsOf('steps.all(s, s.at >= startedAt)')).toEqual([])

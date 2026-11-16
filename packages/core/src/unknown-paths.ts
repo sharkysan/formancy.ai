@@ -81,7 +81,7 @@ export function rowScopeOf(target: string): string | undefined {
 
 /**
  * The model path a read names in a rule whose row, if any, is `rowScope`. Outside a row, `item`
- * is a name like any other. Shared by the checks of a temporal comparison (0236, 0237), so they
+ * is a name like any other. Shared by the checks of a temporal comparison (0236, 0238), so they
  * resolve one row read one way.
  */
 export function inModel(read: string, rowScope: string | undefined): string {

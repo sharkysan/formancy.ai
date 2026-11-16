@@ -418,7 +418,7 @@ and text orders as time does only between strings of one fixed width
 ([0067](../decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)). So a shape is a
 property of a field, not only of its type: a `time` or `datetime` may declare a `precision`, 0 to
 9 digits after the seconds, and every answer to that field has that one width
-([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 - **One function gives the shape**, `temporalShape(type, precision)` in `@formancy/spec`, and
   `temporalExample` an answer in it. The engine, the bound check, the publish check and the

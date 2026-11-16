@@ -206,7 +206,7 @@ for two dates and times of different widths: a rule doing so cannot tell apart t
 than a millisecond. Not worked around; pinned by *compares timestamps to the millisecond, cutting
 the rest, as the documents say* in `packages/expressions/src/evaluate.test.ts`, which a release of the library that
 compared finer, or rounded, would fail; named in hazard A12 of [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) and in
-[0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md).
+[0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md).
 
 `recheck` decides whether a form's `pattern` may be published. It statically
 analyses each expression for catastrophic backtracking, which is the only

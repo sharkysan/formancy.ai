@@ -137,7 +137,7 @@ describe('a submission in words', () => {
 })
 
 /**
- * A time and an instant said at their field's precision (0237).
+ * A time and an instant said at their field's precision (0238).
  *
  * A field with a precision keeps seconds and the digits after them, and a reviewer reading it
  * back to the minute, or through a `Date`, which keeps milliseconds, reads a moment the

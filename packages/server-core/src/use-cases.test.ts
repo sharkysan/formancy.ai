@@ -158,7 +158,7 @@ describe('publishForm', () => {
 
   test('refuses a rule comparing a temporal answer across widths, and persists nothing', async () => {
     // Valid and engine-clean, and wrong for every answer: a precision-3 time against "09:00"
-    // orders as text. Published, it would be an immutable version that decides wrongly (0237).
+    // orders as text. Published, it would be an immutable version that decides wrongly (0238).
     const wide: FormSchema = {
       specVersion: '6',
       id: 'x',

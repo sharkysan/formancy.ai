@@ -192,7 +192,7 @@ function wholeSeconds(value: string): string {
 
 /**
  * An instant as the reader writes one, in UTC. Without a precision, to the minute, which is all
- * its control types. With one (0237), to the second, and every digit after the seconds the answer
+ * its control types. With one (0238), to the second, and every digit after the seconds the answer
  * holds copied as stored: `Date` keeps milliseconds, so a fraction read through it would be cut,
  * and a reviewer would read a moment the submission does not hold.
  */

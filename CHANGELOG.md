@@ -20,7 +20,7 @@ database counts them in `timestamp(p)`, so that what is collected is what its st
 answer to the field has that width, `09:30:00.123` or `2026-10-08T09:30:00.123456Z`. Absent,
 nothing changes: a time is still `09:30`, a date and time still ends in whole seconds, and the
 control is still the browser's, to the minute
-([0237](docs/decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 - **The control is typed, in React and Angular**: every declared digit is shown and typed into, a
   date and time on the person's own clock and stored in UTC with its fraction copied digit for

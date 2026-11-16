@@ -598,7 +598,7 @@ field that declares a precision with a literal not in its shape, and of two temp
 different shapes where either declares one; shapes are compared, not lengths. A publish
 refuses such a rule with `invalid_logic` and stores nothing, and the MCP check and the builder's
 authoring loop report it as the publish refuses it
-([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)). The sentence says what
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)). The sentence says what
 to write for what is compared, and offers `timestamp()` only between two dates and times: on a time
 or a date it is an error, and a `visible` rule that errors shows its field, so the advice would
 have published this hazard's own outcome. For a date against a date and time it offers nothing:
@@ -1148,7 +1148,7 @@ typed from a stopwatch, a fraction of a second from a device's log — and the c
 what it shows. Through 0.13.0 a `datetime` control showed minutes and wrote the instant back with
 `00` seconds on any edit, and no field could hold a fraction at all. The browser's own controls
 hold minutes, or milliseconds at best, so none of them could keep a seventh digit
-([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 *Constraint:* a field that declares a `precision` is typed into a control of its own shape, in
 React and Angular, on the mask core ([0125](../decisions/0125-a-mask-stores-what-was-typed.md)),
@@ -2115,7 +2115,7 @@ and versions `"1"` to `"5"` are frozen — so it would belong to **version `"6"`
 would be a migration with a report rather than a silent breakage
 ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version 6 is open and
 in no release yet, and was opened for a time's and an instant's `precision`
-([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)), not for this. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)), not for this. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
 allowed without breaking a document that validates today, so the honest form of this is a
 warning on publish rather than a refusal
 ([0097](../decisions/0097-a-publish-may-warn.md)). Until then the constraint covers the

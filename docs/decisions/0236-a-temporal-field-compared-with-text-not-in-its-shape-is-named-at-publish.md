@@ -1,8 +1,8 @@
 # 0236 — A date or time compared with text not written as its answers are is named at publish, not refused
 
-- **Status:** accepted; extended by [0237](0237-a-time-or-an-instant-declares-its-precision.md): on a field
+- **Status:** accepted; extended by [0238](0238-a-time-or-an-instant-declares-its-precision.md): on a field
   that declares a `precision`, such a comparison refuses the publish; its `has()` for a field at
-  the top corrected by 0237
+  the top corrected by 0238
 - **Date:** 2026-11-15
 - **Deciders:** Daniel Bacher
 - **Extends:** [0235](0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md),
@@ -85,7 +85,7 @@ gates on `warnings`, as the self-hosting guide suggests, now stops on them.
   with something that is not one, and `has()` and `!= null` say the first more truly. But a
   rule its author knows to be right will warn on every publish.
 
-  > **Corrected 2026-11-16 by [0237](0237-a-time-or-an-instant-declares-its-precision.md).**
+  > **Corrected 2026-11-16 by [0238](0238-a-time-or-an-instant-declares-its-precision.md).**
   > `has()` takes a field selection, so `has(leave)` does not compile: for a field at the top of
   > the form the test for an answer is `leave != null`, and `has()` is for a member of a group.
   > Measured with the built `@formancy/expressions`; the decision above is unchanged.

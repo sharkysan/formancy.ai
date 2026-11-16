@@ -32,7 +32,7 @@ readers before the documents.
   version 5 document carrying one is refused, naming the property. Changing or removing it on a
   published form is a lossy change in the diff, because every answer's width changes with it;
   submissions already stored are never converted
-  ([0237](docs/decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+  ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 **Giving an existing field a precision** means writing what compares with it at the new width:
 its `earliest`, `latest` and `default`, and the literals in rules that compare it, as

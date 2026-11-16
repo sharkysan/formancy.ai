@@ -167,7 +167,7 @@ function checkDocument(answer: Checkable): Verdict<FormSchema, AuthoringProblem>
   const refusal = engineRefusal(parsed as FormSchema)
   if (refusal !== undefined) return { ok: false, problem: { kind: 'logic', detail: refusal } }
 
-  // A temporal answer compared across widths is refused at publish (0237), so it is the same
+  // A temporal answer compared across widths is refused at publish (0238), so it is the same
   // kind of problem here: valid, opens, and orders its answers wrongly.
   const silent = [...expressionProblems(parsed as FormSchema), ...crossWidthComparisons(parsed as FormSchema)]
   if (silent.length > 0) {

@@ -62,7 +62,7 @@ export interface ComparedFields {
  * text, which is only right when both have one width (0067). The reads come from the same
  * walk as `comparedLiterals`, so a comprehension's own variable is never a field, and
  * **`steps.all(s, s.at >= startedAt)` is not seen**: `s.at` is no read in the model. That is
- * the named limit decided in 0237, and closing it would mean teaching this package what a
+ * the named limit decided in 0238, and closing it would mean teaching this package what a
  * variable stands for, which 0236 avoided on purpose.
  */
 export function comparedFields(ast: ExpressionAst): readonly ComparedFields[] {

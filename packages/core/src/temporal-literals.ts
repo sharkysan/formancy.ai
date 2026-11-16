@@ -75,7 +75,7 @@ export function misshapenTemporalLiterals(schema: FormSchema): MisshapenTemporal
   const temporal = new Map<string, TemporalFieldType>()
   for (const { path, def } of modelDataFields(schema.model)) {
     // A field that declares `precision` is not warned about: a literal at the wrong width
-    // there is refused at publish (0237), and saying it twice helps nobody.
+    // there is refused at publish (0238), and saying it twice helps nobody.
     if (isTemporal(def.type) && def.precision === undefined) temporal.set(path, def.type)
   }
   if (temporal.size === 0) return []

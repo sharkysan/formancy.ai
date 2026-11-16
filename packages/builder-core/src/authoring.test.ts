@@ -125,7 +125,7 @@ describe('an answer that does not work', () => {
 
   test('a comparison across widths is sent back with the way to fix it', async () => {
     // Valid, type-checks and engine-opens, and then orders its answers wrongly as text; the
-    // loop exists to catch what publish would refuse (0237), and the model needs the remedy.
+    // loop exists to catch what publish would refuse (0238), and the model needs the remedy.
     const wide = {
       ...GOOD,
       specVersion: '6',

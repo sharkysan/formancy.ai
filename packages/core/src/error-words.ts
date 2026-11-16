@@ -100,7 +100,7 @@ const STORED_FORM: Partial<Record<FieldDef['type'], string>> = {
 
 /**
  * What `shape` asks for. A field without a precision is 0.13.0's, and its sentence with it. One
- * with a precision (0237) is asked for at its width, by an answer of that width, since letters
+ * with a precision (0238) is asked for at its width, by an answer of that width, since letters
  * cannot say how many digits follow the seconds; and an instant there is refused as `shape` on a
  * day the calendar does not have as well, which the sentence cannot tell apart without the
  * answer, so it asks for both.

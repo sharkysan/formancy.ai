@@ -2,7 +2,7 @@
 
 - **Status:** accepted; its one width per type and its "never a fractional part", for a field
   that declares a `precision`, superseded in part by
-  [0237](0237-a-time-or-an-instant-declares-its-precision.md)
+  [0238](0238-a-time-or-an-instant-declares-its-precision.md)
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/spec/src/temporal.test.ts` (25 cases: the shapes each

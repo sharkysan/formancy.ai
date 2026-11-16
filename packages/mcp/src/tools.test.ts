@@ -91,7 +91,7 @@ describe('validate_form', () => {
   })
 
   test('a temporal comparison across widths is reported as invalid, as publish refuses it', () => {
-    // Passing it here and refusing it at publish would send an agent round the loop the tool exists to save (0237).
+    // Passing it here and refusing it at publish would send an agent round the loop the tool exists to save (0238).
     const result = validateForm({
       ...valid,
       specVersion: '6',

@@ -74,7 +74,7 @@ const TEMPORAL_FORMS: Record<TemporalFieldType, string> = {
 }
 
 /**
- * The form a temporal field's answer takes. With a precision (0237) it is given by an answer at
+ * The form a temporal field's answer takes. With a precision (0238) it is given by an answer at
  * the field's width, since letters cannot say how many digits follow the seconds.
  */
 function temporalForm(field: FieldDef): string | undefined {

@@ -5,7 +5,7 @@ import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@forma
 import { ROW_ITEM, inModel, rowScopeOf } from './unknown-paths.js'
 
 /**
- * Rules that compare a temporal answer with something of another width (spec 6, 0237).
+ * Rules that compare a temporal answer with something of another width (spec 6, 0238).
  *
  * **Why it is a defect.** A field can declare how many digits follow its seconds, and every
  * answer to it has that width. A rule compares an answer as text, and text orders the way time
@@ -23,7 +23,7 @@ import { ROW_ITEM, inModel, rowScopeOf } from './unknown-paths.js'
  * **Shapes are compared, not lengths.** A `date` and a precision-1 `time` are both ten
  * characters and are not the same shape.
  *
- * **Not seen** (the named limit of 0237): a comparison through a list rule's own variable, as
+ * **Not seen** (the named limit of 0238): a comparison through a list rule's own variable, as
  * in `steps.all(s, s.at >= startedAt)`. `@formancy/expressions` takes `s.at` for no field, as
  * 0236 chose.
  */
