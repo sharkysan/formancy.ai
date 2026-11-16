@@ -141,7 +141,10 @@ describe('an answer that does not work', () => {
 
     expect(result).toMatchObject({ ok: true, attempts: 2 })
     const second = (ask as ReturnType<typeof vi.fn>).mock.calls[1]?.[0] as { user: string }
-    expect(second.user).toContain('timestamp(a) < timestamp(b)')
+    expect(second.user).toContain('09:30:00.000')
+    // Told to wrap a time in `timestamp()`, the model wrote a rule that errors on every answer,
+    // and a `visible` rule that errors fails open: the note always showed.
+    expect(second.user).not.toContain('timestamp(')
   })
 
   test('a document the engine would not open is sent back in the engine’s words', async () => {

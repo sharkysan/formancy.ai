@@ -1,6 +1,6 @@
 import { comparedFields, comparedLiterals, parse } from '@formancy/expressions'
-import type { ExpressionAst } from '@formancy/expressions'
-import { TEMPORAL_FIELD_TYPES, modelDataFields, temporalExample, temporalShape } from '@formancy/spec'
+import type { ComparedFields, ComparisonOperator, ExpressionAst } from '@formancy/expressions'
+import { TEMPORAL_FIELD_TYPES, modelDataFields, temporalAnyShape, temporalExample, temporalShape } from '@formancy/spec'
 import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@formancy/spec'
 import { ROW_ITEM, inModel, rowScopeOf } from './unknown-paths.js'
 
@@ -51,10 +51,12 @@ function isTemporal(type: FieldType): type is TemporalFieldType {
   return (TEMPORAL_FIELD_TYPES as readonly FieldType[]).includes(type)
 }
 
-/** What to do about it: the same three ways whichever comparison it is. */
-const REMEDY =
-  'Write the literal at the field’s width, give both fields one precision, or compare ' +
-  '`timestamp(a) < timestamp(b)`, which compares to the millisecond and so cannot tell apart two answers closer than that.'
+/**
+ * What `timestamp()` costs, said wherever it is offered. It is offered only between two
+ * dates and times: it errors on a time of day and on a date, and a `visible` rule that errors
+ * fails open, so a sentence offering it there sent the author to a field that always shows.
+ */
+const MILLISECOND = 'which compares to the millisecond and so cannot tell apart two answers closer than that'
 
 export function crossWidthComparisons(schema: FormSchema): CrossWidthComparison[] {
   const rules = schema.logic?.rules ?? []
@@ -98,24 +100,37 @@ function literalProblems(ast: ExpressionAst, rowScope: string | undefined, field
       literal: compared.literal,
       message:
         compared.literal === ''
-          ? emptyLiteralMessage(about, path, compared.path, rowScope)
+          ? emptyLiteralMessage(about, path, compared.path, compared.operator, rowScope)
           : `${ruleOf(about)} compares "${path}", which declares precision ${String(field.precision)}, with "${compared.literal}", which is not at that width. ` +
             `A rule compares the two as text, so it orders them wrongly and no answer equals it. ` +
-            `${REMEDY} At this field’s width the literal is written like "${temporalExample(field.type, field.precision)}".`,
+            `Write the literal at the field’s width, like "${temporalExample(field.type, field.precision)}".${literalTimestamp(field, compared.literal)}`,
     })
   }
   return found
 }
 
 /**
+ * `timestamp()` for a literal, offered only where both sides are an instant: a time and a
+ * date make it error. The side the literal is on is not known here, so the sentence names the
+ * function rather than an expression to copy.
+ */
+function literalTimestamp(field: TemporalField, literal: string): string {
+  if (field.type !== 'datetime' || !new RegExp(temporalAnyShape('datetime')).test(literal)) return ''
+  return ` Or, as both are a date and time, wrap each side in \`timestamp()\`, ${MILLISECOND}.`
+}
+
+/**
  * `opens != ""` is the usual way to ask whether a field was answered, and it is the wrong one:
  * an unanswered field holds null, so the rule is always true (0236). No width fixes it, so the
- * message gives the idiom that does, not the three remedies for a literal that meant a time.
+ * message gives the idiom that does, not the remedies for a literal that meant a time. `==`
+ * asks the opposite, so it is given the opposite test: the answered one copied into it would
+ * invert the rule.
  */
-function emptyLiteralMessage(about: About, path: string, read: string, rowScope: string | undefined): string {
+function emptyLiteralMessage(about: About, path: string, read: string, operator: ComparisonOperator, rowScope: string | undefined): string {
+  const unanswered = operator === '=='
   return (
-    `${ruleOf(about)} compares "${path}" with the empty text "". An unanswered field holds null, not "", so this does not ask whether it was answered. ` +
-    `To ask that, write \`${answeredTest(read, rowScope)}\`.`
+    `${ruleOf(about)} compares "${path}" with the empty text "". An unanswered field holds null, not "", so this does not ask whether it was ${unanswered ? 'left unanswered' : 'answered'}. ` +
+    `To ask that, write \`${answeredTest(read, rowScope, unanswered)}\`.`
   )
 }
 
@@ -129,10 +144,13 @@ function emptyLiteralMessage(about: About, path: string, read: string, rowScope:
  * - **At the top of the form, `!= null`.** `has()` takes only a member, so `has(opens)` does not
  *   compile.
  * - **In a row, `!= null`.** A row presents every key, so `has(item.at)` is always true.
+ *
+ * `unanswered` asks the opposite: `!has(stay.at)`, `opens == null`.
  */
-function answeredTest(read: string, rowScope: string | undefined): string {
+function answeredTest(read: string, rowScope: string | undefined, unanswered: boolean): string {
   const inRow = rowScope !== undefined && read.startsWith(`${ROW_ITEM}.`)
-  return !inRow && read.includes('.') && !read.includes('[') ? `has(${read})` : `${read} != null`
+  if (!inRow && read.includes('.') && !read.includes('[')) return `${unanswered ? '!' : ''}has(${read})`
+  return `${read} ${unanswered ? '==' : '!='} null`
 }
 
 /** Two temporal fields compared, where either declares a precision and their shapes differ. */
@@ -151,13 +169,49 @@ function fieldProblems(ast: ExpressionAst, rowScope: string | undefined, fields:
       paths: [left, right],
       message:
         `${ruleOf(about)} compares "${left}" with "${right}", whose answers are not written at one width (${widthOf(a)} and ${widthOf(b)}). ` +
-        `A rule compares the two as text, so it orders them wrongly and no answer equals it. ${REMEDY}`,
+        `A rule compares the two as text, so it orders them wrongly and no answer equals it. ${pairRemedy(compared, a, b)}`,
     })
   }
   return found
 }
 
-/** A field's width, in a sentence: its type and, where declared, its precision. */
+/**
+ * What the author can write instead, which depends on the two kinds, because each remedy
+ * works for some and makes a rule that errors for others. An expression is written on the
+ * rule's own reads and operator, so it can be copied into the rule as it stands.
+ *
+ * - **Two dates and times:** one precision, or `timestamp()` on both.
+ * - **Two times:** one precision. `timestamp()` errors on a time of day.
+ * - **A date and a date and time:** the instant's own day, its first ten characters, is a date
+ *   and compares as one. It is the day in UTC, which the sentence says, since that can be
+ *   another than the respondent's.
+ * - **A time with either:** nothing. A time of day names no day and is the respondent's own
+ *   clock, so no expression on the two compares what the rule means.
+ */
+function pairRemedy(compared: ComparedFields, a: TemporalField, b: TemporalField): string {
+  if (a.type === b.type) {
+    const same = 'Give both fields one precision'
+    return a.type === 'datetime'
+      ? `${same}, or compare \`timestamp(${compared.left}) ${compared.operator} timestamp(${compared.right})\`, ${MILLISECOND}.`
+      : `${same}.`
+  }
+  const both = `${kindOf(a)} and ${kindOf(b)}`
+  const kinds = `${both.charAt(0).toUpperCase()}${both.slice(1)} are different kinds of answer, which compare as text only within one kind.`
+  if (a.type === 'time' || b.type === 'time') return `${kinds} Compare each with a value of its own kind.`
+  const day = (read: string, field: TemporalField): string => (field.type === 'datetime' ? `${read}.substring(0, 10)` : read)
+  return (
+    `${kinds} To compare the day of the date and time, in UTC, with the date, write ` +
+    `\`${day(compared.left, a)} ${compared.operator} ${day(compared.right, b)}\`; in UTC it can be another day than the respondent’s own.`
+  )
+}
+
+/** A kind of answer, in a sentence. */
+function kindOf(field: TemporalField): string {
+  return field.type === 'date' ? 'a date' : field.type === 'time' ? 'a time' : 'a date and time'
+}
+
+/** A field's width, in a sentence: its type and, where declared, its precision. A date has none to declare. */
 function widthOf(field: TemporalField): string {
+  if (field.type === 'date') return 'a date'
   return field.precision === undefined ? `a ${field.type} with no precision` : `a ${field.type} of precision ${String(field.precision)}`
 }

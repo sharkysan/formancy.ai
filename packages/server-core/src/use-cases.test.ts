@@ -179,7 +179,10 @@ describe('publishForm', () => {
     expect(outcome.kind).toBe('invalid_logic')
     if (outcome.kind !== 'invalid_logic') return
     expect(outcome.message).toContain('"opens"')
-    expect(outcome.message).toContain('timestamp(a) < timestamp(b)')
+    // The way out at the time's width, and not `timestamp()`, which errors on a time: a
+    // `visible` rule that errors fails open, so following that advice published the defect.
+    expect(outcome.message).toContain('09:30:00.000')
+    expect(outcome.message).not.toContain('timestamp(')
     expect(await resolveForm(deps, 'x')).toBeUndefined()
   })
 

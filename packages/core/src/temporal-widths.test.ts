@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { compile } from '@formancy/expressions'
+import { compile, evaluate, fixedCapabilities } from '@formancy/expressions'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { crossWidthComparisons } from './temporal-widths.js'
 import { misshapenTemporalLiterals } from './temporal-literals.js'
@@ -44,19 +44,39 @@ const visible = (cel: string, target = 'note'): LogicRule => ({ target, kind: 'v
 const offered = (message: string | undefined): string[] => [...(message ?? '').matchAll(/`([^`]+)`/g)].map((match) => match[1]!)
 
 describe('a literal compared with a field that declares precision', () => {
-  test('is reported when it is not at the field’s width, with the three remedies', () => {
+  test('on a time is reported with the literal at the field’s width, and never `timestamp()`', () => {
     const [found, ...rest] = crossWidthComparisons(trip([visible('opens > "09:00"')]))
 
     expect(rest).toEqual([])
     expect(found).toMatchObject({ target: 'note', kind: 'visible', cel: 'opens > "09:00"', paths: ['opens'], literal: '09:00' })
-    // The sentence names the rule, the field and the literal, and gives the way out each of
-    // the three ways, or the author is told it is wrong and not what to do.
+    // The sentence names the rule, the field and the literal, and how the literal is written
+    // at the field's width, or the author is told it is wrong and not what to do.
     expect(found?.message).toContain('"note"')
     expect(found?.message).toContain('"opens"')
     expect(found?.message).toContain('"09:00"')
     expect(found?.message).toContain('09:30:00.000')
-    expect(found?.message).toContain('one precision')
-    expect(found?.message).toContain('timestamp(a) < timestamp(b)')
+    // `timestamp("09:00:00.000")` errors, and a `visible` rule that errors fails open: an
+    // author, or the builder's authoring loop, following that advice published a field that
+    // always shows. A literal has no precision to give either.
+    expect(found?.message).not.toContain('timestamp(')
+    expect(found?.message).not.toContain('one precision')
+  })
+
+  test('on a date and time is offered `timestamp()` too, where the literal is an instant', () => {
+    // An instant is what `timestamp()` reads, so wrapping both sides compares the two instants,
+    // to the millisecond; without it the author is not told the one way that needs no rewriting.
+    const [found] = crossWidthComparisons(trip([visible('fine > "2026-10-08T10:00:00Z"')]))
+
+    expect(found?.message).toContain('2026-10-08T09:30:00.000Z')
+    expect(found?.message).toContain('`timestamp()`')
+  })
+
+  test('on a date and time is not offered `timestamp()` where the literal is no instant', () => {
+    // `timestamp("2026-10-08")` errors as a time does, and the rule would fail open.
+    const [found] = crossWidthComparisons(trip([visible('fine > "2026-10-08"')]))
+
+    expect(found?.message).toContain('2026-10-08T09:30:00.000Z')
+    expect(found?.message).not.toContain('timestamp(')
   })
 
   test('is not reported at the field’s width', () => {
@@ -96,6 +116,76 @@ describe('two temporal fields compared', () => {
   test('is reported for a date and a precision-1 time, whose lengths are equal', () => {
     // Both are ten characters; a length test lets the comparison of a date with a time through.
     expect(crossWidthComparisons(trip([visible('leave < coarse')]))).toHaveLength(1)
+  })
+
+  test('two dates and times are told to share one precision, or to compare through `timestamp()` as the rule reads them', () => {
+    // Both ways work for two instants. Written on the rule's own reads and operator, the
+    // expression can be copied; `timestamp(a) < timestamp(b)` names no field of this form.
+    const [found] = crossWidthComparisons(trip([visible('finer >= fine')]))
+
+    expect(found?.message).toContain('one precision')
+    expect(offered(found?.message)).toEqual(['timestamp(finer) >= timestamp(fine)'])
+  })
+
+  test('two times are told to share one precision, and never `timestamp()`', () => {
+    // `timestamp()` errors on a time of day, so a rule following that advice fails open.
+    const [found] = crossWidthComparisons(trip([visible('opens < coarse')]))
+
+    expect(found?.message).toContain('one precision')
+    expect(found?.message).not.toContain('timestamp(')
+  })
+
+  test.each([
+    ['leave < fine', 'leave < fine.substring(0, 10)'],
+    ['fine >= leave', 'fine.substring(0, 10) >= leave'],
+  ])('a date with a date and time is told they are different kinds, and how to compare the instant’s day: %s', (cel, written) => {
+    // Neither remedy for one kind works: a date has no precision to give, and `timestamp()`
+    // errors on it, so the rule would fail open. The instant's own day is a date, and compares
+    // as one, on whichever side the rule put it.
+    const [found] = crossWidthComparisons(trip([visible(cel)]))
+
+    expect(found?.message).toContain('different kinds of answer')
+    expect(found?.message).toContain('UTC')
+    expect(found?.message).not.toContain('one precision')
+    expect(found?.message).not.toContain('timestamp(')
+    expect(offered(found?.message)).toEqual([written])
+  })
+
+  test.each(['leave < coarse', 'opens < fine'])(
+    'a time with a date, or with a date and time, is told they are different kinds, and offered nothing to write: %s',
+    (cel) => {
+      // A time of day is the respondent's own clock and names no day, so neither `timestamp()`
+      // nor a precision makes it comparable with a day or an instant; offering either sends
+      // the author to a rule that fails open or to a second refusal.
+      const [found] = crossWidthComparisons(trip([visible(cel)]))
+
+      expect(found?.message).toContain('different kinds of answer')
+      expect(found?.message).not.toContain('one precision')
+      expect(found?.message).not.toContain('timestamp(')
+      expect(offered(found?.message)).toEqual([])
+    },
+  )
+
+  test('each expression a refusal offers runs on answers at the fields’ widths', () => {
+    // An offered expression that errors is the defect this check exists to refuse, a rule
+    // that fails open, delivered by the check's own sentence.
+    const schema = trip([visible('fine < finer'), visible('leave < fine'), visible('fine >= leave'), visible('item.at < finer', 'legs[].at')])
+    const values = {
+      fine: '2026-10-08T09:30:00.000Z',
+      finer: '2026-10-08T09:30:00.000001Z',
+      leave: '2026-10-08',
+      item: { at: '2026-10-08T09:30:00.000Z' },
+    }
+    const expressions = crossWidthComparisons(schema).flatMap(({ message }) => offered(message))
+
+    expect(expressions).toHaveLength(4)
+    for (const expression of expressions) {
+      const compiled = compile(expression, { kind: 'visible', variables: { fine: 'dyn', finer: 'dyn', leave: 'dyn', item: 'dyn' } })
+      expect(compiled.ok, expression).toBe(true)
+      if (!compiled.ok) continue
+      const outcome = evaluate(compiled.program, values, { capabilities: fixedCapabilities({ nowMs: 0, today: '2026-10-08', random: 0 }) })
+      expect(outcome.ok, expression).toBe(true)
+    }
   })
 
   test('is not reported through `timestamp()`, the way out the refusal itself offers', () => {
@@ -168,13 +258,35 @@ describe('what else is and is not a cross-width comparison', () => {
     expect(offered(crossWidthComparisons(schema)[0]?.message)).toEqual(['has(stay.at)'])
   })
 
+  test.each([
+    ['opens == ""', 'note', 'opens == null'],
+    ['item.at == ""', 'legs[].at', 'item.at == null'],
+    ['stay.at == ""', 'note', '!has(stay.at)'],
+  ])('`%s` asks whether it was left unanswered, and is answered with the test that asks that', (cel, target, idiom) => {
+    // `==` asks the opposite of `!=`. Offered `opens != null`, an author copying it into
+    // `opens == ""` inverted the rule: the field showed for every answer and hid for none.
+    const schema = trip([visible(cel, target)])
+    schema.model.fields.push({ key: 'stay', type: 'group', fields: [{ key: 'at', type: 'time', label: 'At', precision: 3 }] })
+
+    const [found] = crossWidthComparisons(schema)
+
+    expect(offered(found?.message)).toEqual([idiom])
+  })
+
   test('each way the empty literal message offers compiles as the rule it would replace', () => {
     // A sentence naming an idiom the parser refuses is a second refusal, at the next publish.
-    const schema = trip([visible('opens != ""'), visible('item.at != ""', 'legs[].at'), visible('stay.at != ""')])
+    const schema = trip([
+      visible('opens != ""'),
+      visible('item.at != ""', 'legs[].at'),
+      visible('stay.at != ""'),
+      visible('opens == ""'),
+      visible('item.at == ""', 'legs[].at'),
+      visible('stay.at == ""'),
+    ])
     schema.model.fields.push({ key: 'stay', type: 'group', fields: [{ key: 'at', type: 'time', label: 'At', precision: 3 }] })
     const idioms = crossWidthComparisons(schema).flatMap(({ message }) => offered(message))
 
-    expect(idioms).toHaveLength(3)
+    expect(idioms).toHaveLength(6)
     for (const idiom of idioms) {
       const compiled = compile(idiom, { kind: 'visible', variables: { opens: 'dyn', item: 'dyn', stay: 'dyn' } })
       expect(compiled.ok, idiom).toBe(true)
