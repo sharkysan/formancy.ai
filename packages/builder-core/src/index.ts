@@ -102,10 +102,10 @@ export {
   emptyRow,
   groupOf,
   isRowGroup,
+  isTypedTemporal,
   removeFromDraft,
   rowsOf,
   setJoin,
-  typedTemporal,
   updateRow,
 } from './condition-draft.js'
 export type { ConditionDraft, ConditionField, ConditionRow, DraftPlace, RowGroup } from './condition-draft.js'

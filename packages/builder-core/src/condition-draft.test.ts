@@ -11,9 +11,9 @@ import {
   emptyDraft,
   emptyRow,
   groupOf,
+  isTypedTemporal,
   removeFromDraft,
   setJoin,
-  typedTemporal,
   updateRow,
 } from './condition-draft.js'
 import type { ConditionDraft, ConditionField, ConditionRow } from './condition-draft.js'
@@ -465,7 +465,7 @@ describe('a time or a date and time with a precision compared', () => {
   test('the field carries its precision to the editor, and one predicate says which are typed', () => {
     // Without it the editor cannot tell which control to draw or which width to write, and two
     // panels asking separately could answer differently.
-    expect(logFields.filter(typedTemporal).map((field) => field.path)).toEqual(['at', 'clock'])
+    expect(logFields.filter(isTypedTemporal).map((field) => field.path)).toEqual(['at', 'clock'])
     expect(logFields.find((field) => field.path === 'at')?.precision).toBe(3)
     expect(logFields.find((field) => field.path === 'shown')?.precision).toBeUndefined()
   })

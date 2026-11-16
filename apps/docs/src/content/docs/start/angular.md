@@ -311,7 +311,10 @@ export class Started {
   fraction copied digit for digit; an entry that stops short is emitted as the text typed, for a
   shape check to refuse, never completed.
 - `readOnly` and `placeholder` are inputs; the placeholder is the mask unless you give one. The
-  element keeps every attribute you put on it, its `id` and `aria-*` among them.
+  directive sets `type` (`text`), `value`, `readOnly`, `placeholder` and `inputmode` (`numeric`)
+  on the element itself, from its inputs and the mask, so leave those to it, and it listens for
+  `input`, `paste` and `drop`. Any other attribute you put on the element, its `id`, `name` and
+  `aria-*` among them, is kept.
 - It emits only what the person types, pastes or drops, never on mount.
 
 ## The other inject helpers

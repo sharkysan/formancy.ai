@@ -370,8 +370,11 @@ import { TypedTemporalInput } from '@formancy/react'
   emptied. A `datetime` is typed on the person's own clock and reported as the UTC instant, its
   fraction copied digit for digit; an entry that stops short is reported as the text typed, for a
   shape check to refuse, never completed.
-- `readOnly`, `placeholder` and every other attribute of an `input`, including `ref`, are passed to
-  the box. Its placeholder is the mask unless you give one.
+- `readOnly`, `placeholder`, `ref` and the other props of an `input` — `id`, `name`, `aria-*`,
+  `onBlur` — are passed to the box. Its placeholder is the mask unless you give one. The props
+  type leaves out the ones the control decides: `type`, always `text`; `inputMode`, `numeric`;
+  `value` and `defaultValue`, which `value` above replaces; and `onChange`, `onPaste` and
+  `onDrop`, through which it reads what is typed, pasted and dropped.
 - It reports only what the person types, pastes or drops, never on mount.
 
 ## The rest of the hook family

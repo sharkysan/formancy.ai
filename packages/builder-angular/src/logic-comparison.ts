@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core'
 import { FormancyTypedTemporalInput } from '@formancy/angular'
-import { comparisonLabel, operatorLabel, operatorTakesValue, operatorsFor, typedTemporal } from '@formancy/builder-core'
+import { comparisonLabel, isTypedTemporal, operatorLabel, operatorTakesValue, operatorsFor } from '@formancy/builder-core'
 import type { BuilderText, ConditionField, ConditionRow, Operator } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -126,7 +126,7 @@ export class FormancyLogicComparison {
   /** A time or a date and time that declares a precision is typed into a mask (0238), not the browser's box. */
   protected readonly typed = computed(() => {
     const field = this.field()
-    return typedTemporal(field) ? field : undefined
+    return isTypedTemporal(field) ? field : undefined
   })
   protected readonly inputType = computed(() => INPUT_TYPE[this.field()?.kind ?? 'other'] ?? 'text')
 

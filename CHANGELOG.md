@@ -63,11 +63,11 @@ control is still the browser's, to the minute
 - **The playground's starter** has a date and time to the millisecond and a time to the second
   with a bound.
 - **The condition editors write a literal at the field's width.** On a time or a date and time that
-  declares a `precision`, both builders' value box is the same typed control the renderers use, with its
-  mask as the hint, and the literal is written at that width: digits typed on the author's own clock
-  become the UTC instant with the fraction copied, `at > "2026-11-15T13:03:27.415Z"`, and a pasted
-  instant is kept as that instant. Before, a rule on such a field was written at version 5's width
-  and refused at publish as a comparison across widths. A field without a `precision` keeps the
+  declares a `precision`, both builders' value box is the same typed control the renderers use, with
+  its mask as the hint, and the literal is written at that width: digits typed on the author's own
+  clock become the UTC instant with the fraction copied, `at > "2026-11-15T13:03:27.415Z"`, and a
+  pasted instant is kept as that instant. Before, a rule on such a field was written at version 5's
+  width and refused at publish as a comparison across widths. A field without a `precision` keeps the
   browser's box ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 - **Changing a field's precision in a builder carries the field and its rules along, or refuses.**
   Setting `precision` in the property panel used to change that property alone, so the field's
@@ -100,14 +100,20 @@ control is still the browser's, to the minute
   `typedFromStored`, `storedFromTyped`, `pasteOutcome` and the type `TypedTemporalType` in
   `@formancy/spec`; `comparedFields` and its type
   `ComparedFields`, and `rewriteComparedLiterals`, which writes the strings a field is compared with
-  again in place, in `@formancy/expressions`; `crossWidthComparisons` and its type
-  `CrossWidthComparison`, and `inModel` and `rowScopeOf`, which say which field a rule's read names,
-  in `@formancy/core/authoring`; `typedTemporal` in `@formancy/builder-core`.
-  The typed control is public too, for a host that draws a time or an instant of its own: `TypedTemporalInput`
-  and its props type in `@formancy/react`, and the directive `FormancyTypedTemporalInput` in
-  `@formancy/angular`, each taking the stored answer and reporting the stored answer. A host that translates the renderer's
-  words adds one, `error.shape.day`, the shape error on a date and time with a precision, which
-  also asks for a day that exists.
+  again in place, in `@formancy/expressions`, refusing with a `policy` error coded
+  `rewrite_literal_not_plain` for a literal written with an escape or as a raw or triple-quoted
+  string, `rewrite_broke_source` when the result would not parse and `rewrite_changed_comparisons`
+  when it would compare something else, and passing a parse error through;
+  `crossWidthComparisons` and its type `CrossWidthComparison`, and `inModel` and `rowScopeOf`, which
+  say which field a rule's read names, in `@formancy/core/authoring`; `isTypedTemporal`, and
+  `precision` on `ConditionField`, present on a time or a date and time that declares one, in
+  `@formancy/builder-core`. The typed control is public too, for a host that draws a time or an
+  instant of its own: `TypedTemporalInput` and its props type in `@formancy/react`, and the
+  directive `FormancyTypedTemporalInput` in `@formancy/angular`, each taking the stored answer and
+  reporting the stored answer. A host that translates the renderer's words adds one,
+  `error.shape.day`, the shape error on a date and time with a precision, which also asks for a day
+  that exists; its `{format}` is an answer as the person types it, `2026-10-08 09:30:00.000` on
+  their own clock, since the stored form's `T` and `Z` have no place in the control's mask.
 
 Version 6 is open and in no release. `0.13.0` and earlier refuse every document declaring `"6"`, not
 only one using `precision`, and this source writes `"6"` for every new form, so upgrade the readers

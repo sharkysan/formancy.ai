@@ -242,7 +242,7 @@ export function conditionOf(row: ConditionRow, fields: readonly ConditionField[]
   if (!operatorTakesValue(row.operator)) return { field: row.field, operator: row.operator, answer }
   // A field typed into the mask holds its stored answer in the row, as the renderer's field holds
   // it (0238): the instant, or the partial the mask holds, which publish's shape check refuses.
-  const typed = typedTemporal(fields.find((candidate) => candidate.path === row.field))
+  const typed = isTypedTemporal(fields.find((candidate) => candidate.path === row.field))
   return { field: row.field, operator: row.operator, value: typed ? row.text : narrowed(answer, row.text), answer }
 }
 
@@ -252,7 +252,7 @@ export function conditionOf(row: ConditionRow, fields: readonly ConditionField[]
  * conversion in `conditionOf` and for both panels' choice of control, so what is drawn and
  * what is written cannot disagree about which fields are typed.
  */
-export function typedTemporal(field: ConditionField | undefined): field is ConditionField & { kind: 'time' | 'datetime'; precision: number } {
+export function isTypedTemporal(field: ConditionField | undefined): field is ConditionField & { kind: 'time' | 'datetime'; precision: number } {
   return field?.precision !== undefined && (field.kind === 'time' || field.kind === 'datetime')
 }
 

@@ -14,6 +14,7 @@ import {
   emptyDraft,
   groupOf,
   isRowGroup,
+  isTypedTemporal,
   kindWrites,
   operatorLabel,
   operatorTakesValue,
@@ -27,7 +28,6 @@ import {
   ruleKindsFor,
   ruleTargetFor,
   setJoin,
-  typedTemporal,
   updateRow,
 } from '@formancy/builder-core'
 import type { ConditionDraft, ConditionField, ConditionGroup, ConditionRow, DraftPlace, Operator } from '@formancy/builder-core'
@@ -426,7 +426,7 @@ function ValueControl({
   }
   // A time or a date and time with a precision is typed into the mask its width gives (0238); the
   // browser's boxes hold minutes, or milliseconds at best.
-  if (typedTemporal(field)) {
+  if (isTypedTemporal(field)) {
     return <TypedTemporalInput type={field.kind} precision={field.precision} value={value} onChange={(answer) => onChange(answer ?? '')} />
   }
   return <input type={INPUT_TYPE[kind] ?? 'text'} value={value} onChange={(event) => onChange(event.target.value)} />
