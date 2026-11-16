@@ -17,7 +17,7 @@ export type { ParseOptions, ParseOutcome } from './parse.js'
 export type { ExpressionAst } from './ast.js'
 
 export { referencedPaths } from './references.js'
-export { comparedFields, comparedLiterals } from './compared-literals.js'
+export { comparedFields, comparedLiterals, rewriteComparedLiterals } from './compared-literals.js'
 export type { ComparedFields, ComparedLiteral, ComparisonOperator } from './compared-literals.js'
 
 export { rewritePath } from './rewrite.js'

@@ -1,8 +1,10 @@
 import schema from '@formancy/spec/schema.json' with { type: 'json' }
 import { showsOptionImages } from '@formancy/spec'
-import type { FieldDef } from '@formancy/spec'
+import type { FieldDef, FormSchema } from '@formancy/spec'
 import { createBuilderText } from './messages.js'
 import type { BuilderText } from './messages.js'
+import { locate } from './navigate.js'
+import type { Refusal } from './session.js'
 
 /**
  * What the property panel offers for a field, read out of the spec's own JSON
@@ -14,6 +16,10 @@ import type { BuilderText } from './messages.js'
  * already says which properties belong to which type — that is what its
  * `allOf` / `if` / `then` branches are — so reading them is both less code and
  * the only version that cannot drift.
+ *
+ * `setProperty` is the other half: how one edited property reaches the field. The precision of a
+ * time or a date and time is the exception, which `reprecision.ts` carries along with its bounds,
+ * its default and its rules.
  */
 
 export type PropertyKind = 'string' | 'number' | 'boolean' | 'enum' | 'options' | 'columns' | 'strings'
@@ -299,4 +305,15 @@ function inLanguage(property: EditableProperty, text: BuilderText): EditableProp
     title: text.schema(property.title),
     description: property.description === '' ? '' : text.schema(property.description),
   }
+}
+
+/** Set one property of the field at `keyPath` on a working copy, or remove it when `value` is undefined. */
+export function setProperty(draft: FormSchema, keyPath: readonly string[], property: string, value: unknown, text: BuilderText): Refusal | undefined {
+  const found = locate(draft, keyPath)
+  if (found === undefined) return { ok: false, path: '/model/fields', message: text('refuse.noField', { path: keyPath.join('.') }) }
+  const field = found.siblings[found.index]! as unknown as Record<string, unknown>
+  // A JSON round trip, as the session copies a document: it is JSON by definition.
+  if (value === undefined) delete field[property]
+  else field[property] = JSON.parse(JSON.stringify(value)) as unknown
+  return undefined
 }

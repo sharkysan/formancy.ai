@@ -1,10 +1,11 @@
 import { provideZonelessChangeDetection } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
+import { crossWidthComparisons } from '@formancy/core/authoring'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { FormancyLogicPanel } from './logic-panel'
 
@@ -52,6 +53,12 @@ interface Mounted {
   click(element: Element): Promise<void>
   type(element: Element, text: string): Promise<void>
   select(element: Element, value: string): Promise<void>
+  /** Pastes at the focused control, then lets the view settle. */
+  paste(text: string): Promise<void>
+  /** Presses keys at the focused control, then lets the view settle. */
+  keyboard(keys: string): Promise<void>
+  /** Lets the view settle after an event the test dispatched itself. */
+  settle(): Promise<void>
 }
 
 const mountOn = async (keyPath: readonly string[], document: FormSchema = paged): Promise<Mounted> => {
@@ -80,6 +87,15 @@ const mountOn = async (keyPath: readonly string[], document: FormSchema = paged)
       await user.selectOptions(element, value)
       await settle()
     },
+    paste: async (text) => {
+      await user.paste(text)
+      await settle()
+    },
+    keyboard: async (keys) => {
+      await user.keyboard(keys)
+      await settle()
+    },
+    settle,
   }
 }
 
@@ -426,5 +442,139 @@ describe('a rule on a field in a repeater row', () => {
 
     expect(session.document().logic?.rules).toMatchObject([{ target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty >= 3.0' }])
     expect(session.canPublish().valid).toBe(true)
+  })
+})
+
+describe('a time or a date and time with a precision (0238)', () => {
+  const log: FormSchema = {
+    specVersion: '6',
+    id: 'log',
+    title: 'Log',
+    model: {
+      fields: [
+        { key: 'at', type: 'datetime', label: 'At', precision: 3 },
+        { key: 'clock', type: 'time', label: 'Clock', precision: 0 },
+        { key: 'plain', type: 'datetime', label: 'Plain' },
+        { key: 'note', type: 'text', label: 'Note' },
+      ],
+    },
+  }
+
+  const started = Intl.DateTimeFormat().resolvedOptions().timeZone
+  afterEach(() => {
+    vi.stubEnv('TZ', started)
+    vi.unstubAllEnvs()
+  })
+
+  const open = async (field: string, operator = 'isAfter') => {
+    const mounted = await mountOn(['note'], log)
+    await mounted.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await mounted.select(screen.getByLabelText('Field'), field)
+    await mounted.select(screen.getByLabelText('Comparison'), operator)
+    return { ...mounted, box: () => screen.getByLabelText<HTMLInputElement>('Value') }
+  }
+
+  test('its value box is typed, with the mask as the hint', async () => {
+    // Left as the browser's datetime-local, a seventh digit cannot be typed and the rule
+    // written is refused at publish.
+    const { box } = await open('at')
+
+    expect(box().type).toBe('text')
+    expect(box().placeholder).toBe('____-__-__ __:__:__.___')
+    expect(box().inputMode).toBe('numeric')
+  })
+
+  test('digits typed are written as the instant at the field width', async () => {
+    // Written at version 5's width, to the second, the rule is a comparison across widths, which
+    // the validator does not read and publish refuses. `canPublish` is the validator's verdict, so
+    // the check asked is publish's own.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { session, type, click, box } = await open('at')
+    await type(box(), '20261115140327415')
+    await click(screen.getByRole('button', { name: 'Add rule' }))
+
+    expect(crossWidthComparisons(session.document())).toEqual([])
+    expect(session.document().logic?.rules).toMatchObject([{ cel: 'at != null && at > "2026-11-15T13:03:27.415Z"' }])
+  })
+
+  test('a pasted UTC instant is stored as that instant', async () => {
+    // Read as typing, an instant's Z is dropped and its digits become the author's own clock.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { click, paste, box } = await open('at')
+    await click(box())
+    await paste('2026-11-15T13:03:27.415Z')
+
+    expect(screen.getByText('at != null && at > "2026-11-15T13:03:27.415Z"')).toBeTruthy()
+  })
+
+  test('a pasted instant in the hour the clocks repeat is kept as it was', async () => {
+    // Zurich shows 02:30 twice on 25 October. A row holding the typed digits turned the later
+    // 01:30Z into the earlier 00:30Z; the renderer keeps it, and so must the editor.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { click, paste, box } = await open('at', 'is')
+    await click(box())
+    await paste('2026-10-25T01:30:00.000Z')
+
+    expect(screen.getByText('at == "2026-10-25T01:30:00.000Z"')).toBeTruthy()
+  })
+
+  test('a dropped instant is stored as that instant', async () => {
+    // A drop reaching the mask as typing dropped the Z and stored the digits as the author's clock.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { settle, box } = await open('at')
+    const drop = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent
+    Object.defineProperty(drop, 'dataTransfer', { value: { getData: () => '2026-11-15T13:03:27.415Z' } })
+    box().dispatchEvent(drop)
+    await settle()
+
+    expect(screen.getByText('at != null && at > "2026-11-15T13:03:27.415Z"')).toBeTruthy()
+  })
+
+  test('a dropped instant in the hour the clocks repeat is kept as it was', async () => {
+    // As for a paste: the later 01:30Z must not come back as the earlier 00:30Z.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { settle, box } = await open('at', 'is')
+    const drop = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent
+    Object.defineProperty(drop, 'dataTransfer', { value: { getData: () => '2026-10-25T01:30:00.000Z' } })
+    box().dispatchEvent(drop)
+    await settle()
+
+    expect(screen.getByText('at == "2026-10-25T01:30:00.000Z"')).toBeTruthy()
+  })
+
+  test('digits pasted into part of the box are typed there', async () => {
+    // A fragment is typing, placed by the mask as the same keystrokes, not an answer of its own.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { type, paste, box } = await open('at')
+    await type(box(), '20261115')
+    await paste('1403')
+
+    expect(box().value.startsWith('2026-11-15 14:03')).toBe(true)
+  })
+
+  test('Delete removes the digit after the caret', async () => {
+    // Read as a backspace, the mask removed the digit before the caret instead.
+    const { type, keyboard, box } = await open('at')
+    await type(box(), '2026')
+    box().setSelectionRange(0, 0)
+    await keyboard('{Delete}')
+
+    expect(box().value.startsWith('026')).toBe(true)
+  })
+
+  test('a time with a precision is typed and written as typed', async () => {
+    // A time is not zoned, so its stored answer is its digits formatted.
+    const { type, box } = await open('clock')
+    await type(box(), '140327')
+
+    expect(box().placeholder).toBe('__:__:__')
+    expect(screen.getByText('clock != null && clock > "14:03:27"')).toBeTruthy()
+  })
+
+  test('a field without a precision keeps the browser box', async () => {
+    // The version 5 control is unchanged for a field that declares none.
+    const { box } = await open('plain')
+
+    expect(box().type).toBe('datetime-local')
   })
 })

@@ -30,6 +30,12 @@ export interface ConditionField {
   kind: AnswerKind
   /** For a choice or a list: what may be compared with, as the field offers it. */
   options: ReadonlyArray<{ value: string; label: string }>
+  /**
+   * A `time` or a `datetime` field's declared `precision` (0238). Present, `row.text` holds the
+   * stored answer, as the renderer's field holds it, typed into the mask `@formancy/spec` derives
+   * from it and written as the literal; absent, the field is version 5's and its box is the browser's.
+   */
+  precision?: number
 }
 
 /**
@@ -74,6 +80,7 @@ export function conditionFields(document: FormSchema, about?: { target: string; 
         path: `${scope}${field.key}`,
         label: inRow && about !== undefined ? about.text('logic.field.inRow', { field: name }) : name,
         kind: answerKindOf(field),
+        ...(typeof field.precision === 'number' && (field.type === 'time' || field.type === 'datetime') ? { precision: field.precision } : {}),
         options: (field.options ?? []).map((option) => ({
           value: option.value,
           label: resolveText(document, option.label, locale) || option.value,
@@ -117,6 +124,8 @@ export interface DraftPlace {
   at: number
   group?: number
 }
+
+const precisionOf = (fields: readonly ConditionField[], path: string): number | undefined => fields.find((field) => field.path === path)?.precision
 
 const kindOf = (fields: readonly ConditionField[], path: string): AnswerKind => fields.find((field) => field.path === path)?.kind ?? 'other'
 
@@ -189,7 +198,8 @@ export function updateRow(draft: ConditionDraft, place: DraftPlace, change: Part
     return {
       ...merged,
       operator: allowed.includes(merged.operator) ? merged.operator : allowed[0]!,
-      text: was === now ? merged.text : startingText(now),
+      // A typed answer means nothing at another width, or beside the browser's box.
+      text: was === now && precisionOf(fields, row.field) === precisionOf(fields, change.field) ? merged.text : startingText(now),
     }
   }
   if (place.group !== undefined) {
@@ -230,7 +240,20 @@ function mapGroup(draft: ConditionDraft, at: number, change: (group: RowGroup) =
 export function conditionOf(row: ConditionRow, fields: readonly ConditionField[]): Condition {
   const answer = kindOf(fields, row.field)
   if (!operatorTakesValue(row.operator)) return { field: row.field, operator: row.operator, answer }
-  return { field: row.field, operator: row.operator, value: narrowed(answer, row.text), answer }
+  // A field typed into the mask holds its stored answer in the row, as the renderer's field holds
+  // it (0238): the instant, or the partial the mask holds, which publish's shape check refuses.
+  const typed = isTypedTemporal(fields.find((candidate) => candidate.path === row.field))
+  return { field: row.field, operator: row.operator, value: typed ? row.text : narrowed(answer, row.text), answer }
+}
+
+/**
+ * Whether a field's value is typed into the mask `@formancy/spec` derives (0238), not the
+ * browser's box: a time or a date and time that declares a `precision`. One decision for the
+ * conversion in `conditionOf` and for both panels' choice of control, so what is drawn and
+ * what is written cannot disagree about which fields are typed.
+ */
+export function isTypedTemporal(field: ConditionField | undefined): field is ConditionField & { kind: 'time' | 'datetime'; precision: number } {
+  return field?.precision !== undefined && (field.kind === 'time' || field.kind === 'datetime')
 }
 
 function narrowed(answer: AnswerKind, text: string): string | number | boolean {

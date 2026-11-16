@@ -62,22 +62,64 @@ control is still the browser's, to the minute
   to the second, with every digit after it.
 - **The playground's starter** has a date and time to the millisecond and a time to the second
   with a bound.
-- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same
-  shapes precompiled, so a host's own check need not compile a pattern), `temporalExample`,
-  `temporalDateExists`, `temporalEntryMask`, `typedFromStored`, `storedFromTyped`, `pasteOutcome`
-  and the type `TypedTemporalType` in `@formancy/spec`; `comparedFields` and its type
-  `ComparedFields` in `@formancy/expressions`; `crossWidthComparisons` and its type
-  `CrossWidthComparison` in `@formancy/core/authoring`. A host that translates the renderer's
-  words adds one, `error.shape.day`, the shape error on a date and time with a precision, which
-  also asks for a day that exists.
+- **The condition editors write a literal at the field's width.** On a time or a date and time that
+  declares a `precision`, both builders' value box is the same typed control the renderers use, with
+  its mask as the hint, and the literal is written at that width: digits typed on the author's own
+  clock become the UTC instant with the fraction copied, `at > "2026-11-15T13:03:27.415Z"`, and a
+  pasted instant is kept as that instant. Before, a rule on such a field was written at version 5's
+  width and refused at publish as a comparison across widths. A field without a `precision` keeps the
+  browser's box ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
+- **Changing a field's precision in a builder carries the field and its rules along, or refuses.**
+  Setting `precision` in the property panel used to change that property alone, so the field's
+  `earliest`, `latest` and `default` were left at the old width and the validator refused the
+  document at once, and a literal in a rule that compares the field stayed at the old width and was
+  refused only at publish. Now the bounds, the default, the text of each such literal and the value
+  the visual editor reopens the rule from are written at the new width when that names the same
+  moment: widening pads with zeros, narrowing cuts only zeros, and a time that loses its precision
+  becomes `HH:MM` when its seconds are zero, since `HH:MM` has always meant seconds 00.
+  `08:00:00.250` at precision 3 cannot become precision 0 without moving by a quarter of a second,
+  so the change is refused, and the document is left as it was: a bound in the validator's own
+  sentence, and a default and a rule literal each in a sentence of the builder's naming it, pointed
+  at that default or that rule, since the validator holds no default to a width and reads no rule's
+  condition. A default left behind used to be accepted, and the form then refused to open. A field
+  inside a page is carried like any other. A rule comparing two such fields with each other,
+  `opens < closes`, is right only while both have one shape and no edit to one field changes the
+  other, so a change that would split a pair that is alike is refused, naming the other field; the
+  author removes the rule, changes both and writes it again. To go from one precision to another,
+  type over the number: clearing the box first removes the precision, which is exact when nothing
+  written at the field's width has digits the removal would drop (a time's seconds and fraction, a
+  date and time's fraction), and otherwise refused. The builder never guesses a value. The rewrite
+  changes only the characters of the literal, so the author's spacing and quotes survive
+  ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)). Saved examples are
+  not rewritten. A host that translates the builder's words adds the refusals'
+  `refuse.precisionRule`, `refuse.precisionForm`, `refuse.precisionPair` and
+  `refuse.precisionDefault`.
+- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`,
+  `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same shapes precompiled, so a host's own
+  check need not compile a pattern), `temporalExample`, `temporalDateExists`, `temporalEntryMask`,
+  `typedFromStored`, `storedFromTyped`, `pasteOutcome` and the type `TypedTemporalType` in
+  `@formancy/spec`; `comparedFields` and its type
+  `ComparedFields`, and `rewriteComparedLiterals`, which writes the strings a field is compared with
+  again in place, in `@formancy/expressions`, refusing with a `policy` error coded
+  `rewrite_literal_not_plain` for a literal written with an escape or as a raw or triple-quoted
+  string, `rewrite_broke_source` when the result would not parse and `rewrite_changed_comparisons`
+  when it would compare something else, and passing a parse error through;
+  `crossWidthComparisons` and its type `CrossWidthComparison`, and `inModel` and `rowScopeOf`, which
+  say which field a rule's read names, in `@formancy/core/authoring`; `isTypedTemporal`, and
+  `precision` on `ConditionField`, present on a time or a date and time that declares one, in
+  `@formancy/builder-core`. The typed control is public too, for a host that draws a time or an
+  instant of its own: `TypedTemporalInput` and its props type in `@formancy/react`, and the
+  directive `FormancyTypedTemporalInput` in `@formancy/angular`, each taking the stored answer and
+  reporting the stored answer. A host that translates the renderer's words adds one,
+  `error.shape.day`, the shape error on a date and time with a precision, which also asks for a day
+  that exists; its `{format}` is an answer as the person types it, `2026-10-08 09:30:00.000` on
+  their own clock, since the stored form's `T` and `Z` have no place in the control's mask.
 
 Version 6 is open and in no release. `0.13.0` and earlier refuse every document declaring `"6"`, not
 only one using `precision`, and this source writes `"6"` for every new form, so upgrade the readers
 before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). A
 change to `precision` is `field.changed` and lossy, and submissions already stored keep the width
-they were written in. The builders' property panels offer `precision`; their condition editors still
-write a time to the minute and a date and time to the second, so a rule they write on a time with a
-precision, or on a date and time with one above 0, is refused at publish, not published wrong.
+they were written in. The builders' property panels offer `precision`.
 
 **Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
 release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,

@@ -10,6 +10,12 @@
   whose check this one refuses where 0236 warns, and whose `has()` for a field at the top it
   corrects; and
   [0125](0125-a-mask-stores-what-was-typed.md), whose mask core the typed control is built on.
+- **History:** amended on 2026-11-16, when the builders' condition editors began to write a literal
+  at the field's width. The consequence below that said they would not, and that a rule they wrote
+  would be refused at publish, held for the length of the first change only. Amended again on
+  2026-11-16, when changing a field's precision in a builder began to carry the field's bounds, its
+  default and the literals in rules along, or to refuse, and the shape error under a typed date and
+  time began to give its example as the person types it.
 - **Verified by:**
   - `packages/spec/src/temporal.test.ts`, *the canonical shapes*: each type and precision accepts
     its own width and refuses its neighbours; answers of one width sort as text in the order they
@@ -45,7 +51,10 @@
     `packages/builder-core/src/authoring.test.ts` report it as publish refuses it.
   - `packages/core/src/default.test.ts`, *of the wrong shape on a time or an instant says how an
     answer there is written*: it failed before the refusal named the width, and a field without a
-    precision keeps 0.13.0's sentence.
+    precision keeps 0.13.0's sentence. `packages/core/src/error-words.test.ts`, *an instant of the
+    wrong shape, on a field with a precision, is asked for as it is typed*, and the `error.shape.day`
+    case of both renderers' `words` tests: the error under the control gives its example on the
+    person's clock, `2026-10-08 09:30:00.000`, and each failed while it gave the stored form.
   - `packages/expressions/src/evaluate.test.ts`, *compares timestamps to the millisecond, cutting
     the rest, as the documents say*: a cel-js release that compared finer, or rounded, would fail
     it.
@@ -63,6 +72,42 @@
     width, and an entry that stops short refused as `shape`. Removing the typed control from a
     renderer failed it. `scripts/temporal-entry-browser-test.mjs`, in `pnpm test:browser`: the
     starter's precision-0 time typed key by key in Chromium, in both renderers.
+  - `packages/builder-react/src/logic-panel.test.tsx` and
+    `packages/builder-angular/src/logic-panel.test.ts`, *a time or a date and time with a
+    precision*: *digits typed are written as the instant at the field width* types into the
+    editor, adds the rule and asserts that `crossWidthComparisons`, publish's own check, finds
+    nothing in the document, which failed with the editor writing the instant to the second, at
+    version 5's width. `canPublish` is the validator's verdict, which reads no rule's condition, so
+    it is not asked;
+    a paste and a drop of an instant in the hour the clocks repeat are kept as they were, which
+    failed, reading the later 01:30Z as 00:30Z, while a row held the typed digits. A dropped
+    instant failed with the shared control's drop handling removed.
+  - `packages/builder-core/src/condition-draft.test.ts`, *a time or a date and time with a
+    precision compared*: a draft holding a version 5 wall clock on a precision field is written
+    unchanged, not read in a zone, which failed with that branch removed. Its *rule written is not
+    a comparison across widths* records the property and cannot fail at version 5's width, since
+    the control's answer is already the instant.
+  - `packages/builder-core/src/reprecision.test.ts`: widening pads a bound, a default, a rule's
+    literal and the editor's value, a row rule is found by the way it reads the field, and
+    `08:00:00` becomes `08:00`; narrowing `08:00:00.250` is refused, in the validator's sentence for
+    a bound and in the builder's for a rule, in German too, and the document is the very object it
+    was. Observed failing with the session's property command as it was. And
+    `packages/expressions/src/compared-literals.test.ts`, *rewriteComparedLiterals*: only the
+    literal's characters move. The panels offer the property on a time and a date and time only, in
+    German and French, and a typed digit carries the bound: `property-panel.test.tsx` and
+    `property-panel.test.ts` in the two builders. In `reprecision.test.ts` also: a field inside a
+    page, a group under one and a repeater under one, each failing with the rules looked up by the
+    key path; two fields compared with each other, refused when the change would split them and
+    not when they already differ or stay alike, failing with that check removed; and a literal
+    written with an escape, refused for its form, failing with that sentence routed to the width's.
+    A default that cannot follow is refused, pointed at that default, at the top and inside a page,
+    in German too, for a time, for a date and time and for a time losing its precision: each case
+    failed while the default was left at the old width and the session said ok. A rule's refusal
+    points at that rule, which failed while it pointed at the list; a value inside a group of the
+    visual editor is carried and refused, which failed with the recursion removed; and a rule that
+    does not parse is left alone, which failed with every rewrite error refused.
+  - `packages/react/src/fields/typed-temporal-input.test.tsx`: the exported control reports the
+    stored answer, not the digits, and a `ref` reaches its input.
 
 ## Context
 
@@ -211,13 +256,45 @@ line.
   supplied seconds to `00` when edited. Declaring a precision is the remedy.
 - **The error under the control cannot tell a missing digit from a missing day.** Both are
   `shape`, and the sentence is chosen without the answer, so on an instant with a precision it asks
-  for both: "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has." That example is the
-  stored form, in UTC with a `T` and a `Z`, under a control where the person types their own clock
-  with a space; saying it in the typed form is left to the builders' change.
-- **The builders follow separately.** Their property panels offer `precision`, read from the
-  schema; their condition editors still write a time to the minute and an instant to the second,
-  so a rule they write on a time with a precision, or on an instant with one above 0, is refused at
+  for both: "Enter it as 2026-10-08 09:30:00.000, on a day the calendar has." The example is written
+  as the control takes it, on the person's own clock with a space, and not in the stored form,
+  whose `T` and `Z` the mask has no place for. It is an example of the form, the same digits in
+  every zone, not an instant converted to the person's clock.
+- **The builders followed in a second change** (see **History**). Their property panels offered
+  `precision` from the first change, read from the schema; their condition editors, in this one,
+  type a literal on such a field into the renderers' own control, exported from `@formancy/react`
+  and `@formancy/angular` so that the author and the respondent type through one implementation,
+  and write the stored answer it reports as the literal, so the rule they write is not a comparison
+  across widths. The session's `canPublish` cannot say so, being the validator's verdict, which
+  reads no rule's condition; publish's `crossWidthComparisons` is the check. Before that change a
+  rule they wrote on a time with a precision, or on an instant with one above 0, was refused at
   publish, loudly, rather than published wrong.
+- **Changing a field's precision in a builder rewrites what is written at its width, or refuses.**
+  The field's `earliest`, `latest` and `default`, the text of every literal a rule compares it with
+  and the value the visual editor reopens that rule from are written at the new width when that is
+  the same moment: widening pads with zeros, narrowing cuts only zeros, and a time without a
+  precision is `HH:MM`, which has always meant seconds 00, so dropping the seconds is exact when
+  they are zero. Otherwise the change is refused and the document is left as it was, because a
+  session never holds a document the validator rejects and the builder never guesses a value: a
+  bound that cannot follow is refused in the validator's own sentence, `bounds.width`; a default,
+  which the validator does not hold to a width, in a sentence of the builder's naming it and pointed
+  at it, since left behind it was accepted and the form then refused to open; and a rule literal in
+  a sentence naming the rule, pointed at that rule, which the validator does not have, since it
+  reads no rule's condition. It costs a step for the author who narrows a precision on a field whose
+  bound or default has a fraction: that is changed first. When a default and a bound both cannot
+  follow, the default is refused first, and the bound on the next attempt. A literal that was not at
+  the old width is left, as it was a misshapen literal before. A comparison through a list rule's
+  own variable is not seen here, as it is not seen at publish, so it stays at the old width. Saved
+  examples (0166) are not rewritten; one that stops holding is named by publish's example warnings,
+  as today. A field inside a page is found by its data path, which has no page in it. **Two temporal
+  fields compared with each other** are refused, not rewritten: no edit to one changes the other, so
+  a change that would split a pair written in one shape is refused naming the other field, and the
+  author removes the rule, changes both and writes it again; a pair already split, or one that stays
+  alike (a date and time between 0 and none), is not refused. **Changing between two precisions is
+  one step**, by typing over the number: the panel reads a cleared box as removing the precision,
+  which is exact when nothing written at the field's width has digits the removal would drop (a
+  time's seconds and fraction, a date and time's fraction), and otherwise refused, leaving the old
+  precision in place.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.
@@ -252,3 +329,25 @@ of pasted and existing digits that nobody wrote.
 
 **Rounding to the field's width**, for a computed instant or a paste. Rejected: a rounded value is
 a reading the device never gave, and the next sort places it wrongly. Exact or refused.
+
+**Each builder binding its own typed box**, a local copy of the mask's handling in each condition
+editor, mirroring the renderers'. Built first and replaced: a paste and a drop are decided by
+`pasteOutcome`, but where the caret goes and what a deletion removes are each control's binding,
+and two more copies of that binding are 0091's silent divergence again. Exporting the renderers'
+control makes it public surface in `@formancy/react` and `@formancy/angular`, which is what it
+costs; the author and the respondent type through one implementation, which is what it buys.
+
+**A condition row holding the typed digits**, converted to the instant when the rule is written.
+Built first and replaced: a pasted or dropped instant became the author's clock in the row, and on
+the night the clocks go back that clock names two instants, so the later 01:30Z came back as the
+earlier 00:30Z. The row holds the stored answer the control reports, as the renderer's field does,
+and only the control converts, on the person's input.
+
+**Rewriting both fields of a compared pair**, or a command that changes both at once. Rejected:
+the author changes one field's precision and would find another field changed that they did not
+touch, its bounds, default and rules carried too, with refusals of its own to explain; and one
+change cannot always say which precision the author meant the pair to share. **Allowing the change
+and leaving the rule to publish** was rejected too: the builder would hold a document it knows
+publish refuses, the refusal far from the box that caused it, which is what carrying the precision
+exists to stop. Refusing, naming the other field, costs the author removing the rule, changing
+both and writing it again.

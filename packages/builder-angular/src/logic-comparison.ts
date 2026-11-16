@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core'
-import { comparisonLabel, operatorLabel, operatorTakesValue, operatorsFor } from '@formancy/builder-core'
+import { FormancyTypedTemporalInput } from '@formancy/angular'
+import { comparisonLabel, isTypedTemporal, operatorLabel, operatorTakesValue, operatorsFor } from '@formancy/builder-core'
 import type { BuilderText, ConditionField, ConditionRow, Operator } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -23,7 +24,7 @@ const INPUT_TYPE: Partial<Record<ConditionField['kind'], string>> = {
 @Component({
   selector: 'formancy-logic-comparison',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BuilderTextPipe],
+  imports: [BuilderTextPipe, FormancyTypedTemporalInput],
   template: `
     <div data-formancy-part="logic-comparison">
       <label>
@@ -74,6 +75,16 @@ const INPUT_TYPE: Partial<Record<ConditionField['kind'], string>> = {
                 </option>
               </select>
             }
+            @case ('typed') {
+              @if (typed(); as typedField) {
+                <input
+                  [formancyTypedTemporalInput]="typedField.kind"
+                  [precision]="typedField.precision"
+                  [value]="row().text"
+                  (valueChange)="changed.emit({ text: $event ?? '' })"
+                />
+              }
+            }
             @default {
               <input
                 [type]="inputType()"
@@ -109,7 +120,13 @@ export class FormancyLogicComparison {
   protected readonly takesValue = computed(() => operatorTakesValue(this.row().operator))
   protected readonly control = computed(() => {
     const kind = this.field()?.kind ?? 'other'
+    if (this.typed() !== undefined) return 'typed'
     return kind === 'choice' || kind === 'list' ? 'choice' : kind === 'boolean' ? 'boolean' : 'box'
+  })
+  /** A time or a date and time that declares a precision is typed into a mask (0238), not the browser's box. */
+  protected readonly typed = computed(() => {
+    const field = this.field()
+    return isTypedTemporal(field) ? field : undefined
   })
   protected readonly inputType = computed(() => INPUT_TYPE[this.field()?.kind ?? 'other'] ?? 'text')
 

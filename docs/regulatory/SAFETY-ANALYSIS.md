@@ -567,6 +567,30 @@ with a string literal not in its answers' shape, whoever wrote it
 ([0236](../decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
 Verified by `packages/core/src/temporal-literals.test.ts` and, at the publish,
 `packages/server-core/src/use-cases.test.ts`. Both were observed failing before the change.
+A date and time with a `precision` takes a second path in the same editor: its row holds the
+stored answer the typed control reports, and `conditionOf` writes that, the control converting
+the author's wall clock to the instant with `storedFromTyped`. Verified by *a time or a date and
+time with a precision compared* in the same test file, which pins Zurich, and by the builders'
+`logic-panel` tests that type, paste and drop through the control, including a paste and a drop
+in the hour the clocks repeat, which failed in both builders when the row held the typed digits
+and read the later 01:30Z back as 00:30Z.
+Changing the `precision` of a field in a builder carries its bounds, its default and the literals in
+rules that compare it along when the rewrite names the same moment, and refuses, leaving the
+document as it was, when it does not: `08:00:00.250` is not cut to the second. A bound is refused by
+the validator (`bounds.width`); a default and a rule literal by the builder, pointed at that default
+or that rule, because the validator holds no default to a width and reads no rule's condition. A
+default left at the old width was accepted, and the form then refused to open. Every value the
+rewrite writes is checked against `temporalShape` before it is used, so a fault in its hand-written
+spelling refuses the change rather than writing a value of another shape: observed once by breaking
+the spelling by hand, when a default was refused rather than written as `09:00.000`, and pinned by
+no test, since no value in the shape reaches it. A field inside a page is carried like any other,
+and a rule comparing two temporal fields with each other is refused when the change would give them
+two shapes, because no edit to one field changes the other. Verified by
+`packages/builder-core/src/reprecision.test.ts`, which failed with the session's property command as
+it was; for a field inside a page, with the rules looked up by the key path instead of the data
+path; and, for a default, while the default was left at the old width and the session said ok. A
+comparison through a list rule's own variable is not rewritten, being not seen at publish either,
+and a saved example is not rewritten.
 
 *Residual:*
 
@@ -618,7 +642,17 @@ widths, and persists nothing* in `packages/server-core/src/use-cases.test.ts`, a
 `packages/mcp/src/tools.test.ts` and `packages/builder-core/src/authoring.test.ts`. A bound, which
 the engine compares as text, is held to its field's width by the validator (`bounds.width`) and to a
 day that exists (`bounds.noSuchDay`), in `packages/spec/src/temporal-bounds.test.ts`. Each was
-observed failing before its change.
+observed failing before its change. The constraint holds for a rule the builders' condition editors
+write too: they write a literal on such a field at its width, and each builder's *digits typed are
+written as the instant at the field width* (`packages/builder-react/src/logic-panel.test.tsx`,
+`packages/builder-angular/src/logic-panel.test.ts`) types into the control, adds the rule, asserts
+that `crossWidthComparisons`, the check publish applies, finds nothing in the document, and reads
+the rule's CEL. Those are the cases that failed with the editor writing the instant to the second,
+at version 5's width. The session's `canPublish` is not asked: it is the validator's verdict, which
+reads no rule's condition, and is valid for a document holding a comparison across widths. The
+builder-core cases cannot fail so: the answer the control reports is already the instant at the
+width, so version 5's path writes the same text for it, and *the rule written is not a comparison
+across widths* there records the property rather than guarding it.
 
 *Residual:*
 
@@ -1171,7 +1205,20 @@ not read. Verified by `packages/conformance/fixtures/temporal-precision.json`, w
 width, an entry that stops short refused — and which failed with the typed control taken out of each
 renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
 `typed-temporal-field` tests and Material's `controls.test.ts`; and, key by key in Chromium, by
-`scripts/temporal-entry-browser-test.mjs` in `pnpm test:browser`.
+`scripts/temporal-entry-browser-test.mjs` in `pnpm test:browser`. Each edit is read against the text
+the control shows: Angular renders the answer an edit reported on a later task, and a key that
+reached the control first was read against the answer one keystroke behind, so a Backspace across a
+colon did nothing, which the browser check failed on intermittently, and a paste over the hour of
+`08:03:27` stored `15` and nothing after it. Verified by *a Backspace pressed before Angular renders
+takes the digit before the colon* and *a paste before Angular renders keeps the digits typed after
+the last render* in Angular's `typed-temporal-field` tests, which failed while the directive read
+its `value`. The shape error under a typed date
+and time, `error.shape.day`, gives its example as the person types it, on their own clock with a
+space, "Enter it as 2026-10-08 09:30:00.000, on a day the calendar has": given in the stored form,
+`…T09:30:00.000Z`, a person copying it would type a `T` and a `Z` the mask has no place for.
+Verified by *an instant of the wrong shape, on a field with a precision, is asked for as it is
+typed* in `packages/core/src/error-words.test.ts` and by the `error.shape.day` case of both
+renderers' `words` tests, which failed while it gave the stored form.
 
 *Residual:* every digit is kept at the field's width, and not beyond it.
 
@@ -1197,13 +1244,6 @@ renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
   digits a device gave. Measured on 2026-11-16 by a probe against the built `@formancy/core`, and
   pinned by *from an answer finer than a millisecond keeps the millisecond, padded to the width* in
   `packages/core/src/temporal-precision.test.ts`.
-- **The shape error under a typed date and time names the stored form**, `error.shape.day`:
-  "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has", in UTC with a `T` and a `Z`,
-  while the person types their own clock with a space. A person who copies it types a `T` the
-  mask has no place for. Pinned, as the sentence it is, by *an instant of the wrong shape, on a
-  field with a precision, is also asked for on a day that exists* in
-  `packages/core/src/error-words.test.ts`; saying it in the typed form is left to the builders'
-  change.
 - **A dropped fragment replaces the whole field**, wherever it was dropped: digits dropped onto
   the minutes are typed over the whole answer. Pinned by *dropped digits are typed over the whole
   field, not at the caret the drag left* in both renderers' tests.

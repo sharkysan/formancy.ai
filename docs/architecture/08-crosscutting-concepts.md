@@ -429,7 +429,10 @@ property of a field, not only of its type: a `time` or `datetime` may declare a 
   `temporalExample` an answer in it. The engine, the bound check, the publish check and the
   sentences about a field with a precision read them; `TEMPORAL_SHAPES` is the no-precision case.
   Where a shape is written by hand — the schema's bound patterns, the examples in their
-  descriptions — a test holds it to the function.
+  descriptions — a test holds it to the function. The parts `reprecision.ts` in builder-core cuts
+  a value into, to write it at another precision, are held to it as they run: what they give is
+  tested against the function's pattern before it is written, and a value that fails it refuses
+  the change.
 - **A bound may be any width before its field is known, and only its field's after.** The schema's
   patterns admit every width of the type (`temporalAnyShape`), because a bound cannot see its
   field's precision; `validateSchema` holds it to the field's, and on a field with a precision to a

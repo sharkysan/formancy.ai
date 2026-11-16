@@ -276,6 +276,50 @@ controls do, or the person types into a box that does not keep what they type
 a type with no read-only box — a tick box, a choice, a list — is not mounted for such a field: the
 renderer draws its answer in words instead. Register it for the field's path to draw it yourself.
 
+## A time or an instant of your own, at a precision
+
+`FormancyTypedTemporalInput` is a directive for an `<input>` that a `time` or a `datetime` with a
+`precision` is typed into, without the form around it: the control `formancy-form` draws for such a
+field, for a host that keeps the answer itself. It takes the stored answer and reports the stored
+answer, so what it emits is what you keep and what you pass in again.
+
+```ts
+import { Component, signal } from '@angular/core'
+import { FormancyTypedTemporalInput } from '@formancy/angular'
+
+@Component({
+  selector: 'app-started',
+  imports: [FormancyTypedTemporalInput],
+  template: `
+    <input
+      formancyTypedTemporalInput="datetime"
+      [precision]="3"
+      [value]="answer()"
+      (valueChange)="answer.set($event ?? '')"
+      aria-label="Started"
+    />
+  `,
+})
+export class Started {
+  protected readonly answer = signal('') // '' or an instant such as 2026-11-15T13:03:27.415Z
+}
+```
+
+- `formancyTypedTemporalInput` is the type, `time` or `datetime`; `precision` is 0 to 9, the field's own.
+- `value` is the stored answer, and `valueChange` emits the stored answer, or `null` when the box is
+  emptied. A `datetime` is typed on the person's own clock and emitted as the UTC instant, its
+  fraction copied digit for digit; an entry that stops short is emitted as the text typed, for a
+  shape check to refuse, never completed.
+- `readOnly` and `placeholder` are inputs; the placeholder is the mask unless you give one. The
+  directive sets `type` (`text`), `value`, `readOnly`, `placeholder` and `inputmode` (`numeric`)
+  on the element itself, from its inputs and the mask, so leave those to it, and it listens for
+  `input`, `paste` and `drop`. Any other attribute you put on the element, its `id`, `name` and
+  `aria-*` among them, is kept.
+- It emits only what the person types, pastes or drops, never on mount.
+- Each edit is read against the text the box shows, not against `value`, so a key pressed before
+  your `value` comes back, a render later, is not lost. A `value` that differs from the last one you
+  passed replaces what the box shows.
+
 ## The other inject helpers
 
 | Helper | What it gives you |

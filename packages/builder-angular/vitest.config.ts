@@ -30,6 +30,14 @@ export default defineConfig({
      * performance gate in `pnpm bench`, not by this number.
      */
     testTimeout: RENDER_TIMEOUT_MS,
+    /*
+     * Child processes, not the Analog plugin's `vmThreads` default: under `vmThreads`
+     * `vi.stubEnv('TZ', …)` never reaches `Date`, and the condition editor's typed date and
+     * time is the author's own wall clock, so a test that pins a zone would read the
+     * machine's. Measured for `packages/angular`, which sets the same pool and gives the cost:
+     * about 2 s a file of starting a process, in return for per-file isolation.
+     */
+    pool: 'forks',
     include: ['src/**/*.test.ts'],
     environment: 'jsdom',
     passWithNoTests: true,

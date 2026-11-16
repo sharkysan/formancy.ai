@@ -153,6 +153,14 @@ export const BUILDER_MESSAGES_DE = {
   'said.cannotRetype': '{name} lässt sich nicht ändern: {reason}',
   'refuse.retypeContainer': '{name} enthält andere Felder und kann darum keine andere Art von Frage werden.',
   'refuse.retypeToContainer': 'Eine Frage kann nicht zu {type} werden: Dafür müssten die Felder darin erfunden werden.',
+  'refuse.precisionRule':
+    'Regel {number} („{kind}“ für „{target}“) vergleicht „{field}“ mit „{other}“, und das lässt sich mit der neuen Genauigkeit nicht schreiben, ohne den Wert zu ändern. Ändere oder lösche die Regel zuerst.',
+  'refuse.precisionDefault':
+    'Die Vorgabe von „{field}“, „{value}“, lässt sich mit der neuen Genauigkeit nicht schreiben, ohne ihren Wert zu ändern. Ändere oder entferne die Vorgabe zuerst.',
+  'refuse.precisionForm':
+    'Regel {number} („{kind}“ für „{target}“) vergleicht „{field}“ mit einem Text, der in einer Form geschrieben ist, die der Builder nicht umschreibt, etwa mit einem Escape darin. Schreib den Text schlicht, dann ändere die Genauigkeit.',
+  'refuse.precisionPair':
+    'Regel {number} („{kind}“ für „{target}“) vergleicht „{field}“ mit „{other}“, und eine Regel vergleicht zwei Antworten als Text, was nur stimmt, solange beide in derselben Form geschrieben sind. Gib beiden dieselbe Genauigkeit: Entferne die Regel, ändere beide Felder und schreib die Regel dann neu.',
   'said.removed': '{name} entfernt.',
   'said.cannotRemove': '{name} lässt sich nicht entfernen: {reason}',
   'said.added': 'Hinzugefügt: {what} – {where}.',

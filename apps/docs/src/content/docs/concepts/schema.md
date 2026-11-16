@@ -150,8 +150,9 @@ reading from a device's log — a field declares `precision`: how many digits fo
 Every answer to the field has that one width, every digit always written, so two answers compare
 as text in the order they happened. On a `datetime`, `0` stores whole seconds, as no precision
 does; what changes is the control, the checks a field with a precision makes, below, and how an
-answer is said: its error, which gives an answer at the width and asks for a day that exists; its
-read-back, to the second rather than the minute; and the type `formancy types` prints for it.
+answer is said: its error, which gives an answer at the width, a date and time as the person types
+it (`2026-10-08 09:30:00.000`), and asks for a day that exists; its read-back, to the second rather
+than the minute; and the type `formancy types` prints for it.
 
 **The control is typed.** A field with a precision is a text box in its own shape — `__:__:__.___`
 for a time to the millisecond — showing and taking every declared digit. A date and time is typed on the person's own clock,
@@ -192,6 +193,22 @@ One comparison it cannot see is through a list rule's own variable —
 **Changing a field's precision** changes the width of every answer from then on. Submissions
 already stored keep the width they were written in, so an export across the change holds both, and
 the diff calls the change lossy.
+
+In a builder, the field's `earliest`, `latest` and `default`, and every text a rule compares it
+with, come along: each is written at the new width when that names the same moment. Widening adds
+zeros, `08:00:00` becoming `08:00:00.000`; narrowing takes off only zeros; and a time that loses its
+precision becomes `HH:MM` when its seconds are zero, since `HH:MM` has always meant seconds 00. A
+value that would move is not guessed at. `08:00:00.250` cannot become precision 0, so the change is
+refused and the form is left as it was, for you to change what holds it first: a bound with the
+sentence any misshapen bound gets, shown at that bound and asking for it written like an answer at
+the new width; a default with a sentence naming the field and its default; and a text a rule
+compares the field with, with a sentence naming the rule and the text. A rule comparing two such
+fields with each other, `opens < closes`, is right only while both have one shape, so a change that
+would give them two is refused, naming the other field: remove the rule, change both fields, and
+write the rule again. To go from one precision to another, type over the number; clearing the box
+first removes the precision, which is refused if anything written at the field's width has digits
+that would be dropped. A comparison through a list rule's own variable, and the form's saved
+examples, are not rewritten.
 
 ## Formatted text is not HTML
 

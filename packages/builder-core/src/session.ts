@@ -16,6 +16,8 @@ import {
   samePath,
 } from './layout.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
+import { carryPrecision } from './reprecision.js'
+import { setProperty } from './properties.js'
 import { repathEverywhere, repathRules, unplaceEverywhere, unplaceOnly, unskipEverywhere } from './repath.js'
 
 /**
@@ -23,13 +25,13 @@ import { repathEverywhere, repathRules, unplaceEverywhere, unplaceOnly, unskipEv
  *
  * Three rules shape everything here.
  *
- * **A session may never hold a document the validator rejects.** Commands are
- * applied to a copy, validated, and only then committed; a command that would
- * produce an invalid document is refused with the validator's own
- * author-facing message and the held document is untouched. That is why
- * `canPublish()` is true by construction rather than by hope — and why legality
- * is decided by *trying* a command rather than by a second implementation of
- * the validator's rules, which would drift from it.
+ * **A session may never hold a document the validator rejects.** Commands are applied to a
+ * copy, validated, and only then committed; a command that would produce an invalid document
+ * is refused with the validator's own author-facing message and the held document is untouched.
+ * That is why `canPublish()`, the validator's verdict and no more, is true by construction. A
+ * rule publish refuses beyond the schema, one comparing a time across widths among them, is
+ * publish's (`crossWidthComparisons`), not the validator's. And legality is decided by *trying*
+ * a command rather than by a second implementation of the validator's rules, which would drift.
  *
  * **The document is frozen and copied at every boundary.** A builder UI is a
  * projection of this state, and a projection that can reach in and mutate the
@@ -642,16 +644,8 @@ export function createBuilderSession(
       })
     },
 
-    setFieldProperty(keyPath, property, value) {
-      return attempt((draft) => {
-        const found = locate(draft, keyPath)
-        if (found === undefined) return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
-        const field = found.siblings[found.index]! as unknown as Record<string, unknown>
-        if (value === undefined) delete field[property]
-        else field[property] = copy(value)
-        return undefined
-      })
-    },
+    setFieldProperty: (keyPath, property, value) =>
+      attempt((draft) => (property === 'precision' ? carryPrecision(draft, keyPath, value, text) : setProperty(draft, keyPath, property, value, text))),
 
     // Translation: one concern, its own file, over this session's core.
     ...translationCommands({ document: () => present, attempt, refuse, text }),

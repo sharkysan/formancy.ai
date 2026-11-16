@@ -102,6 +102,7 @@ export {
   emptyRow,
   groupOf,
   isRowGroup,
+  isTypedTemporal,
   removeFromDraft,
   rowsOf,
   setJoin,

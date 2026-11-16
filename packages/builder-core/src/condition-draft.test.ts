@@ -1,8 +1,22 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createFormEngine } from '@formancy/core'
+import { crossWidthComparisons } from '@formancy/core/authoring'
+import { storedFromTyped } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
-import { addGroup, addRow, conditionFields, conditionOf, emptyDraft, emptyRow, groupOf, removeFromDraft, setJoin, updateRow } from './condition-draft.js'
-import type { ConditionDraft, ConditionField } from './condition-draft.js'
+import {
+  addGroup,
+  addRow,
+  conditionFields,
+  conditionOf,
+  emptyDraft,
+  emptyRow,
+  groupOf,
+  isTypedTemporal,
+  removeFromDraft,
+  setJoin,
+  updateRow,
+} from './condition-draft.js'
+import type { ConditionDraft, ConditionField, ConditionRow } from './condition-draft.js'
 import { compileGroup, operatorTakesValue } from './conditions.js'
 
 /**
@@ -414,5 +428,122 @@ describe('a date and time compared', () => {
     // reached `toISOString()`, which throws, for a draft composed through the API rather
     // than through a browser's box.
     expect(conditionOf({ field: 'departs', operator: 'isAfter', text: '2026-13-01T10:30' }, tripFields).value).toBe('2026-13-01T10:30')
+  })
+})
+
+/**
+ * A field with a `precision` is typed into the mask the spec derives (0238), and its row holds
+ * the stored answer, as the renderer's field does, so the literal is the answer at the field's
+ * width and publish does not refuse the rule the editor wrote.
+ */
+describe('a time or a date and time with a precision compared', () => {
+  const log: FormSchema = {
+    specVersion: '6',
+    id: 'log',
+    title: 'Log',
+    model: {
+      fields: [
+        { key: 'at', type: 'datetime', label: 'At', precision: 3 },
+        { key: 'clock', type: 'time', label: 'Clock', precision: 0 },
+        { key: 'shown', type: 'text', label: 'Shown' },
+      ],
+    },
+  }
+  const logFields = conditionFields(log)
+
+  const started = Intl.DateTimeFormat().resolvedOptions().timeZone
+  afterEach(() => {
+    vi.stubEnv('TZ', started)
+    vi.unstubAllEnvs()
+  })
+
+  const publishedAs = (draft: ConditionDraft): FormSchema => ({
+    ...log,
+    logic: { rules: [{ target: 'shown', kind: 'visible', cel: compileGroup(groupOf(draft, logFields)), editor: groupOf(draft, logFields) }] },
+  })
+
+  test('the field carries its precision to the editor, and one predicate says which are typed', () => {
+    // Without it the editor cannot tell which control to draw or which width to write, and two
+    // panels asking separately could answer differently.
+    expect(logFields.filter(isTypedTemporal).map((field) => field.path)).toEqual(['at', 'clock'])
+    expect(logFields.find((field) => field.path === 'at')?.precision).toBe(3)
+    expect(logFields.find((field) => field.path === 'shown')?.precision).toBeUndefined()
+  })
+
+  test('a typed instant is the literal, unchanged', () => {
+    // What the control reports is already the instant at the field's width; this pins that the
+    // editor writes it as it is (the version 5 path gives the same text for it, so the guard
+    // against version 5's width is the builders' cases that check the rule publishes).
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const answer = storedFromTyped('datetime', 3, '20261115140327415')!
+    const draft: ConditionDraft = { join: 'all', items: [{ field: 'at', operator: 'isAfter', text: answer }] }
+
+    expect(compileGroup(groupOf(draft, logFields))).toBe('at != null && at > "2026-11-15T13:03:27.415Z"')
+  })
+
+  test('a wall clock composed through the API is not read in a zone', () => {
+    // A draft not made by the control may hold the text of a version 5 box. On a field with a
+    // precision it is written unchanged, and publish refuses it as a shape the field does not
+    // have, rather than the editor guessing the author's zone: version 5's path would have
+    // turned it into 13:03:27Z in Zurich.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const plain = conditionFields({ ...log, model: { fields: [{ key: 'at', type: 'datetime', label: 'At', precision: 0 }] } })
+
+    expect(conditionOf({ field: 'at', operator: 'isAfter', text: '2026-11-15T14:03:27' }, plain).value).toBe('2026-11-15T14:03:27')
+  })
+
+  test('the repeated hour is kept as the instant that was pasted', () => {
+    // On the night the clocks go back Zurich shows 02:30 twice. Held as the typed digits, the
+    // later 01:30Z came back as the earlier 00:30Z; held as the answer, nothing is lost.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const draft: ConditionDraft = { join: 'all', items: [{ field: 'at', operator: 'is', text: '2026-10-25T01:30:00.000Z' }] }
+
+    expect(conditionOf(draft.items[0] as ConditionRow, logFields).value).toBe('2026-10-25T01:30:00.000Z')
+  })
+
+  test('a time is the literal as typed, at its width', () => {
+    // A time is not zoned: its stored answer is the formatted digits.
+    const row: ConditionRow = { field: 'clock', operator: 'is', text: storedFromTyped('time', 0, '140327')! }
+
+    expect(conditionOf(row, logFields).value).toBe('14:03:27')
+  })
+
+  test('an empty box stays empty rather than becoming null', () => {
+    // `storedFromTyped` gives null for nothing typed; a literal of null would compile as a
+    // comparison with null where an empty box compiles as the empty text.
+    expect(conditionOf({ field: 'at', operator: 'is', text: '' }, logFields).value).toBe('')
+  })
+
+  test('the rule written is not a comparison across widths', () => {
+    // The point of the change: at version 5's width publish refused this very rule.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const draft: ConditionDraft = {
+      join: 'all',
+      items: [
+        { field: 'at', operator: 'isAfter', text: storedFromTyped('datetime', 3, '20261115140327415')! },
+        { field: 'clock', operator: 'isBefore', text: storedFromTyped('time', 0, '140327')! },
+      ],
+    }
+
+    expect(crossWidthComparisons(publishedAs(draft))).toEqual([])
+  })
+
+  test('the same rule at version 5 width is the one publish refuses', () => {
+    // Shows the check above can fail: a literal to the second on a field of three digits.
+    const wrong: FormSchema = { ...log, logic: { rules: [{ target: 'shown', kind: 'visible', cel: 'at > "2026-11-15T13:03:27Z"' }] } }
+
+    expect(crossWidthComparisons(wrong)).not.toEqual([])
+  })
+
+  test('a change to a field of another width clears the answer', () => {
+    // An answer at three places is refused beside a field of nine, and the browser's box text
+    // is no answer to a typed one: the value is cleared as a change of kind clears it.
+    const wide: FormSchema = { ...log, model: { fields: [...log.model.fields, { key: 'wide', type: 'datetime', label: 'Wide', precision: 9 }] } }
+    const fields = conditionFields(wide)
+    const draft: ConditionDraft = { join: 'all', items: [{ field: 'at', operator: 'isAfter', text: '2026-11-15T13:03:27.415Z' }] }
+
+    const next = updateRow(draft, { at: 0 }, { field: 'wide' }, fields)
+
+    expect((next.items[0] as ConditionRow).text).toBe('')
   })
 })

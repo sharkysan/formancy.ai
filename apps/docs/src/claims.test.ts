@@ -790,7 +790,7 @@ describe('what the roadmap says is still to do', () => {
 
     // Exported from the entry an author's tools import, which no form loads (0217).
     const core = readFileSync(join(repo, 'packages', 'core', 'src', 'authoring.ts'), 'utf8')
-    expect(core, 'the unknown-path check is no longer exported').toMatch(/export \{ unknownReferences \}/)
+    expect(core, 'the unknown-path check is no longer exported').toMatch(/export \{[^}]*\bunknownReferences\b[^}]*\}/)
 
     const publishing = readFileSync(join(repo, 'packages', 'server-core', 'src', 'publishing.ts'), 'utf8')
     expect(publishing, 'publishing no longer computes warnings').toContain('unknownReferences(')
