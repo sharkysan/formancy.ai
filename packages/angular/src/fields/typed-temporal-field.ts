@@ -8,7 +8,7 @@ import { applyMaskedEdit } from './masked-edit.js'
 
 /**
  * What a control that types a `time` or a `datetime` at its `precision` needs: the text to
- * show, the hint and keypad, and the two handlers.
+ * show, the hint and keypad, and the handlers.
  *
  * A function over a field rather than logic in the component, so the handlers read as one
  * unit away from the markup. It holds no state of its own, only computed views of the
@@ -38,6 +38,33 @@ function typedTemporalEntry(field: FieldBinding, type: TypedTemporalType, author
   /** The answer in its shape: every digit it holds, whatever its width. */
   const shown = computed(() => formatMasked(mask(), typed()))
 
+  /**
+   * Text a paste or a drop puts over what is shown from `start` to `end`. Whether it is an
+   * answer, typing or nothing is `@formancy/spec`'s, for every control (0091): a drop that
+   * reached the control as `input` instead was read by the mask, which dropped an instant's
+   * `Z` and stored its digits as the person's own clock.
+   */
+  function replace(input: HTMLInputElement, pasted: string, start: number, end: number): void {
+    const before = shown().slice(0, start)
+    const after = shown().slice(end)
+    const outcome = pasteOutcome(type, precision(), { before, selected: shown().slice(start, end), pasted, after })
+    if ('answer' in outcome) {
+      // When the answer shows as the text the field now holds, the control is written and
+      // the caret placed before the binding renders, as typing leaves it; the binding would
+      // write the same text and leave the caret at the end.
+      const text = formatMasked(mask(), typedFromStored(type, precision(), outcome.answer))
+      if (text === `${before}${pasted}${after}`) {
+        input.value = text
+        input.setSelectionRange(before.length + pasted.length, before.length + pasted.length)
+      }
+      field.setValue(outcome.answer)
+    } else if ('typed' in outcome) {
+      const caret = before.length + pasted.length
+      field.setValue(storedFromTyped(type, precision(), applyMaskedEdit(input, mask(), typed(), outcome.typed, { caret, forward: false })))
+    }
+    // Ignored, the default is prevented and nothing else happens, as for a key the mask cannot place.
+  }
+
   return {
     shown,
     placeholder: computed(() => authoredPlaceholder() ?? maskPlaceholder(mask())),
@@ -55,30 +82,18 @@ function typedTemporalEntry(field: FieldBinding, type: TypedTemporalType, author
       // rewritten to digits that are not stored.
       if (field.snapshot().readOnly) return
       const input = event.target as HTMLInputElement
-      const pasted = event.clipboardData?.getData('text') ?? ''
-      // What is shown before, in and after the selection, which is what the paste replaces.
-      const start = input.selectionStart ?? shown().length
-      const end = input.selectionEnd ?? shown().length
-      const before = shown().slice(0, start)
-      const after = shown().slice(end)
       event.preventDefault()
-      // Whether the paste is an answer, typing or nothing is `@formancy/spec`'s, for every control (0091).
-      const outcome = pasteOutcome(type, precision(), { before, selected: shown().slice(start, end), pasted, after })
-      if ('answer' in outcome) {
-        // When the answer shows as the text the field now holds, the control is written and
-        // the caret placed before the binding renders, as typing leaves it; the binding would
-        // write the same text and leave the caret at the end.
-        const text = formatMasked(mask(), typedFromStored(type, precision(), outcome.answer))
-        if (text === `${before}${pasted}${after}`) {
-          input.value = text
-          input.setSelectionRange(before.length + pasted.length, before.length + pasted.length)
-        }
-        field.setValue(outcome.answer)
-      } else if ('typed' in outcome) {
-        const caret = before.length + pasted.length
-        field.setValue(storedFromTyped(type, precision(), applyMaskedEdit(input, mask(), typed(), outcome.typed, { caret, forward: false })))
-      }
-      // Ignored, the default is prevented and nothing else happens, as for a key the mask cannot place.
+      // The paste replaces the selection.
+      replace(input, event.clipboardData?.getData('text') ?? '', input.selectionStart ?? shown().length, input.selectionEnd ?? shown().length)
+    },
+
+    onDrop(event: DragEvent): void {
+      if (field.snapshot().readOnly) return
+      event.preventDefault()
+      // A drop replaces the whole field. Where it lands is a pointer position, which no gate
+      // here can turn into a place in the text and check (jsdom has no layout); a fragment
+      // typed at a guessed caret would land where the person did not drop it.
+      replace(event.target as HTMLInputElement, event.dataTransfer?.getData('text') ?? '', 0, shown().length)
     },
   }
 }
@@ -112,6 +127,7 @@ function typedTemporalEntry(field: FieldBinding, type: TypedTemporalType, author
         [attr.inputmode]="entry.inputMode()"
         (input)="entry.onInput($event)"
         (paste)="entry.onPaste($event)"
+        (drop)="entry.onDrop($event)"
         (blur)="field.touch()"
       />
     </formancy-field-shell>

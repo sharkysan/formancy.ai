@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, createEvent, fireEvent, render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createFormEngine } from '@formancy/core'
 import type { FieldDef, FormSchema } from '@formancy/spec'
@@ -49,6 +49,23 @@ function mount(field: FieldDef, initialValue?: unknown, cel?: string): ReturnTyp
 
 const control = (): HTMLInputElement => screen.getByLabelText<HTMLInputElement>('At')
 const value = (engine: ReturnType<typeof createFormEngine>): unknown => engine.getFieldSnapshot(['at']).value
+
+/**
+ * A drop as the browser applies it: `drop`, and unless a handler prevents it or the field is
+ * read-only, the text put over the selection and `input` saying `insertFromDrop`. jsdom has no
+ * default action for a drop, so without the second half a binding that never handled `drop`
+ * would pass. The value is written through the prototype's setter, as a browser writes it, so
+ * React sees the change.
+ */
+function drop(input: HTMLInputElement, text: string): void {
+  const dropped = createEvent.drop(input, { dataTransfer: { getData: () => text } })
+  fireEvent(input, dropped)
+  if (dropped.defaultPrevented || input.readOnly) return
+  const from = input.selectionStart ?? input.value.length
+  const to = input.selectionEnd ?? input.value.length
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, input.value.slice(0, from) + text + input.value.slice(to))
+  input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromDrop', data: text }))
+}
 
 describe('a time with a precision', () => {
   test('an untouched supplied value shows every digit and is submitted byte for byte', () => {
@@ -306,6 +323,53 @@ describe('a time with a precision', () => {
     fireEvent.paste(control(), { clipboardData: { getData: () => '9' } })
 
     expect(control().value).toBe('2026-11-15 09:03:27.415')
+  })
+
+  test('a dropped UTC instant is stored as that instant, in Zurich', () => {
+    // A drop reached the control as `input`, past the paste decision: the mask dropped the
+    // separators and the Z, read the digits as Zurich's clock, and stored …T12:03:27.415Z,
+    // complete, valid and an hour off.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const engine = mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 })
+
+    drop(control(), '2026-11-15T13:03:27.415Z')
+
+    expect(value(engine)).toBe('2026-11-15T13:03:27.415Z')
+    expect(control().value).toBe('2026-11-15 14:03:27.415')
+  })
+
+  test('a dropped text that is no time changes nothing', () => {
+    // Read as typing, a drop over the selected answer took its letters for no digits at all
+    // and stored null: the answer erased by a drop of text that names no time.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(0, control().value.length)
+
+    drop(control(), 'noon-ish')
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().value).toBe('14:03:27.415')
+  })
+
+  test('dropped digits are typed over the whole field, not at the caret the drag left', () => {
+    // Where a drop lands is a pointer position the binding cannot read; at the old caret, the
+    // digits would land where the person did not drop them, and here would not fit at all.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '09:00:00.000' })
+    control().setSelectionRange(5, 5)
+
+    drop(control(), '140327415')
+
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('a drop into a read-only field leaves it as it was', () => {
+    // The paste's guard, for the drop: the engine ignores the write, and the control must not
+    // be rewritten to digits that are not stored.
+    const engine = mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, undefined, "'10:34:56.7890121'")
+
+    drop(control(), '01:02:03.4560000')
+
+    expect(value(engine)).toBe('10:34:56.7890121')
+    expect(control().value).toBe('10:34:56.7890121')
   })
 
   test('a time without a precision is still the browser control', () => {
