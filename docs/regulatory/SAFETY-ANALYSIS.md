@@ -568,12 +568,12 @@ with a string literal not in its answers' shape, whoever wrote it
 Verified by `packages/core/src/temporal-literals.test.ts` and, at the publish,
 `packages/server-core/src/use-cases.test.ts`. Both were observed failing before the change.
 A date and time with a `precision` takes a second path in the same editor: its row holds the
-stored answer the typed control reports, and `conditionOf` writes that, with `storedFromTyped`
-in the control converting the author's wall clock to the instant. Verified by *a time or a date and time with a
-precision compared* in the same test file, which pins Zurich, and by the builders' `logic-panel`
-tests that type, paste and drop through the control, including a paste and a drop in the hour the
-clocks repeat, which failed when the row held the typed digits and read the later 01:30Z back as
-00:30Z.
+stored answer the typed control reports, and `conditionOf` writes that, the control converting
+the author's wall clock to the instant with `storedFromTyped`. Verified by *a time or a date and
+time with a precision compared* in the same test file, which pins Zurich, and by the builders'
+`logic-panel` tests that type, paste and drop through the control, including a paste and a drop
+in the hour the clocks repeat, which failed in both builders when the row held the typed digits
+and read the later 01:30Z back as 00:30Z.
 
 *Residual:*
 

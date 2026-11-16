@@ -232,12 +232,12 @@ line.
   stored form, in UTC with a `T` and a `Z`, under a control where the person types their own clock
   with a space; saying it in the typed form is left to the builders' change.
 - **The builders followed in a second change** (see **History**). Their property panels offered
-  `precision` from the first change, read from the schema; their condition editors, in this one, type a literal on such a field into
-  the renderers' own control, exported from `@formancy/react` and `@formancy/angular` so that the
-  author and the respondent type through one implementation, and write the stored answer it
-  reports as the literal, so the rule they write is not a comparison across widths. Before that
-  change a rule they wrote on a time with a precision, or on an instant with one above 0, was
-  refused at publish, loudly, rather than published wrong.
+  `precision` from the first change, read from the schema; their condition editors, in this one,
+  type a literal on such a field into the renderers' own control, exported from `@formancy/react`
+  and `@formancy/angular` so that the author and the respondent type through one implementation,
+  and write the stored answer it reports as the literal, so the rule they write is not a
+  comparison across widths. Before that change a rule they wrote on a time with a precision, or on
+  an instant with one above 0, was refused at publish, loudly, rather than published wrong.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.
