@@ -603,15 +603,18 @@ to write for what is compared, and offers `timestamp()` only between two dates a
 or a date it is an error, and a `visible` rule that errors shows its field, so the advice would
 have published this hazard's own outcome. For a date against a date and time it offers nothing:
 which day an instant falls on depends on a zone the rule does not have, and the instant's day in
-UTC, offered while this was built, held on the wrong day for part of the world. Every expression
-it offers is run on answers at the fields' widths by *each expression a refusal offers runs on
-answers at the fields' widths*, which
-failed on the old sentence's `timestamp(a) < timestamp(b)`, written on no field of the form; the
-cases for a time failed while a time was offered `timestamp()`. An empty literal, `opens != ""`,
-is refused with the test that asks whether the field was answered, and `opens == ""` with the one
-that asks whether it was not. Verified by `packages/core/src/temporal-widths.test.ts`, by *refuses
-a rule comparing a temporal answer across widths, and persists nothing* in
-`packages/server-core/src/use-cases.test.ts`, and by
+UTC, offered while this was built, held on the wrong day for part of the world. For one fixed set
+of comparisons the expressions offered are run on answers at the fields' widths, by *each
+expression a refusal offers runs on answers at the fields' widths*: two dates and times, at the
+top of a form and in a row, which are offered `timestamp()`, and a date against a date and time
+on either side, which must be offered nothing. It failed on the old sentence's
+`timestamp(a) < timestamp(b)`, written on no field of the form; the cases for a time
+failed while a time was offered `timestamp()`. The empty-literal idioms are compiled, not run, by
+*each way the empty literal message offers compiles as the rule it would replace*. An empty
+literal, `opens != ""`, is refused with the test that asks whether the field was answered, and
+`opens == ""` with the one that asks whether it was not. Verified by
+`packages/core/src/temporal-widths.test.ts`, by *refuses a rule comparing a temporal answer across
+widths, and persists nothing* in `packages/server-core/src/use-cases.test.ts`, and by
 `packages/mcp/src/tools.test.ts` and `packages/builder-core/src/authoring.test.ts`. A bound, which
 the engine compares as text, is held to its field's width by the validator (`bounds.width`) and to a
 day that exists (`bounds.noSuchDay`), in `packages/spec/src/temporal-bounds.test.ts`. Each was

@@ -154,7 +154,7 @@ rather than superseded, since a mask is the default control's there.
 
 **A paste is decided once, by `pasteOutcome` in `@formancy/spec`,** for every control, and **a
 drop is decided by it too**, as a paste over the whole field: where a drop lands is a pointer
-position, which a binding cannot turn into a place in the text and no gate here could check. Read
+position, which the bindings do not turn into a place in the text and no gate here could check. Read
 as typing instead, through `input`, a dropped `2026-11-15T13:03:27.415Z` lost its `Z` to the mask
 and was stored in Zurich an hour off. The rules:
 

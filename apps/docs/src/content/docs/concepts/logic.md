@@ -390,10 +390,9 @@ would turn the rule round.
 **One comparison is not seen: through a list rule's own variable.** In
 `steps.all(s, s.at >= startedAt)`, `s.at` is not a field to the check, so the rule publishes
 whatever the precisions of `steps[].at` and `startedAt` are, and if they differ it compares wrongly.
-Give the fields a list rule compares one precision, or, for two dates and times, compare them with
-`timestamp()`. The
-condition editor writes no list rule, so only one written by hand meets this
-([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+Give the fields a list rule compares one precision, or, for two dates and times, compare them
+with `timestamp()`. The condition editor writes no list rule, so only one written by hand meets
+this ([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
 
 ## Nothing ambient
 

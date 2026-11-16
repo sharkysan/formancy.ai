@@ -46,14 +46,17 @@ control is still the browser's, to the minute
   precision 3 the digits past it are zeros added, not measured.
 - **A publish refuses a rule comparing such a field across widths**, with a literal or with another
   field of another shape, because text of two widths orders wrongly and never compares equal. The
-  sentence says what to write for what is compared: a literal at the field's width; one precision
-  for two fields of one type; `timestamp()` only between two dates and times, since on a time or a
-  date it is an error and a `visible` rule that errors shows its field; and for a date against a date
-  and time nothing, since which day an instant falls on depends on a zone the rule does not have.
-  `opens != ""` on such a field is refused with the test that asks whether it was answered, and `opens == ""` with the one that asks whether it was not. A
-  comparison through a list rule's own variable, `steps.all(s, s.at >= startedAt)`, is not seen:
-  give the fields compared there one precision, or, for two dates and times, compare them with
-  `timestamp()`, which compares to the millisecond and no finer.
+  sentence says what to write for what is compared: a literal at the field's width, or on a date
+  and time, where the literal is an instant, both sides through `timestamp()`; one precision for
+  two fields of one type, or for two dates and times `timestamp()` on both; and nothing for a date
+  against a date and time, since which day an instant falls on depends on a zone the rule does not
+  have, nor for a time against either, since a time of day names no day. `timestamp()` is offered
+  nowhere else: on a time or a date it is an error, and a `visible` rule that errors shows its
+  field. `opens != ""` on such a field is refused with the test that asks whether it was answered,
+  and `opens == ""` with the one that asks whether it was not. A comparison through a list rule's
+  own variable, `steps.all(s, s.at >= startedAt)`, is not seen: give the fields compared there one
+  precision, or, for two dates and times, compare them with `timestamp()`, which compares to the
+  millisecond and no finer.
 - **An error, a submission read back, the type `formancy types` prints and a model's briefing for
   examples** each say the answer at the field's width; a date and time with a precision is read back
   to the second, with every digit after it.
