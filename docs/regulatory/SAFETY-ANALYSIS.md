@@ -567,6 +567,11 @@ with a string literal not in its answers' shape, whoever wrote it
 ([0236](../decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
 Verified by `packages/core/src/temporal-literals.test.ts` and, at the publish,
 `packages/server-core/src/use-cases.test.ts`. Both were observed failing before the change.
+A date and time with a `precision` takes a second path in the same editor: its row holds the
+stored answer the typed control reports, and `conditionOf` writes that, with `storedFromTyped`
+converting the author's wall clock to the instant. Verified by *a time or a date and time with a
+precision compared* in the same test file, which pins Zurich, including the hour the clocks
+repeat, and by the builders' `logic-panel` tests that type, paste and drop through the control.
 
 *Residual:*
 
@@ -618,7 +623,10 @@ widths, and persists nothing* in `packages/server-core/src/use-cases.test.ts`, a
 `packages/mcp/src/tools.test.ts` and `packages/builder-core/src/authoring.test.ts`. A bound, which
 the engine compares as text, is held to its field's width by the validator (`bounds.width`) and to a
 day that exists (`bounds.noSuchDay`), in `packages/spec/src/temporal-bounds.test.ts`. Each was
-observed failing before its change.
+observed failing before its change. The constraint holds for a rule the builders' condition
+editors write too: they write a literal on such a field at its width, verified by *the rule
+written is not a comparison across widths* in
+`packages/builder-core/src/condition-draft.test.ts`, which runs `crossWidthComparisons` on it.
 
 *Residual:*
 

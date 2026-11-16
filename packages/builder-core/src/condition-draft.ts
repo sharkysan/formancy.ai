@@ -1,5 +1,5 @@
-import { resolveText, storedFromTyped, typedFromStored } from '@formancy/spec'
-import type { FieldDef, FormSchema, TypedTemporalType } from '@formancy/spec'
+import { resolveText } from '@formancy/spec'
+import type { FieldDef, FormSchema } from '@formancy/spec'
 import { answerKindOf, operatorTakesValue, operatorsFor } from './conditions.js'
 import type { AnswerKind, Condition, ConditionGroup, Operator } from './conditions.js'
 import type { BuilderText } from './messages.js'
@@ -32,8 +32,8 @@ export interface ConditionField {
   options: ReadonlyArray<{ value: string; label: string }>
   /**
    * A `time` or a `datetime` field's declared `precision` (0238). Present, `row.text` holds the
-   * digits typed into the mask `@formancy/spec` derives from it, and the literal is written at
-   * the field's width; absent, the field is version 5's and its box is the browser's.
+   * stored answer, as the renderer's field holds it, typed into the mask `@formancy/spec` derives
+   * from it and written as the literal; absent, the field is version 5's and its box is the browser's.
    */
   precision?: number
 }
@@ -240,31 +240,20 @@ function mapGroup(draft: ConditionDraft, at: number, change: (group: RowGroup) =
 export function conditionOf(row: ConditionRow, fields: readonly ConditionField[]): Condition {
   const answer = kindOf(fields, row.field)
   if (!operatorTakesValue(row.operator)) return { field: row.field, operator: row.operator, answer }
-  const field = fields.find((candidate) => candidate.path === row.field)
-  const typed = typedField(field)
-  const value = typed === undefined ? narrowed(answer, row.text) : (storedFromTyped(typed.type, typed.precision, row.text) ?? '')
-  return { field: row.field, operator: row.operator, value, answer }
+  // A field typed into the mask holds its stored answer in the row, as the renderer's field holds
+  // it (0238): the instant, or the partial the mask holds, which publish's shape check refuses.
+  const typed = typedTemporal(fields.find((candidate) => candidate.path === row.field))
+  return { field: row.field, operator: row.operator, value: typed ? row.text : narrowed(answer, row.text), answer }
 }
 
 /**
- * The field's type and precision when its box is typed, not the browser's. Decided here, in
- * the one place both panels and the conversions read, so a field is typed in both directions
- * or in neither.
+ * Whether a field's value is typed into the mask `@formancy/spec` derives (0238), not the
+ * browser's box: a time or a date and time that declares a `precision`. One decision for the
+ * conversion in `conditionOf` and for both panels' choice of control, so what is drawn and
+ * what is written cannot disagree about which fields are typed.
  */
-function typedField(field: ConditionField | undefined): { type: TypedTemporalType; precision: number } | undefined {
-  if (field?.precision === undefined) return undefined
-  return field.kind === 'time' || field.kind === 'datetime' ? { type: field.kind, precision: field.precision } : undefined
-}
-
-/**
- * The text a row holds for a stored literal: on a field with a precision, the digits that
- * were typed, so a rule reopened shows the author's own wall clock rather than the UTC text
- * it was stored as, and the first edit does not shift it by their offset. On any other field
- * the literal as it is.
- */
-export function textOfLiteral(field: ConditionField | undefined, literal: string): string {
-  const typed = typedField(field)
-  return typed === undefined ? literal : typedFromStored(typed.type, typed.precision, literal)
+export function typedTemporal(field: ConditionField | undefined): field is ConditionField & { kind: 'time' | 'datetime'; precision: number } {
+  return field?.precision !== undefined && (field.kind === 'time' || field.kind === 'datetime')
 }
 
 function narrowed(answer: AnswerKind, text: string): string | number | boolean {

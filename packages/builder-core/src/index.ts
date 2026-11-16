@@ -105,7 +105,7 @@ export {
   removeFromDraft,
   rowsOf,
   setJoin,
-  textOfLiteral,
+  typedTemporal,
   updateRow,
 } from './condition-draft.js'
 export type { ConditionDraft, ConditionField, ConditionRow, DraftPlace, RowGroup } from './condition-draft.js'

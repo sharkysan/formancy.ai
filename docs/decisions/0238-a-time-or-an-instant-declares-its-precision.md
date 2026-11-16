@@ -10,6 +10,9 @@
   whose check this one refuses where 0236 warns, and whose `has()` for a field at the top it
   corrects; and
   [0125](0125-a-mask-stores-what-was-typed.md), whose mask core the typed control is built on.
+- **History:** amended on 2026-11-16, when the builders' condition editors began to write a literal
+  at the field's width. The consequence below that said they would not, and that a rule they wrote
+  would be refused at publish, held for the length of the first change only.
 - **Verified by:**
   - `packages/spec/src/temporal.test.ts`, *the canonical shapes*: each type and precision accepts
     its own width and refuses its neighbours; answers of one width sort as text in the order they
@@ -63,6 +66,13 @@
     width, and an entry that stops short refused as `shape`. Removing the typed control from a
     renderer failed it. `scripts/temporal-entry-browser-test.mjs`, in `pnpm test:browser`: the
     starter's precision-0 time typed key by key in Chromium, in both renderers.
+  - `packages/builder-core/src/condition-draft.test.ts`, *a time or a date and time with a precision
+    compared*, and the *time or date and time with a precision* cases in
+    `packages/builder-react/src/logic-panel.test.tsx` and
+    `packages/builder-angular/src/logic-panel.test.ts`: the condition editors write the literal at
+    the field's width and not as a comparison across widths (`crossWidthComparisons` finds none), a
+    pasted or dropped instant in the hour the clocks repeat is kept as it was, and the value box
+    is the renderers' own exported control. The cases failed with the editor at version 5's width.
 
 ## Context
 
@@ -214,11 +224,13 @@ line.
   for both: "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has." That example is the
   stored form, in UTC with a `T` and a `Z`, under a control where the person types their own clock
   with a space; saying it in the typed form is left to the builders' change.
-- **The builders followed in a second change.** Their property panels offer `precision`, read from
-  the schema, and their condition editors type a literal on such a field into the same mask and write
-  it at the field's width (`storedFromTyped`), so the rule they write is not a comparison across
-  widths. Until that change a rule they wrote on a time with a precision, or on an instant with one
-  above 0, was refused at publish, loudly, rather than published wrong.
+- **The builders followed in a second change** (see **History**). Their property panels offer
+  `precision`, read from the schema, and their condition editors type a literal on such a field into
+  the renderers' own control, exported from `@formancy/react` and `@formancy/angular` so that the
+  author and the respondent type through one implementation, and write the stored answer it
+  reports as the literal, so the rule they write is not a comparison across widths. Before that
+  change a rule they wrote on a time with a precision, or on an instant with one above 0, was
+  refused at publish, loudly, rather than published wrong.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.

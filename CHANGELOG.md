@@ -62,12 +62,22 @@ control is still the browser's, to the minute
   to the second, with every digit after it.
 - **The playground's starter** has a date and time to the millisecond and a time to the second
   with a bound.
+- **The condition editors write a literal at the field's width.** On a time or a date and time that
+  declares a `precision`, both builders' value box is the same typed control the renderers use, with its
+  mask as the hint, and the literal is written at that width: digits typed on the author's own clock
+  become the UTC instant with the fraction copied, `at > "2026-11-15T13:03:27.415Z"`, and a pasted
+  instant is kept as that instant. Before, a rule on such a field was written at version 5's width
+  and refused at publish as a comparison across widths. A field without a `precision` keeps the
+  browser's box ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 - **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same
   shapes precompiled, so a host's own check need not compile a pattern), `temporalExample`,
   `temporalDateExists`, `temporalEntryMask`, `typedFromStored`, `storedFromTyped`, `pasteOutcome`
   and the type `TypedTemporalType` in `@formancy/spec`; `comparedFields` and its type
   `ComparedFields` in `@formancy/expressions`; `crossWidthComparisons` and its type
-  `CrossWidthComparison` in `@formancy/core/authoring`. A host that translates the renderer's
+  `CrossWidthComparison` in `@formancy/core/authoring`; `typedTemporal` in `@formancy/builder-core`.
+  The typed control is public too, for a host that draws a time or an instant of its own: `TypedTemporalInput`
+  and its props type in `@formancy/react`, and the directive `FormancyTypedTemporalInput` in
+  `@formancy/angular`, each taking the stored answer and reporting the stored answer. A host that translates the renderer's
   words adds one, `error.shape.day`, the shape error on a date and time with a precision, which
   also asks for a day that exists.
 
@@ -76,14 +86,6 @@ only one using `precision`, and this source writes `"6"` for every new form, so 
 before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). A
 change to `precision` is `field.changed` and lossy, and submissions already stored keep the width
 they were written in. The builders' property panels offer `precision`.
-
-- **The condition editors write a literal at the field's width.** On a time or a date and time that
-  declares a `precision`, both builders' value box is the typed entry the renderers use, with its
-  mask as the hint, and the literal is written at that width: digits typed on the author's own clock
-  become the UTC instant with the fraction copied, `at > "2026-11-15T13:03:27.415Z"`, and a pasted
-  instant is kept as that instant. Before, a rule on such a field was written at version 5's width
-  and refused at publish as a comparison across widths. A field without a `precision` keeps the
-  browser's box ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 **Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
 release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,

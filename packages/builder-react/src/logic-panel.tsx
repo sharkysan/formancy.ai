@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession, BuilderText } from '@formancy/builder-core'
+import { TypedTemporalInput } from '@formancy/react'
 import type { LogicRule } from '@formancy/spec'
 import {
   addGroup,
@@ -26,10 +27,10 @@ import {
   ruleKindsFor,
   ruleTargetFor,
   setJoin,
+  typedTemporal,
   updateRow,
 } from '@formancy/builder-core'
 import type { ConditionDraft, ConditionField, ConditionGroup, ConditionRow, DraftPlace, Operator } from '@formancy/builder-core'
-import { TypedTemporalInput } from './typed-temporal-input.js'
 import { useBuilder } from './use-builder.js'
 
 /**
@@ -425,8 +426,8 @@ function ValueControl({
   }
   // A time or a date and time with a precision is typed into the mask its width gives (0238); the
   // browser's boxes hold minutes, or milliseconds at best.
-  if (field?.precision !== undefined && (kind === 'time' || kind === 'datetime')) {
-    return <TypedTemporalInput type={kind} precision={field.precision} value={value} onChange={onChange} />
+  if (typedTemporal(field)) {
+    return <TypedTemporalInput type={field.kind} precision={field.precision} value={value} onChange={(answer) => onChange(answer ?? '')} />
   }
   return <input type={INPUT_TYPE[kind] ?? 'text'} value={value} onChange={(event) => onChange(event.target.value)} />
 }
