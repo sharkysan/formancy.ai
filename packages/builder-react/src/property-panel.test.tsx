@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { createBuilderSession } from '@formancy/builder-core'
+import { BUILDER_MESSAGES_DE, BUILDER_MESSAGES_FR, SCHEMA_WORDS_DE, SCHEMA_WORDS_FR, createBuilderSession, createBuilderText } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { PropertyPanel } from './property-panel.js'
 
@@ -406,5 +406,65 @@ describe('the kind of question', () => {
     })
     render(<PropertyPanel session={session} keyPath={['items']} />)
     expect(screen.queryByRole('combobox', { name: 'Kind of question' })).toBeNull()
+  })
+})
+
+describe('the precision of a time or a date and time (0238)', () => {
+  const temporal: FormSchema = {
+    specVersion: '6',
+    id: 'shop',
+    title: 'Shop',
+    model: {
+      fields: [
+        { key: 'opens', type: 'time', label: 'Opens', earliest: '08:00' },
+        { key: 'departs', type: 'datetime', label: 'Departs' },
+        { key: 'born', type: 'date', label: 'Born' },
+        { key: 'note', type: 'text', label: 'Note' },
+      ],
+    },
+  }
+
+  // The panel is generated from the schema, so a type the schema's conditional does not name
+  // would offer no box and the property would be reachable only by editing JSON.
+  test('is offered on a time and on a date and time, and on no other type', () => {
+    for (const [key, offered] of [
+      ['opens', true],
+      ['departs', true],
+      ['born', false],
+      ['note', false],
+    ] as const) {
+      mountFor(key)
+      expect(screen.queryByLabelText('Precision') !== null, key).toBe(offered)
+      cleanup()
+    }
+
+    function mountFor(key: string): void {
+      render(<PropertyPanel session={createBuilderSession(temporal)} keyPath={[key]} />)
+    }
+  })
+
+  // The person using a German or French builder reads the property in their language, or the
+  // box is the one English word on the panel.
+  test('is named in German and in French', () => {
+    for (const [text, name] of [
+      [createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE, schema: SCHEMA_WORDS_DE }), 'Genauigkeit'],
+      [createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR, schema: SCHEMA_WORDS_FR }), 'Précision'],
+    ] as const) {
+      render(<PropertyPanel session={createBuilderSession(temporal, { text })} keyPath={['opens']} />)
+      expect(screen.getByLabelText(name)).toBeTruthy()
+      cleanup()
+    }
+  })
+
+  // Setting the number in the panel carries the field's bounds, or the document would be
+  // refused the moment a digit is typed.
+  test('typing a precision rewrites the bound written at the old width', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(temporal)
+    render(<PropertyPanel session={session} keyPath={['opens']} />)
+
+    await user.type(screen.getByLabelText('Precision'), '3')
+
+    expect(fieldNamed('opens', session)).toMatchObject({ precision: 3, earliest: '08:00:00.000' })
   })
 })

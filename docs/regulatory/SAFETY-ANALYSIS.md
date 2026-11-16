@@ -574,6 +574,12 @@ time with a precision compared* in the same test file, which pins Zurich, and by
 `logic-panel` tests that type, paste and drop through the control, including a paste and a drop
 in the hour the clocks repeat, which failed in both builders when the row held the typed digits
 and read the later 01:30Z back as 00:30Z.
+Changing the `precision` of a field in a builder carries its bounds, its default and the literals in
+rules that compare it along when the rewrite names the same moment, and refuses, leaving the
+document as it was, when it does not: `08:00:00.250` is not cut to the second. Verified by
+`packages/builder-core/src/reprecision.test.ts`, which failed with the session's property command
+as it was. A comparison through a list rule's own variable is not rewritten, being not seen at
+publish either, and a saved example is not rewritten.
 
 *Residual:*
 

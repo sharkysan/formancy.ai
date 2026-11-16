@@ -69,12 +69,29 @@ control is still the browser's, to the minute
   instant is kept as that instant. Before, a rule on such a field was written at version 5's width
   and refused at publish as a comparison across widths. A field without a `precision` keeps the
   browser's box ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
+- **Changing a field's precision in a builder carries the field and its rules along, or refuses.**
+  Setting `precision` in the property panel used to change that property alone, so the field's
+  `earliest`, `latest` and `default` were left at the old width and the validator refused the
+  document at once, and a literal in a rule that compares the field stayed at the old width and was
+  refused only at publish. Now the bounds, the default, the text of each such literal and the value
+  the visual editor reopens the rule from are written at the new width when that names the same
+  moment: widening pads with zeros, narrowing cuts only zeros, and a time that loses its precision
+  becomes `HH:MM` when its seconds are zero, since `HH:MM` has always meant seconds 00.
+  `08:00:00.250` at precision 3 cannot become precision 0 without moving by a quarter of a second,
+  so the change is refused, with the validator's own sentence for a bound and a sentence naming the
+  rule for a literal, and the document is left as it was. The builder never guesses a value. The
+  rewrite changes only the characters of the literal, so the author's spacing and quotes survive
+  ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)). Saved examples are
+  not rewritten.
 - **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same
   shapes precompiled, so a host's own check need not compile a pattern), `temporalExample`,
   `temporalDateExists`, `temporalEntryMask`, `typedFromStored`, `storedFromTyped`, `pasteOutcome`
   and the type `TypedTemporalType` in `@formancy/spec`; `comparedFields` and its type
-  `ComparedFields` in `@formancy/expressions`; `crossWidthComparisons` and its type
-  `CrossWidthComparison` in `@formancy/core/authoring`; `typedTemporal` in `@formancy/builder-core`.
+  `ComparedFields`, and `rewriteComparedLiterals`, which writes the strings a field is compared with
+  again in place, in `@formancy/expressions`; `crossWidthComparisons` and its type
+  `CrossWidthComparison`, and `inModel` and `rowScopeOf`, which say which field a rule's read names,
+  in `@formancy/core/authoring`; `typedTemporal`, `reprecise` and the types `Reprecision` and
+  `StuckLiteral` in `@formancy/builder-core`.
   The typed control is public too, for a host that draws a time or an instant of its own: `TypedTemporalInput`
   and its props type in `@formancy/react`, and the directive `FormancyTypedTemporalInput` in
   `@formancy/angular`, each taking the stored answer and reporting the stored answer. A host that translates the renderer's

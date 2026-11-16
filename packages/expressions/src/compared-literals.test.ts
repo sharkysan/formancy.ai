@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { comparedFields, comparedLiterals } from './compared-literals.js'
+import { comparedFields, comparedLiterals, rewriteComparedLiterals } from './compared-literals.js'
 import { parse } from './parse.js'
 
 /** Parse or fail the test loudly; every case here is syntactically valid. */
@@ -86,5 +86,38 @@ describe('comparedFields', () => {
     // pair with `startedAt` goes unseen. Seeing it means teaching this package what the
     // variable stands for, which 0236 declined on purpose.
     expect(fieldsOf('steps.all(s, s.at >= startedAt)')).toEqual([])
+  })
+})
+
+/**
+ * Writing a compared literal again, where it stands (0238). A builder changing a field's
+ * precision has to change the text a rule compares the field with and nothing else.
+ */
+describe('rewriteComparedLiterals', () => {
+  // A rewrite that reprinted the expression would show changes nobody made in the diff of a
+  // published form, so only the characters between the quotes may move.
+  test('replaces the text of the literal and leaves every other character alone', () => {
+    const outcome = rewriteComparedLiterals('has(x)  &&  opens >= "08:00:00" || other == "08:00:00"', (compared) =>
+      compared.path === 'opens' ? '08:00:00.000' : undefined,
+    )
+    expect(outcome).toEqual({ ok: true, source: 'has(x)  &&  opens >= "08:00:00.000" || other == "08:00:00"', changed: true })
+  })
+
+  // `"x" < a` has the literal on the left; splicing by position rather than by side keeps it.
+  test('on whichever side the literal stands, and with the quotes the author chose', () => {
+    const outcome = rewriteComparedLiterals("'08:00:00' <= opens", () => '08:00:00.000')
+    expect(outcome).toEqual({ ok: true, source: "'08:00:00.000' <= opens", changed: true })
+  })
+
+  // A caller that has nothing to change must be able to skip the write.
+  test('reports no change when nothing is replaced', () => {
+    expect(rewriteComparedLiterals('opens >= "08:00:00"', () => undefined)).toEqual({ ok: true, source: 'opens >= "08:00:00"', changed: false })
+  })
+
+  // An escape inside the literal means the source text is not the literal's value, so a
+  // splice of the value would write a different string than the one compared.
+  test('refuses a literal whose source is not its plain text, rather than splicing a guess', () => {
+    const outcome = rewriteComparedLiterals('opens >= "08:00\\u003a00"', () => '08:00:00.000')
+    expect(outcome.ok).toBe(false)
   })
 })

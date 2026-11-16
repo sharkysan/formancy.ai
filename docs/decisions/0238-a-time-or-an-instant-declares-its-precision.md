@@ -12,7 +12,9 @@
   [0125](0125-a-mask-stores-what-was-typed.md), whose mask core the typed control is built on.
 - **History:** amended on 2026-11-16, when the builders' condition editors began to write a literal
   at the field's width. The consequence below that said they would not, and that a rule they wrote
-  would be refused at publish, held for the length of the first change only.
+  would be refused at publish, held for the length of the first change only. Amended again on
+  2026-11-16, when changing a field's precision in a builder began to carry the field's bounds, its
+  default and the literals in rules along, or to refuse.
 - **Verified by:**
   - `packages/spec/src/temporal.test.ts`, *the canonical shapes*: each type and precision accepts
     its own width and refuses its neighbours; answers of one width sort as text in the order they
@@ -78,6 +80,15 @@
     unchanged, not read in a zone, which failed with that branch removed. Its *rule written is not
     a comparison across widths* records the property and cannot fail at version 5's width, since
     the control's answer is already the instant.
+  - `packages/builder-core/src/reprecision.test.ts`: widening pads a bound, a default, a rule's
+    literal and the editor's value, a row rule is found by the way it reads the field, and
+    `08:00:00` becomes `08:00`; narrowing `08:00:00.250` is refused, in the validator's sentence for
+    a bound and in the builder's for a rule, in German too, and the document is the very object it
+    was. Observed failing with the session's property command as it was. And
+    `packages/expressions/src/compared-literals.test.ts`, *rewriteComparedLiterals*: only the
+    literal's characters move. The panels offer the property on a time and a date and time only, in
+    German and French, and a typed digit carries the bound: `property-panel.test.tsx` and
+    `property-panel.test.ts` in the two builders.
   - `packages/react/src/fields/typed-temporal-input.test.tsx`: the exported control reports the
     stored answer, not the digits, and a `ref` reaches its input.
 
@@ -238,6 +249,20 @@ line.
   and write the stored answer it reports as the literal, so the rule they write is not a
   comparison across widths. Before that change a rule they wrote on a time with a precision, or on
   an instant with one above 0, was refused at publish, loudly, rather than published wrong.
+- **Changing a field's precision in a builder rewrites what is written at its width, or refuses.**
+  The field's `earliest`, `latest` and `default`, the text of every literal a rule compares it with
+  and the value the visual editor reopens that rule from are written at the new width when that is
+  the same moment: widening pads with zeros, narrowing cuts only zeros, and a time without a
+  precision is `HH:MM`, which has always meant seconds 00, so dropping the seconds is exact when
+  they are zero. Otherwise the change is refused and the document is left as it was, because a
+  session never holds a document the validator rejects and the builder never guesses a value: a
+  bound that cannot follow is refused in the validator's own sentence, `bounds.width`, and a rule
+  literal in a sentence naming the rule, which the validator does not have, since it reads no
+  rules. It costs a step for the author who narrows a precision on a field whose bound has a
+  fraction: the bound is changed first. A literal that was not at the old width is left, as it
+  was a misshapen literal before. A comparison through a list rule's own variable is not seen here,
+  as it is not seen at publish, so it stays at the old width. Saved examples (0166) are not
+  rewritten; one that stops holding is named by publish's example warnings, as today.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.

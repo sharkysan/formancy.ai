@@ -287,7 +287,10 @@ space between two nodes from where they were drawn rather than from a target the
 renderer emits — [0146](../decisions/0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md)), the
 palette, the editable property list read out of the spec's own JSON Schema — which is also
 what a field keeps when `retype.ts` changes its type, so the panel and the change cannot
-disagree about a type's properties, while `duplicate.ts` places a copy the way a block is
+disagree about a type's properties, and `reprecision.ts`, which writes a time's or a date and
+time's bounds, default and the literals in its rules again when its `precision` changes, or refuses
+when the same moment cannot be written at the new width
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)), while `duplicate.ts` places a copy the way a block is
 placed ([0192](../decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)) and
 `other.ts` adds "Other, please specify" as an option, a text field and the rules on it, written
 by the condition editor's own composition ([0202](../decisions/0202-other-please-specify-is-a-command.md)) — and,

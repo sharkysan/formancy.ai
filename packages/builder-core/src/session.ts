@@ -16,6 +16,7 @@ import {
   samePath,
 } from './layout.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
+import { applyFieldProperty } from './reprecision.js'
 import { repathEverywhere, repathRules, unplaceEverywhere, unplaceOnly, unskipEverywhere } from './repath.js'
 
 /**
@@ -643,14 +644,7 @@ export function createBuilderSession(
     },
 
     setFieldProperty(keyPath, property, value) {
-      return attempt((draft) => {
-        const found = locate(draft, keyPath)
-        if (found === undefined) return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
-        const field = found.siblings[found.index]! as unknown as Record<string, unknown>
-        if (value === undefined) delete field[property]
-        else field[property] = copy(value)
-        return undefined
-      })
+      return attempt((draft) => applyFieldProperty(draft, keyPath, property, value, text))
     },
 
     // Translation: one concern, its own file, over this session's core.

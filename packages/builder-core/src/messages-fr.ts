@@ -153,6 +153,8 @@ export const BUILDER_MESSAGES_FR = {
   'said.cannotRetype': 'Impossible de changer {name} : {reason}',
   'refuse.retypeContainer': "{name} contient d'autres champs et ne peut donc pas devenir un autre type de question.",
   'refuse.retypeToContainer': "Une question ne peut pas devenir {type} : il faudrait inventer les champs qu'elle contient.",
+  'refuse.precisionRule':
+    'La règle {number} (« {kind} » sur « {target} ») compare « {field} » avec « {literal} », ce qui ne peut pas s’écrire à la nouvelle précision sans changer la valeur. Modifiez ou supprimez d’abord la règle.',
   'said.removed': '{name} supprimé.',
   'said.cannotRemove': 'Impossible de supprimer {name} : {reason}',
   'said.added': 'Ajouté : {what} — {where}.',

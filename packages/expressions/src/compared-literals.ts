@@ -1,7 +1,10 @@
 import { childNodes } from './ast.js'
 import type { CelNode, ExpressionAst } from './ast.js'
 import { readChains } from './chains.js'
-import type { ParsedExpression } from './parse.js'
+import { ExpressionError } from './errors.js'
+import { parse } from './parse.js'
+import type { ParseOptions, ParsedExpression } from './parse.js'
+import type { RewriteOutcome } from './rewrite.js'
 
 /** The operators that compare one value with another. `in` is not one: its right side is a collection. */
 export type ComparisonOperator = '==' | '!=' | '<' | '<=' | '>' | '>='
@@ -31,9 +34,17 @@ export interface ComparedLiteral {
  * the first: `x.at` in `legs.all(x, x.at == "1")` is no read there, and so no field here.
  */
 export function comparedLiterals(ast: ExpressionAst): readonly ComparedLiteral[] {
+  return literalNodes(ast).map(({ node: _node, ...compared }) => compared)
+}
+
+interface LiteralNode extends ComparedLiteral {
+  readonly node: CelNode
+}
+
+function literalNodes(ast: ExpressionAst): readonly LiteralNode[] {
   const reads = wholeReads(ast)
 
-  const found: ComparedLiteral[] = []
+  const found: LiteralNode[] = []
   const visit = (node: CelNode): void => {
     if (COMPARISONS.has(node.op)) {
       const [left, right] = node.args as [CelNode, CelNode]
@@ -44,6 +55,58 @@ export function comparedLiterals(ast: ExpressionAst): readonly ComparedLiteral[]
   }
   visit((ast as ParsedExpression).node)
   return found
+}
+
+/**
+ * Write the strings a field is compared with again, in place (0238): what a builder needs to
+ * carry a rule along when the width of the field's answers changes.
+ *
+ * `replace` is asked once per compared literal and answers the text to put there, or nothing to
+ * leave it. **It splices source, as `rewritePath` does**: only the characters between the quotes
+ * change, so the author's spacing and quotes survive and a published form's diff shows the one
+ * change. A literal whose source is not its plain text (an escape, a raw or triple-quoted string)
+ * is refused rather than spliced, because the value read and the text written would differ.
+ * The result is parsed again and must compare the same fields in the same order, with the
+ * literals that were asked to change changed and the rest not.
+ */
+export function rewriteComparedLiterals(source: string, replace: (compared: ComparedLiteral) => string | undefined, options?: ParseOptions): RewriteOutcome {
+  const parsed = parse(source, options)
+  if (!parsed.ok) return { ok: false, error: parsed.error }
+
+  const splices: Array<{ start: number; end: number; text: string }> = []
+  const expected: ComparedLiteral[] = []
+  for (const { node, ...compared } of literalNodes(parsed.ast)) {
+    const text = replace(compared)
+    expected.push({ ...compared, literal: text ?? compared.literal })
+    if (text === undefined || text === compared.literal) continue
+    const written = source.slice(node.start, node.end)
+    const quote = written.charAt(0)
+    if ((quote !== '"' && quote !== "'") || written !== `${quote}${compared.literal}${quote}`) {
+      return {
+        ok: false,
+        error: refusal('rewrite_literal_not_plain', `The literal ${written} is not written as plain text, so it cannot be replaced without guessing.`, source),
+      }
+    }
+    splices.push({ start: node.start + 1, end: node.end - 1, text })
+  }
+  if (splices.length === 0) return { ok: true, source, changed: false }
+
+  // Right to left, so an earlier splice's offsets are still the offsets of the string spliced.
+  let rewritten = source
+  for (const splice of [...splices].sort((a, b) => b.start - a.start)) {
+    rewritten = rewritten.slice(0, splice.start) + splice.text + rewritten.slice(splice.end)
+  }
+
+  const after = parse(rewritten, options)
+  if (!after.ok) return { ok: false, error: refusal('rewrite_broke_source', 'Replacing a literal produced an expression that no longer parses.', source) }
+  if (JSON.stringify(comparedLiterals(after.ast)) !== JSON.stringify(expected)) {
+    return { ok: false, error: refusal('rewrite_changed_comparisons', 'Replacing a literal would change what the expression compares.', source) }
+  }
+  return { ok: true, source: rewritten, changed: true }
+}
+
+function refusal(code: string, message: string, source: string): ExpressionError {
+  return new ExpressionError({ kind: 'policy', code, message, source, hint: 'The expression is unchanged.' })
 }
 
 /** Two fields compared with each other. */
@@ -93,10 +156,10 @@ function wholeReads(ast: ExpressionAst): ReadonlyMap<string, string> {
   return reads
 }
 
-function fieldAndLiteral(field: CelNode, literal: CelNode, reads: ReadonlyMap<string, string>): { path: string; literal: string } | undefined {
+function fieldAndLiteral(field: CelNode, literal: CelNode, reads: ReadonlyMap<string, string>): { path: string; literal: string; node: CelNode } | undefined {
   const path = reads.get(spanOf(field))
   if (path === undefined || literal.op !== 'value' || typeof literal.args !== 'string') return undefined
-  return { path, literal: literal.args }
+  return { path, literal: literal.args, node: literal }
 }
 
 function spanOf(node: { readonly start: number; readonly end: number }): string {

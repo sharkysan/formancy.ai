@@ -17,4 +17,7 @@ export const FIELD_EDIT_MESSAGES = {
   'said.cannotRetype': 'Cannot change {name}: {reason}',
   'refuse.retypeContainer': '{name} holds other fields, so it cannot become another kind of question.',
   'refuse.retypeToContainer': 'A question cannot become a {type}: that would mean inventing the fields inside it.',
+  /** `{kind}` is the rule kind's own word, as in `refuse.ruleCannotFollow`. */
+  'refuse.precisionRule':
+    'Rule {number} (“{kind}” on “{target}”) compares “{field}” with “{literal}”, which cannot be written at the new precision without changing its value. Change or delete the rule first.',
 } as const satisfies Record<string, Message>
