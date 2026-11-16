@@ -1,0 +1,435 @@
+import { provideZonelessChangeDetection } from '@angular/core'
+import { TestBed } from '@angular/core/testing'
+import { createEvent, fireEvent, render, screen } from '@testing-library/angular'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { createFormEngine } from '@formancy/core'
+import type { FieldDef, FormSchema } from '@formancy/spec'
+import { FormancyForm, provideFormancy } from './index'
+
+/**
+ * A `time` or `datetime` with a `precision`, as a person types into it, in Angular.
+ *
+ * What the digits mean, and what they are stored as, is `@formancy/spec`'s and is tested
+ * there; React's binding is held to the same cases (0033). These are about this binding:
+ * that the control shows the answer in its own shape, writes only on the person's input,
+ * and leaves a field without a precision as the browser's own control.
+ */
+// Put back by name. `vi.unstubAllEnvs()` deletes TZ, and Node keeps the zone it was last given
+// rather than returning to the one it started in, so a case pinned to New York would leave the
+// rest of the file in New York (as builder-core's condition-draft.test.ts does).
+const started = Intl.DateTimeFormat().resolvedOptions().timeZone
+afterEach(() => {
+  vi.stubEnv('TZ', started)
+  vi.unstubAllEnvs()
+  TestBed.resetTestingModule()
+  document.body.innerHTML = ''
+})
+
+const CLOCK = { now: () => 0, today: () => '2026-11-15', random: () => 0.5 }
+
+type Engine = ReturnType<typeof createFormEngine>
+
+async function mount(field: FieldDef, initialValue?: unknown, cel?: string): Promise<Engine> {
+  const schema: FormSchema = {
+    specVersion: '6',
+    id: 'log',
+    title: 'Log',
+    model: { fields: [field] },
+    ...(cel === undefined ? {} : { logic: { rules: [{ target: field.key, kind: 'computed', cel }] } }),
+  }
+  const engine = createFormEngine({ schema, capabilities: CLOCK, ...(initialValue === undefined ? {} : { initialValue }) })
+  const view = await render(FormancyForm, { providers: [provideZonelessChangeDetection(), provideFormancy(engine)] })
+  await view.fixture.whenStable()
+  return engine
+}
+
+const control = (): HTMLInputElement => screen.getByLabelText<HTMLInputElement>('At')
+const value = (engine: Engine): unknown => engine.getFieldSnapshot(['at']).value
+
+/** Keystrokes as the browser applies them: the text changes, the caret moves, `input` says how. */
+function type(input: HTMLInputElement, text: string): void {
+  input.setSelectionRange(input.value.length, input.value.length)
+  for (const typed of text) {
+    const at = input.selectionStart ?? input.value.length
+    input.value = input.value.slice(0, at) + typed + input.value.slice(at)
+    input.setSelectionRange(at + 1, at + 1)
+    input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: typed }))
+  }
+}
+
+function backspace(input: HTMLInputElement): void {
+  const at = input.selectionStart ?? input.value.length
+  input.value = input.value.slice(0, at - 1) + input.value.slice(at)
+  input.setSelectionRange(at - 1, at - 1)
+  input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }))
+}
+
+function paste(text: string): void {
+  fireEvent.paste(control(), { clipboardData: { getData: () => text } })
+}
+
+/**
+ * A drop as the browser applies it: `drop`, and unless a handler prevents it or the field is
+ * read-only, the text put over the selection and `input` saying `insertFromDrop`. jsdom has no
+ * default action for a drop, so without the second half a binding that never handled `drop`
+ * would pass.
+ */
+function drop(text: string): void {
+  const input = control()
+  const dropped = createEvent.drop(input, { dataTransfer: { getData: () => text } })
+  fireEvent(input, dropped)
+  if (dropped.defaultPrevented || input.readOnly) return
+  const from = input.selectionStart ?? input.value.length
+  const to = input.selectionEnd ?? input.value.length
+  input.value = input.value.slice(0, from) + text + input.value.slice(to)
+  input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromDrop', data: text }))
+}
+
+describe('a time with a precision', () => {
+  test('an untouched supplied value shows every digit and is submitted byte for byte', async () => {
+    // A control that rewrote what it was given on mount would change a stored answer nobody
+    // edited; a time of seven digits is the width a browser picker cannot hold at all.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, { at: '10:34:56.7890121' })
+
+    expect(control().value).toBe('10:34:56.7890121')
+    expect(control().type).toBe('text')
+    expect(value(engine)).toBe('10:34:56.7890121')
+  })
+
+  test('typing digits stores the time as the mask writes it', async () => {
+    // The answer is the time, not its digits: the mask's separators belong in what is stored.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    type(control(), '140327415')
+
+    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('is offered as its shape, with a keypad', async () => {
+    // The placeholder is the statement of the shape (0125), and a numeric keypad is the
+    // reason to have a mask of digits at all.
+    await mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    expect(control().placeholder).toBe('__:__:__.___')
+    expect(control().inputMode).toBe('numeric')
+  })
+
+  test("the author's example replaces the shape as the hint", async () => {
+    // The author's example is the placeholder wherever there is one (0196); the shape is only
+    // the fallback.
+    await mount({ key: 'at', type: 'time', label: 'At', precision: 3, placeholder: 'e.g. 09:30:00.000' })
+
+    expect(control().placeholder).toBe('e.g. 09:30:00.000')
+  })
+
+  test('clearing the control stores null', async () => {
+    // An empty control left as the partial text "" would read as a malformed answer and not
+    // as no answer, so a field that is not required would refuse a person who changed their mind.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+
+    control().value = ''
+    control().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }))
+
+    expect(value(engine)).toBeNull()
+  })
+
+  test('a supplied value of another width is shown, and is a shape error once touched', async () => {
+    // Stored as it was supplied is not the mask's to repair: a value at the wrong width must
+    // reach the engine's shape check, not be padded into one that passes.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.41' })
+
+    expect(control().value).toBe('14:03:27.41')
+    backspace(control())
+
+    expect(value(engine)).toBe('14:03:27.4')
+    expect(engine.submit().errors['at']).toContain('shape')
+  })
+
+  test('a value wider than its field shows as complete, and an edit drops the hidden digits', async () => {
+    // Accepted, and named in the safety analysis: the mask has no position for the extra
+    // digits. This pins it so that it changes on purpose rather than by accident.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.4155' })
+
+    expect(control().value).toBe('14:03:27.415')
+    backspace(control())
+
+    expect(value(engine)).toBe('14:03:27.41')
+  })
+
+  test('a paste of an instant with an offset is stored as the same instant, at the field width', async () => {
+    // The mask reads digits and drops the rest; a pasted log timestamp would otherwise become
+    // a complete, valid answer moved by the sender's offset.
+    const engine = await mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 })
+
+    paste('2026-11-15T14:03:27.415+01:00')
+
+    expect(value(engine)).toBe('2026-11-15T13:03:27.415Z')
+  })
+
+  test('a paste a person could have typed goes through the mask', async () => {
+    // Digits and separators in the mask's own places are typing; they must land as typing
+    // does, including the separators the mask writes itself.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    paste('140327415')
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().value).toBe('14:03:27.415')
+  })
+
+  test('a paste the mask has no place for changes nothing', async () => {
+    // Dropping the characters the mask has no place for would make an answer out of text
+    // nobody typed; ignored, the field is as it was, as it is for a letter typed.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 })
+
+    paste('noon-ish')
+
+    expect(value(engine)).toBeUndefined()
+    expect(control().value).toBe('')
+  })
+
+  test('a read-only field shows every digit, and a change writes nothing', async () => {
+    // A computed answer is the engine's: a control that took the typing would watch the
+    // engine take it back, and one that hid digits would misreport what is stored.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, undefined, "'10:34:56.7890121'")
+
+    expect(control().readOnly).toBe(true)
+    expect(control().value).toBe('10:34:56.7890121')
+    type(control(), '9')
+    paste('01:02:03.4560000')
+
+    expect(value(engine)).toBe('10:34:56.7890121')
+  })
+
+  test('a paste into a read-only field leaves the control as it was', async () => {
+    // The engine ignores the write, so only the control can go wrong: without the guard in
+    // the paste handler a typeable paste rewrites the control to digits that are not stored.
+    await mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, undefined, "'10:34:56.7890121'")
+    control().setSelectionRange(0, control().value.length)
+
+    paste('0102034560000')
+
+    expect(control().value).toBe('10:34:56.7890121')
+  })
+
+  test('a whole instant pasted over part of a filled datetime replaces the answer, in New York', async () => {
+    // The mask dropped the Z and stored the shown clock's digits, five hours from the instant.
+    vi.stubEnv('TZ', 'America/New_York')
+    const engine = await mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+    control().setSelectionRange(0, 4)
+
+    paste('2026-11-15T13:03:27.415Z')
+
+    expect(value(engine)).toBe('2026-11-15T13:03:27.415Z')
+    expect(control().value).toBe('2026-11-15 08:03:27.415')
+  })
+
+  test('a paste over a selection in the middle replaces only the selection', async () => {
+    // Judged as the whole text it makes, not as the pasted piece alone: 59 alone is no time.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(3, 5)
+
+    paste('59')
+
+    expect(value(engine)).toBe('14:59:27.415')
+    expect(control().value).toBe('14:59:27.415')
+    // The caret stays after the paste, as typing leaves it.
+    expect(control().selectionStart).toBe(6)
+  })
+
+  test('a paste that leaves a separator out of its place changes nothing', async () => {
+    // "5:" over the minutes makes "14:5::27.415", which no typing makes; read through the mask it
+    // would move every digit after it.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(3, 5)
+
+    paste('5:')
+
+    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('a paste completes a partial answer as typing would', async () => {
+    // The pasted tail joined to what was shown must read as the rest of one time.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:0' })
+    control().setSelectionRange(4, 4)
+
+    paste('3:27.415')
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().selectionStart).toBe(12)
+  })
+
+  test('a digit with no room in a complete field changes nothing, and a whole time replaces it', async () => {
+    // Held, a digit after a complete time was stored where the control could not show it; read
+    // as typing, a digit that does not fit is cut. A whole time says what it is, so it is the
+    // answer rather than digits merged into the old one.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(12, 12)
+
+    paste('6')
+    expect(value(engine)).toBe('14:03:27.415')
+    paste('09:15:00.000')
+
+    expect(value(engine)).toBe('09:15:00.000')
+    expect(control().value).toBe('09:15:00.000')
+  })
+
+  test('a paste of one digit over a selected hour types as the key would', async () => {
+    // Digits carry no zone: "0" there is what typing 0 over the hour does.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(0, 2)
+
+    paste('0')
+
+    expect(control().value).toBe('00:32:74.15')
+    expect(value(engine)).toBe('00:32:74.15')
+  })
+
+  test('more digits than the field has room for change nothing, never cut into an answer', async () => {
+    // Read as typing, the first six were stored as 13:03:27, complete and accepted, and the
+    // three after them dropped: an answer the paste did not denote.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 0 })
+
+    paste('130327415')
+
+    expect(value(engine)).toBeUndefined()
+    expect(control().value).toBe('')
+  })
+
+  test.each([
+    // An empty clipboard, or one holding only an image, gives '' to paste. At a caret the text was
+    // unchanged, which the mask reads as a backspace: 14:02:74.15.
+    ['an empty paste at the caret', 5, 5, ''],
+    // Over a selection it was the selection deleted: null, and 14:03. Deleting is the Delete key's.
+    ['an empty paste over the whole time', 0, 12, ''],
+    ['an empty paste over the seconds', 6, 12, ''],
+    // The same text over itself, typed, was unchanged text and a backspace too: 14:32:74.15.
+    ['0 pasted over a selected 0', 3, 4, '0'],
+  ])('%s leaves a time as it was', async (_name, from, to, pasted) => {
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(from, to)
+
+    paste(pasted)
+
+    expect(control().value).toBe('14:03:27.415')
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('a time pasted over the same text shown replaces a stored value wider than the field', async () => {
+    // 14:03:27.4155 shows as 14:03:27.415. Ignored as a change of nothing, the paste of what the
+    // person reads left the hidden digit stored, and the shape error with it.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.4155' })
+    control().setSelectionRange(0, 12)
+
+    paste('14:03:27.415')
+
+    expect(value(engine)).toBe('14:03:27.415')
+    expect(control().value).toBe('14:03:27.415')
+  })
+
+  test("a datetime's own clock pasted over itself leaves it as it was, in New York", async () => {
+    // Read as an edit that changed nothing, it lost its last digit and stored an unfinished answer.
+    vi.stubEnv('TZ', 'America/New_York')
+    const engine = await mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+    control().setSelectionRange(11, 23)
+
+    paste('09:03:27.415')
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
+    expect(value(engine)).toBe('2026-11-15T14:03:27.415Z')
+  })
+
+  test('a complete datetime pasted a digit keeps showing its answer', async () => {
+    // Same blanking, for the control whose held text shows as nothing.
+    vi.stubEnv('TZ', 'America/New_York')
+    await mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+    control().setSelectionRange(23, 23)
+
+    paste('9')
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
+  })
+
+  test('a dropped UTC instant is stored as that instant, in Zurich', async () => {
+    // A drop reached the control as `input`, past the paste decision: the mask dropped the
+    // separators and the Z, read the digits as Zurich's clock, and stored …T12:03:27.415Z,
+    // complete, valid and an hour off.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const engine = await mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 })
+
+    drop('2026-11-15T13:03:27.415Z')
+
+    expect(value(engine)).toBe('2026-11-15T13:03:27.415Z')
+  })
+
+  test('a dropped text that is no time changes nothing', async () => {
+    // Read as typing, a drop over the selected answer took its letters for no digits at all
+    // and stored null: the answer erased by a drop of text that names no time.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '14:03:27.415' })
+    control().setSelectionRange(0, control().value.length)
+
+    drop('noon-ish')
+
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('dropped digits are typed over the whole field, not at the caret the drag left', async () => {
+    // Where a drop lands is a pointer position the binding cannot read; at the old caret, the
+    // digits would land where the person did not drop them, and here would not fit at all.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 3 }, { at: '09:00:00.000' })
+    control().setSelectionRange(5, 5)
+
+    drop('140327415')
+
+    expect(value(engine)).toBe('14:03:27.415')
+  })
+
+  test('a drop into a read-only field leaves it as it was', async () => {
+    // The paste's guard, for the drop: the engine ignores the write, and the control must not
+    // be rewritten to digits that are not stored.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 7 }, undefined, "'10:34:56.7890121'")
+
+    drop('01:02:03.4560000')
+
+    expect(value(engine)).toBe('10:34:56.7890121')
+    expect(control().value).toBe('10:34:56.7890121')
+  })
+
+  test('a time without a precision is still the browser control', async () => {
+    // The typed control is for a precision only; every existing form keeps its picker.
+    await mount({ key: 'at', type: 'time', label: 'At' })
+
+    expect(control().type).toBe('time')
+  })
+})
+
+describe('a datetime with a precision', () => {
+  test('typed on the wall clock of New York, it is stored as UTC with the fraction unchanged', async () => {
+    // The zone moves whole seconds and never a fraction: a fraction passed through Date
+    // would be cut to milliseconds, and a stored answer would differ from the typed one.
+    vi.stubEnv('TZ', 'America/New_York')
+    const engine = await mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 })
+
+    type(control(), '20261115090327415')
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
+    expect(value(engine)).toBe('2026-11-15T14:03:27.415Z')
+  })
+
+  test('a stored instant is shown on the wall clock of the person', async () => {
+    // Shown in UTC, the person would read an hour they did not type.
+    vi.stubEnv('TZ', 'America/New_York')
+    await mount({ key: 'at', type: 'datetime', label: 'At', precision: 3 }, { at: '2026-11-15T14:03:27.415Z' })
+
+    expect(control().value).toBe('2026-11-15 09:03:27.415')
+  })
+
+  test('a datetime without a precision is still the browser control', async () => {
+    // As above, for the second control.
+    await mount({ key: 'at', type: 'datetime', label: 'At' })
+
+    expect(control().type).toBe('datetime-local')
+  })
+})

@@ -581,6 +581,72 @@ Verified by `packages/core/src/temporal-literals.test.ts` and, at the publish,
   through `timestamp()`, held in a list for `in`, or a comparison of two fields, is compared as
   written and named by nothing.
 
+### A12. A time or an instant is compared with something of another width, and the rule answers wrongly
+
+*How it arises:* a `time` or `datetime` field declares a `precision` (spec version 6), so every
+answer to it has one width: `09:30:00.000` at precision 3. A rule compares an answer as text, and
+text orders as time does only between strings of one width: `"…:56.000Z" < "…:56Z"` is `true` for
+the same instant, measured on 2026-11-16. A rule comparing such a field with a literal at another
+width, `opens > "09:00"`, or with a temporal field of another width, holds at the wrong moment, and
+one using `==` holds for nobody. A `visible` rule shows or hides its field at the wrong time, a
+`required` one asks or does not, and a `validate` one accepts what its author meant to refuse.
+Every gate passes it: the expression type-checks, and it decides something for every answer.
+
+*Constraint:* `crossWidthComparisons` in `@formancy/core/authoring` finds each comparison (`==`,
+`!=`, `<`, `<=`, `>`, `>=`, on either side, `item` resolved to its repeater in a row rule) of a
+field that declares a precision with a literal not in its shape, and of two temporal fields of
+different shapes where either declares one; shapes are compared, not lengths. A publish
+refuses such a rule with `invalid_logic` and stores nothing, and the MCP check and the builder's
+authoring loop report it as the publish refuses it
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)). The sentence says what
+to write for what is compared, and offers `timestamp()` only between two dates and times: on a time
+or a date it is an error, and a `visible` rule that errors shows its field, so the advice would
+have published this hazard's own outcome. For a date against a date and time it offers nothing:
+which day an instant falls on depends on a zone the rule does not have, and the instant's day in
+UTC, offered while this was built, held on the wrong day for part of the world. For one fixed set
+of comparisons the expressions offered are run on answers at the fields' widths, by *each
+expression a refusal offers runs on answers at the fields' widths*: two dates and times, at the
+top of a form and in a row, which are offered `timestamp()`, and a date against a date and time
+on either side, which must be offered nothing. It failed on the old sentence's
+`timestamp(a) < timestamp(b)`, written on no field of the form; the cases for a time
+failed while a time was offered `timestamp()`. The empty-literal idioms are compiled, not run, by
+*each way the empty literal message offers compiles as the rule it would replace*. An empty
+literal, `opens != ""`, is refused with the test that asks whether the field was answered, and
+`opens == ""` with the one that asks whether it was not. Verified by
+`packages/core/src/temporal-widths.test.ts`, by *refuses a rule comparing a temporal answer across
+widths, and persists nothing* in `packages/server-core/src/use-cases.test.ts`, and by
+`packages/mcp/src/tools.test.ts` and `packages/builder-core/src/authoring.test.ts`. A bound, which
+the engine compares as text, is held to its field's width by the validator (`bounds.width`) and to a
+day that exists (`bounds.noSuchDay`), in `packages/spec/src/temporal-bounds.test.ts`. Each was
+observed failing before its change.
+
+*Residual:*
+
+- **A comparison through a list rule's own variable is not seen.**
+  `steps.all(s, s.at >= startedAt)` publishes whatever the precisions of `steps[].at` and
+  `startedAt` are, and compares as text: wrongly, when they differ. `@formancy/expressions` takes a
+  comprehension's variable for no field, as 0236 chose, pinned by *gives none through a
+  comprehension's variable* in `packages/expressions/src/compared-literals.test.ts`. The builders' condition editors write no
+  list rule, so only a hand-written one reaches it, by an author or by an agent through
+  `@formancy/mcp`. The advice, in the record and the documentation: give the fields compared in a
+  list rule one precision, or, for two dates and times, compare them with `timestamp()`.
+- **`timestamp()` compares to the millisecond.** The refusal offers it for two dates and times, and
+  in `@marcbachmann/cel-js` 8.0.0 it cuts every digit after the third:
+  `timestamp(a) < timestamp(b)` is `false` for two instants a microsecond apart, measured on
+  2026-11-16 ([`SOUP-DECLARATION.md`](SOUP-DECLARATION.md)), and pinned by *compares timestamps to
+  the millisecond, cutting the rest, as the documents say* in
+  `packages/expressions/src/evaluate.test.ts`. A rule
+  using it cannot tell apart two answers closer than that.
+- **Only a literal or a field compared directly is seen.** A literal built by a function, passed
+  through `timestamp()`, held in a list for `in`, or compared through a computed index is not.
+- **A field without a precision is not refused.** A literal not in its shape is warned about
+  (A11), and a comparison of two such fields, a `date` with a `datetime`, is named by nothing, as
+  in 0.13.0 (*is not reported for two fields neither of which declares precision*, in
+  `temporal-widths.test.ts`).
+- **One form's submissions can hold two widths** once its precision changes, since submissions
+  never migrate. A rule reads one submission at a time, at its version's width, but an export or a
+  sort across the change mixes them. The diff calls every change to `precision` lossy.
+
 ## B — Correct data is lost or altered
 
 ### B1. Answers are orphaned when a field is renamed
@@ -1074,6 +1140,73 @@ each change reverted on its own was caught by the case meant for it.
 - **A map an expression builds holds no `constructor`, `prototype` or `__proto__`**: the library
   leaves those keys out of a literal, so `{"constructor": 1}` evaluates to `{}`. A `computed` field
   writing such a map out loses the member without an error.
+
+### B12. A control drops part of a temporal answer
+
+*How it arises:* a time or an instant arrives with more of it than its control can show — seconds
+typed from a stopwatch, a fraction of a second from a device's log — and the control writes back
+what it shows. Through 0.13.0 a `datetime` control showed minutes and wrote the instant back with
+`00` seconds on any edit, and no field could hold a fraction at all. The browser's own controls
+hold minutes, or milliseconds at best, so none of them could keep a seventh digit
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
+
+*Constraint:* a field that declares a `precision` is typed into a control of its own shape, in
+React and Angular, on the mask core ([0125](../decisions/0125-a-mask-stores-what-was-typed.md)),
+which shows and takes every declared digit; Angular Material draws it with the default control
+([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)). A `datetime`'s whole
+seconds cross the person's zone through `Date`, and its fraction is copied digit for digit, never
+through `Date`, which keeps milliseconds. The control writes only on the person's input, so a value
+supplied and never touched is submitted byte for byte, a read-only one never writes, and an entry
+that stops short is stored as typed for the shape check to refuse, never completed by a guess. A
+paste is decided once, by `pasteOutcome` in `@formancy/spec`: a whole time or instant is the answer,
+brought to the field's width only where that is exact; text that could have been typed is typing;
+anything else changes nothing, so no paste stores a mix of pasted and existing digits that nobody
+wrote. A drop is decided by `pasteOutcome` as a paste over the whole field, and a read-only field
+takes none: read as typing, through `input`, a dropped `2026-11-15T13:03:27.415Z` lost its `Z` to
+the mask and was stored in Zurich as `…T12:03:27.415Z`, complete, valid and an hour off, which *a
+dropped UTC instant is stored as that instant, in Zurich* in both renderers' tests failed on. The
+whole field rather than a caret, because where a drop lands is a pointer position the bindings do
+not read. Verified by `packages/conformance/fixtures/temporal-precision.json`, which every driver runs
+— a six-digit instant and a seven-digit time submitted byte for byte, typed digits stored at the
+width, an entry that stops short refused — and which failed with the typed control taken out of each
+renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
+`typed-temporal-field` tests and Material's `controls.test.ts`; and, key by key in Chromium, by
+`scripts/temporal-entry-browser-test.mjs` in `pnpm test:browser`.
+
+*Residual:* every digit is kept at the field's width, and not beyond it.
+
+- **A supplied value wider than its field** shows the digits that fit and looks complete, while
+  the engine refuses it as `shape`; an edit then drops the digits the control did not show. Pinned
+  by *a value wider than its field shows as complete, and an edit drops the hidden digits* in
+  `packages/react/src/fields/typed-temporal-field.test.tsx`.
+- **A wall clock that happens twice**, on the night the clocks go back, is read as the earlier of
+  its two instants, as `Date` reads it, so a one-digit edit to an answer in the later hour moves it
+  by an hour. Pinned by *an ambiguous wall clock* in `temporal-entry.test.ts`.
+- **An instant whose local year leaves 0000–9999** — the last half hour of 9999 in UTC, read in
+  Zurich, or the first hours of year 0 read in New York — shows an empty control, while the engine
+  accepts it. Pinned in `temporal-entry.test.ts` and `packages/core/src/temporal-precision.test.ts`.
+- **A `datetime` without a precision still resets supplied seconds to `00` when edited.** Its
+  control is the browser's, to the minute, as in 0.13.0, and writes back the minute it shows: read
+  from `temporal-fields.tsx` and `temporal-fields.ts`, and not pinned by a test. Declaring a
+  precision is the remedy. A `time` without one has no seconds to lose.
+- **The typed control has no clock picker**, and its shape is fixed, `YYYY-MM-DD HH:MM:SS` and the
+  digits, rather than the person's locale.
+- **A computed date and time above precision 3 is padded, not measured.** A rule computes through
+  `Date`, which keeps milliseconds, so one second after `…:56.789012Z` is stored, on a field of
+  precision 6, as `…:57.789000Z`: the `012` gone, and three zeros in their place that read like
+  digits a device gave. Measured on 2026-11-16 by a probe against the built `@formancy/core`, and
+  pinned by *from an answer finer than a millisecond keeps the millisecond, padded to the width* in
+  `packages/core/src/temporal-precision.test.ts`.
+- **The shape error under a typed date and time names the stored form**, `error.shape.day`:
+  "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has", in UTC with a `T` and a `Z`,
+  while the person types their own clock with a space. A person who copies it types a `T` the
+  mask has no place for. Pinned, as the sentence it is, by *an instant of the wrong shape, on a
+  field with a precision, is also asked for on a day that exists* in
+  `packages/core/src/error-words.test.ts`; saying it in the typed form is left to the builders'
+  change.
+- **A dropped fragment replaces the whole field**, wherever it was dropped: digits dropped onto
+  the minutes are typed over the whole answer. Pinned by *dropped digits are typed over the whole
+  field, not at the caret the drag left* in both renderers' tests.
 
 
 
@@ -1978,9 +2111,11 @@ that spliced the questions onto the top level, which is the one that reads corre
 *Residual, and it is the substantial one:* **the format still permits it.** A document
 written by hand, by an agent through `@formancy/mcp`, or by an older version of the
 builder can place a field beside a page, and it validates. Refusing it is a spec change,
-and versions `"1"` to `"5"` are frozen — so it would belong to **version `"6"`**, which is
-not open ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)), where it would be a migration with a report rather than a
-silent breakage. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
+and versions `"1"` to `"5"` are frozen — so it would belong to **version `"6"`**, where it
+would be a migration with a report rather than a silent breakage
+([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version 6 is open and
+in no release yet, and was opened for a time's and an instant's `precision`
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)), not for this. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
 allowed without breaking a document that validates today, so the honest form of this is a
 warning on publish rather than a refusal
 ([0097](../decisions/0097-a-publish-may-warn.md)). Until then the constraint covers the
@@ -2947,7 +3082,7 @@ are compared with nothing.
    ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are all
    frozen, so stored data written against any of them has a settled shape — and so is
    `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), which 0.4.0 first releases. Version `"5"` is frozen too, and first
-   released with 0.8.0, which writes it ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Otherwise it is the software that is still moving.
+   released with 0.8.0, which writes it ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version `"6"` is open and in no release: the source writes it and it may still gain constructs, so characterise against a frozen version. Otherwise it is the software that is still moving.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be

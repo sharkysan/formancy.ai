@@ -1,7 +1,7 @@
 import { createFormEngine } from '@formancy/core'
 import { runScenarios } from '@formancy/core/authoring'
 import type { Scenario } from '@formancy/core/authoring'
-import { canonicalize } from '@formancy/spec'
+import { canonicalize, temporalExample } from '@formancy/spec'
 import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import { ANSWER_EXAMPLES, BUILT_IN_ERROR_CODES, EXAMPLE_FORM, EXAMPLE_INTENT, EXAMPLE_SCENARIO, EXAMPLE_TODAY, scenarioPrompt } from './scenario-prompt.js'
@@ -146,7 +146,8 @@ describe('what a model drafting examples is told', () => {
      * property added to the format tomorrow — and every rule is reduced to its kind and its
      * code. If the prompt reads any of it, the two prompts differ.
      */
-    const SHAPE = new Set(['key', 'type', 'label', 'options', 'rows', 'optionsSource', 'fields'])
+    // `precision` with them: an answer to a time or an instant is written at its field's width.
+    const SHAPE = new Set(['key', 'type', 'label', 'options', 'rows', 'optionsSource', 'fields', 'precision'])
     const shapeOf = (field: FieldDef): FieldDef =>
       Object.fromEntries(
         Object.entries(field)
@@ -167,6 +168,31 @@ describe('what a model drafting examples is told', () => {
     const intent = 'Adults only.'
 
     expect(scenarioPrompt(stripped, intent)).toEqual(scenarioPrompt(RULED, intent))
+  })
+
+  test('says what an answer looks like for a time or a date and time with a precision, at its width', () => {
+    // The answers by type are version 5's shapes. A model writing "2026-10-06T09:30:00Z" for an
+    // instant stored to the millisecond writes an example that fails on `shape`, whatever the
+    // rules say, and the person reads a broken rule that is not there.
+    const form: FormSchema = {
+      specVersion: '6',
+      id: 'run',
+      title: 'Run',
+      model: {
+        fields: [
+          { key: 'startedAt', type: 'datetime', label: 'Started', precision: 3 },
+          { key: 'lap', type: 'time', label: 'Lap', precision: 0 },
+        ],
+      },
+    }
+    const { user } = scenarioPrompt(form, 'anything')
+    const said = (path: string): unknown => JSON.parse(new RegExp(`^- ${path}: .*, an answer like ("[^"]+")$`, 'm').exec(user)?.[1] ?? 'null')
+
+    expect(user).toContain(`- startedAt: datetime, "Started", an answer like "${temporalExample('datetime', 3)}"`)
+    expect(user).toContain(`- lap: time, "Lap", an answer like "${temporalExample('time', 0)}"`)
+    // And what it says is an answer the engine accepts.
+    const [result] = runScenarios(form, [{ name: 'accepted', changes: { startedAt: said('startedAt'), lap: said('lap') }, valid: true }])
+    expect(result?.failures).toEqual([])
   })
 
   test('names every field by the path an example uses, with its type, label and options', () => {

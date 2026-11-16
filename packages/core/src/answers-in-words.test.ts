@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { answersInWords } from './answers-in-words.js'
 import { createFormText } from './words.js'
@@ -133,5 +133,67 @@ describe('a submission in words', () => {
   test('says what JSON cannot write as String writes it', () => {
     const said = answersInWords(form, { country: Number.NaN, qty: { amount: 1n }, agree: 12n }, createFormText({ locale: 'en' }))
     expect(said.map(({ said: words }) => words)).toEqual(['NaN', '{"amount":"1"}', '12'])
+  })
+})
+
+/**
+ * A time and an instant said at their field's precision (0238).
+ *
+ * A field with a precision keeps seconds and the digits after them, and a reviewer reading it
+ * back to the minute, or through a `Date`, which keeps milliseconds, reads a moment the
+ * submission does not hold.
+ */
+describe('a temporal answer in words, at its field’s precision', () => {
+  const run = (type: 'time' | 'datetime', precision?: number): FormSchema => ({
+    specVersion: '6',
+    id: 'run',
+    title: 'Run',
+    model: { fields: [{ key: 'at', type, label: 'Started', ...(precision === undefined ? {} : { precision }) }] },
+  })
+  const said = (schema: FormSchema, at: string, locale = 'en'): string | undefined =>
+    answersInWords(schema, { at }, createFormText({ locale }), locale)[0]?.said
+
+  // A field without a precision is 0.13.0's in every respect, and its words said minutes.
+  test('an instant on a field without a precision is said to the minute, in UTC, as before', () => {
+    expect(said(run('datetime'), '2026-10-08T10:34:56Z')).toBe('8 October 2026 at 10:34 UTC')
+  })
+
+  // A test run timed to the second, read back to the minute, loses what it was declared to keep.
+  test('an instant at precision 0 is said to the second', () => {
+    expect(said(run('datetime', 0), '2026-10-08T10:34:56Z')).toBe('8 October 2026 at 10:34:56 UTC')
+  })
+
+  // Through `Date`, .789012 would be said as .789: a reading the device never gave.
+  test('an instant with a fraction is said with every digit it holds, as the language writes a fraction', () => {
+    expect(said(run('datetime', 6), '2026-10-08T10:34:56.789012Z')).toBe('8 October 2026 at 10:34:56.789012 UTC')
+    expect(said(run('datetime', 6), '2026-10-08T10:34:56.789012Z', 'de')).toBe('8. Oktober 2026 um 10:34:56,789012 UTC')
+  })
+
+  // A wall clock reads the same everywhere, so a time is said as stored, every digit with it.
+  test('a time with a precision is said as stored', () => {
+    expect(said(run('time', 7), '08:03:27.1234567')).toBe('08:03:27.1234567')
+  })
+
+  // ECMAScript defines a date string's fraction as three digits; what an engine makes of more is
+  // its own. V8 cuts them, and an engine that rounds read …:59.9999999 as the next minute, so the
+  // reviewer was told 10:35:00 of an answer stored at 10:34:59. The stand-in is such an engine.
+  test('an instant with more than three digits after the seconds is said at its own second, whatever the engine does with the fraction', () => {
+    const Engine = Date
+    class Rounding extends Engine {
+      constructor(value?: string | number) {
+        if (value === undefined) super()
+        else super(typeof value === 'string' ? Rounding.parse(value) : value)
+      }
+      static override parse(text: string): number {
+        const long = /^(.*:\d{2})\.(\d{4,})Z$/.exec(text)
+        return long === null ? Engine.parse(text) : Engine.parse(`${long[1]}Z`) + Math.round(Number(`0.${long[2]}`) * 1000)
+      }
+    }
+    vi.stubGlobal('Date', Rounding)
+    try {
+      expect(said(run('datetime', 7), '2026-10-08T10:34:59.9999999Z')).toBe('8 October 2026 at 10:34:59.9999999 UTC')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

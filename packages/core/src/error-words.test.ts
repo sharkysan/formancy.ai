@@ -108,6 +108,27 @@ describe('an error is said, not coded', () => {
     expect(errorSentence(german, EVERY_CODE.earliest, 'earliest')).toBe('Frühestens: 3. Mai 2027.')
   })
 
+  // A field without a precision is 0.13.0's in every respect, its sentences among them.
+  test('a temporal answer of the wrong shape, on a field without a precision, is asked for in version 5’s form', () => {
+    expect(errorSentence(english, { key: 't', type: 'time' }, 'shape')).toBe('Enter it as HH:MM.')
+    expect(errorSentence(english, { key: 'd', type: 'datetime' }, 'shape')).toBe('Enter it as YYYY-MM-DDTHH:MM:SSZ.')
+  })
+
+  // "Enter it as HH:MM" under a time stored to the millisecond asks for an answer the field refuses.
+  test('a temporal answer of the wrong shape, on a field with a precision, is asked for at its width', () => {
+    expect(errorSentence(english, { key: 't', type: 'time', precision: 3 }, 'shape')).toBe('Enter it as 09:30:00.000.')
+    expect(errorSentence(french, { key: 't', type: 'time', precision: 0 }, 'shape')).toBe('Saisissez la réponse sous la forme 09:30:00.')
+  })
+
+  // Such a field refuses 30 February as `shape` too, and a sentence giving only the form would ask
+  // for what the answer already has.
+  test('an instant of the wrong shape, on a field with a precision, is also asked for on a day that exists', () => {
+    const at: FieldDef = { key: 'd', type: 'datetime', precision: 6 }
+    expect(errorSentence(english, at, 'shape')).toBe('Enter it as 2026-10-08T09:30:00.000000Z, on a day the calendar has.')
+    expect(errorSentence(german, at, 'shape')).toBe('Geben Sie die Antwort als 2026-10-08T09:30:00.000000Z ein, an einem Tag, den es gibt.')
+    expect(errorSentence(french, at, 'shape')).toBe('Saisissez la réponse sous la forme 2026-10-08T09:30:00.000000Z, à une date qui existe.')
+  })
+
   // A validate rule's own code and its message are the author's words, and the catalogue
   // has nothing better to say than what the author wrote.
   test('a code the catalogue does not know is said as itself', () => {

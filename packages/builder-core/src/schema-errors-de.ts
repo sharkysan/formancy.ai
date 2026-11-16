@@ -21,6 +21,10 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
   'grid.columnTwice': 'Zwei Spalten zeigen beide „{field}“. Eine Antwort kann nicht zwei Spalten füllen.',
   'bounds.crossed':
     'Der früheste erlaubte Wert „{earliest}“ liegt nach dem spätesten erlaubten „{latest}“, es könnte also keine Antwort angenommen werden. Vertausche sie oder entferne einen.',
+  'bounds.width':
+    'Diese Grenze ist nicht so geschrieben wie die Antworten des Feldes, und eine Grenze wird als Text mit einer Antwort verglichen, würde also falsch einsortiert. Schreibe sie genau so, wie eine Antwort geschrieben wird, etwa „{expected}“.',
+  'bounds.noSuchDay':
+    '„{bound}“ fällt auf einen Tag, den der Kalender nicht hat. Ein Feld mit einer Genauigkeit lehnt einen solchen Tag als Antwort ab, eine Grenze an einem solchen Tag ist also keine Antwort, die es haben könnte. Schreibe einen Tag, den es gibt.',
   'key.taken': 'Ein anderes Feld verwendet bereits den Schlüssel „{key}“. Ein Schlüssel bezeichnet eine Antwort, zwei Felder können ihn also nicht teilen.',
   'key.reserved': '„{key}“ ist reserviert: Damit trägt eine Zeile einer Wiederholung ihre Identität, also kann kein Feld so heißen.',
   'key.unstorable':

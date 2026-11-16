@@ -446,20 +446,42 @@ describe('the spec version 2 freeze', () => {
     expect([...widgetsInFour, ...typesInFour].filter((name) => !text.includes(`\`${name}\``))).toEqual([])
   })
 
-  test('and says every version the code speaks is frozen, and none is open', () => {
+  test('and says every version the code speaks is frozen, but the newest while it is open', () => {
     // Version 4 froze with no version open (0140); version 5 opened (0194) and froze with the
-    // batch it was opened for (0201), and again nothing is open. Read from the code's own list
-    // of versions, so a version 6 has to arrive with a heading — OPEN while it gains
-    // constructs, when this case says so again.
+    // batch it was opened for (0201). Version 6 is open for `precision`, and this is where that
+    // is written down: at most one heading says OPEN, and only for the highest version the
+    // code speaks. Read from the code's own list of versions, so a version 7 has to arrive
+    // with a heading too — and when version 6 freezes, this case goes back to "none is open".
     const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
     const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
     const versions = [...(/export const SPEC_VERSIONS = \[([^\]]*)\]/.exec(types)?.[1] ?? '').matchAll(/'(\d+)'/g)].map((match) => match[1]!)
 
     expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(4)
-    for (const version of versions) {
+    const newest = versions[versions.length - 1]!
+    for (const version of versions.slice(0, -1)) {
       expect(text, `version ${version}`).toContain(`## Spec version ${version} is FROZEN`)
     }
-    expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([])
+    expect(text, `version ${newest}`).toContain(`## Spec version ${newest} is OPEN`)
+    expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([newest])
+  })
+
+  test('and names one version as the one this package writes: the one the code writes', () => {
+    // When version 5 opened, version 4's section dropped "the version this package writes";
+    // when 6 opened, version 5's kept it, so two sections each said a new document declared
+    // them. The claim is made in two clauses, and either kept alone in an old section says it
+    // again, so each is held: exactly one section says it, and a rewording that drops it
+    // everywhere fails too. Read with its line breaks as spaces: version 5's was wrapped
+    // mid-phrase, and a pattern on the raw text passed it.
+    const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8').replace(/\s+/g, ' ')
+    const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
+    const current = /export const CURRENT_SPEC_VERSION: SpecVersion = '(\d+)'/.exec(types)?.[1]
+    expect(current, 'no current version was read out of the code').toBeDefined()
+
+    const sections = text.split(/(?=## Spec version \d+ is )/).filter((section) => section.startsWith('## Spec version'))
+    for (const claim of [/the version this package writes/, /a new document declares it/]) {
+      const saying = sections.filter((section) => claim.test(section)).map((section) => /^## Spec version (\d+)/.exec(section)?.[1])
+      expect(saying, String(claim)).toEqual([current])
+    }
   })
 
   test('says the version is frozen and what a version 1 document may not carry', () => {

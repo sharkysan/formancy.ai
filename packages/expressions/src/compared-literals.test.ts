@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { comparedLiterals } from './compared-literals.js'
+import { comparedFields, comparedLiterals } from './compared-literals.js'
 import { parse } from './parse.js'
 
 /** Parse or fail the test loudly; every case here is syntactically valid. */
@@ -57,5 +57,34 @@ describe('comparedLiterals', () => {
   test('nor a string handed to a function, whose argument is not compared with the field', () => {
     // `timestamp("…")` is a conversion; whether it parses is the evaluator's to say.
     expect(literalsOf('timestamp(at) > timestamp("2026-10-08T08:30:00Z")')).toEqual([])
+  })
+})
+
+function fieldsOf(source: string): ReturnType<typeof comparedFields> {
+  const result = parse(source)
+  if (!result.ok) throw result.error
+  return comparedFields(result.ast)
+}
+
+/**
+ * Two fields compared, which `comparedLiterals` cannot see and a check across widths needs
+ * (0236's sibling): a precision-3 time against a precision-6 one orders wrongly as text.
+ */
+describe('comparedFields', () => {
+  test('finds two fields compared, as written', () => {
+    // Reported turned round, a check could name the wrong field as the left of a rule.
+    expect(fieldsOf('startedAt < endedAt')).toEqual([{ left: 'startedAt', right: 'endedAt', operator: '<' }])
+  })
+
+  test('gives none for a field against a literal', () => {
+    // That is comparedLiterals' answer; reporting it here too would say one comparison twice.
+    expect(fieldsOf('startedAt < "2026-10-08T08:30:00Z"')).toEqual([])
+  })
+
+  test('gives none through a comprehension’s variable', () => {
+    // The named limit, decided in 0238: `s` is bound by `all`, so `s.at` is no field, and the
+    // pair with `startedAt` goes unseen. Seeing it means teaching this package what the
+    // variable stands for, which 0236 declined on purpose.
+    expect(fieldsOf('steps.all(s, s.at >= startedAt)')).toEqual([])
   })
 })

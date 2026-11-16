@@ -2,7 +2,7 @@ import { authoringFacts, diffSchemas, schemaHash } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { Change, FormSchema } from '@formancy/spec'
 import { engineRefusal } from '@formancy/core'
-import { expressionProblems, runScenarios } from '@formancy/core/authoring'
+import { crossWidthComparisons, expressionProblems, runScenarios } from '@formancy/core/authoring'
 import type { Scenario } from '@formancy/core/authoring'
 
 /**
@@ -107,6 +107,18 @@ export function validateForm(document: unknown): ToolResult {
         `do anything. These compile and then fail at evaluation, so nothing would report them at runtime: ` +
         `a computed field would stay empty and a visible rule would show the field it was meant to hide.`,
       data: { valid: true, expressionProblems: problems },
+    }
+  }
+
+  const widths = crossWidthComparisons(document as FormSchema)
+  if (widths.length > 0) {
+    return {
+      ok: false,
+      summary:
+        `The document is structurally valid, but ${String(widths.length)} rule(s) compare a temporal answer across ` +
+        `widths, which publish refuses: a rule compares the two as text. ` +
+        widths.map((found) => found.message).join(' '),
+      data: { valid: true, crossWidthComparisons: widths },
     }
   }
 

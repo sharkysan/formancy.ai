@@ -134,6 +134,65 @@ the site that shows the form, or the picture itself as a `data:image/` address �
 and an address on another site tells that site who opened the form. Spec version 4
 ([0126](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0126-an-option-may-carry-a-picture.md)).
 
+## A time or a date and time to the second, or finer
+
+A `time` answer is `09:30`, and a `datetime` answer ends in whole seconds behind a control that
+shows minutes. Where a minute is too coarse — a test run's start and end and the steps between, a
+reading from a device's log — a field declares `precision`: how many digits follow the seconds,
+0 to 9, counted as a database counts them in `timestamp(p)`. Spec version 6
+([0238](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
+
+```jsonc
+{ "key": "startedAt", "type": "datetime", "label": "Started", "precision": 3 },  // "2026-10-08T09:30:00.123Z"
+{ "key": "lap", "type": "time", "label": "Lap", "precision": 0, "earliest": "08:00:00" }  // "08:03:27"
+```
+
+Every answer to the field has that one width, every digit always written, so two answers compare
+as text in the order they happened. On a `datetime`, `0` stores whole seconds, as no precision
+does; what changes is the control, the checks a field with a precision makes, below, and how an
+answer is said: its error, which gives an answer at the width and asks for a day that exists; its
+read-back, to the second rather than the minute; and the type `formancy types` prints for it.
+
+**The control is typed.** A field with a precision is a text box in its own shape — `__:__:__.___`
+for a time to the millisecond — showing and taking every declared digit. A date and time is typed on the person's own clock,
+`YYYY-MM-DD HH:MM:SS` and the digits, and stored in UTC with its fraction copied digit for digit.
+The control writes only when somebody types, so an answer a host supplied and nobody touched is
+submitted exactly as it came. An entry that stops short is refused as `shape`, never filled in with
+zeros. A field without a precision keeps the browser's control, to the minute; Angular Material
+draws a time with a precision with the default control, as it draws a masked text. The typed
+control has no clock picker, and its shape is fixed rather than the person's locale.
+
+**A paste, or a drop.** A whole time, or a whole instant with `Z` or an offset (`+01:00`,
+`+0100`, `+01`) and a `T` or a space, pasted anywhere in the box is the answer, at any width; an instant is stored
+in UTC. One at another width is brought to the field's where that is exact — zeros added, or only
+zeros taken off — and otherwise kept as it was, which the field refuses as `shape`. Digits that fit, or text with each
+separator where the box writes it, are typed as the keys would be. Anything else, and a paste of
+nothing, changes nothing. Text dragged and dropped into the box is read the same way, as if pasted
+over everything in it, wherever it was dropped.
+
+**What is checked.** The answer, at the field's width, in the browser and again on the server. On
+a date and time with a precision, a day the calendar does not have — 30 February, month 13 — is
+refused as `shape` too; a field without a precision accepts it, as version 5 always has. A bound is
+written at the field's width, `"08:00:00"` above rather than `"08:00"`, and on a day that exists,
+or the document is refused. A `default` of another width keeps the form from opening. A computed
+date and time is written padded to the width, and not at all when a digit other than zero would
+fall beyond it: never rounded. A rule computes to the millisecond, so above precision 3 the digits
+past it are zeros added, not measured: one second after `…:56.789012Z` is stored `…:57.789000Z`.
+
+**In a rule**, compare it with text at its width, or with a field whose answers have the same
+shape: a field of the same type and precision, or, for a `datetime` at precision 0, one without a
+precision. A `time` and a `datetime` of one precision are two shapes. A publish refuses a
+comparison with any other text, or with a temporal field of another shape, and says what to do;
+one through `timestamp()` it leaves alone, and that compares to the millisecond. `timestamp()`
+takes a date and time only: on a time or a date it is an error, and a `visible` rule that errors
+shows its field.
+One comparison it cannot see is through a list rule's own variable —
+[Logic](/docs/concepts/logic/#a-time-or-an-instant-with-a-precision) says which, and what to do.
+
+**Changing a field's precision** changes the width of every answer from then on. Submissions
+already stored keep the width they were written in, so an export across the change holds both, and
+the diff calls the change lossy.
+
 ## Formatted text is not HTML
 
 A `richtext` answer is stored in a small closed grammar — paragraphs, bullet

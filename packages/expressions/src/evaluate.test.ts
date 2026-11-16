@@ -59,6 +59,17 @@ describe('evaluate', () => {
     const values = { age: 1, name: 'a', items: [{ active: true }, { active: false }] }
     expect(valueOf('items.filter(i, i.active).size()', computed, values)).toBe(1)
   })
+
+  // The library's known anomaly, pinned: `timestamp()` keeps three digits after the seconds and
+  // cuts the rest, so two instants a microsecond apart are equal to it, and .7899 is .789, not
+  // .790. 0238, the `precision` description in the schema, `concepts/logic.md`, the CHANGELOG and
+  // SOUP-DECLARATION.md say so; a cel-js release that compares finer, or rounds, fails here.
+  test('compares timestamps to the millisecond, cutting the rest, as the documents say', () => {
+    const answers: CompileOptions = { kind: 'visible', variables: { a: 'dyn', b: 'dyn' } }
+    expect(valueOf('timestamp(a) == timestamp(b)', answers, { a: '2026-10-08T10:34:56.789012Z', b: '2026-10-08T10:34:56.789013Z' })).toBe(true)
+    const said: CompileOptions = { kind: 'computed', variables: { a: 'dyn' } }
+    expect(valueOf('string(timestamp(a))', said, { a: '2026-10-08T10:34:56.7899Z' })).toBe('2026-10-08T10:34:56.789Z')
+  })
 })
 
 describe('injected capabilities', () => {

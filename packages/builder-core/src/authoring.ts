@@ -2,7 +2,7 @@ import { authoringBriefing, canonicalize, DECLINE_KEY } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
 import { engineRefusal } from '@formancy/core'
-import { expressionProblems } from '@formancy/core/authoring'
+import { crossWidthComparisons, expressionProblems } from '@formancy/core/authoring'
 import { askChecked } from './answers.js'
 import type { AskModel, Checkable, Stop, Verdict } from './answers.js'
 
@@ -167,7 +167,9 @@ function checkDocument(answer: Checkable): Verdict<FormSchema, AuthoringProblem>
   const refusal = engineRefusal(parsed as FormSchema)
   if (refusal !== undefined) return { ok: false, problem: { kind: 'logic', detail: refusal } }
 
-  const silent = expressionProblems(parsed as FormSchema)
+  // A temporal answer compared across widths is refused at publish (0238), so it is the same
+  // kind of problem here: valid, opens, and orders its answers wrongly.
+  const silent = [...expressionProblems(parsed as FormSchema), ...crossWidthComparisons(parsed as FormSchema)]
   if (silent.length > 0) {
     // The failure worth the whole loop. These compile and then evaluate to
     // nothing, so the form would publish cleanly and quietly do nothing.

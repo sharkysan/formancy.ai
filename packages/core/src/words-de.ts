@@ -56,6 +56,7 @@ export const FORM_WORDS_DE = {
   'error.url': 'Geben Sie eine Webadresse ein, die mit https:// oder http:// beginnt.',
   'error.uuid': 'Geben Sie eine Kennung aus 32 Hexadezimalziffern in fünf Gruppen ein.',
   'error.shape': 'Geben Sie die Antwort als {format} ein.',
+  'error.shape.day': 'Geben Sie die Antwort als {format} ein, an einem Tag, den es gibt.',
   // A colon rather than a sentence: a date needs an article ("den 3. Mai") that a time must not have.
   'error.earliest': 'Frühestens: {earliest}.',
   'error.latest': 'Spätestens: {latest}.',

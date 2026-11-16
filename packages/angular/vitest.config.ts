@@ -37,6 +37,21 @@ export default defineConfig({
      * performance gate in `pnpm bench`, not by this number.
      */
     testTimeout: RENDER_TIMEOUT_MS,
+    /*
+     * Child processes, which is Vitest's own default and every other package's pool here,
+     * not the Analog plugin's `vmThreads` default. A worker thread has its
+     * own copy of `process.env`, so `vi.stubEnv('TZ', …)` never reaches the clock there: the
+     * typed datetime control is shown on the wall clock of the person, and a test that pins a
+     * zone and silently reads the machine's own passes or fails by where it is run. Measured:
+     * under `vmThreads` a `Date` stayed in the machine's zone after the stub; under `forks` it
+     * moved.
+     *
+     * The cost, measured on three files with one worker on Windows: 16.3 s under `forks`
+     * against about 9.7 s under `vmThreads`. Test time is the same; the extra is about 2.2 s
+     * per file of starting a process. In return `forks` keeps per-file isolation (a VM pool
+     * does not honour `isolate`) and does not carry the memory leaks VM pools are known for.
+     */
+    pool: 'forks',
     include: ['src/**/*.test.ts', 'material/src/**/*.test.ts'],
     environment: 'jsdom',
     passWithNoTests: true,

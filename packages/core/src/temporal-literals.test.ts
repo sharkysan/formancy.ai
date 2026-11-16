@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { temporalExample, temporalShape } from '@formancy/spec'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { misshapenTemporalLiterals } from './temporal-literals.js'
 
@@ -48,6 +49,21 @@ describe('a temporal field compared with text', () => {
     expect(found?.message).toContain('"departs"')
     expect(found?.message).toContain('"2026-10-08T10:30"')
     expect(found?.message).toContain('YYYY-MM-DDTHH:MM:SSZ')
+  })
+
+  test('gives, for each type, the shape its answers have and an answer in it', () => {
+    // The letters are prose and the example a copy, and nothing held either to the shape: a
+    // sentence saying "HH:MM:SS" for a field whose answers are "HH:MM" sends the author to
+    // write a literal that orders wrongly too. Read back from the sentence, each letter a
+    // digit, the letters must be an answer of the field's own shape, and the example must be
+    // the one every sentence about a temporal answer gives.
+    const said = misshapenTemporalLiterals(trip([visible('departs > "x"'), visible('leave < "x"'), visible('opens == "x"')]))
+    expect(said).toHaveLength(3)
+    for (const { type, message } of said) {
+      const [, letters, example] = /written "([^"]+)".*?, like "([^"]+)"/.exec(message) ?? []
+      expect(new RegExp(temporalShape(type)).test(letters?.replace(/[YMDHS]/g, '0') ?? ''), `${type}: ${String(letters)}`).toBe(true)
+      expect(example, type).toBe(temporalExample(type))
+    }
   })
 
   test('and says nothing about one written as the answers are', () => {

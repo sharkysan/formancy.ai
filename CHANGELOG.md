@@ -10,6 +10,75 @@ later.
 
 ## Unreleased
 
+**Added: a time or a date and time can be recorded to the second, or to a fraction of one, with
+`precision` on a `time` or `datetime` field, in spec version 6, which opens for it.** A test run's
+start, its end and the steps between had no room below the minute: a `time` answer was `HH:MM`, and
+a date and time's control showed minutes, so an edit set its seconds to `00`. A reading from a
+device's log to the microsecond was refused as `shape`, since no answer could carry a fraction of a
+second. `precision` says how many digits follow the seconds, 0 to 9, counted as a
+database counts them in `timestamp(p)`, so that what is collected is what its storage keeps; every
+answer to the field has that width, `09:30:00.123` or `2026-10-08T09:30:00.123456Z`. Absent,
+nothing changes: a time is still `09:30`, a date and time still ends in whole seconds, and the
+control is still the browser's, to the minute
+([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
+
+- **The control is typed, in React and Angular**: every declared digit is shown and typed into, a
+  date and time on the person's own clock and stored in UTC with its fraction copied digit for
+  digit, never rounded and never passed through `Date`, which keeps milliseconds. It writes only
+  when the person types, so a value supplied and never touched is submitted byte for byte. An
+  entry that stops short is refused as `shape`, never completed. Angular Material draws such a time
+  with the default control, as it does a masked text
+  ([0132](docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
+- **A paste** of a whole time, or of a whole instant with `Z` or an offset, is the answer at any
+  width, an offset turned into the same instant in UTC. Digits that fit, or text with each separator where
+  the control writes it, are typed. Anything else, and a paste of nothing, changes nothing. It is
+  decided once, by `pasteOutcome` in `@formancy/spec`, so no two controls read a paste two ways.
+  **A drop is read the same way**, as a paste over the whole field: read as typing instead, a
+  dropped `2026-11-15T13:03:27.415Z` lost its `Z` to the mask and was stored in Zurich as
+  `…T12:03:27.415Z`, complete, valid and an hour off.
+- **The engine checks an answer at the field's width**, in the browser and on the replay, and on a
+  field with a precision **refuses a day the calendar does not have**, such as 30 February, as
+  `shape`. A field without a precision accepts it, as `0.13.0` does.
+- **A bound is written at the field's width**, or the document is refused as `bounds.width`, and
+  on a day that exists, `bounds.noSuchDay`. A `default` of another width keeps the form from
+  opening. A computed date and time is written padded to the width, and not at all when a digit
+  other than zero falls beyond it: never rounded. A rule computes to the millisecond, so above
+  precision 3 the digits past it are zeros added, not measured.
+- **A publish refuses a rule comparing such a field across widths**, with a literal or with another
+  field of another shape, because text of two widths orders wrongly and never compares equal. The
+  sentence says what to write for what is compared: a literal at the field's width, or on a date
+  and time, where the literal is an instant, both sides through `timestamp()`; one precision for
+  two fields of one type, or for two dates and times `timestamp()` on both; and nothing for a date
+  against a date and time, since which day an instant falls on depends on a zone the rule does not
+  have, nor for a time against either, since a time of day names no day. `timestamp()` is offered
+  nowhere else: on a time or a date it is an error, and a `visible` rule that errors shows its
+  field. `opens != ""` on such a field is refused with the test that asks whether it was answered,
+  and `opens == ""` with the one that asks whether it was not. A comparison through a list rule's
+  own variable, `steps.all(s, s.at >= startedAt)`, is not seen: give the fields compared there one
+  precision, or, for two dates and times, compare them with `timestamp()`, which compares to the
+  millisecond and no finer.
+- **An error, a submission read back, the type `formancy types` prints and a model's briefing for
+  examples** each say the answer at the field's width; a date and time with a precision is read back
+  to the second, with every digit after it.
+- **The playground's starter** has a date and time to the millisecond and a time to the second
+  with a bound.
+- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same
+  shapes precompiled, so a host's own check need not compile a pattern), `temporalExample`,
+  `temporalDateExists`, `temporalEntryMask`, `typedFromStored`, `storedFromTyped`, `pasteOutcome`
+  and the type `TypedTemporalType` in `@formancy/spec`; `comparedFields` and its type
+  `ComparedFields` in `@formancy/expressions`; `crossWidthComparisons` and its type
+  `CrossWidthComparison` in `@formancy/core/authoring`. A host that translates the renderer's
+  words adds one, `error.shape.day`, the shape error on a date and time with a precision, which
+  also asks for a day that exists.
+
+Version 6 is open and in no release. `0.13.0` and earlier refuse every document declaring `"6"`, not
+only one using `precision`, and this source writes `"6"` for every new form, so upgrade the readers
+before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). A
+change to `precision` is `field.changed` and lossy, and submissions already stored keep the width
+they were written in. The builders' property panels offer `precision`; their condition editors still
+write a time to the minute and a date and time to the second, so a rule they write on a time with a
+precision, or on a date and time with one above 0, is refused at publish, not published wrong.
+
 **Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
 release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,
 `departs > "2026-10-08T10:30"`, and that was compared as text with answers stored in UTC with

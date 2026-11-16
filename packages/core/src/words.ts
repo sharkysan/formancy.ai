@@ -119,8 +119,13 @@ export const FORM_WORDS = {
   'error.email': 'Enter an email address, such as name@example.com.',
   'error.url': 'Enter a web address that starts with https:// or http://.',
   'error.uuid': 'Enter an identifier of 32 hexadecimal digits in five groups.',
-  /** `{format}` is the stored form a date, time or date and time takes. */
+  /**
+   * `{format}` is the stored form a date, time or date and time takes: in letters for a field
+   * without a precision, and as an answer at its width for one with a precision (0238).
+   */
   'error.shape': 'Enter it as {format}.',
+  /** An instant on a field with a precision, which refuses a day the calendar does not have as `shape` too. */
+  'error.shape.day': 'Enter it as {format}, on a day the calendar has.',
   'error.earliest': 'Enter {earliest} or later.',
   'error.latest': 'Enter {latest} or earlier.',
   'error.minItems.choices': { one: 'Choose at least {count}.', other: 'Choose at least {count}.' },

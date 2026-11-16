@@ -1,5 +1,6 @@
 import { useField } from '../use-field.js'
 import { FieldShell } from './internals.js'
+import { TypedTemporalField } from './typed-temporal-field.js'
 import type { FieldComponentProps } from './internals.js'
 
 /**
@@ -41,6 +42,8 @@ export function DateField({ path, label }: FieldComponentProps) {
  */
 export function TimeField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  // A precision is typed, not picked: no browser control holds a seventh digit.
+  if (typeof field.def.precision === 'number') return <TypedTemporalField path={path} label={label} type="time" />
   return (
     <FieldShell path={path} field={field} label={label}>
       <input
@@ -84,6 +87,8 @@ export function TimeField({ path, label }: FieldComponentProps) {
  */
 export function DateTimeField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  // As for a time: typed on the person's own wall clock, stored as the UTC instant.
+  if (typeof field.def.precision === 'number') return <TypedTemporalField path={path} label={label} type="datetime" />
   const stored = typeof field.value === 'string' ? field.value : ''
   const asLocal = (): string => {
     if (stored === '') return ''

@@ -1,5 +1,7 @@
+import { NgComponentOutlet } from '@angular/common'
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
+import { FormancyTypedTemporalField } from './typed-temporal-field.js'
 
 /**
  * The temporal controls, each holding one canonical fixed-width string.
@@ -46,29 +48,34 @@ export class FormancyDateField extends FieldComponentBase {
 @Component({
   selector: 'formancy-time-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
+  imports: [FormancyFieldShell, NgComponentOutlet],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-      <input
-        type="time"
-        [id]="control().id"
-        [attr.name]="control().name"
-        [attr.aria-invalid]="control()['aria-invalid']"
-        [attr.aria-required]="control()['aria-required']"
-        [attr.aria-describedby]="control()['aria-describedby']"
-        [attr.min]="earliest()"
-        [attr.max]="latest()"
-        [disabled]="control().disabled === true"
-        [readOnly]="field.snapshot().readOnly"
-        [value]="text()"
-        (input)="onInput($event)"
-        (blur)="field.touch()"
-      />
-    </formancy-field-shell>
+    @if (typed()) {
+      <ng-container *ngComponentOutlet="typedControl" />
+    } @else {
+      <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+        <input
+          type="time"
+          [id]="control().id"
+          [attr.name]="control().name"
+          [attr.aria-invalid]="control()['aria-invalid']"
+          [attr.aria-required]="control()['aria-required']"
+          [attr.aria-describedby]="control()['aria-describedby']"
+          [attr.min]="earliest()"
+          [attr.max]="latest()"
+          [disabled]="control().disabled === true"
+          [readOnly]="field.snapshot().readOnly"
+          [value]="text()"
+          (input)="onInput($event)"
+          (blur)="field.touch()"
+        />
+      </formancy-field-shell>
+    }
   `,
 })
 /**
- * A time of day, as `HH:MM`.
+ * A time of day, as `HH:MM`, when the field declares no `precision`; with one it is
+ * `FormancyTypedTemporalField`, typed into its own shape.
  *
  * `<input type="time">` gives the platform's picker, keyboard handling and locale
  * display — a 12-hour clock where the reader expects one — while its `value` is
@@ -79,6 +86,10 @@ export class FormancyDateField extends FieldComponentBase {
  * offering precision the format discards loses what somebody typed.
  */
 export class FormancyTimeField extends FieldComponentBase {
+  /** A `precision` is typed into its own shape, which no browser picker can hold; without one, the picker. */
+  protected readonly typed = computed(() => typeof this.field.snapshot().def.precision === 'number')
+  protected readonly typedControl = FormancyTypedTemporalField
+
   protected readonly text = computed(() => {
     const value = this.field.snapshot().value
     return typeof value === 'string' ? value : ''
@@ -106,23 +117,27 @@ export class FormancyTimeField extends FieldComponentBase {
 @Component({
   selector: 'formancy-datetime-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
+  imports: [FormancyFieldShell, NgComponentOutlet],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-      <input
-        type="datetime-local"
-        [id]="control().id"
-        [attr.name]="control().name"
-        [attr.aria-invalid]="control()['aria-invalid']"
-        [attr.aria-required]="control()['aria-required']"
-        [attr.aria-describedby]="control()['aria-describedby']"
-        [disabled]="control().disabled === true"
-        [readOnly]="field.snapshot().readOnly"
-        [value]="localText()"
-        (input)="onInput($event)"
-        (blur)="field.touch()"
-      />
-    </formancy-field-shell>
+    @if (typed()) {
+      <ng-container *ngComponentOutlet="typedControl" />
+    } @else {
+      <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+        <input
+          type="datetime-local"
+          [id]="control().id"
+          [attr.name]="control().name"
+          [attr.aria-invalid]="control()['aria-invalid']"
+          [attr.aria-required]="control()['aria-required']"
+          [attr.aria-describedby]="control()['aria-describedby']"
+          [disabled]="control().disabled === true"
+          [readOnly]="field.snapshot().readOnly"
+          [value]="localText()"
+          (input)="onInput($event)"
+          (blur)="field.touch()"
+        />
+      </formancy-field-shell>
+    }
   `,
 })
 /**
@@ -144,6 +159,10 @@ export class FormancyTimeField extends FieldComponentBase {
  * ordering work.
  */
 export class FormancyDateTimeField extends FieldComponentBase {
+  /** A `precision` is typed into its own shape, which no browser picker can hold; without one, the picker. */
+  protected readonly typed = computed(() => typeof this.field.snapshot().def.precision === 'number')
+  protected readonly typedControl = FormancyTypedTemporalField
+
   protected readonly localText = computed(() => {
     const value = this.field.snapshot().value
     if (typeof value !== 'string' || value === '') return ''

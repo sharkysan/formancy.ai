@@ -1,4 +1,5 @@
 import type { AutocompleteToken } from './autocomplete.js'
+import { temporalShape } from './temporal.js'
 import type { FieldWidget } from './widgets.js'
 /**
  * The formancy form schema.
@@ -42,12 +43,12 @@ export interface FormSchema {
  * compatible the rest of it looks
  * ([0051](../../../docs/decisions/0051-spec-2-adds-types.md)).
  */
-export const SPEC_VERSIONS = ['1', '2', '3', '4', '5'] as const
+export const SPEC_VERSIONS = ['1', '2', '3', '4', '5', '6'] as const
 
 export type SpecVersion = (typeof SPEC_VERSIONS)[number]
 
 /** What a document gets when nothing says otherwise: the newest this package speaks. */
-export const CURRENT_SPEC_VERSION: SpecVersion = '5'
+export const CURRENT_SPEC_VERSION: SpecVersion = '6'
 
 /** Field types version 1 defines. Everything else needs `specVersion: "2"`. */
 export const SPEC_1_FIELD_TYPES = [
@@ -218,11 +219,11 @@ export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
  */
 export const TEMPORAL_SHAPES = {
   /** `YYYY-MM-DD`, ten characters. Unchanged — version 1 fixed it. */
-  date: '^\\d{4}-\\d{2}-\\d{2}$',
+  date: temporalShape('date'),
   /** `HH:MM`, five characters, 24-hour. No seconds, no zone, no `24:00`. */
-  time: '^(?:[01]\\d|2[0-3]):[0-5]\\d$',
+  time: temporalShape('time'),
   /** `YYYY-MM-DDTHH:MM:SSZ`, twenty characters. Seconds and `Z` mandatory. */
-  datetime: '^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$',
+  datetime: temporalShape('datetime'),
 } as const satisfies Partial<Record<FieldType, string>>
 
 /** The field types whose answer is one of the shapes above. */
@@ -442,6 +443,12 @@ export interface FieldDef {
    */
   earliest?: string
   latest?: string
+  /**
+   * `time` and `datetime`: how many digits follow the seconds in the answer, 0 to 9 — a
+   * database's own word (`timestamp(p)`). Absent keeps the shape of version 5; `0` and up
+   * give a typed control, and every width is fixed, never abbreviated. Spec version 6.
+   */
+  precision?: number
   /** number fields: the valid range. */
   min?: number
   max?: number

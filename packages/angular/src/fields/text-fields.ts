@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core'
-import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
+import { answerFromText, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { injectScanner } from '../scanning.js'
 import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FormancyCharacterCount } from './character-count.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
+import { applyMaskedEdit } from './masked-edit.js'
 
 /**
  * The controls that take typed text, and the widgets over them.
@@ -132,17 +133,7 @@ export class FormancyTextField extends FieldComponentBase {
       return
     }
     const forward = (event as InputEvent).inputType === 'deleteContentForward'
-    const edit = editMasked(mask, this.answer(), input.value, {
-      caret: input.selectionStart,
-      direction: forward ? 'forward' : 'backward',
-    })
-    // Written to the control here rather than left to the binding: a refused character
-    // leaves the answer — and so `text()` — unchanged, and Angular writes a bound value
-    // only when it changes, so the character would stay on screen. And the caret can
-    // only be placed in text that is already there.
-    input.value = formatMasked(mask, edit.answer)
-    input.setSelectionRange(edit.caret, edit.caret)
-    this.commit(edit.answer)
+    this.commit(applyMaskedEdit(input, mask, this.answer(), input.value, { caret: input.selectionStart, forward }))
   }
 
   /**

@@ -28,10 +28,10 @@ const errorsOf = (document: FormSchema): string[] => {
 }
 
 describe('what each version defines', () => {
-  test('the versions this package speaks are 1 to 5, newest by default', () => {
-    // Version 4 is frozen, like the three before it (0140); version 5 is open (0194).
-    expect([...SPEC_VERSIONS]).toEqual(['1', '2', '3', '4', '5'])
-    expect(CURRENT_SPEC_VERSION).toBe('5')
+  test('the versions this package speaks are 1 to 6, newest by default', () => {
+    // Version 4 is frozen, like the three before it (0140); version 5 froze with its batch (0201); version 6 is open.
+    expect([...SPEC_VERSIONS]).toEqual(['1', '2', '3', '4', '5', '6'])
+    expect(CURRENT_SPEC_VERSION).toBe('6')
   })
 
   test('and every type and widget belongs to a version by name, so a new one is version 5’s by name too', () => {

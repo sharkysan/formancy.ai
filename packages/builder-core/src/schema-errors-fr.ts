@@ -19,6 +19,10 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
   'grid.columnTwice': 'Deux colonnes affichent toutes deux « {field} ». Une réponse ne peut pas remplir deux colonnes.',
   'bounds.crossed':
     'La borne inférieure « {earliest} » vient après la borne supérieure « {latest} » : aucune réponse ne pourrait donc être acceptée. Inversez-les, ou supprimez-en une.',
+  'bounds.width':
+    'Cette borne n’est pas écrite comme les réponses du champ, et une borne est comparée à une réponse comme du texte : elle serait donc mal ordonnée. Écrivez-la exactement comme une réponse s’écrit, comme « {expected} ».',
+  'bounds.noSuchDay':
+    '« {bound} » tombe un jour que le calendrier n’a pas. Un champ doté d’une précision refuse un tel jour comme réponse : une borne écrite ce jour-là ne correspond donc à aucune réponse qu’il puisse recevoir. Écrivez un jour qui existe.',
   'key.taken': 'Un autre champ utilise déjà la clé « {key} ». Une clé désigne une réponse : deux champs ne peuvent donc pas la partager.',
   'key.reserved': '« {key} » est réservé : c’est ainsi qu’une ligne de répétition porte son identité, si bien qu’aucun champ ne peut s’appeler ainsi.',
   'key.unstorable':

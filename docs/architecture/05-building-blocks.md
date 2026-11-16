@@ -75,6 +75,9 @@ The data contract, and nothing that evaluates it.
 | `option-image.ts` | An option's picture: where it may come from (`isImageSource`, the schema's own pattern, held to it by a test) and where it can be shown (`optionImageRefusal`) — asked by the validator, both renderers and the builder ([0126](../decisions/0126-an-option-may-carry-a-picture.md)) |
 | `options-source.ts` | What a deployment's own source may hand a control, checked once for both renderers. `acceptRemoteOptions` refuses a list whole for one bad row ([0077](../decisions/0077-options-may-come-from-a-named-source.md)); `acceptRemoteAnswer` reads every row or one page that says its list goes on and counts what it withholds, refusing a page whole for anything ambiguous, and `capRemoteAnswer` decides what a control can truthfully say about the rows it does not show ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)). The flow they sit in, from the browser's search to the server's membership check, is [§6.16](06-runtime-view.md) |
 | `mask.ts` | An input mask: whether an answer fills it, how the control shows it, and `editMasked` — where a typed, deleted or pasted character lands. Here because the engine and both renderers act on a mask and must agree ([0125](../decisions/0125-a-mask-stores-what-was-typed.md)) |
+| `temporal.ts` | A temporal answer's shape for a type and a `precision`, an answer in it for sentences, and whether a day exists: the one function the schema's patterns, the validator, the engine and the publish check are held to ([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)) |
+| `temporal-entry.ts` | Typing a time or an instant with a precision, on the mask core: the mask, the conversion between a person's wall clock and the stored instant with its fraction copied digit for digit, and `pasteOutcome`, the one decision every control makes about a paste or a drop — an answer, typing, or nothing. Here because React's control and Angular's, which a Material form draws too, type into it and must agree ([0091](../decisions/0091-a-second-builder-is-a-binding.md)) |
+| `temporal-bounds.ts` | What `validate.ts` asks of a temporal field's bounds: written at the field's width, and on a field with a precision, on a day that exists |
 | `pattern.ts` | How a field's `pattern` runs: anchored to the whole answer, with the `u` flag. Here because the validator, the engine and the server's backtracking analysis must read one expression; the analysis read another until [0226](../decisions/0226-a-pattern-is-analysed-as-it-runs.md) |
 | `schema-errors.ts` | Every reason a document is refused, by code, in English. An error carries its code and the values its sentence names beside the English, so a builder can say it in another language; `schemaError` takes exactly the values a code's sentence names, checked by the compiler ([0122](../decisions/0122-a-validator-error-has-a-code.md)) |
 | `canonical.ts` | Deterministic serialisation. **Throws** rather than dropping undefined, NaN or Infinity ([0010](../decisions/0010-canonical-hash.md)) |
@@ -168,6 +171,7 @@ Deliberately small, and structurally parallel:
 | A design system's registry | — | `material/src/` — `@formancy/angular/material`, Angular Material for the types it has an equivalent for, the default control for the rest ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |
 | File uploads, drawn | `fields/file-field.tsx` | `fields/file-field.ts`, `fields/file-thumbnail.ts` |
 | Options from a source ([§6.16](06-runtime-view.md)) | `options-source.ts`, `use-sourced-options.ts` | `options-source.ts`, `sourced-options.ts` |
+| A time or an instant with a `precision`, typed ([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)) | `fields/typed-temporal-field.tsx` | `fields/typed-temporal-field.ts`, which Material draws too, as it draws a mask |
 | A host's content under a field [0233](../decisions/0233-a-host-may-add-content-under-a-field.md) | `field-addition.tsx`, by context from `FormancyForm` | `field-addition.ts`, by injection token from `formancy-form`, the template given the field's binding |
 | A host's content beside a select's or a typeahead's box [0237](../decisions/0237-a-host-may-add-content-beside-a-fields-control.md) | `field-beside.tsx`, by context from `FormancyForm`, drawn by its `FieldControlRow` round the box | `field-beside.ts`, by injection token from `formancy-form`, read by the two controls' `beside`, which draw the box once as a template, alone or first in the row |
 | Conformance driver | `conformance-driver.tsx` | `conformance-driver.ts` |
@@ -196,8 +200,9 @@ case list pinned in a test, so a case that silently stopped being embedded is
 caught.
 
 `core` also publishes `runScenarios`, from `@formancy/core/authoring` beside `expressionProblems`,
-`unknownReferences` and `misshapenTemporalLiterals`, the entry an author's tools import and no form loads
-([0217](../decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)). It is the only answer this product has to a
+`unknownReferences`, `misshapenTemporalLiterals` and `crossWidthComparisons` — the rules a publish refuses for comparing a
+time or an instant across widths ([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)) — the entry an author's
+tools import and no form loads ([0217](../decisions/0217-what-no-form-runs-leaves-the-engine-barrel.md)). It is the only answer this product has to a
 condition that type-checks and is still the wrong business rule: an example with its
 answer written down, run against the real engine in the mode asked for. It reports
 rather than asserts, because the caller is sometimes a test and sometimes a panel. Every path

@@ -90,6 +90,23 @@ describe('validate_form', () => {
     expect((result.data as { valid: boolean }).valid).toBe(true)
   })
 
+  test('a temporal comparison across widths is reported as invalid, as publish refuses it', () => {
+    // Passing it here and refusing it at publish would send an agent round the loop the tool exists to save (0238).
+    const result = validateForm({
+      ...valid,
+      specVersion: '6',
+      model: {
+        fields: [...valid.model.fields, { key: 'opens', type: 'time', label: 'Opens', precision: 3 }],
+      },
+      logic: { rules: [{ target: 'company', kind: 'visible', cel: 'opens > "09:00"' }] },
+    })
+
+    expect(result.ok).toBe(false)
+    const { crossWidthComparisons } = result.data as { crossWidthComparisons: { paths: string[] }[] }
+    expect(crossWidthComparisons).toHaveLength(1)
+    expect(crossWidthComparisons[0]?.paths).toEqual(['opens'])
+  })
+
   test('and the summary says why nothing would report it at runtime', () => {
     // A total, not `seats` computed from itself: that is a cycle, which the
     // engine refuses before this check is ever reached — as the server does.

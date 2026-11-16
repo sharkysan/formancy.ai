@@ -172,16 +172,44 @@ function sayAnswer(
   }
 }
 
-/** A date as the reader writes one; a time as it reads everywhere; an instant in UTC, said so. */
+/** A date as the reader writes one; a time as it reads everywhere, every digit with it; an instant in UTC, said so. */
 function temporal(def: FieldDef, value: string, language: string): string {
   if (def.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return new Intl.DateTimeFormat(language, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`))
   }
-  if (def.type === 'datetime' && !Number.isNaN(Date.parse(value))) {
-    const said = new Intl.DateTimeFormat(language, { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(value))
-    return `${said} UTC`
-  }
+  if (def.type === 'datetime' && !Number.isNaN(Date.parse(wholeSeconds(value)))) return `${instant(value, def.precision, language)} UTC`
   return value
+}
+
+/**
+ * An instant without its fraction, for `Date`. ECMAScript defines a date string's fraction as
+ * three digits, and what an engine makes of more is its own: V8 cuts them, and one that rounds
+ * would read …:59.9999999 as the next minute.
+ */
+function wholeSeconds(value: string): string {
+  return value.replace(/\.\d+Z$/, 'Z')
+}
+
+/**
+ * An instant as the reader writes one, in UTC. Without a precision, to the minute, which is all
+ * its control types. With one (0238), to the second, and every digit after the seconds the answer
+ * holds copied as stored: `Date` keeps milliseconds, so a fraction read through it would be cut,
+ * and a reviewer would read a moment the submission does not hold.
+ */
+function instant(value: string, precision: number | undefined, language: string): string {
+  const at = new Date(wholeSeconds(value))
+  if (precision === undefined) return new Intl.DateTimeFormat(language, { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }).format(at)
+  const fraction = /\.(\d+)Z$/.exec(value)?.[1]
+  return new Intl.DateTimeFormat(language, { dateStyle: 'long', timeStyle: 'medium', timeZone: 'UTC' })
+    .formatToParts(at)
+    .map((part) => (part.type === 'second' && fraction !== undefined ? `${part.value}${fractionSeparator(language)}${fraction}` : part.value))
+    .join('')
+}
+
+/** What the language writes between a time's seconds and their fraction, read from its own time: "." in English, "," in German. */
+function fractionSeparator(language: string): string {
+  const parts = new Intl.DateTimeFormat(language, { second: 'numeric', fractionalSecondDigits: 1, timeZone: 'UTC' }).formatToParts(0)
+  return parts.find((part, at) => part.type === 'literal' && parts[at + 1]?.type === 'fractionalSecond')?.value ?? '.'
 }
 
 /**

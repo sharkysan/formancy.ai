@@ -13,6 +13,7 @@ import { maskHasPositions } from './mask.js'
 import { PATTERN_FLAGS } from './pattern.js'
 import { optionImageRefusal } from './option-image.js'
 import { schemaError } from './schema-errors.js'
+import { temporalBoundErrors } from './temporal-bounds.js'
 import type { SchemaError } from './schema-errors.js'
 
 /** One reason a document is not a valid formancy form. */
@@ -125,7 +126,13 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     // a plain string comparison precisely because the shapes are fixed-width and
     // zero-padded: that is the property TEMPORAL_SHAPES exists to guarantee, and it
     // is why this rule can be three lines rather than a date parser.
-    if (field.earliest !== undefined && field.latest !== undefined && field.earliest > field.latest) {
+    //
+    // Only between bounds written at the field's width, on a day that exists: text of two widths
+    // has an order, but not the clock's, and naming both mistakes would send the author to fix the
+    // wrong one.
+    const widthErrors = temporalBoundErrors(field, path)
+    errors.push(...widthErrors)
+    if (widthErrors.length === 0 && field.earliest !== undefined && field.latest !== undefined && field.earliest > field.latest) {
       errors.push(
         schemaError(`${path}/earliest`, 'bounds.crossed', {
           earliest: field.earliest,
@@ -507,7 +514,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
  *
  * `__proto__` belongs to no one: an answer written under it replaces the object's
  * prototype, so a field keyed with it, or a matrix row valued with it, collected
- * answers no release ever stored. Refused although every version is frozen, because no
+ * answers no release ever stored. Refused although every released version is frozen, because no
  * document holding it ever worked (0185).
  */
 function reservedKeyErrors(schema: FormSchema): SchemaError[] {

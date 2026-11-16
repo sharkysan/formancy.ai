@@ -65,7 +65,7 @@ import { FormancyCharacterCount, FormancyErrorText } from '@formancy/angular'
   `,
 })
 export class FormancyMaterialTextField extends MaterialFieldBase {
-  /** A mask or a scanner is the default control's: Material has neither. */
+  /** A mask or a scanner is the default control's: Material has neither. (A time's `precision` is the same case.) */
   protected readonly plain = computed(() => {
     const def = this.field.snapshot().def
     return def.mask === undefined && def.widget === undefined
@@ -230,37 +230,44 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-time-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
   template: `
-    <mat-form-field [attr.data-formancy-field-path]="context.path">
-      <mat-label>{{ context.label }}</mat-label>
-      <input
-        matInput
-        type="time"
-        [id]="control().id"
-        [attr.name]="control().name"
-        [attr.min]="earliest()"
-        [attr.max]="latest()"
-        [required]="field.snapshot().required"
-        [disabled]="field.snapshot().disabled"
-        [readonly]="field.snapshot().readOnly"
-        [errorStateMatcher]="matcher"
-        [aria-describedby]="describedBy() ?? ''"
-        [value]="text()"
-        (input)="onInput($event)"
-        (blur)="field.touch()"
-      />
-      <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
-    </mat-form-field>
-    <!-- The field's help text under the box, at the id the box's describedby names (0194),
-         outside the form field as the count is: Material's own hint hides while an error
-         shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
-    @if (field.snapshot().description; as said) {
-      <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+    @if (plain()) {
+      <mat-form-field [attr.data-formancy-field-path]="context.path">
+        <mat-label>{{ context.label }}</mat-label>
+        <input
+          matInput
+          type="time"
+          [id]="control().id"
+          [attr.name]="control().name"
+          [attr.min]="earliest()"
+          [attr.max]="latest()"
+          [required]="field.snapshot().required"
+          [disabled]="field.snapshot().disabled"
+          [readonly]="field.snapshot().readOnly"
+          [errorStateMatcher]="matcher"
+          [aria-describedby]="describedBy() ?? ''"
+          [value]="text()"
+          (input)="onInput($event)"
+          (blur)="field.touch()"
+        />
+        <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
+      </mat-form-field>
+      <!-- The field's help text under the box, at the id the box's describedby names (0194),
+           outside the form field as the count is: Material's own hint hides while an error
+           shows, and the default control keeps both. Undrawn, the box pointed at nothing (0211). -->
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
+    } @else {
+      <ng-container *ngComponentOutlet="fallbackFor('time')" />
     }
   `,
 })
 export class FormancyMaterialTimeField extends MaterialFieldBase {
+  /** A `precision` is typed into its own shape, which no browser picker can hold: the default control's. */
+  protected readonly plain = computed(() => typeof this.field.snapshot().def.precision !== 'number')
+
   protected readonly text = computed(() => {
     const value = this.field.snapshot().value
     return typeof value === 'string' ? value : ''

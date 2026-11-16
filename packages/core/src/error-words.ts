@@ -1,3 +1,4 @@
+import { temporalExample } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
 import type { BuiltInErrorCode } from './error-codes.js'
 import type { FormText, FormWordId, FormWordValues } from './words.js'
@@ -75,7 +76,7 @@ const WORDED: Record<BuiltInErrorCode, Worded> = {
   email: said('error.email'),
   url: said('error.url'),
   uuid: said('error.uuid'),
-  shape: (def) => ({ id: 'error.shape', values: def === undefined ? {} : { format: STORED_FORM[def.type] ?? '' } }),
+  shape: shapeSentence,
   earliest: (def, locale) => ({ id: 'error.earliest', values: moment('earliest', def, locale) }),
   latest: (def, locale) => ({ id: 'error.latest', values: moment('latest', def, locale) }),
   minItems: counted('minItems'),
@@ -90,11 +91,25 @@ const WORDED: Record<BuiltInErrorCode, Worded> = {
   maxPoints: said('error.maxPoints'),
 }
 
-/** The form a temporal answer is typed in, which is the form `shape` refuses another of. */
+/** The form a temporal answer is stored in on a field without a precision, which is the form `shape` refuses another of. */
 const STORED_FORM: Partial<Record<FieldDef['type'], string>> = {
   date: 'YYYY-MM-DD',
   time: 'HH:MM',
   datetime: 'YYYY-MM-DDTHH:MM:SSZ',
+}
+
+/**
+ * What `shape` asks for. A field without a precision is 0.13.0's, and its sentence with it. One
+ * with a precision (0238) is asked for at its width, by an answer of that width, since letters
+ * cannot say how many digits follow the seconds; and an instant there is refused as `shape` on a
+ * day the calendar does not have as well, which the sentence cannot tell apart without the
+ * answer, so it asks for both.
+ */
+function shapeSentence(def: FieldDef | undefined): ReturnType<Worded> {
+  if (def === undefined) return { id: 'error.shape', values: {} }
+  if ((def.type !== 'time' && def.type !== 'datetime') || def.precision === undefined)
+    return { id: 'error.shape', values: { format: STORED_FORM[def.type] ?? '' } }
+  return { id: def.type === 'datetime' ? 'error.shape.day' : 'error.shape', values: { format: temporalExample(def.type, def.precision) } }
 }
 
 /** A bound left out of the document leaves its placeholder visible, as every word does. */

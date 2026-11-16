@@ -415,3 +415,26 @@ The audit log is the other record, and the two do different jobs: the audit log 
 what to whose data, in the transaction that did it, and is read by people with the right to;
 the request log says what the server answered, and how long it took, to whoever reads the
 process's output. That is why the request log is the one that can hold no subject.
+
+## 8.12 A temporal answer's shape
+
+CEL has no date type, so a rule and a bound compare a `date`, `time` or `datetime` answer as text,
+and text orders as time does only between strings of one fixed width
+([0067](../decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)). So a shape is a
+property of a field, not only of its type: a `time` or `datetime` may declare a `precision`, 0 to
+9 digits after the seconds, and every answer to that field has that one width
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
+
+- **One function gives the shape**, `temporalShape(type, precision)` in `@formancy/spec`, and
+  `temporalExample` an answer in it. The engine, the bound check, the publish check and the
+  sentences about a field with a precision read them; `TEMPORAL_SHAPES` is the no-precision case.
+  Where a shape is written by hand — the schema's bound patterns, the examples in their
+  descriptions — a test holds it to the function.
+- **A bound may be any width before its field is known, and only its field's after.** The schema's
+  patterns admit every width of the type (`temporalAnyShape`), because a bound cannot see its
+  field's precision; `validateSchema` holds it to the field's, and on a field with a precision to a
+  day that exists.
+- **An answer is its field's width**, checked by the engine on both sides of the replay; on a field
+  with a precision, on a day the calendar has too. A field without one is version 5's, unchanged.
+- **A comparison across widths is refused where it can be seen**: at publish, for a field with a
+  precision. One through a list rule's own variable cannot be (§11.2).

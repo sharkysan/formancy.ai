@@ -11,12 +11,50 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
+## Spec version 6 is OPEN
+
+Spec `"6"` is open as of 2026-11-15, and is the version this package writes: a new document
+declares it, and `upgradeSpecVersion` moves an older one to it unchanged but for the version
+line. **It is not frozen, and it is in no release yet.** A document written against it today is a
+document of a version that may still gain constructs; pin a reader to it knowing that, and freeze
+nothing on it until it says FROZEN here.
+
+It is a superset of version 5 and removes nothing. A reader pinned to spec 5, which every release
+up to 0.13.0 is, **refuses** a version 6 document rather than ignoring the part it does not know,
+as at every version before it ([0051](docs/decisions/0051-spec-2-adds-types.md)): upgrade the
+readers before the documents.
+
+### What version 6 adds so far
+
+- `precision` on a `time` or `datetime` field — how many digits follow the seconds in the
+  answer, 0 to 9, counted as a database counts them in `timestamp(p)`, so that a form can say
+  what its storage keeps. Absent, the shape is version 5's; `0` and up give a typed control. A
+  version 5 document carrying one is refused, naming the property. Changing or removing it on a
+  published form is a lossy change in the diff, because every answer's width changes with it;
+  submissions already stored are never converted
+  ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
+
+**Giving an existing field a precision** means writing what compares with it at the new width:
+its `earliest`, `latest` and `default`, and the literals in rules that compare it, as
+`opens > "09:00:00.000"` rather than `"09:00"`, and every field it is compared with at the same
+precision. The validator refuses a bound at another width and the engine a default, each naming
+how an answer at the width is written. A publish refuses a rule: one comparing text not at the
+width is told how the text is written there, and on a date and time, where the text is an instant,
+that both sides can go through `timestamp()`; one comparing two fields of different widths is told
+both widths and what to write for those two kinds — one precision for two fields of one type, and
+`timestamp()` too for two dates and times; nothing for a date against a date and time, since which
+day an instant falls on depends on a zone, nor for a time against either, since a time of day
+names no day; and `timestamp()` nowhere else. One comparing `""` is told the test that asks
+whether the field was answered, or for `==`, whether it was not. A rule comparing through a list
+rule's own variable, `steps.all(s, s.at >= startedAt)`, is the one it does not see. On a date and
+time, the field then also refuses an answer on a day the calendar does not have, which it
+accepted before.
+
 ## Spec version 5 is FROZEN
 
-Spec `"5"` is frozen as of 2026-10-27, with the batch it was opened for, and is the version this
-package writes: a new document declares it, and `upgradeSpecVersion` moves an older one to it
-unchanged but for the version line. It is first released with `0.8.0`. No version is open:
-version 6 opens when a construct needs one
+Spec `"5"` is frozen as of 2026-10-27, with the batch it was opened for. It is first released with
+`0.8.0`. Version 6, opened by the next construct that needed one as this record said it would be,
+is open above
 ([0201](docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md), [0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
 It is a superset of version 4 and removes nothing, and adds properties only — no field type,
@@ -359,7 +397,7 @@ again.
 
 ## Known pre-1.0 caveats
 
-- Every spec version is frozen; the PACKAGES are not. Their APIs will still change
+- Every released spec version is frozen; the PACKAGES are not. Their APIs will still change
   before 1.0, and those changes are documented here.
 - An asynchronous validator is not a property on a rule. It is `kind: "check"`, a rule kind
   in spec 3 that names a check the deployment answers

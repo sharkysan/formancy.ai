@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import type { ComponentType, ReactNode } from 'react'
-import { isImageSource } from '@formancy/spec'
+import { editMasked, formatMasked, isImageSource } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
 import { inOptionOrder } from '@formancy/core'
 import { errorSentence } from '@formancy/core/words'
@@ -283,4 +283,27 @@ export function OptionPicture({ option }: { option: ResolvedOption }) {
 export interface SignatureAnswerValue {
   drawn?: Array<Array<[number, number]>>
   typed?: string
+}
+
+/**
+ * Applies an edit to a masked control and returns the answer it leaves: the one place a
+ * masked control's text and caret are written, for `TextField` and the typed temporal
+ * control alike, so two controls cannot answer one keystroke differently (0125).
+ *
+ * Written to the control before React renders, so the caret can be placed in the text it
+ * belongs to: React would write the same text a moment later and leave the caret at its
+ * end. (A refused character React removes by itself, restoring the controlled value —
+ * measured, not assumed.)
+ */
+export function applyMaskedEdit(
+  input: HTMLInputElement,
+  mask: string,
+  answer: string,
+  next: string,
+  { caret, forward }: { caret: number | null; forward: boolean },
+): string {
+  const edit = editMasked(mask, answer, next, { caret, direction: forward ? 'forward' : 'backward' })
+  input.value = formatMasked(mask, edit.answer)
+  input.setSelectionRange(edit.caret, edit.caret)
+  return edit.answer
 }

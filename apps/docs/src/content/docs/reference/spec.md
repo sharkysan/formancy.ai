@@ -1,5 +1,5 @@
 ---
-title: Spec reference (v5)
+title: Spec reference (v6)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
@@ -9,7 +9,7 @@ the source of truth — edit it, not this page.
 :::
 
 :::note
-This page describes spec version 5. Earlier versions are **frozen**: a
+This page describes spec version 6. Earlier versions are **frozen**: a
 document that validates against one keeps validating. A newer version only adds, and
 a reader of an older one refuses a document it cannot fully understand rather than
 dropping an answer from it. See [Versioning](/docs/concepts/versioning/) for how that
@@ -22,9 +22,9 @@ A formancy form. The document holds the data contract only: what the form collec
 
 ### `specVersion`
 
-required · one of `"1"`, `"2"`, `"3"`, `"4"`, `"5"` · default `"5"`
+required · one of `"1"`, `"2"`, `"3"`, `"4"`, `"5"`, `"6"` · default `"6"`
 
-**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties; version 5, which is open, a field's `description`. The default is the newest version, which is the one this package writes.
+**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties; version 5 the `description`, `autocomplete`, `placeholder`, `default` and `shuffle` field properties, an option's `exclusive` and `keepPlace`, and a `validate` rule's `message`; version 6, which is open, a `time` or `datetime` field's `precision`. The default is the newest version, which is the one this package writes.
 
 ### `id`
 
@@ -137,8 +137,8 @@ What kind of answer the field collects, or — for a group, a page or a repeater
 - `"ranking"` — **Ranking.** Options put in order of preference. The answer is the values of the options in the order chosen, most preferred first, and an option nobody ranked is not in it — so to ask for a complete order, set the fewest ranked to the number of options.
 - `"matrix"` — **Matrix.** One question asked of several rows, with the same answers for each — how was the taste, the delivery, the price. The answer holds the column chosen for each row answered, under the row’s value, so a row added later leaves the answers already collected as they were.
 - `"date"` — **Date.** A calendar date, with no time of day.
-- `"time"` — **Time.** A time of day, with no date and no time zone: opening hours, an appointment slot. Stored as "HH:MM" on a 24-hour clock, zero-padded, so that comparing two answers as text gives the same order as comparing them as times. Because it carries no zone it is not an instant and cannot be compared with the current time.
-- `"datetime"` — **Date and time.** One moment in time, stored as "YYYY-MM-DDTHH:MM:SSZ" — always UTC, always with seconds. A reader types and reads it in their own zone; the answer records the instant. Numeric offsets are refused because "…10:00:00+03:00" sorts after "…08:00:00Z" as text while being earlier in fact, and the ordering is what makes an earliest or latest bound mean anything.
+- `"time"` — **Time.** A time of day, with no date and no time zone: opening hours, an appointment slot. Stored as "HH:MM" on a 24-hour clock, zero-padded — or, with a precision, with seconds and that many digits after them — so that every answer to the field has one width, and comparing two answers as text gives the same order as comparing them as times. Because it carries no zone it is not an instant and cannot be compared with the current time.
+- `"datetime"` — **Date and time.** One moment in time, stored as "YYYY-MM-DDTHH:MM:SSZ" — always UTC, always with seconds and, with a precision, that many digits after the seconds before the Z. A reader types and reads it in their own zone; the answer records the instant. Numeric offsets are refused because "…10:00:00+03:00" sorts after "…08:00:00Z" as text while being earlier in fact, and the ordering is what makes an earliest or latest bound mean anything.
 - `"file"` — **File upload.** One or more attached files. The submission stores what each file is and where it went — never its bytes — so a submission stays small and readable on its own.
 - `"richtext"` — **Formatted text.** Several lines of text the reader can emphasise, link and list. Stored as a restricted markup, not as HTML: nothing a reader writes is ever parsed as markup by the renderer, which is what keeps a submitted answer from becoming a script on the page that displays it.
 - `"signature"` — **Signature.** A mark somebody draws, or their name typed. Stored as points rather than as a picture, so it scales, diffs and means something to a reader that is not a browser — and never as stroke timing, which is what would make it biometric data.
@@ -442,29 +442,41 @@ optional · string · pattern `^\d{4}-\d{2}-\d{2}$`
 
 ##### `earliest`
 
-optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d$`
+optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,9})?)?$`
 
-**Earliest allowed.** The earliest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+**Earliest allowed.** The earliest time this field accepts, inclusive, written exactly as an answer is, at the field's width: 09:30 without a precision, 09:30:00 at precision 0, 09:30:00.000 at precision 3. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
 ##### `latest`
 
-optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d$`
+optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,9})?)?$`
 
-**Latest allowed.** The latest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+**Latest allowed.** The latest time this field accepts, inclusive, written exactly as an answer is, at the field's width: 09:30 without a precision, 09:30:00 at precision 0, 09:30:00.000 at precision 3. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+##### `precision`
+
+optional · integer · minimum 0 · maximum 9
+
+**Precision.** How many digits follow the seconds in the answer, from 0 to 9, counted as a database counts them in timestamp(p). Absent: a time is stored as 09:30 and a date and time as 2026-10-08T09:30:00Z, and the control is the browser's, to the minute. 0: a time is stored as 09:30:00 and a date and time as 2026-10-08T09:30:00Z, and the control is typed, to the second. 1 to 9: that many digits follow the seconds, always all of them and never abbreviated, as 09:30:00.123 or 2026-10-08T09:30:00.123Z. The bounds are written at the same width. With a precision, a date and time on a day the calendar does not have, such as 30 February, is refused, which a field without one accepts as version 5 did. A rule comparing the field as text with a literal or another field not at its width is refused at publish, but one comparing through a list rule's own variable, as `steps.all(s, s.at >= startedAt)`, is not seen: give the fields compared there one precision, or, for two dates and times, compare them with `timestamp()`, which compares to the millisecond. Submissions already stored are never converted, so changing it leaves an earlier answer in the width it was written in. Needs spec version 6.
 
 #### `datetime`
 
 ##### `earliest`
 
-optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
+optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?Z$`
 
-**Earliest allowed.** The earliest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+**Earliest allowed.** The earliest date and time this field accepts, inclusive, written exactly as an answer is, at the field's width: 2026-09-19T08:00:00Z without a precision or at precision 0, 2026-09-19T08:00:00.000Z at precision 3. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
 ##### `latest`
 
-optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
+optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?Z$`
 
-**Latest allowed.** The latest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+**Latest allowed.** The latest date and time this field accepts, inclusive, written exactly as an answer is, at the field's width: 2026-09-19T08:00:00Z without a precision or at precision 0, 2026-09-19T08:00:00.000Z at precision 3. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+##### `precision`
+
+optional · integer · minimum 0 · maximum 9
+
+**Precision.** How many digits follow the seconds in the answer, from 0 to 9, counted as a database counts them in timestamp(p). Absent: a time is stored as 09:30 and a date and time as 2026-10-08T09:30:00Z, and the control is the browser's, to the minute. 0: a time is stored as 09:30:00 and a date and time as 2026-10-08T09:30:00Z, and the control is typed, to the second. 1 to 9: that many digits follow the seconds, always all of them and never abbreviated, as 09:30:00.123 or 2026-10-08T09:30:00.123Z. The bounds are written at the same width. With a precision, a date and time on a day the calendar does not have, such as 30 February, is refused, which a field without one accepts as version 5 did. A rule comparing the field as text with a literal or another field not at its width is refused at publish, but one comparing through a list rule's own variable, as `steps.all(s, s.at >= startedAt)`, is not seen: give the fields compared there one precision, or, for two dates and times, compare them with `timestamp()`, which compares to the millisecond. Submissions already stored are never converted, so changing it leaves an earlier answer in the width it was written in. Needs spec version 6.
 
 #### `select`
 

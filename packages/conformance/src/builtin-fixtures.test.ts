@@ -66,6 +66,7 @@ describe('builtinFixtures', () => {
       'a repeater says when it holds more rows than it allows, or none where one is required',
       'a repeating group validates each item and re-indexes when one is removed',
       'a required field blocks submit until it has a value',
+      'a time or instant with a precision keeps the digits it was given, and refuses an entry that stops short',
       'a wizard validates the current page on next and the whole form on submit',
       'conditional visibility follows country',
       "several answers from one list, stored in the list's own order",
