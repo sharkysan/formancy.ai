@@ -173,7 +173,12 @@ Beside the three, a host may add content of its own **under** a field rather tha
 `fieldAddition`, called with each field's path, draws what it returns as the last thing in the
 field's wrapper, in a `field-addition` part the themes dress, and nothing where it returns nothing
 ([0233](../decisions/0233-a-host-may-add-content-under-a-field.md)). It is how a host shows what an answer points to without a stylesheet of its own
-reaching into the paper.
+reaching into the paper. And **beside** the box of a select or a typeahead, on the box's line:
+`fieldBeside` draws what it returns after the box, the two in a `field-control-row` and the content
+in a `field-beside` part, which each theme draws with the box as one field, its frame, underline,
+fill or shadow carried across a button there; nothing is wrapped where it returns nothing, and no
+other control asks ([0237](../decisions/0237-a-host-may-add-content-beside-a-fields-control.md)).
+It is where a host puts an action about the answer, joined to the box as an input group's button is.
 
 **Zero CSS is about appearance, and one property crossed that line.** A control
 declares what it needs in order to *work*; a theme declares how it looks

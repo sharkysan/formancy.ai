@@ -10,6 +10,7 @@ import { injectFieldContext } from '../registry.js'
 import { injectSourcedOptions, sameValues, storedValues } from '../sourced-options.js'
 import { FormancyErrorText } from './error-text.js'
 import { injectFieldAddition } from '../field-addition.js'
+import { injectFieldBeside } from '../field-beside.js'
 
 /**
  * The shell every control renders inside, and the base they all extend.
@@ -76,6 +77,11 @@ export abstract class FieldComponentBase {
   protected readonly field = injectField(this.context.path)
   /** The host's content under the field, for the controls that draw their own fieldset (0233). */
   protected readonly addition = injectFieldAddition(() => this.context.path)
+  /**
+   * The host's content beside the field's box, for the select and the typeahead, which draw it
+   * (0237). No other control reads it, so the host is never asked about a field with no box.
+   */
+  protected readonly beside = injectFieldBeside(() => this.context.path)
   protected readonly control = computed(() => this.field.snapshot().props.control)
   protected readonly engine = injectEngine()
   /** The author's example for the empty box, in the form's language (0196); null for none. */

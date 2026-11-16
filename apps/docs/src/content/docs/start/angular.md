@@ -163,6 +163,73 @@ It adds no role and no name, and no control is described by it: your links and b
 own names. In a matrix or a ranking, which are drawn as a fieldset disabled with its field, your
 controls are disabled with the field.
 
+### Content of your own beside a field's control
+
+`fieldBeside` draws a template of yours beside a field's box, on the box's own line: a button that
+opens the record a lookup points to, or one that clears the answer. It is called with the path of
+each select and each typeahead, a row's by its own, and the template it returns is drawn after the
+box, the two in a `data-formancy-part="field-control-row"` and yours in a
+`data-formancy-part="field-beside"`. Every theme draws a button there with the box as one field;
+anything else is laid out on the box's line and not dressed. The field's status and error stay under
+the box. Return nothing and nothing is wrapped, so the field is drawn as without it. No other
+control asks: a text field, a select whose source the deployment lacks, the fieldsets and Angular
+Material's controls draw no row. The template is given the path and the field's binding, as the
+addition's is
+([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-host-may-add-content-beside-a-fields-control.md)):
+
+```ts
+import { Component, viewChild } from '@angular/core'
+import type { TemplateRef } from '@angular/core'
+import { FormancyForm } from '@formancy/angular'
+import type { FieldBinding, FormancyFieldBeside, FormancyFieldBesideContext } from '@formancy/angular'
+
+@Component({
+  selector: 'app-order',
+  imports: [FormancyForm],
+  template: `
+    <formancy-form [fieldBeside]="beside" />
+    <ng-template #clear let-field="field">
+      <button
+        type="button"
+        aria-label="Clear the country"
+        title="Clear the country"
+        [attr.aria-disabled]="unavailable(field) ? 'true' : null"
+        (click)="clearIn(field)"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path [attr.d]="cross" /></svg>
+      </button>
+    </ng-template>
+  `,
+})
+export class OrderComponent {
+  private readonly clear = viewChild<TemplateRef<FormancyFieldBesideContext>>('clear')
+  protected readonly beside: FormancyFieldBeside = (path) => (path === 'country' ? this.clear() : undefined)
+  protected readonly cross = 'M4.28 3.22 8 6.94l3.72-3.72 1.06 1.06L9.06 8l3.72 3.72-1.06 1.06L8 9.06l-3.72 3.72-1.06-1.06L6.94 8 3.22 4.28z'
+
+  protected unavailable(field: FieldBinding): boolean {
+    const { value, disabled } = field.snapshot()
+    return value === null || value === undefined || disabled
+  }
+
+  protected clearIn(field: FieldBinding): void {
+    if (!this.unavailable(field)) field.setValue(null)
+  }
+}
+```
+
+A button there is the box's height and at least 44px wide, and an `svg` in it is sized to the text
+and filled in the button's colour, so an icon needs no styling of yours. The themes draw it
+unavailable as `:disabled` and as `aria-disabled="true"`; the second keeps it in the keyboard's
+order, so a button that becomes unavailable while the keyboard is on it, as a Clear does once
+pressed, keeps the keyboard rather than dropping it to the page.
+
+Give a template for a path or none, and keep to it: a template for a path that had none, or none for
+one that had one, draws the box again, and a person in it loses the keyboard. To show nothing for a
+while, give a template that draws nothing, which keeps the box, and whose empty place every theme
+hides. It adds no role and no name and describes no control, and it disables nothing: beside a field
+a rule disables your button stays operable, so one that changes the answer reads the binding's
+`disabled` first, as the Clear above does.
+
 ## Drive one field yourself
 
 `FormancyForm` is a convenience. Underneath, every field is a signal you can

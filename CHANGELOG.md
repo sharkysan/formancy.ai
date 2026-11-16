@@ -110,6 +110,27 @@ moves to; no theme did before (hazard D7a, [#345](https://github.com/sharkysan/f
 A host stylesheet that restyles a theme's select arrow needs a selector at least as strong as the
 theme's, which is now one attribute stronger: `[data-formancy-theme] [data-formancy-part='field'] select:not([multiple])`.
 
+**Added: a host may draw content of its own beside a select's or a typeahead's box, on the box's
+line.** `FormancyForm` in `@formancy/react` and `formancy-form` in `@formancy/angular` take
+`fieldBeside`, the sibling of `fieldAddition`: a function from a field's path to the host's content,
+a React node, or a template, which Angular gives the path and the field's binding. A select and a
+typeahead draw it after their box, the two wrapped in `data-formancy-part="field-control-row"` and the
+content in `data-formancy-part="field-beside"`; the field's status and error stay under the box, and
+no other control draws it. Every theme draws the box and a button there as one field, its frame,
+underline, fill or shadow, and an invalid field's mark, carried across the button; anything else
+there is laid out on the box's line and not dressed. The button is the box's height and at least
+44px wide, its icon sized to the text, and drawn unavailable alike as `:disabled` and as
+`aria-disabled`, which keeps it in the keyboard's order. Nothing is wrapped where it gives nothing,
+so a form without it is unchanged. Formancy Data asked for it: under each lookup
+its host draws a text button that opens the record the answer points to, on a line of its own that
+reads as the form's rather than the answer's, and it will draw the first of those as an icon button
+joined to the box ([0237](docs/decisions/0237-a-host-may-add-content-beside-a-fields-control.md)).
+The playground draws an Open beside the pickup point and a Clear beside the country, which is
+unavailable while the country is empty and while a rule disables it, since the engine takes a value
+set on a disabled field.
+`FormancyFieldBeside`, `FormancyFieldBesideContext`, `FORMANCY_FIELD_BESIDE` and `injectFieldBeside`
+are exported from `@formancy/angular`.
+
 ## 0.13.0 — 2026-11-05
 
 **A minor release; the spec version stays 5.** `0.13.0` reads and writes what `0.12.0` does, so a

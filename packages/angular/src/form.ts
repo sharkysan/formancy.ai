@@ -9,6 +9,8 @@ import { injectEngine } from './provide.js'
 import { FormancyLayout } from './layout.js'
 import { FORMANCY_FIELD_ADDITION } from './field-addition.js'
 import type { FormancyFieldAddition } from './field-addition.js'
+import { FORMANCY_FIELD_BESIDE } from './field-beside.js'
+import type { FormancyFieldBeside } from './field-beside.js'
 import { FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
 import { FormancyTextPipe, injectFormText } from './text.js'
 import { FormancyReview } from './review.js'
@@ -34,8 +36,12 @@ export interface SubmitOutcome {
 @Component({
   selector: 'formancy-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // The host's additions, for the fields the registry creates below; see field-addition.ts.
-  providers: [{ provide: FORMANCY_FIELD_ADDITION, useFactory: () => inject(FormancyForm).fieldAddition }],
+  // The host's additions and what it puts beside a control, for the fields the registry creates
+  // below; see field-addition.ts and field-beside.ts.
+  providers: [
+    { provide: FORMANCY_FIELD_ADDITION, useFactory: () => inject(FormancyForm).fieldAddition },
+    { provide: FORMANCY_FIELD_BESIDE, useFactory: () => inject(FormancyForm).fieldBeside },
+  ],
   imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyLayout, FormancyReview, FormancyTextPipe, NgTemplateOutlet],
   template: `
     <!-- What ends the form: sending it, or checking the answers first where it asks (0204). -->
@@ -135,6 +141,17 @@ export class FormancyForm {
    * `data-formancy-part="field-addition"`, and given the path and the field's binding (0233).
    */
   readonly fieldAddition = input<FormancyFieldAddition>()
+  /**
+   * The host's own content beside a field's control, on the control's line, by the field's path
+   * (a row's field by its own), or nothing: a template drawn after the box of a select or a
+   * typeahead, the two wrapped in `data-formancy-part="field-control-row"` and the content in
+   * `data-formancy-part="field-beside"`, and given the path and the field's binding (0237). No
+   * other control draws it, and a field the host gives nothing is drawn exactly as without it.
+   * A template for a path that had none, or none for a path that had one, draws the box again,
+   * and a person in it loses the keyboard: to show nothing for a while, give a template that
+   * draws nothing, which keeps the box.
+   */
+  readonly fieldBeside = input<FormancyFieldBeside>()
   readonly submitted = output<SubmitOutcome>()
 
   /** Whether the answers are being checked. */

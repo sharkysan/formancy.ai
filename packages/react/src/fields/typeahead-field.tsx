@@ -5,6 +5,7 @@ import { optionsStatus } from '@formancy/core/words'
 import { useFormText } from '../context.js'
 import type { FieldBinding } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
+import { FieldControlRow } from '../field-beside.js'
 import { FieldShell, optionDomId, statusState } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
@@ -156,91 +157,95 @@ export function TypeaheadSelectField({
 
   return (
     <FieldShell path={path} field={field} label={label}>
-      {/* The popup's containing block, and the reason it is an element rather than
-          nothing at all.
+      <FieldControlRow path={path}>
+        {/* The popup's containing block, and the reason it is an element rather than
+            nothing at all.
 
-          The popup was absolutely positioned with `top: auto`, on the reasoning that it
-          would then land at its STATIC position -- where it would have sat in the flow,
-          directly under the box. That holds inside a block container and NOT inside a
-          grid or flex one, and every theme lays a field out with `display: grid`. For an
-          absolutely positioned child of a grid container the static position is the
-          container's own content-box origin, so the list opened over its own label and
-          box rather than under them. Measured in the playground before the fix: the
-          field's top edge was 457px, an in-flow child would have sat at 537px, and the
-          popup sat at 459px.
+            The popup was absolutely positioned with `top: auto`, on the reasoning that it
+            would then land at its STATIC position -- where it would have sat in the flow,
+            directly under the box. That holds inside a block container and NOT inside a
+            grid or flex one, and every theme lays a field out with `display: grid`. For an
+            absolutely positioned child of a grid container the static position is the
+            container's own content-box origin, so the list opened over its own label and
+            box rather than under them. Measured in the playground before the fix: the
+            field's top edge was 457px, an in-flow child would have sat at 537px, and the
+            popup sat at 459px.
 
-          So the popup is given a containing block that wraps the control and nothing
-          else, and every theme positions it against that explicitly. The status region
-          stays OUTSIDE it, because it is a row of the field's grid exactly as the error
-          region is. */}
-      <div data-formancy-part="typeahead-anchor">
-        <input
-          type="text"
-          role="combobox"
-          {...field.controlProps}
-          data-formancy-part="typeahead"
-          // The browser's own suggestion list would sit over this one. This is not
-          // the HTML autofill token WCAG 1.3.5 asks for: that is a separate thing
-          // the spec has deliberately not spent the word on yet.
-          autoComplete="off"
-          aria-expanded={expanded}
-          aria-controls={listboxId}
-          aria-autocomplete="list"
-          {...(sourced.remote?.busy === true
-            ? // Busy, never disabled: disabling the element somebody just typed into
-              // blurs it and the browser resets focus to the document body -- the same
-              // reason the scanner's button stays enabled while a scan is in flight.
-              { 'aria-busy': true }
-            : {})}
-          {...(activeId === undefined ? {} : { 'aria-activedescendant': activeId })}
-          value={query ?? chosen?.label ?? ''}
-          onChange={(event) => {
-            setQuery(event.target.value)
-            setOpen(true)
-            // Nothing is active on a keystroke: aria-activedescendant is ABSENT
-            // rather than pointing at a row the person has not moved to.
-            setActiveValue(null)
-          }}
-          onClick={() => setOpen(true)}
-          onKeyDown={onKeyDown}
-          onBlur={onBlur}
-        />
-        {/* Named, because `listbox` is one of the roles whose accessible name is
-            required -- `aria-query`'s `listboxRole.accessibleNameRequired` is true.
-            axe in jsdom does NOT report its absence, measured by removing this line
-            and watching the audit below stay green, so the case that holds it in
-            place is a query by role AND name rather than the auditor.
+            So the popup is given a containing block that wraps the control and nothing
+            else, and every theme positions it against that explicitly. The status region
+            stays OUTSIDE it, because it is a row of the field's grid exactly as the error
+            region is. Where a host draws something beside the field (0237), the row around
+            this holds the anchor and that content and nothing else, so the list still opens
+            under the box and not under the host's content. */}
+        <div data-formancy-part="typeahead-anchor">
+          <input
+            type="text"
+            role="combobox"
+            {...field.controlProps}
+            data-formancy-part="typeahead"
+            // The browser's own suggestion list would sit over this one. This is not
+            // the HTML autofill token WCAG 1.3.5 asks for: that is a separate thing
+            // the spec has deliberately not spent the word on yet.
+            autoComplete="off"
+            aria-expanded={expanded}
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            {...(sourced.remote?.busy === true
+              ? // Busy, never disabled: disabling the element somebody just typed into
+                // blurs it and the browser resets focus to the document body -- the same
+                // reason the scanner's button stays enabled while a scan is in flight.
+                { 'aria-busy': true }
+              : {})}
+            {...(activeId === undefined ? {} : { 'aria-activedescendant': activeId })}
+            value={query ?? chosen?.label ?? ''}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setOpen(true)
+              // Nothing is active on a keystroke: aria-activedescendant is ABSENT
+              // rather than pointing at a row the person has not moved to.
+              setActiveValue(null)
+            }}
+            onClick={() => setOpen(true)}
+            onKeyDown={onKeyDown}
+            onBlur={onBlur}
+          />
+          {/* Named, because `listbox` is one of the roles whose accessible name is
+              required -- `aria-query`'s `listboxRole.accessibleNameRequired` is true.
+              axe in jsdom does NOT report its absence, measured by removing this line
+              and watching the audit below stay green, so the case that holds it in
+              place is a query by role AND name rather than the auditor.
 
-            Not the field's own name: two elements answering to the same accessible
-            name make "the control called X" ambiguous for every query that uses it,
-            starting with the conformance driver's own. */}
-        <ul
-          ref={listbox}
-          id={listboxId}
-          role="listbox"
-          aria-label={text('options.suggestions', { label })}
-          data-formancy-part="typeahead-listbox"
-          hidden={!expanded}
-        >
-          {matches.map((option) => (
-            <li
-              key={option.value}
-              id={optionDomId(field, option.value)}
-              role="option"
-              data-formancy-part="typeahead-option"
-              data-active={option.value === activeValue ? 'true' : undefined}
-              {...(chosen?.value === option.value ? { 'aria-selected': true } : {})}
-              // Keeps DOM focus in the text box, which is the pattern's whole
-              // premise; without it the blur handler runs before the click and the
-              // click lands on a list that has already gone.
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => choose(option.value)}
-            >
-              {option.label}
-            </li>
-          ))}
-        </ul>
-      </div>
+              Not the field's own name: two elements answering to the same accessible
+              name make "the control called X" ambiguous for every query that uses it,
+              starting with the conformance driver's own. */}
+          <ul
+            ref={listbox}
+            id={listboxId}
+            role="listbox"
+            aria-label={text('options.suggestions', { label })}
+            data-formancy-part="typeahead-listbox"
+            hidden={!expanded}
+          >
+            {matches.map((option) => (
+              <li
+                key={option.value}
+                id={optionDomId(field, option.value)}
+                role="option"
+                data-formancy-part="typeahead-option"
+                data-active={option.value === activeValue ? 'true' : undefined}
+                {...(chosen?.value === option.value ? { 'aria-selected': true } : {})}
+                // Keeps DOM focus in the text box, which is the pattern's whole
+                // premise; without it the blur handler runs before the click and the
+                // click lands on a list that has already gone.
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => choose(option.value)}
+              >
+                {option.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </FieldControlRow>
       {/* Present from the start and empty until there is something to say: a live
           region created at the moment it gets its text is one several screen
           readers never announce.

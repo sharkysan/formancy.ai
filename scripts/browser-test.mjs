@@ -44,6 +44,7 @@ import { checkSuggestionsPlacement } from './suggestions-browser-test.mjs'
 import { checkActiveOptionInView } from './typeahead-browser-test.mjs'
 import { checkSelectArrow } from './select-arrow-browser-test.mjs'
 import { checkTemporalEntry } from './temporal-entry-browser-test.mjs'
+import { checkFieldBeside } from './field-beside-browser-test.mjs'
 import { checkBuildersLayAlike } from './builders-layout-browser-test.mjs'
 import { REFUSALS, checkServedUnderItsPolicies, servedUnder } from './policy-browser-test.mjs'
 
@@ -218,6 +219,7 @@ async function run() {
     await checkActiveOptionInView(browser, url, check)
     await checkSelectArrow(browser, url, check)
     await checkTemporalEntry(browser, url, check)
+    await checkFieldBeside(browser, url, check)
     await checkBuildersLayAlike(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })

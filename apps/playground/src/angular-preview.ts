@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, viewChild } from '@angular/core'
 import type { TemplateRef } from '@angular/core'
-import { FormancyForm } from '@formancy/angular'
-import type { FormancyFieldAddition, FormancyFieldAdditionContext } from '@formancy/angular'
+import { FormancyForm, injectEngine } from '@formancy/angular'
+import type { FieldBinding, FormancyFieldAddition, FormancyFieldAdditionContext, FormancyFieldBeside, FormancyFieldBesideContext } from '@formancy/angular'
 import { PICKUP_POINTS } from './demo-capabilities.js'
+import { besideWords } from './demo-beside-words.js'
+import { CLEAR_GLYPH, OPEN_GLYPH } from './demo-glyphs.js'
 
 /**
  * The Angular renderer, mounted beside the React one.
@@ -36,23 +38,74 @@ import { PICKUP_POINTS } from './demo-capabilities.js'
   //
   // Under the pickup point, the point the answer holds, as the React pane draws it
   // (`demo-addition.tsx`, 0233): the template is handed the field's binding, which is how a host
-  // reads the field there.
+  // reads the field there. Beside the pickup point an Open and beside the country a Clear, as the
+  // React pane draws them (`demo-beside.tsx`, 0237), each unavailable while its field is empty, the
+  // Clear also while a rule disables the country, and each named in the form's language.
   template: `
-    <formancy-form layout="web" [review]="true" [fieldAddition]="addition" />
+    <formancy-form layout="web" [review]="true" [fieldAddition]="addition" [fieldBeside]="beside" />
     <ng-template #chosenPoint let-field="field">
       @if (pointOf(field.snapshot().value); as point) {
-        {{ point.label }} · <code>{{ point.value }}</code>
+        <span class="chosen-point" tabindex="-1">{{ point.label }} · <code>{{ point.value }}</code></span>
       }
+    </ng-template>
+    <ng-template #openPoint let-field="field">
+      @let point = pointOf(field.snapshot().value);
+      @let name = words.open(point?.label);
+      <button type="button" [attr.aria-label]="name" [title]="name" [attr.aria-disabled]="point === undefined ? 'true' : null" (click)="open($event, point)">
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path [attr.d]="openGlyph" /></svg>
+      </button>
+    </ng-template>
+    <ng-template #clearCountry let-field="field">
+      <button
+        type="button"
+        [attr.aria-label]="words.clear"
+        [title]="words.clear"
+        [attr.aria-disabled]="unavailable(field) ? 'true' : null"
+        (click)="clear(field)"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path [attr.d]="clearGlyph" /></svg>
+      </button>
     </ng-template>
   `,
 })
 export class AngularPreview {
   private readonly chosenPoint = viewChild<TemplateRef<FormancyFieldAdditionContext>>('chosenPoint')
+  private readonly openPoint = viewChild<TemplateRef<FormancyFieldBesideContext>>('openPoint')
+  private readonly clearCountry = viewChild<TemplateRef<FormancyFieldBesideContext>>('clearCountry')
+
+  protected readonly openGlyph = OPEN_GLYPH
+  protected readonly clearGlyph = CLEAR_GLYPH
+  /** In the engine's language, which is fixed for its lifetime, as this application is bootstrapped per engine. */
+  protected readonly words = besideWords(injectEngine().locale())
 
   /** Under the pickup point, and under nothing else. */
   protected readonly addition: FormancyFieldAddition = (path) => (path === 'deliveryPoint' ? this.chosenPoint() : undefined)
 
+  /** Beside the pickup point and the country, and beside nothing else. */
+  protected readonly beside: FormancyFieldBeside = (path) =>
+    path === 'deliveryPoint' ? this.openPoint() : path === 'country' ? this.clearCountry() : undefined
+
   protected pointOf(value: unknown): { label: string; value: string } | undefined {
     return PICKUP_POINTS.find((point) => point.value === value)
+  }
+
+  /**
+   * While the country is empty, and while a rule disables it: the row is no fieldset, so the button
+   * stays operable there, and the engine would take the value it sets (0237).
+   */
+  protected unavailable(field: FieldBinding): boolean {
+    const { value, disabled } = field.snapshot()
+    return value === null || value === undefined || value === '' || disabled
+  }
+
+  /** The keyboard to the point drawn under the field, as the React pane's Open moves it; nothing while no point is chosen. */
+  protected open(event: Event, point: unknown): void {
+    if (point === undefined || !(event.currentTarget instanceof HTMLElement)) return
+    event.currentTarget.closest('[data-formancy-part="field"]')?.querySelector<HTMLElement>('.chosen-point')?.focus()
+  }
+
+  /** The answer taken away, as the select's empty option does; nothing while there is none, or while the field is disabled. */
+  protected clear(field: FieldBinding): void {
+    if (!this.unavailable(field)) field.setValue(null)
   }
 }

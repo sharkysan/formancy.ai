@@ -1135,8 +1135,10 @@ that produced D4a's third instance and D4c, a file field's thumbnail, and since 
 checks `scripts/browser-test.mjs` imports by name: the templates gallery and the Angular page
 drawn in the landing page's shell, both builders laid out alike (D4a), a drop between two nodes
 on the preview, the Material starter's date button, where the relay's suggestions sit, a
-select's arrow inside the room it keeps under every theme and in both reading orders (D7a), and
-that no page asks another host for anything (C6). Nothing else of appearance: no pixel baselines by
+select's arrow inside the room it keeps under every theme and in both reading orders (D7a), a
+host's button beside a select's or a typeahead's box joined to it under every theme, in both
+reading orders, at rest, invalid and with the keyboard in the row (0237), and that no page asks
+another host for anything (C6). Nothing else of appearance: no pixel baselines by
 choice, one engine rather than Safari, and one demo schema rather than the conformance suite. A manufacturer relying on visual correctness must still
 verify it in the browsers it ships to.
 
