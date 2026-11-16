@@ -31,6 +31,10 @@
   --fm-radius: 12px;
   --fm-lift: 4px 4px 0 var(--fm-ink);
   --fm-step: 1.5rem;
+  /* How wide a button beside a field's box is (0237): the box's height, so the button is square,
+     and more than the 44px a pointer and a finger need. Its padding, its line and an icon the
+     size of the box's text fit inside. */
+  --fm-beside-size: 3rem;
 
   color: var(--fm-ink);
   font-family: var(--fm-sans);
@@ -106,6 +110,111 @@
 /* One with nothing in it, the summary of a choice not made yet, takes no room in the field. */
 [data-formancy-theme='pop'] [data-formancy-part='field-addition']:empty {
   display: none;
+}
+
+/* What a host draws beside a field's box (0237): one line, the box taking what the host's
+   content leaves, the two the same height. `min-inline-size: 0` here and on the box is what
+   lets a narrow screen shrink the box rather than push the row past the field.
+
+   The row is the object here, not the box: it casts the hard shadow, with the box's corners,
+   so the shadow lies under the pair and never between them, and it is the row that lifts
+   under the pointer and lifts further, its shadow blue, while anything in it has the
+   keyboard. Cast the way every box in this theme casts one, in both reading orders: a shadow
+   is cast by a light, and a light does not move with the language. A row whose shadow was
+   named again for right to left fell left beside boxes whose shadows fall right. */
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row'] {
+  display: flex;
+  align-items: stretch;
+  min-inline-size: 0;
+  border-radius: var(--fm-radius);
+  box-shadow: var(--fm-lift);
+  transition:
+    translate 120ms ease,
+    box-shadow 120ms ease;
+}
+
+/* Lifted, the row is a stacking context of its own, and the typeahead's list inside it could
+   only rise within it: a positioned box in a later field would draw over the open list, as
+   the playground's tag picker under the pickup point did. So the row rises as far as the
+   list did. */
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:has(:focus-visible) {
+  z-index: 20;
+  translate: -2px -2px;
+  box-shadow: 6px 6px 0 var(--fm-blue);
+}
+
+/* An invalid box's pink shadow, which wins over the keyboard's as it does on a box alone. */
+[data-formancy-theme='pop'] [data-formancy-part='field'][data-state='invalid'] [data-formancy-part='field-control-row'] {
+  box-shadow: 4px 4px 0 var(--fm-pink);
+}
+
+/* After the invalid rules on purpose: the pointer's lift outweighs an invalid shadow on a box
+   alone, and these two weigh the same as those. */
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:hover:not(:has(:focus-visible)) {
+  translate: -1px -1px;
+  box-shadow: 5px 5px 0 var(--fm-ink);
+}
+
+/* A disabled box casts no shadow, and the row around it none either. Last, for the same
+   reason. */
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:has(> select:disabled, > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead']:disabled) {
+  translate: none;
+  box-shadow: none;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row'] > :is(select, [data-formancy-part='typeahead-anchor']) {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+/* The typeahead's box is the text box inside the anchor, and a line box around it can be
+   taller than it is; laid out as a flex item it is exactly the anchor's height, which is the
+   row's. The list stays positioned against the anchor. */
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] {
+  display: flex;
+}
+
+/* In the row the box neither lifts nor casts a shadow of its own, in any state: the row does
+   both. Each state named, because each of the box's own rules outweighs a plain one. */
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='field-control-row'] > select:not([multiple]),
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='field-control-row'] > select:not([multiple]):hover,
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='field-control-row'] > select:not([multiple]):focus-visible,
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead'],
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead']:hover,
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead']:focus-visible {
+  translate: none;
+  box-shadow: none;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field-beside'] {
+  display: flex;
+}
+
+/* A host's component that draws nothing leaves no gap: the box takes the whole row, with its
+   own corners and its own line all round, since the rule below opens them only when
+   something is beside it. */
+[data-formancy-theme='pop'] [data-formancy-part='field-beside']:empty {
+  display: none;
+}
+
+/* A field's status is a line of its own under the row, and would run on under the button; the
+   typeahead's list, opened against the box, is only as wide as the box. So the status ends where
+   the box does, and the open list covers it whole rather than leaving its end beside the list.
+   And 2px short of that: with the keyboard in it the row lifts 2px to the left, the list with it,
+   and the status does not, so read left to right the list's end would stop 2px short of the
+   status's. */
+[data-formancy-theme='pop'] [data-formancy-part='field']:has(> [data-formancy-part='field-control-row'] > [data-formancy-part='field-beside']:not(:empty)) > :is([data-formancy-part='typeahead-status'], [data-formancy-part='select-status']) {
+  margin-inline-end: calc(var(--fm-beside-size) + 2px);
+}
+
+/* One shape, the box and what is beside it: the box's end corners square and its end line
+   gone, and the button below draws the line round its own three sides and the line between
+   the two. */
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:has(> [data-formancy-part='field-beside']:not(:empty)) > select,
+[data-formancy-theme='pop'] [data-formancy-part='field-control-row']:has(> [data-formancy-part='field-beside']:not(:empty)) > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead'] {
+  border-inline-end: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
 }
 
 /* A character count under a box with a limit (0203): quiet as the help text, its figures in
@@ -1814,6 +1923,63 @@
 [data-formancy-theme='pop'] [data-formancy-part='checkbox-retry']:hover:not(:disabled) {
   color: var(--fm-ink);
   border-color: var(--fm-ink);
+}
+
+/* A button beside a field's box (0237) is the end of the box, not a sticker pressed against
+   it: the box's height, its paper and its line, the box's corners at its end, and no shadow,
+   which the row casts under both. In the muted ink, answering the pointer as the quiet
+   buttons do. The row's lift says that something in it has the keyboard; a ring inside the
+   button says it is the button, kept inside so it does not cross onto the box. Its content
+   is centred, and an icon in it is the size of the box's text and drawn in the button's
+   colour, so a host's icon needs no styling of its own. */
+[data-formancy-theme='pop'] [data-formancy-part='field-beside'] button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--fm-beside-size);
+  margin: 0;
+  padding: 0 0.75rem;
+  border: var(--fm-line);
+  border-radius: 0;
+  border-start-end-radius: var(--fm-radius);
+  border-end-end-radius: var(--fm-radius);
+  background-color: var(--fm-paper);
+  color: var(--fm-muted);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* An invalid box's wash runs on under the button, the row casting the pink shadow under both.
+   The field is named in `:where()`, so the rule weighs what the button's own does and the
+   pointer's and the keyboard's rules, which say the button is the one meant, are drawn over
+   it. */
+[data-formancy-theme='pop'] :where([data-formancy-part='field'][data-state='invalid']) [data-formancy-part='field-beside'] button {
+  background-color: var(--fm-invalid-wash);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true']) {
+  color: var(--fm-ink);
+  border-color: var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field-beside'] button:focus-visible {
+  outline: 3px solid var(--fm-blue);
+  outline-offset: -6px;
+}
+
+/* Unavailable either way a host says so: `disabled`, or `aria-disabled`, which keeps the
+   button in the keyboard's order. Only the glyph fades, so the shape stays whole. */
+[data-formancy-theme='pop'] [data-formancy-part='field-beside'] button:is(:disabled, [aria-disabled='true']) {
+  color: color-mix(in srgb, var(--fm-muted) 45%, var(--fm-paper));
+  cursor: not-allowed;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field-beside'] svg {
+  flex: none;
+  inline-size: 1em;
+  block-size: 1em;
+  fill: currentColor;
 }
 
 /* ---------------------------------------------------------------- tag picker */

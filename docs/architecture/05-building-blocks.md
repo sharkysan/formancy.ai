@@ -169,6 +169,7 @@ Deliberately small, and structurally parallel:
 | File uploads, drawn | `fields/file-field.tsx` | `fields/file-field.ts`, `fields/file-thumbnail.ts` |
 | Options from a source ([§6.16](06-runtime-view.md)) | `options-source.ts`, `use-sourced-options.ts` | `options-source.ts`, `sourced-options.ts` |
 | A host's content under a field [0233](../decisions/0233-a-host-may-add-content-under-a-field.md) | `field-addition.tsx`, by context from `FormancyForm` | `field-addition.ts`, by injection token from `formancy-form`, the template given the field's binding |
+| A host's content beside a select's or a typeahead's box [0237](../decisions/0237-a-host-may-add-content-beside-a-fields-control.md) | `field-beside.tsx`, by context from `FormancyForm`, drawn by its `FieldControlRow` round the box | `field-beside.ts`, by injection token from `formancy-form`, read by the two controls' `beside`, which draw the box once as a template, alone or first in the row |
 | Conformance driver | `conformance-driver.tsx` | `conformance-driver.ts` |
 
 Neither contains a CSS file. Both resolve labels through the engine rather than

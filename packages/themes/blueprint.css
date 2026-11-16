@@ -28,6 +28,9 @@
 
   --fm-step: 1.125rem;
   --fm-radius: 3px;
+  /* How wide a button beside a field's box is (0237): the 44px a pointer and a finger need, which
+     its padding and an icon the size of the box's text fit inside. */
+  --fm-beside-size: 44px;
 
   /* The form's text colour is the theme's, not whatever the host page set.
      Fields set it for themselves, but a form's title, its section headings and
@@ -104,6 +107,53 @@
 /* One with nothing in it, the summary of a choice not made yet, takes no room in the field. */
 [data-formancy-theme='blueprint'] [data-formancy-part='field-addition']:empty {
   display: none;
+}
+
+/* What a host draws beside a field's box (0237): one line, the box taking what the host's
+   content leaves, the two the same height. `min-inline-size: 0` here and on the box is what
+   lets a narrow screen shrink the box rather than push the row past the field. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-control-row'] {
+  display: flex;
+  align-items: stretch;
+  min-inline-size: 0;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field-control-row'] > :is(select, [data-formancy-part='typeahead-anchor']) {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+/* The typeahead's box is the text box inside the anchor, and a line box around it can be
+   taller than it is; laid out as a flex item it is exactly the anchor's height, which is the
+   row's. The list stays positioned against the anchor. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-control-row'] > [data-formancy-part='typeahead-anchor'] {
+  display: flex;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] {
+  display: flex;
+}
+
+/* A host's component that draws nothing leaves no gap: the box takes the whole row, with its
+   own corners, since the rule below squares them only when something is beside it. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside']:empty {
+  display: none;
+}
+
+/* A field's status is a line of its own under the row, and would run on under the button; the
+   typeahead's list, opened against the box, is only as wide as the box. So the status ends where
+   the box does, and the open list covers it whole rather than leaving its end beside the list. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field']:has(> [data-formancy-part='field-control-row'] > [data-formancy-part='field-beside']:not(:empty)) > :is([data-formancy-part='typeahead-status'], [data-formancy-part='select-status']) {
+  margin-inline-end: var(--fm-beside-size);
+}
+
+/* One frame round the box and what is beside it: the box's end corners square, and the
+   button below draws the same rule round its other three sides, so the line between the
+   two is the box's own. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-control-row']:has(> [data-formancy-part='field-beside']:not(:empty)) > select,
+[data-formancy-theme='blueprint'] [data-formancy-part='field-control-row']:has(> [data-formancy-part='field-beside']:not(:empty)) > [data-formancy-part='typeahead-anchor'] > [data-formancy-part='typeahead'] {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
 }
 
 /* A character count under a box with a limit (0203): quiet as the help text, its figures in
@@ -1784,6 +1834,70 @@
 [data-formancy-theme='blueprint'] [data-formancy-part='checkbox-retry']:hover:not(:disabled) {
   color: var(--fm-ink);
   border-color: var(--fm-signal);
+}
+
+/* A button beside a field's box (0237) is the end of the box's frame, not a button of its
+   own pressed against it: the box's height, the paper behind it, the same rule, the box's
+   corners at its end. In the muted ink. Its content is centred, and an icon in it is the size
+   of the box's text and drawn in the button's colour, so a host's icon needs no styling of its
+   own. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--fm-beside-size);
+  margin: 0;
+  padding: 0 0.75rem;
+  border: 1px solid var(--fm-rule);
+  border-inline-start: 0;
+  border-radius: 0;
+  border-start-end-radius: var(--fm-radius);
+  border-end-end-radius: var(--fm-radius);
+  background: var(--fm-paper);
+  color: var(--fm-muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+/* An invalid field's mark runs on across the button: the frame red round the pair and the
+   wash under both, rather than a red box with a grey stub at its end. The field is named in
+   `:where()`, so the rule weighs what the button's own does and the pointer's and the
+   keyboard's rules, which say the button is the one meant, are drawn over it. */
+[data-formancy-theme='blueprint'] :where([data-formancy-part='field'][data-state='invalid']) [data-formancy-part='field-beside'] button {
+  border-color: var(--fm-invalid);
+  background-color: var(--fm-invalid-wash);
+}
+
+/* The pointer and the keyboard are answered by a ring in the signal colour inside the button's
+   own edge, all the way round. Its start has no edge of its own, the line there being the
+   box's, so an edge coloured as a quiet button's is would stop at three sides, and a halo as
+   the box's would cross onto the box. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button:hover:not(:disabled, [aria-disabled='true'], :focus-visible) {
+  color: var(--fm-ink);
+  outline: 1px solid var(--fm-signal);
+  outline-offset: -1px;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button:focus-visible {
+  color: var(--fm-ink);
+  outline: 2px solid var(--fm-signal);
+  outline-offset: -2px;
+}
+
+/* Unavailable either way a host says so: `disabled`, or `aria-disabled`, which keeps the
+   button in the keyboard's order. Only the glyph fades, so the frame stays whole. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] button:is(:disabled, [aria-disabled='true']) {
+  color: color-mix(in srgb, var(--fm-muted) 45%, var(--fm-paper));
+  cursor: not-allowed;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field-beside'] svg {
+  flex: none;
+  inline-size: 1em;
+  block-size: 1em;
+  fill: currentColor;
 }
 
 /* ---------------------------------------------------------------- tag picker */

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common'
 import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, signal, viewChild } from '@angular/core'
 import { optionsStatus } from '@formancy/core/words'
 import { narrowOptionsByLabel } from '@formancy/spec'
@@ -55,65 +56,77 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 @Component({
   selector: 'formancy-typeahead-select',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
+  imports: [FormancyFieldShell, NgTemplateOutlet],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-      <!-- The popup's containing block, and the reason it is an element rather than
-           nothing at all.
+      <!-- The box, written once and drawn either alone, as it always was, or first in a row
+           with what the host puts beside it (0237). -->
+      <ng-template #box>
+        <!-- The popup's containing block, and the reason it is an element rather than
+             nothing at all.
 
-           The popup was absolutely positioned with 'top: auto', on the reasoning that
-           it would then land at its STATIC position -- where it would have sat in the
-           flow, directly under the box. That holds inside a block container and NOT
-           inside a grid or flex one, and every theme lays a field out with
-           'display: grid'. For an absolutely positioned child of a grid container the
-           static position is the container's own content-box origin, so the list opened
-           over its own label and box rather than under them. Measured in the playground
-           before the fix: the field's top edge was 457px, an in-flow child would have
-           sat at 537px, and the popup sat at 459px.
+             The popup was absolutely positioned with 'top: auto', on the reasoning that
+             it would then land at its STATIC position -- where it would have sat in the
+             flow, directly under the box. That holds inside a block container and NOT
+             inside a grid or flex one, and every theme lays a field out with
+             'display: grid'. For an absolutely positioned child of a grid container the
+             static position is the container's own content-box origin, so the list opened
+             over its own label and box rather than under them. Measured in the playground
+             before the fix: the field's top edge was 457px, an in-flow child would have
+             sat at 537px, and the popup sat at 459px.
 
-           So the popup is given a containing block that wraps the control and nothing
-           else, and every theme positions it against that explicitly. The status region
-           stays OUTSIDE it, because it is a row of the field's grid exactly as the
-           error region is. The React binding does the same, for the same reason. -->
-      <div data-formancy-part="typeahead-anchor">
-        <input
-          type="text"
-          role="combobox"
-          [id]="control().id"
-          [attr.name]="control().name"
-          [attr.aria-invalid]="control()['aria-invalid']"
-          [attr.aria-required]="control()['aria-required']"
-          [attr.aria-describedby]="control()['aria-describedby']"
-          [disabled]="control().disabled === true"
-          data-formancy-part="typeahead"
-          autocomplete="off"
-          aria-autocomplete="list"
-          [attr.aria-busy]="remote.busy() ? 'true' : null"
-          [attr.aria-expanded]="expanded()"
-          [attr.aria-controls]="listboxId()"
-          [attr.aria-activedescendant]="activeId()"
-          [value]="text()"
-          (input)="onInput($event)"
-          (click)="opened.set(true)"
-          (keydown)="onKeyDown($event)"
-          (blur)="onBlur()"
-        />
-        <!-- Named, because the listbox role is one whose accessible name is required.
-             Not with the name the field already has: two elements answering to the
-             same accessible name make every query by that name ambiguous. -->
-        <ul
-          #listbox
-          [id]="listboxId()"
-          role="listbox"
-          [attr.aria-label]="popupLabel()"
-          data-formancy-part="typeahead-listbox"
-          [hidden]="!expanded()"
-        >
-          @for (option of matches(); track option.value) {
-            <li [id]="optionId(option.value)" role="option" data-formancy-part="typeahead-option" [attr.data-active]="option.value === activeValue() ? 'true' : null" [attr.aria-selected]="chosen()?.value === option.value ? 'true' : null" (mousedown)="$event.preventDefault()" (click)="choose(option.value)">{{ option.label }}</li>
-          }
-        </ul>
-      </div>
+             So the popup is given a containing block that wraps the control and nothing
+             else, and every theme positions it against that explicitly. The status region
+             stays OUTSIDE it, because it is a row of the field's grid exactly as the
+             error region is. Where a host draws something beside the field (0237), the
+             row around this holds the anchor and that content and nothing else, so the
+             list still opens under the box and not under the host's content. The React
+             binding does the same, for the same reasons. -->
+        <div data-formancy-part="typeahead-anchor">
+          <input
+            type="text"
+            role="combobox"
+            [id]="control().id"
+            [attr.name]="control().name"
+            [attr.aria-invalid]="control()['aria-invalid']"
+            [attr.aria-required]="control()['aria-required']"
+            [attr.aria-describedby]="control()['aria-describedby']"
+            [disabled]="control().disabled === true"
+            data-formancy-part="typeahead"
+            autocomplete="off"
+            aria-autocomplete="list"
+            [attr.aria-busy]="remote.busy() ? 'true' : null"
+            [attr.aria-expanded]="expanded()"
+            [attr.aria-controls]="listboxId()"
+            [attr.aria-activedescendant]="activeId()"
+            [value]="text()"
+            (input)="onInput($event)"
+            (click)="opened.set(true)"
+            (keydown)="onKeyDown($event)"
+            (blur)="onBlur()"
+          />
+          <!-- Named, because the listbox role is one whose accessible name is required.
+               Not with the name the field already has: two elements answering to the
+               same accessible name make every query by that name ambiguous. -->
+          <ul
+            #listbox
+            [id]="listboxId()"
+            role="listbox"
+            [attr.aria-label]="popupLabel()"
+            data-formancy-part="typeahead-listbox"
+            [hidden]="!expanded()"
+          >
+            @for (option of matches(); track option.value) {
+              <li [id]="optionId(option.value)" role="option" data-formancy-part="typeahead-option" [attr.data-active]="option.value === activeValue() ? 'true' : null" [attr.aria-selected]="chosen()?.value === option.value ? 'true' : null" (mousedown)="$event.preventDefault()" (click)="choose(option.value)">{{ option.label }}</li>
+            }
+          </ul>
+        </div>
+      </ng-template>
+      @if (beside(); as template) {
+        <div data-formancy-part="field-control-row"><ng-container *ngTemplateOutlet="box" /><div data-formancy-part="field-beside"><ng-container *ngTemplateOutlet="template; context: { $implicit: context.path, field: field }" /></div></div>
+      } @else {
+        <ng-container *ngTemplateOutlet="box" />
+      }
       <!-- Present from the start and empty until there is something to say: a live
            region created at the moment it gets its text is one several screen
            readers never announce. -->

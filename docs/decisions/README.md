@@ -337,3 +337,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0234](0234-the-website-is-served-under-a-policy-for-each-section.md) | The website is served under a content security policy for each of its sections, which the build writes and the browser gate serves it under | accepted |
 | [0235](0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md) | A date and time in a condition is the instant its author chose, written as every answer is | accepted; extended by 0236 |
 | [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md) | A date or time compared with text not written as its answers are is named at publish, not refused | accepted |
+| [0237](0237-a-host-may-add-content-beside-a-fields-control.md) | A host may add content of its own beside a select's or a typeahead's box, on the box's line | accepted |

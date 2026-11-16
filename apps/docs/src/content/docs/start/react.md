@@ -151,6 +151,59 @@ redraws every field's addition. It adds no role and no name, and no control is d
 your links and buttons carry their own names. In a matrix or a ranking, which are drawn as a
 fieldset disabled with its field, your controls are disabled with the field.
 
+### Content of your own beside a field's control
+
+`fieldBeside` draws something of yours beside a field's box, on the box's own line: a button that
+opens the record a lookup points to, or one that clears the answer. It is called with the path of
+each select and each typeahead, a row's by its own, and what it returns is drawn after the box, the
+two in a `data-formancy-part="field-control-row"` and yours in a
+`data-formancy-part="field-beside"`. Every theme draws a button there with the box as one field;
+anything else is laid out on the box's line and not dressed. The field's status and error stay under
+the box. Return nothing and nothing is wrapped, so the field is drawn as without it. No other
+control asks: a text field, a select whose source the deployment lacks and the fieldsets draw no row
+([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-host-may-add-content-beside-a-fields-control.md)):
+
+```tsx
+const CROSS = 'M4.28 3.22 8 6.94l3.72-3.72 1.06 1.06L9.06 8l3.72 3.72-1.06 1.06L8 9.06l-3.72 3.72-1.06-1.06L6.94 8 3.22 4.28z'
+
+function Clear({ path }: { path: string }) {
+  const field = useField(path)
+  const unavailable = field.value == null || field.disabled
+  return (
+    <button
+      type="button"
+      aria-label="Clear the country"
+      title="Clear the country"
+      aria-disabled={unavailable ? 'true' : undefined}
+      onClick={() => {
+        if (!unavailable) field.setValue(null)
+      }}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d={CROSS} />
+      </svg>
+    </button>
+  )
+}
+
+const beside = (path: string) => (path === 'country' ? <Clear path={path} /> : null)
+
+<FormancyForm fieldBeside={beside} />
+```
+
+A button there is the box's height and at least 44px wide, and an `svg` in it is sized to the text
+and filled in the button's colour, so an icon needs no styling of yours. The themes draw it
+unavailable as `:disabled` and as `aria-disabled="true"`; the second keeps it in the keyboard's
+order, so a button that becomes unavailable while the keyboard is on it, as a Clear does once
+pressed, keeps the keyboard rather than dropping it to the page.
+
+Give content for a path or nothing, and keep to it: content for a path that had none, or none for
+one that had some, draws the box again, and a person in it loses the keyboard. To show nothing for a
+while, give a component that draws nothing, which keeps the box, and whose empty place every theme
+hides. Keep the function a constant, as for `fieldAddition`. It adds no role and no name and
+describes no control, and it disables nothing: beside a field a rule disables your button stays
+operable, so one that changes the answer reads `field.disabled` first, as the Clear above does.
+
 ## The form's own words, in its language
 
 The questions are yours. The words around them — Next, Back, Submit, a repeater's Add and
