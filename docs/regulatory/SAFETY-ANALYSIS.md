@@ -576,13 +576,20 @@ in the hour the clocks repeat, which failed in both builders when the row held t
 and read the later 01:30Z back as 00:30Z.
 Changing the `precision` of a field in a builder carries its bounds, its default and the literals in
 rules that compare it along when the rewrite names the same moment, and refuses, leaving the
-document as it was, when it does not: `08:00:00.250` is not cut to the second. A field inside a
-page is carried like any other, and a rule comparing two temporal fields with each other is refused
-when the change would give them two shapes, because no edit to one field changes the other.
-Verified by `packages/builder-core/src/reprecision.test.ts`, which failed with the session's
-property command as it was, and, for a field inside a page, with the rules looked up by the key
-path instead of the data path. A comparison through a list rule's own variable is not rewritten, being not seen at
-publish either, and a saved example is not rewritten.
+document as it was, when it does not: `08:00:00.250` is not cut to the second. A bound is refused by
+the validator (`bounds.width`); a default and a rule literal by the builder, pointed at that default
+or that rule, because the validator holds no default to a width and reads no rule. A default left at
+the old width was accepted, and the form then refused to open. Every value the rewrite writes is
+checked against `temporalShape` before it is used, so a fault in its hand-written spelling refuses
+the change rather than writing a value of another shape: observed once by breaking the spelling by
+hand, when a default was refused rather than written as `09:00.000`, and pinned by no test, since no
+value in the shape reaches it. A field inside a page is carried like any other, and a rule comparing
+two temporal fields with each other is refused when the change would give them two shapes, because
+no edit to one field changes the other. Verified by `packages/builder-core/src/reprecision.test.ts`,
+which failed with the session's property command as it was; for a field inside a page, with the
+rules looked up by the key path instead of the data path; and, for a default, while the default was
+left at the old width and the session said ok. A comparison through a list rule's own variable is
+not rewritten, being not seen at publish either, and a saved example is not rewritten.
 
 *Residual:*
 

@@ -155,6 +155,8 @@ export const BUILDER_MESSAGES_FR = {
   'refuse.retypeToContainer': "Une question ne peut pas devenir {type} : il faudrait inventer les champs qu'elle contient.",
   'refuse.precisionRule':
     'La règle {number} (« {kind} » sur « {target} ») compare « {field} » avec « {other} », ce qui ne peut pas s’écrire à la nouvelle précision sans changer la valeur. Modifiez ou supprimez d’abord la règle.',
+  'refuse.precisionDefault':
+    'La valeur par défaut de « {field} », « {value} », ne peut pas s’écrire à la nouvelle précision sans changer sa valeur. Modifiez ou supprimez d’abord la valeur par défaut.',
   'refuse.precisionForm':
     'La règle {number} (« {kind} » sur « {target} ») compare « {field} » avec un texte écrit sous une forme que le constructeur ne réécrit pas, par exemple avec une séquence d’échappement. Écrivez le texte simplement, puis changez la précision.',
   'refuse.precisionPair':

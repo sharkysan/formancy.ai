@@ -153,12 +153,70 @@ describe('narrowing a field’s precision', () => {
     if (!outcome.ok) expect(outcome.message).toMatch(/^Regel 1 /)
   })
 
+  // A refusal pointing at the rule list as a whole leaves a panel to guess which rule to show; the
+  // pointer names the one that cannot follow, counted from zero as a JSON Pointer counts.
+  test('points the refusal at the rule that cannot follow', () => {
+    const session = createBuilderSession(form({ precision: 3 }, [rule('opens >= "08:00:00.000"'), rule('opens >= "08:00:00.250"', { kind: 'required' })]))
+    expect(session.setFieldProperty(['opens'], 'precision', 0)).toMatchObject({ ok: false, path: '/logic/rules/1' })
+  })
+
+  // A condition in a group of the visual editor is one level down; a value there left at the old
+  // width would come back over the rule the next time it is opened, as one at the top would.
+  test('rewrites and refuses a value inside a group of the visual editor', () => {
+    const editor = (value: string) => ({ join: 'all', conditions: [{ join: 'any', conditions: [{ field: 'opens', operator: 'gte', value }] }] })
+    const exact = createBuilderSession(form({ precision: 3 }, [rule('opens >= "08:00:00.000"', { editor: editor('08:00:00.000') })]))
+    expect(exact.setFieldProperty(['opens'], 'precision', 0).ok).toBe(true)
+    expect(exact.document().logic?.rules[0]?.editor).toEqual(editor('08:00:00'))
+    const inexact = createBuilderSession(form({ precision: 3 }, [rule('opens >= "08:00:00.000"', { editor: editor('08:00:00.250') })]))
+    expect(inexact.setFieldProperty(['opens'], 'precision', 0)).toMatchObject({ ok: false, path: '/logic/rules/0' })
+  })
+
   // An editor value that cannot follow would be recompiled back over the CEL the next time the
   // rule is opened, so it refuses on its own even when the CEL is exact.
   test('refuses an editor value that has a fraction even when the rule’s text could be cut', () => {
     const editor = { join: 'all', conditions: [{ field: 'opens', operator: 'gte', value: '08:00:00.250' }] }
     const session = createBuilderSession(form({ precision: 3 }, [rule('opens >= "08:00:00.000"', { editor })]))
     expect(session.setFieldProperty(['opens'], 'precision', 0).ok).toBe(false)
+  })
+
+  // The validator checks a bound's width and never a default's, so a default left at the old
+  // width was committed: the session said ok, the form then refused to open, and publish refused
+  // the document. The builder refuses instead, naming the default, and the document is untouched.
+  test('refuses a default that has a fraction, naming it, and leaves the document alone', () => {
+    const session = createBuilderSession(form({ precision: 3, default: '08:00:00.250' }))
+    const before = session.document()
+    const outcome = session.setFieldProperty(['opens'], 'precision', 0)
+    expect(outcome).toMatchObject({ ok: false, path: '/model/fields/0/default' })
+    if (!outcome.ok)
+      expect(outcome.message).toBe(
+        'The default of “opens”, “08:00:00.250”, cannot be written at the new precision without changing its value. Change or remove the default first.',
+      )
+    expect(session.document()).toBe(before)
+  })
+
+  // The same for a date and time: cutting `.250` moves the instant a respondent starts with.
+  test('refuses a date and time’s default that has a fraction', () => {
+    const stamped = {
+      specVersion: '6',
+      id: 's',
+      title: 'S',
+      model: { fields: [{ key: 'at', type: 'datetime', label: 'At', precision: 3, default: '2026-10-08T09:00:00.250Z' }] },
+    } as unknown as FormSchema
+    const session = createBuilderSession(stamped)
+    const before = session.document()
+    expect(session.setFieldProperty(['at'], 'precision', 0)).toMatchObject({ ok: false, path: '/model/fields/0/default' })
+    expect(session.document()).toBe(before)
+  })
+
+  // The pointer is the field's own: one inside a page is not the first field of the form.
+  test('points a default’s refusal at the field where it sits, in the builder’s language', () => {
+    const text = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    const paged = form({ precision: 3, default: '08:00:00.250' })
+    paged.model.fields = [{ key: 'p', type: 'page', label: 'P', fields: paged.model.fields }] as unknown as FormSchema['model']['fields']
+    const session = createBuilderSession(paged, { text })
+    const outcome = session.setFieldProperty(['p', 'opens'], 'precision', 0)
+    expect(outcome).toMatchObject({ ok: false, path: '/model/fields/0/fields/0/default' })
+    if (!outcome.ok) expect(outcome.message).toMatch(/^Die Vorgabe von „opens“, „08:00:00\.250“,/)
   })
 
   // A value already not at the old width was a misshapen literal before this edit (publish
@@ -177,6 +235,15 @@ describe('removing a field’s precision', () => {
     const outcome = session.setFieldProperty(['opens'], 'precision', undefined)
     expect(outcome).toMatchObject({ ok: false, path: '/model/fields/0/earliest' })
     if (!outcome.ok) expect(outcome.message).toContain('like "09:30"')
+  })
+
+  // A default of 08:00:30 would become 08:00 and start every respondent thirty seconds early; the
+  // validator does not look at a default's width, so nothing else would have said so.
+  test('refuses a default that has seconds other than 00', () => {
+    const session = createBuilderSession(form({ precision: 0, default: '08:00:30' }))
+    const before = session.document()
+    expect(session.setFieldProperty(['opens'], 'precision', undefined)).toMatchObject({ ok: false, path: '/model/fields/0/default' })
+    expect(session.document()).toBe(before)
   })
 
   // HH:MM means seconds 00 (0067), so 08:00:00 and 08:00 are the same time of day written two
@@ -314,6 +381,16 @@ describe('a literal the builder does not rewrite', () => {
     if (!outcome.ok) expect(outcome.message).toContain('a form the builder does not rewrite')
     expect(session.document()).toBe(before)
   })
+
+  // A rule that does not parse was publish's to refuse before this edit and is still. Refusing
+  // the precision for it would block every change to the field over a rule unrelated to width,
+  // and rewriting text that does not parse would be guessing what it says.
+  test('leaves a rule that does not parse alone, and lets the change through', () => {
+    const session = createBuilderSession(form({ precision: 0, earliest: '08:00:00' }, [rule('opens >= "08:00:00" &&')]))
+    expect(session.setFieldProperty(['opens'], 'precision', 3).ok).toBe(true)
+    expect(opensOf(session.document()).earliest).toBe('08:00:00.000')
+    expect(session.document().logic?.rules[0]?.cel).toBe('opens >= "08:00:00" &&')
+  })
 })
 
 describe('two fields compared with each other', () => {
@@ -338,7 +415,7 @@ describe('two fields compared with each other', () => {
     const session = createBuilderSession(pair({ precision: 0 }, { precision: 0 }))
     const before = session.document()
     const outcome = session.setFieldProperty(['opens'], 'precision', 3)
-    expect(outcome.ok).toBe(false)
+    expect(outcome).toMatchObject({ ok: false, path: '/logic/rules/0' })
     if (!outcome.ok) expect(outcome.message).toMatch(/compares “opens” with “closes”.*the same precision/)
     expect(session.document()).toBe(before)
   })

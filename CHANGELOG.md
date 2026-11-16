@@ -78,20 +78,27 @@ control is still the browser's, to the minute
   moment: widening pads with zeros, narrowing cuts only zeros, and a time that loses its precision
   becomes `HH:MM` when its seconds are zero, since `HH:MM` has always meant seconds 00.
   `08:00:00.250` at precision 3 cannot become precision 0 without moving by a quarter of a second,
-  so the change is refused, with the validator's own sentence for a bound and a sentence naming the
-  rule for a literal, and the document is left as it was. A field inside a page is carried like any
-  other. A rule comparing two such fields with each other, `opens < closes`, is right only while
-  both have one shape and no edit to one field changes the other, so a change that would split a
-  pair that is alike is refused, naming the other field; the author removes the rule, changes both
-  and writes it again. To go from one precision to another, type over the number: clearing the box
-  first removes the precision, which is exact when nothing written at the field's width has digits the removal would drop (a time's seconds and fraction, a date and time's fraction), and otherwise refused. The builder never guesses a value. The
-  rewrite changes only the characters of the literal, so the author's spacing and quotes survive
+  so the change is refused, and the document is left as it was: a bound in the validator's own
+  sentence, and a default and a rule literal each in a sentence of the builder's naming it, pointed
+  at that default or that rule, since the validator holds no default to a width and reads no rule.
+  A default left behind used to be accepted, and the form then refused to open. A field inside a
+  page is carried like any other. A rule comparing two such fields with each other,
+  `opens < closes`, is right only while both have one shape and no edit to one field changes the
+  other, so a change that would split a pair that is alike is refused, naming the other field; the
+  author removes the rule, changes both and writes it again. To go from one precision to another,
+  type over the number: clearing the box first removes the precision, which is exact when nothing
+  written at the field's width has digits the removal would drop (a time's seconds and fraction, a
+  date and time's fraction), and otherwise refused. The builder never guesses a value. The rewrite
+  changes only the characters of the literal, so the author's spacing and quotes survive
   ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)). Saved examples are
-  not rewritten.
-- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same
-  shapes precompiled, so a host's own check need not compile a pattern), `temporalExample`,
-  `temporalDateExists`, `temporalEntryMask`, `typedFromStored`, `storedFromTyped`, `pasteOutcome`
-  and the type `TypedTemporalType` in `@formancy/spec`; `comparedFields` and its type
+  not rewritten. A host that translates the builder's words adds the refusals'
+  `refuse.precisionRule`, `refuse.precisionForm`, `refuse.precisionPair` and
+  `refuse.precisionDefault`.
+- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`,
+  `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same shapes precompiled, so a host's own
+  check need not compile a pattern), `temporalExample`, `temporalDateExists`, `temporalEntryMask`,
+  `typedFromStored`, `storedFromTyped`, `pasteOutcome` and the type `TypedTemporalType` in
+  `@formancy/spec`; `comparedFields` and its type
   `ComparedFields`, and `rewriteComparedLiterals`, which writes the strings a field is compared with
   again in place, in `@formancy/expressions`; `crossWidthComparisons` and its type
   `CrossWidthComparison`, and `inModel` and `rowScopeOf`, which say which field a rule's read names,

@@ -93,6 +93,12 @@
     key path; two fields compared with each other, refused when the change would split them and
     not when they already differ or stay alike, failing with that check removed; and a literal
     written with an escape, refused for its form, failing with that sentence routed to the width's.
+    A default that cannot follow is refused, pointed at that default, at the top and inside a page,
+    in German too, for a time, for a date and time and for a time losing its precision: each case
+    failed while the default was left at the old width and the session said ok. A rule's refusal
+    points at that rule, which failed while it pointed at the list; a value inside a group of the
+    visual editor is carried and refused, which failed with the recursion removed; and a rule that
+    does not parse is left alone, which failed with every rewrite error refused.
   - `packages/react/src/fields/typed-temporal-input.test.tsx`: the exported control reports the
     stored answer, not the digits, and a `ref` reaches its input.
 
@@ -260,20 +266,24 @@ line.
   precision is `HH:MM`, which has always meant seconds 00, so dropping the seconds is exact when
   they are zero. Otherwise the change is refused and the document is left as it was, because a
   session never holds a document the validator rejects and the builder never guesses a value: a
-  bound that cannot follow is refused in the validator's own sentence, `bounds.width`, and a rule
-  literal in a sentence naming the rule, which the validator does not have, since it reads no
-  rules. It costs a step for the author who narrows a precision on a field whose bound has a
-  fraction: the bound is changed first. A literal that was not at the old width is left, as it
-  was a misshapen literal before. A comparison through a list rule's own variable is not seen here,
-  as it is not seen at publish, so it stays at the old width. Saved examples (0166) are not
-  rewritten; one that stops holding is named by publish's example warnings, as today. A field
-  inside a page is found by its data path, which has no page in it. **Two temporal fields compared
-  with each other** are refused, not rewritten: no edit to one changes the other, so a change that
-  would split a pair written in one shape is refused naming the other field, and the author removes
-  the rule, changes both and writes it again; a pair already split, or one that stays alike (a date
-  and time between 0 and none), is not refused. **Changing between two precisions is one step**, by
-  typing over the number: the panel reads a cleared box as removing the precision, which is exact when nothing written at the field's width has digits the removal would drop (a time's seconds and fraction, a date and time's fraction), and otherwise refused, leaving the old
-  precision in place when refused.
+  bound that cannot follow is refused in the validator's own sentence, `bounds.width`; a default,
+  which the validator does not hold to a width, in a sentence of the builder's naming it and
+  pointed at it, since left behind it was accepted and the form then refused to open; and a rule
+  literal in a sentence naming the rule, pointed at that rule, which the validator does not have,
+  since it reads no rules. It costs a step for the author who narrows a precision on a field whose
+  bound or default has a fraction: that is changed first. A literal that was not at the old width
+  is left, as it was a misshapen literal before. A comparison through a list rule's own variable is
+  not seen here, as it is not seen at publish, so it stays at the old width. Saved examples (0166)
+  are not rewritten; one that stops holding is named by publish's example warnings, as today. A
+  field inside a page is found by its data path, which has no page in it. **Two temporal fields
+  compared with each other** are refused, not rewritten: no edit to one changes the other, so a
+  change that would split a pair written in one shape is refused naming the other field, and the
+  author removes the rule, changes both and writes it again; a pair already split, or one that
+  stays alike (a date and time between 0 and none), is not refused. **Changing between two
+  precisions is one step**, by typing over the number: the panel reads a cleared box as removing
+  the precision, which is exact when nothing written at the field's width has digits the removal
+  would drop (a time's seconds and fraction, a date and time's fraction), and otherwise refused,
+  leaving the old precision in place.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.

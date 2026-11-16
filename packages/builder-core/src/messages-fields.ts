@@ -20,6 +20,9 @@ export const FIELD_EDIT_MESSAGES = {
   /** `{kind}` is the rule kind's own word, as in `refuse.ruleCannotFollow`. */
   'refuse.precisionRule':
     'Rule {number} (“{kind}” on “{target}”) compares “{field}” with “{other}”, which cannot be written at the new precision without changing its value. Change or delete the rule first.',
+  /** `{field}` is the field as a rule reads it, as in `refuse.precisionRule`; `{value}` is its default as written. */
+  'refuse.precisionDefault':
+    'The default of “{field}”, “{value}”, cannot be written at the new precision without changing its value. Change or remove the default first.',
   'refuse.precisionForm':
     'Rule {number} (“{kind}” on “{target}”) compares “{field}” with a text written in a form the builder does not rewrite, such as one with an escape in it. Write the text plainly, then change the precision.',
   'refuse.precisionPair':

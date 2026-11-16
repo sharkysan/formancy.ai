@@ -289,8 +289,9 @@ palette, the editable property list read out of the spec's own JSON Schema — w
 what a field keeps when `retype.ts` changes its type, so the panel and the change cannot
 disagree about a type's properties, and `reprecision.ts`, which writes a time's or a date and
 time's bounds, default and the literals in its rules again when its `precision` changes, or refuses
-when the same moment cannot be written at the new width, or when a rule compares the field with another
-of the same shape
+when the same moment cannot be written at the new width — a bound in the validator's sentence, a
+default and a rule in the builder's own, pointed at them — or when a rule compares the field with
+another it would no longer share a shape with
 ([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md)), while `duplicate.ts` places a copy the way a block is
 placed ([0192](../decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)) and
 `other.ts` adds "Other, please specify" as an option, a text field and the rules on it, written

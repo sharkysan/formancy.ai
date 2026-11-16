@@ -18,7 +18,8 @@ import type { Refusal } from './session.js'
  * the only version that cannot drift.
  *
  * `setProperty` is the other half: how one edited property reaches the field. The precision of a
- * time is the exception, which `reprecision.ts` carries along with its bounds and rules.
+ * time or a date and time is the exception, which `reprecision.ts` carries along with its bounds,
+ * its default and its rules.
  */
 
 export type PropertyKind = 'string' | 'number' | 'boolean' | 'enum' | 'options' | 'columns' | 'strings'

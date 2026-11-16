@@ -4,7 +4,7 @@ import { inModel, rowScopeOf } from '@formancy/core/authoring'
 import { comparedFields, parse, rewriteComparedLiterals } from '@formancy/expressions'
 import { ruleKindLabel } from './logic.js'
 import type { BuilderText } from './messages.js'
-import { dataPathOf, locate, rulePathOf } from './navigate.js'
+import { dataPathOf, fieldPointerOf, locate, rulePathOf } from './navigate.js'
 import type { Refusal } from './session.js'
 
 /**
@@ -38,9 +38,11 @@ import type { Refusal } from './session.js'
  * change that would split a pair that is alike is refused and names the other field. A pair
  * already split, or still alike afterwards, is not this edit's.
  *
- * **Refused with the validator's words.** A bound that cannot follow is left at its width, so
- * the validator that has to accept the document refuses it, in the sentence it always uses
- * (`bounds.width`). A rule has no such sentence in the validator, so the builder has one.
+ * **Refused with the validator's words where it has them.** A bound that cannot follow is left at
+ * its width, so the validator that has to accept the document refuses it, in the sentence it
+ * always uses (`bounds.width`). It holds no default to a width and reads no rule, so a default and
+ * a rule that cannot follow are refused by the builder, in sentences of its own: a default left
+ * behind was committed, and the form then refused to open.
  */
 type Precision = number | undefined
 
@@ -59,10 +61,10 @@ interface Stuck {
 
 /**
  * Set the precision of the field at `keyPath` on `draft`, in place, and carry along what is
- * written at its width. Returns a refusal in the session's language, or nothing; `attempt` then
- * validates the draft, which refuses a bound that could not follow in the validator's own
- * sentence (`bounds.width`) and discards the draft whole. The body of the session's `precision`
- * command.
+ * written at its width. Returns a refusal in the session's language, pointing at the default or
+ * the rule that cannot follow, or nothing; `attempt` then validates the draft, which refuses a
+ * bound that could not follow in the validator's own sentence (`bounds.width`). A refusal
+ * discards the draft whole. The body of the session's `precision` command.
  */
 export function carryPrecision(draft: FormSchema, keyPath: readonly string[], requested: unknown, text: BuilderText): Refusal | undefined {
   const precision = requested as Precision
@@ -80,16 +82,24 @@ export function carryPrecision(draft: FormSchema, keyPath: readonly string[], re
   if ((field.type !== 'time' && field.type !== 'datetime') || !readable(before) || !readable(precision)) return undefined
 
   const change = { type: field.type, from: before, to: precision }
-  for (const bound of ['earliest', 'latest', 'default'] as const) {
+  // Rules name a field by its data path, which has no page in it, so the key path is not it.
+  const modelPath = rulePathOf(draft, dataPathOf(draft, keyPath) ?? '')
+  for (const bound of ['earliest', 'latest'] as const) {
     const value = record[bound]
     if (typeof value === 'string') record[bound] = rewidth(change, value) ?? value
   }
-  // Rules name a field by its data path, which has no page in it, so the key path is not it.
-  const modelPath = rulePathOf(draft, dataPathOf(draft, keyPath) ?? '')
+  if (typeof record.default === 'string') {
+    const written = rewidth(change, record.default)
+    if (written === undefined) {
+      const path = `${fieldPointerOf(draft, keyPath) ?? '/model/fields'}/default`
+      return { ok: false, path, message: text('refuse.precisionDefault', { field: modelPath, value: record.default }) }
+    }
+    record.default = written
+  }
   const stuck = rewriteRules(draft, modelPath, change) ?? splitPairs(draft, modelPath, change)
   if (stuck === undefined) return undefined
   const key = ({ width: 'refuse.precisionRule', form: 'refuse.precisionForm', pair: 'refuse.precisionPair' } as const)[stuck.reason]
-  return { ok: false, path: '/logic/rules', message: text(key, { ...stuck, kind: ruleKindLabel(stuck.kind, text) }) }
+  return { ok: false, path: `/logic/rules/${String(stuck.number - 1)}`, message: text(key, { ...stuck, kind: ruleKindLabel(stuck.kind, text) }) }
 }
 
 /** Whether the format has a shape for this precision, which it answers by throwing for any it has not. */
@@ -118,16 +128,25 @@ const allZero = (digits: string): boolean => !/[^0]/.test(digits)
 /**
  * `value` written at the new width, the same moment; or `value` itself when it was not written
  * at the old one (not ours to correct); or nothing when no exact spelling exists.
+ *
+ * `PARTS` and the spelling below are written by hand, so what they give is held to the format's
+ * own shape before it is used: a disagreement between the two refuses the change, as a value
+ * with no exact spelling does, rather than writing a value of another shape (arc42 §8.12).
  */
 function rewidth({ type, from, to }: Change, value: string): string | undefined {
   if (!temporalShapeRegExp(type, from).test(value)) return value
   const [, head = '', seconds = '00', fraction = ''] = PARTS[type].exec(value) ?? []
   const digits = to ?? 0
   if (!allZero(fraction.slice(digits))) return undefined
+  const written = spelled(type, to, head, seconds, fraction.slice(0, digits).padEnd(digits, '0'))
+  return written !== undefined && temporalShapeRegExp(type, to).test(written) ? written : undefined
+}
+
+function spelled(type: Change['type'], to: Precision, head: string, seconds: string, fraction: string): string | undefined {
   // Without a precision a time is HH:MM, which has always meant seconds 00, so it holds no more
   // than a zero second and a zero fraction. A date and time has seconds either way.
   if (type === 'time' && to === undefined) return seconds === '00' ? head : undefined
-  const body = `${head}:${seconds}${digits === 0 ? '' : `.${fraction.slice(0, digits).padEnd(digits, '0')}`}`
+  const body = `${head}:${seconds}${fraction === '' ? '' : `.${fraction}`}`
   return type === 'time' ? body : `${body}Z`
 }
 

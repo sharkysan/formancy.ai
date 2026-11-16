@@ -45,6 +45,23 @@ export function locate(document: FormSchema, keyPath: readonly string[]): Locate
   return undefined
 }
 
+/**
+ * The JSON Pointer to the field at `keyPath`, as the validator reports a path into one:
+ * `/model/fields/0/fields/2`. A refusal of the builder's own points where the validator's would,
+ * so a panel shows both at the same property.
+ */
+export function fieldPointerOf(document: FormSchema, keyPath: readonly string[]): string | undefined {
+  let pointer = '/model'
+  let fields: readonly FieldDef[] = document.model.fields
+  for (const key of keyPath) {
+    const index = fields.findIndex((field) => field.key === key)
+    if (index === -1) return undefined
+    pointer += `/fields/${String(index)}`
+    fields = fields[index]!.fields ?? []
+  }
+  return pointer
+}
+
 /** Every container's key path, root first. */
 export function containerPaths(document: FormSchema): string[][] {
   const paths: string[][] = [[]]
