@@ -446,23 +446,36 @@ describe('the spec version 2 freeze', () => {
     expect([...widgetsInFour, ...typesInFour].filter((name) => !text.includes(`\`${name}\``))).toEqual([])
   })
 
-  test('and says every version the code speaks is frozen, but the newest while it is open', () => {
-    // Version 4 froze with no version open (0140); version 5 opened (0194) and froze with the
-    // batch it was opened for (0201). Version 6 is open for `precision`, and this is where that
-    // is written down: at most one heading says OPEN, and only for the highest version the
-    // code speaks. Read from the code's own list of versions, so a version 7 has to arrive
-    // with a heading too — and when version 6 freezes, this case goes back to "none is open".
+  test('and says every version the code speaks is frozen, and none is open', () => {
+    // Version 5 froze with no version open (0201); version 6 opened for `precision` (0238) and
+    // froze with it (0239), and again nothing is open. Read from the code's own list of
+    // versions, so a version 7 has to arrive with a heading — OPEN while it gains constructs,
+    // when this case says so again. A frozen version left saying OPEN tells a manufacturer the
+    // format they pinned may still move, which is the claim the freeze exists to withdraw.
     const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
     const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
     const versions = [...(/export const SPEC_VERSIONS = \[([^\]]*)\]/.exec(types)?.[1] ?? '').matchAll(/'(\d+)'/g)].map((match) => match[1]!)
 
-    expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(4)
-    const newest = versions[versions.length - 1]!
-    for (const version of versions.slice(0, -1)) {
+    expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(5)
+    for (const version of versions) {
       expect(text, `version ${version}`).toContain(`## Spec version ${version} is FROZEN`)
     }
-    expect(text, `version ${newest}`).toContain(`## Spec version ${newest} is OPEN`)
-    expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([newest])
+    expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([])
+  })
+
+  test('and the schema calls no version open, since the status is written in MIGRATIONS', () => {
+    // The schema's `specVersion` description ships in @formancy/spec's tarball, and an editor
+    // shows it to every author. 0.8.0 to 0.13.0 published it calling version 5 open, after
+    // version 5 froze, because the freeze rewrote MIGRATIONS and nothing read this sentence;
+    // 0.14.0 would have shipped it calling version 6 open. A status said in two places goes
+    // stale in one, so the description says what each version added and no version's status,
+    // and MIGRATIONS, held by the case above, is where the status lives.
+    const schema = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8')) as {
+      properties?: { specVersion?: { description?: unknown } }
+    }
+    const description = schema.properties?.specVersion?.description
+    expect(typeof description, 'no specVersion description was read out of the schema').toBe('string')
+    expect(description).not.toMatch(/\bopen\b/i)
   })
 
   test('and names one version as the one this package writes: the one the code writes', () => {

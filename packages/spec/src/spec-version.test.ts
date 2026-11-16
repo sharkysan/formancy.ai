@@ -29,12 +29,12 @@ const errorsOf = (document: FormSchema): string[] => {
 
 describe('what each version defines', () => {
   test('the versions this package speaks are 1 to 6, newest by default', () => {
-    // Version 4 is frozen, like the three before it (0140); version 5 froze with its batch (0201); version 6 is open.
+    // Version 4 is frozen, like the three before it (0140); version 5 froze with its batch (0201), and version 6 with its property (0239).
     expect([...SPEC_VERSIONS]).toEqual(['1', '2', '3', '4', '5', '6'])
     expect(CURRENT_SPEC_VERSION).toBe('6')
   })
 
-  test('and every type and widget belongs to a version by name, so a new one is version 5’s by name too', () => {
+  test('and every type and widget belongs to a version by name, so a new one needs the next version opened for it', () => {
     /*
      * The freeze, made mechanical. A version's constructs are its own list, and the version
      * check attributes a construct from those lists. While a version was open the newest one

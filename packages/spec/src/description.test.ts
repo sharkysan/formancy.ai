@@ -21,7 +21,7 @@ const formWith = (field: Partial<FieldDef>, specVersion = '5'): FormSchema =>
 
 describe('a description', () => {
   test('is version 5, which is frozen and no longer the version a document is written in', () => {
-    // Version 6 is open and is what a new document is written in.
+    // Version 6 is what a new document is written in, frozen with its property (0239).
     expect([...SPEC_VERSIONS]).toContain('5')
     expect(CURRENT_SPEC_VERSION).toBe('6')
   })

@@ -106,7 +106,10 @@ in another.
    read a version 4 document. Version `"5"` is **frozen** as of 2026-10-27 and first released
    with 0.8.0, which writes it; a release before it cannot read a version 5 document, and pinning
    it settles the shape of documents as the others do
-   ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version `"6"` is **open** and in no release yet: the source writes it, it may still gain constructs, and it is not a format to characterise against until it is frozen. Version `"1"` stays frozen and readable
+   ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version `"6"` is **frozen** as of 2026-11-16 and first
+   released with 0.14.0, which writes it; a release before it cannot read a version 6 document,
+   and pinning it settles the shape of documents as the others do
+   ([0239](../decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md)). Version `"1"` stays frozen and readable
    ([0042](../decisions/0042-freeze-the-spec.md)), so the shape of your form
    documents and stored submissions is settled in either. Version 2 is a
    superset that removes nothing, so a version 1 document is also a valid

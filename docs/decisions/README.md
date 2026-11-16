@@ -301,7 +301,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0198](0198-a-rule-says-its-own-message.md) | A rule says its own message, in the form's language, for its code on its field | accepted |
 | [0199](0199-an-option-can-be-chosen-only-on-its-own.md) | An option can be chosen only on its own, and one function ticks it | accepted |
 | [0200](0200-options-can-be-shown-in-a-shuffled-order.md) | Options can be shown in a shuffled order, chosen once by the engine, and the answer keeps the written one | accepted |
-| [0201](0201-spec-5-freezes-with-the-batch-it-opened-for.md) | Spec 5 freezes with the batch it was opened for, and nothing opens version 6 yet | accepted |
+| [0201](0201-spec-5-freezes-with-the-batch-it-opened-for.md) | Spec 5 freezes with the batch it was opened for, and nothing opens version 6 yet | accepted; version 6 opened by 0238 |
 | [0202](0202-other-please-specify-is-a-command.md) | "Other, please specify" is a builder command, composed from what the format has | accepted |
 | [0203](0203-a-limit-is-counted-while-typing.md) | A field with a limit counts while somebody types, and speaks only when they pause | accepted |
 | [0204](0204-answers-can-be-checked-before-they-are-sent.md) | The answers can be checked before they are sent, in words, from one list | accepted; a question nobody answered having no line, superseded in part by 0214 |
@@ -339,3 +339,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md) | A date or time compared with text not written as its answers are is named at publish, not refused | accepted; extended by 0238, which refuses such a comparison on a field with a precision, and corrects its `has()` for a field at the top |
 | [0237](0237-a-host-may-add-content-beside-a-fields-control.md) | A host may add content of its own beside a select's or a typeahead's box, on the box's line | accepted |
 | [0238](0238-a-time-or-an-instant-declares-its-precision.md) | A time or an instant declares its precision, and every answer to it has that width | accepted |
+| [0239](0239-spec-6-freezes-with-the-property-it-opened-for.md) | Spec 6 freezes with the property it was opened for, and nothing opens version 7 yet | accepted |
