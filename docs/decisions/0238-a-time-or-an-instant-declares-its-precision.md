@@ -262,7 +262,14 @@ line.
   fraction: the bound is changed first. A literal that was not at the old width is left, as it
   was a misshapen literal before. A comparison through a list rule's own variable is not seen here,
   as it is not seen at publish, so it stays at the old width. Saved examples (0166) are not
-  rewritten; one that stops holding is named by publish's example warnings, as today.
+  rewritten; one that stops holding is named by publish's example warnings, as today. A field
+  inside a page is found by its data path, which has no page in it. **Two temporal fields compared
+  with each other** are refused, not rewritten: no edit to one changes the other, so a change that
+  would split a pair written in one shape is refused naming the other field, and the author removes
+  the rule, changes both and writes it again; a pair already split, or one that stays alike (a date
+  and time between 0 and none), is not refused. **Changing between two precisions is one step**, by
+  typing over the number: the panel reads a cleared box as removing the precision, which is exact
+  only for a time whose seconds are zero and otherwise refused, leaving the old precision in place.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.

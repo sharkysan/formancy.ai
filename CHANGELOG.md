@@ -79,7 +79,12 @@ control is still the browser's, to the minute
   becomes `HH:MM` when its seconds are zero, since `HH:MM` has always meant seconds 00.
   `08:00:00.250` at precision 3 cannot become precision 0 without moving by a quarter of a second,
   so the change is refused, with the validator's own sentence for a bound and a sentence naming the
-  rule for a literal, and the document is left as it was. The builder never guesses a value. The
+  rule for a literal, and the document is left as it was. A field inside a page is carried like any
+  other. A rule comparing two such fields with each other, `opens < closes`, is right only while
+  both have one precision and no edit to one field changes the other, so a change that would split a
+  pair that is alike is refused, naming the other field; the author removes the rule, changes both
+  and writes it again. To go from one precision to another, type over the number: clearing the box
+  first removes the precision, which is exact only for a time whose seconds are zero. The builder never guesses a value. The
   rewrite changes only the characters of the literal, so the author's spacing and quotes survive
   ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)). Saved examples are
   not rewritten.
@@ -90,8 +95,7 @@ control is still the browser's, to the minute
   `ComparedFields`, and `rewriteComparedLiterals`, which writes the strings a field is compared with
   again in place, in `@formancy/expressions`; `crossWidthComparisons` and its type
   `CrossWidthComparison`, and `inModel` and `rowScopeOf`, which say which field a rule's read names,
-  in `@formancy/core/authoring`; `typedTemporal`, `reprecise` and the types `Reprecision` and
-  `StuckLiteral` in `@formancy/builder-core`.
+  in `@formancy/core/authoring`; `typedTemporal` in `@formancy/builder-core`.
   The typed control is public too, for a host that draws a time or an instant of its own: `TypedTemporalInput`
   and its props type in `@formancy/react`, and the directive `FormancyTypedTemporalInput` in
   `@formancy/angular`, each taking the stored answer and reporting the stored answer. A host that translates the renderer's

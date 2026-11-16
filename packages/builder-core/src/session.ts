@@ -16,7 +16,8 @@ import {
   samePath,
 } from './layout.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
-import { applyFieldProperty } from './reprecision.js'
+import { carryPrecision } from './reprecision.js'
+import { setProperty } from './properties.js'
 import { repathEverywhere, repathRules, unplaceEverywhere, unplaceOnly, unskipEverywhere } from './repath.js'
 
 /**
@@ -643,9 +644,8 @@ export function createBuilderSession(
       })
     },
 
-    setFieldProperty(keyPath, property, value) {
-      return attempt((draft) => applyFieldProperty(draft, keyPath, property, value, text))
-    },
+    setFieldProperty: (keyPath, property, value) =>
+      attempt((draft) => (property === 'precision' ? carryPrecision(draft, keyPath, value, text) : setProperty(draft, keyPath, property, value, text))),
 
     // Translation: one concern, its own file, over this session's core.
     ...translationCommands({ document: () => present, attempt, refuse, text }),

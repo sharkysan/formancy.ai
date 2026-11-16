@@ -19,5 +19,9 @@ export const FIELD_EDIT_MESSAGES = {
   'refuse.retypeToContainer': 'A question cannot become a {type}: that would mean inventing the fields inside it.',
   /** `{kind}` is the rule kind's own word, as in `refuse.ruleCannotFollow`. */
   'refuse.precisionRule':
-    'Rule {number} (“{kind}” on “{target}”) compares “{field}” with “{literal}”, which cannot be written at the new precision without changing its value. Change or delete the rule first.',
+    'Rule {number} (“{kind}” on “{target}”) compares “{field}” with “{other}”, which cannot be written at the new precision without changing its value. Change or delete the rule first.',
+  'refuse.precisionForm':
+    'Rule {number} (“{kind}” on “{target}”) compares “{field}” with a text written in a form the builder does not rewrite, such as one with an escape in it. Write the text plainly, then change the precision.',
+  'refuse.precisionPair':
+    'Rule {number} (“{kind}” on “{target}”) compares “{field}” with “{other}”, and a rule compares two answers as text, which is right only while both have one precision. Give both the same precision: remove the rule, change both fields, then write the rule again.',
 } as const satisfies Record<string, Message>

@@ -576,9 +576,12 @@ in the hour the clocks repeat, which failed in both builders when the row held t
 and read the later 01:30Z back as 00:30Z.
 Changing the `precision` of a field in a builder carries its bounds, its default and the literals in
 rules that compare it along when the rewrite names the same moment, and refuses, leaving the
-document as it was, when it does not: `08:00:00.250` is not cut to the second. Verified by
-`packages/builder-core/src/reprecision.test.ts`, which failed with the session's property command
-as it was. A comparison through a list rule's own variable is not rewritten, being not seen at
+document as it was, when it does not: `08:00:00.250` is not cut to the second. A field inside a
+page is carried like any other, and a rule comparing two temporal fields with each other is refused
+when the change would give them two shapes, because no edit to one field changes the other.
+Verified by `packages/builder-core/src/reprecision.test.ts`, which failed with the session's
+property command as it was, and, for a field inside a page, with the rules looked up by the key
+path instead of the data path. A comparison through a list rule's own variable is not rewritten, being not seen at
 publish either, and a saved example is not rewritten.
 
 *Residual:*

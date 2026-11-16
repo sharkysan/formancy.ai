@@ -2,7 +2,6 @@ import { describe, expect, test } from 'vitest'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { createBuilderText } from './messages.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
-import { reprecise } from './reprecision.js'
 import { createBuilderSession } from './session.js'
 
 /**
@@ -214,24 +213,7 @@ describe('removing a field’s precision', () => {
   })
 })
 
-describe('reprecise', () => {
-  // The command the property box uses and the function a caller without a session uses must
-  // not be two answers; the function is the one place the rewrite is decided.
-  test('returns the rewritten document, and leaves the one it was given unchanged', () => {
-    const given = form({ precision: 0, earliest: '08:00:00' })
-    const outcome = reprecise(given, 'opens', 3)
-    expect(outcome.ok).toBe(true)
-    if (outcome.ok) expect(opensOf(outcome.schema)).toMatchObject({ precision: 3, earliest: '08:00:00.000' })
-    expect(opensOf(given)).toMatchObject({ precision: 0, earliest: '08:00:00' })
-  })
-
-  // A caller deciding what to say needs the validator's codes, not only a sentence.
-  test('refuses with the validator’s errors', () => {
-    const outcome = reprecise(form({ precision: 3, earliest: '08:00:00.250' }), 'opens', 0)
-    expect(outcome.ok).toBe(false)
-    if (!outcome.ok) expect(outcome.errors).toMatchObject([{ code: 'bounds.width', path: '/model/fields/0/earliest', values: { expected: '09:30:00' } }])
-  })
-
+describe('what the validator is left to refuse', () => {
   // A precision the schema refuses (1.5, 12) has no width to rewrite to; the validator says what
   // is wrong with the number and the field is untouched.
   test('hands a precision it cannot read to the validator rather than guessing a width', () => {
@@ -246,5 +228,153 @@ describe('reprecise', () => {
   test('leaves a field of another type to the ordinary property command', () => {
     const session = createBuilderSession(form({}))
     expect(session.setFieldProperty(['note'], 'precision', 3).ok).toBe(false)
+  })
+
+  // A key path that names no field is a refusal in words, not an exception.
+  test('refuses a field that is not there', () => {
+    const session = createBuilderSession(form({}))
+    expect(session.setFieldProperty(['nowhere'], 'precision', 3)).toMatchObject({ ok: false })
+  })
+})
+
+describe('a field inside a page', () => {
+  // A rule names a field by its data path, which has no page in it. Looked up by the key path,
+  // `about.opens` found no rule: the bound was rewritten, the session said ok, and the rule stayed
+  // at the old width for publish to refuse.
+  const wizard = (cels: LogicRule[] = []): FormSchema =>
+    ({
+      specVersion: '6',
+      id: 'wizard',
+      title: 'Wizard',
+      model: {
+        fields: [
+          {
+            key: 'about',
+            type: 'page',
+            label: 'About',
+            fields: [
+              { key: 'opens', type: 'time', label: 'Opens', precision: 0, earliest: '08:00:00' },
+              { key: 'where', type: 'group', label: 'Where', fields: [{ key: 'ends', type: 'time', label: 'Ends', precision: 0 }] },
+              {
+                key: 'legs',
+                type: 'repeater',
+                label: 'Legs',
+                fields: [
+                  { key: 'at', type: 'time', label: 'At', precision: 0 },
+                  { key: 'flag', type: 'text', label: 'Flag' },
+                ],
+              },
+              { key: 'note', type: 'text', label: 'Note' },
+            ],
+          },
+        ],
+      },
+      logic: { rules: cels },
+    }) as unknown as FormSchema
+
+  test('carries the rules that compare it, as well as its bounds', () => {
+    const session = createBuilderSession(wizard([rule('opens >= "08:00:00"')]))
+    expect(session.setFieldProperty(['about', 'opens'], 'precision', 3).ok).toBe(true)
+    expect(session.document().logic?.rules[0]?.cel).toBe('opens >= "08:00:00.000"')
+  })
+
+  test('and so does a field in a group under a page', () => {
+    const session = createBuilderSession(wizard([rule('where.ends >= "09:00:00"')]))
+    expect(session.setFieldProperty(['about', 'where', 'ends'], 'precision', 3).ok).toBe(true)
+    expect(session.document().logic?.rules[0]?.cel).toBe('where.ends >= "09:00:00.000"')
+  })
+
+  test('and a field in a repeater under a page, read in its row', () => {
+    const session = createBuilderSession(wizard([rule('item.at >= "10:00:00"', { target: 'legs[].flag' })]))
+    expect(session.setFieldProperty(['about', 'legs', 'at'], 'precision', 3).ok).toBe(true)
+    expect(session.document().logic?.rules[0]?.cel).toBe('item.at >= "10:00:00.000"')
+  })
+
+  // The refusal must reach the rule through the page too, or only a bound would ever be refused.
+  test('and refuses a rule literal that cannot follow', () => {
+    const document = wizard([rule('opens >= "08:00:00.250"')])
+    Object.assign(document.model.fields[0]!.fields![0]!, { precision: 3, earliest: '08:00:00.000' })
+    const session = createBuilderSession(document)
+    const outcome = session.setFieldProperty(['about', 'opens'], 'precision', 0)
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toContain('08:00:00.250')
+  })
+})
+
+describe('a literal the builder does not rewrite', () => {
+  // `"08:00:00"` reads as 08:00:00 and matches the old width, so the rewrite is asked for and
+  // cannot splice the escape. The sentence says why, rather than naming the whole expression.
+  // `rewrite_broke_source` and `rewrite_changed_comparisons` are not reachable: a plain quoted run
+  // of digits and colons parses and compares the same after the splice.
+  test('is refused for its form, not for its width', () => {
+    const session = createBuilderSession(form({ precision: 0 }, [rule('opens >= "08:00\\u003a00"')]))
+    const before = session.document()
+    const outcome = session.setFieldProperty(['opens'], 'precision', 3)
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toContain('a form the builder does not rewrite')
+    expect(session.document()).toBe(before)
+  })
+})
+
+describe('two fields compared with each other', () => {
+  const pair = (opens: Record<string, unknown>, closes: Record<string, unknown>): FormSchema =>
+    ({
+      specVersion: '6',
+      id: 'pair',
+      title: 'Pair',
+      model: {
+        fields: [
+          { key: 'opens', type: 'time', label: 'Opens', ...opens },
+          { key: 'closes', type: 'time', label: 'Closes', ...closes },
+          { key: 'note', type: 'text', label: 'Note' },
+        ],
+      },
+      logic: { rules: [rule('opens < closes')] },
+    }) as unknown as FormSchema
+
+  // Publish refuses a comparison of two shapes, and no edit to one field changes the other, so the
+  // builder would author a document it cannot publish. Refused, naming the other field.
+  test('refuses a change that would give them two shapes, naming the other', () => {
+    const session = createBuilderSession(pair({ precision: 0 }, { precision: 0 }))
+    const before = session.document()
+    const outcome = session.setFieldProperty(['opens'], 'precision', 3)
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toMatch(/compares “opens” with “closes”.*the same precision/)
+    expect(session.document()).toBe(before)
+  })
+
+  // A pair that already differs is publish's to name; refusing every step towards fixing it would
+  // leave no way to fix it.
+  test('lets a pair that already differs change', () => {
+    const session = createBuilderSession(pair({ precision: 0 }, { precision: 3 }))
+    expect(session.setFieldProperty(['opens'], 'precision', 6).ok).toBe(true)
+  })
+
+  // 0 and absent write a date and time in one shape, so the pair stays alike.
+  test('lets a date and time pair change between 0 and none', () => {
+    const stamped = {
+      specVersion: '6',
+      id: 's',
+      title: 'S',
+      model: {
+        fields: [
+          { key: 'a', type: 'datetime', label: 'A' },
+          { key: 'b', type: 'datetime', label: 'B', precision: 0 },
+          { key: 'note', type: 'text', label: 'Note' },
+        ],
+      },
+      logic: { rules: [rule('a < b')] },
+    } as unknown as FormSchema
+    const session = createBuilderSession(stamped)
+    expect(session.setFieldProperty(['a'], 'precision', 0).ok).toBe(true)
+  })
+
+  // The same check through a field inside a page, whose key path is not its data path.
+  test('is found for a field inside a page', () => {
+    const paged = pair({ precision: 0 }, { precision: 0 })
+    const inner = paged.model.fields
+    paged.model.fields = [{ key: 'p', type: 'page', label: 'P', fields: inner }] as unknown as FormSchema['model']['fields']
+    const session = createBuilderSession(paged)
+    expect(session.setFieldProperty(['p', 'opens'], 'precision', 3).ok).toBe(false)
   })
 })
