@@ -174,6 +174,14 @@ set on a disabled field.
 `FormancyFieldBeside`, `FormancyFieldBesideContext`, `FORMANCY_FIELD_BESIDE` and `injectFieldBeside`
 are exported from `@formancy/angular`.
 
+**Fixed: on a phone, the playground scrolls nothing under its pane switch.** Below the breakpoint the
+switch sticks to the top of the window, over what scrolls under it, and the browser counted that band
+as in view: a box given the keyboard by Tab while its top lay there stayed there, hidden whole, and a
+typeahead's list scrolled into view kept its first rows under the switch's buttons. The playground's
+`scroll-padding-top` now gives the band to the switch. The browser gate's check that nothing is drawn
+over the pickup point's open list failed on it now and then, whenever the starter's shuffled *Add to
+your order* took a line more and left the list there.
+
 ## 0.13.0 — 2026-11-05
 
 **A minor release; the spec version stays 5.** `0.13.0` reads and writes what `0.12.0` does, so a
