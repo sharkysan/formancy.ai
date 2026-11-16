@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { answersInWords } from './answers-in-words.js'
 import { createFormText } from './words.js'
@@ -172,5 +172,28 @@ describe('a temporal answer in words, at its field’s precision', () => {
   // A wall clock reads the same everywhere, so a time is said as stored, every digit with it.
   test('a time with a precision is said as stored', () => {
     expect(said(run('time', 7), '08:03:27.1234567')).toBe('08:03:27.1234567')
+  })
+
+  // ECMAScript defines a date string's fraction as three digits; what an engine makes of more is
+  // its own. V8 cuts them, and an engine that rounds read …:59.9999999 as the next minute, so the
+  // reviewer was told 10:35:00 of an answer stored at 10:34:59. The stand-in is such an engine.
+  test('an instant with more than three digits after the seconds is said at its own second, whatever the engine does with the fraction', () => {
+    const Engine = Date
+    class Rounding extends Engine {
+      constructor(value?: string | number) {
+        if (value === undefined) super()
+        else super(typeof value === 'string' ? Rounding.parse(value) : value)
+      }
+      static override parse(text: string): number {
+        const long = /^(.*:\d{2})\.(\d{4,})Z$/.exec(text)
+        return long === null ? Engine.parse(text) : Engine.parse(`${long[1]}Z`) + Math.round(Number(`0.${long[2]}`) * 1000)
+      }
+    }
+    vi.stubGlobal('Date', Rounding)
+    try {
+      expect(said(run('datetime', 7), '2026-10-08T10:34:59.9999999Z')).toBe('8 October 2026 at 10:34:59.9999999 UTC')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

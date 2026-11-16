@@ -177,8 +177,17 @@ function temporal(def: FieldDef, value: string, language: string): string {
   if (def.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return new Intl.DateTimeFormat(language, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`))
   }
-  if (def.type === 'datetime' && !Number.isNaN(Date.parse(value))) return `${instant(value, def.precision, language)} UTC`
+  if (def.type === 'datetime' && !Number.isNaN(Date.parse(wholeSeconds(value)))) return `${instant(value, def.precision, language)} UTC`
   return value
+}
+
+/**
+ * An instant without its fraction, for `Date`. ECMAScript defines a date string's fraction as
+ * three digits, and what an engine makes of more is its own: V8 cuts them, and one that rounds
+ * would read …:59.9999999 as the next minute.
+ */
+function wholeSeconds(value: string): string {
+  return value.replace(/\.\d+Z$/, 'Z')
 }
 
 /**
@@ -188,7 +197,7 @@ function temporal(def: FieldDef, value: string, language: string): string {
  * and a reviewer would read a moment the submission does not hold.
  */
 function instant(value: string, precision: number | undefined, language: string): string {
-  const at = new Date(value)
+  const at = new Date(wholeSeconds(value))
   if (precision === undefined) return new Intl.DateTimeFormat(language, { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }).format(at)
   const fraction = /\.(\d+)Z$/.exec(value)?.[1]
   return new Intl.DateTimeFormat(language, { dateStyle: 'long', timeStyle: 'medium', timeZone: 'UTC' })
