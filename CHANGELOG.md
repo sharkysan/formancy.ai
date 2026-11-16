@@ -62,7 +62,8 @@ control is still the browser's, to the minute
   to the second, with every digit after it.
 - **The playground's starter** has a date and time to the millisecond and a time to the second
   with a bound.
-- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalExample`,
+- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`, `temporalAnyShapeRegExp` (the same
+  shapes precompiled, so a host's own check need not compile a pattern), `temporalExample`,
   `temporalDateExists`, `temporalEntryMask`, `typedFromStored`, `storedFromTyped`, `pasteOutcome`
   and the type `TypedTemporalType` in `@formancy/spec`; `comparedFields` and its type
   `ComparedFields` in `@formancy/expressions`; `crossWidthComparisons` and its type
