@@ -39,8 +39,8 @@ import { CLEAR_GLYPH, OPEN_GLYPH } from './demo-glyphs.js'
   // Under the pickup point, the point the answer holds, as the React pane draws it
   // (`demo-addition.tsx`, 0233): the template is handed the field's binding, which is how a host
   // reads the field there. Beside the pickup point an Open and beside the country a Clear, as the
-  // React pane draws them (`demo-beside.tsx`, 0237), each unavailable while its field is empty and
-  // named in the form's language.
+  // React pane draws them (`demo-beside.tsx`, 0237), each unavailable while its field is empty, the
+  // Clear also while a rule disables the country, and each named in the form's language.
   template: `
     <formancy-form layout="web" [review]="true" [fieldAddition]="addition" [fieldBeside]="beside" />
     <ng-template #chosenPoint let-field="field">
@@ -60,7 +60,7 @@ import { CLEAR_GLYPH, OPEN_GLYPH } from './demo-glyphs.js'
         type="button"
         [attr.aria-label]="words.clear"
         [title]="words.clear"
-        [attr.aria-disabled]="empty(field.snapshot().value) ? 'true' : null"
+        [attr.aria-disabled]="unavailable(field) ? 'true' : null"
         (click)="clear(field)"
       >
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path [attr.d]="clearGlyph" /></svg>
@@ -89,8 +89,13 @@ export class AngularPreview {
     return PICKUP_POINTS.find((point) => point.value === value)
   }
 
-  protected empty(value: unknown): boolean {
-    return value === null || value === undefined || value === ''
+  /**
+   * While the country is empty, and while a rule disables it: the row is no fieldset, so the button
+   * stays operable there, and the engine would take the value it sets (0237).
+   */
+  protected unavailable(field: FieldBinding): boolean {
+    const { value, disabled } = field.snapshot()
+    return value === null || value === undefined || value === '' || disabled
   }
 
   /** The keyboard to the point drawn under the field, as the React pane's Open moves it; nothing while no point is chosen. */
@@ -99,8 +104,8 @@ export class AngularPreview {
     event.currentTarget.closest('[data-formancy-part="field"]')?.querySelector<HTMLElement>('.chosen-point')?.focus()
   }
 
-  /** The answer taken away, as the select's empty option does; nothing while there is none. */
+  /** The answer taken away, as the select's empty option does; nothing while there is none, or while the field is disabled. */
   protected clear(field: FieldBinding): void {
-    if (!this.empty(field.snapshot().value)) field.setValue(null)
+    if (!this.unavailable(field)) field.setValue(null)
   }
 }

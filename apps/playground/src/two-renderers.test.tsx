@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { computeAccessibleName } from 'dom-accessibility-api'
 import { FORM_WORDS, FORM_WORDS_DE, FORM_WORDS_FR } from '@formancy/core/words'
@@ -26,8 +26,12 @@ import { App } from './app.js'
  * only way to compare two renderers at all: the markup is deliberately each
  * package's own, so anything structural would be comparing the wrong thing.
  */
+// A mock that carries an edit to the page, as the builders' suite's does: a person adds a rule in the
+// Schema view, and one case here holds what the playground draws beside a field under it.
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => <textarea readOnly aria-label="Schema" value={value ?? ''} />,
+  default: ({ value, onChange }: { value?: string; onChange?: (next: string) => void }) => (
+    <textarea aria-label="Schema" value={value ?? ''} onChange={(event) => onChange?.(event.target.value)} />
+  ),
   useMonaco: () => null,
 }))
 
@@ -304,6 +308,42 @@ describe('what the playground, as a host, draws beside a field', () => {
       await waitFor(() => expect(within(pane).queryByRole('textbox', { name: 'Canton' }), `${where}: and the engine heard it`).toBeNull())
       expect(clear.getAttribute('aria-disabled'), `${where}: unavailable again`).toBe('true')
       expect(document.activeElement, `${where}: the keyboard stays on the Clear`).toBe(clear)
+    }
+  })
+
+  // The row is no fieldset, so a rule that disables the country leaves the Clear beside it
+  // operable, and the engine accepts a value set on a disabled field (hazard B6a's residual). A
+  // Clear that read the answer alone stayed available there and emptied a country the form had
+  // made read-only, and the playground is the host the documentation's Clear is copied from. So,
+  // with a rule a person can add in the Schema view, the Clear is available while the country
+  // holds an answer and is enabled, unavailable once the rule disables it, and a press then
+  // leaves the answer as it was.
+  test('is unavailable beside a field a rule disables, and a press leaves its answer, in both renderers', async () => {
+    await mounted()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Schema' }))
+    const editor = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Schema' })
+    const schema = JSON.parse(editor.value) as { model: { fields: { key: string; default?: string }[] }; logic: { rules: unknown[] } }
+    const countryField = schema.model.fields.find((field) => field.key === 'country')
+    expect(countryField, 'the starter no longer has the country this case locks').toBeDefined()
+    countryField!.default = 'CH'
+    schema.logic.rules.push({ target: 'country', kind: 'disabled', cel: 'firstName == "Locked"' })
+    fireEvent.change(editor, { target: { value: JSON.stringify(schema, null, 2) } })
+
+    for (const pane of [reactPane, angularPane]) {
+      const where = pane === reactPane ? 'React' : 'Angular'
+      const country = () => within(pane()).getByRole<HTMLSelectElement>('combobox', { name: 'Country' })
+      const clear = () => within(pane()).getByRole('button', { name: 'Clear the country' })
+      // The edited form starts in Switzerland, which tells the pane drawn from it from the one before.
+      await waitFor(() => expect(country().value, `${where}: the edited form never arrived`).toBe('CH'), { timeout: 10_000 })
+      expect(clear().hasAttribute('aria-disabled'), `${where}: available while the country is enabled`).toBe(false)
+
+      await user.type(within(pane()).getByRole('textbox', { name: 'First name' }), 'Locked')
+      await waitFor(() => expect(country().disabled, `${where}: the rule disables the country`).toBe(true))
+      expect(clear().getAttribute('aria-disabled'), `${where}: unavailable beside a disabled country`).toBe('true')
+      await user.click(clear())
+      expect(country().value, `${where}: a press leaves the answer`).toBe('CH')
+      expect(within(pane()).queryByRole('textbox', { name: 'Canton' }), `${where}: and the engine heard nothing`).not.toBeNull()
     }
   })
 })

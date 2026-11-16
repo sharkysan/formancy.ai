@@ -30,10 +30,15 @@
     field*, in both renderers: an Open beside the pickup point's typeahead and a Clear beside the
     country's select, each in the `field-beside` of a row whose first child is the box, unavailable
     with `aria-disabled` while its field is empty and the same button once it holds an answer; each
-    doing what it says, the Clear keeping the keyboard as its field empties; and both named in the
-    form's language. It failed before the demo, with no button named "Open the pickup point" in
-    either pane, and the language case before the names were the form's, with no "Abholort öffnen"
-    in the React pane.
+    doing what it says, the Clear keeping the keyboard as its field empties; the Clear unavailable
+    beside a country that a rule added in the Schema view disables, and a press on it leaving the
+    answer; and both named in the form's language. It failed before the demo, with no button named
+    "Open the pickup point" in the React pane, and in the Angular pane with the React pane's demo in
+    place and no `fieldBeside` given to the Angular preview (measured 2026-11-16); the language case
+    before the names were the form's, with no "Abholort öffnen" in the React pane; and the disabled
+    case while the Clear read its field's answer alone: available beside the disabled country in the
+    React pane, then, with the React pane's Clear reading `disabled` too, in the Angular pane, and,
+    with its press guarded by the answer alone, the country emptied.
   - `scripts/field-beside-browser-test.mjs`, in `pnpm test:browser`: on the playground in Chromium,
     with each theme on both sheets, left to right and right to left, at 1180 and at 390 pixels, and
     each row at rest, invalid and with the keyboard in it: the button is the box's height, at least
@@ -120,8 +125,8 @@ the engine are untouched. It adds no role, no name and no id, and describes no c
 reasons the addition gives (0233): the content is the host's, and its buttons are named by the host,
 an icon button by its `aria-label`. It disables nothing: the row is no fieldset, so a host's button
 beside a field a rule disables stays operable, and one that changes the answer, as a Clear does, reads
-the field's `disabled` first, or changes a field the form has made read-only (hazard B6a's residual:
-the engine accepts a value set on a disabled field).
+the field's `disabled` first, as the playground's does, or changes a field the form has made read-only
+(hazard B6a's residual: the engine accepts a value set on a disabled field).
 
 ## Alternatives considered
 

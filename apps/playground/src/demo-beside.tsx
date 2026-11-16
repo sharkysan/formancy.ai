@@ -39,20 +39,23 @@ function OpenPoint({ path }: { path: string }) {
 
 /**
  * Beside the country, a Clear: the answer taken away, as the select's empty option does, and the
- * keyboard left on the button, which stays as it becomes unavailable.
+ * keyboard left on the button, which stays as it becomes unavailable. Unavailable too while a rule
+ * disables the country: the row is no fieldset, so the button stays operable there, and the engine
+ * would take the value it sets (0237).
  */
 function ClearCountry({ path }: { path: string }) {
   const field = useField(path)
   const { clear } = besideWords(useFormEngine().locale())
   const empty = field.value === null || field.value === undefined || field.value === ''
+  const unavailable = empty || field.disabled
   return (
     <button
       type="button"
       aria-label={clear}
       title={clear}
-      aria-disabled={empty ? 'true' : undefined}
+      aria-disabled={unavailable ? 'true' : undefined}
       onClick={() => {
-        if (!empty) field.setValue(null)
+        if (!unavailable) field.setValue(null)
       }}
     >
       <Glyph path={CLEAR_GLYPH} />

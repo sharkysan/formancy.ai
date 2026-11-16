@@ -56,7 +56,9 @@ it gives nothing, so a form without it is unchanged. Formancy Data asked for it:
 its host draws a text button that opens the record the answer points to, on a line of its own that
 reads as the form's rather than the answer's, and it will draw the first of those as an icon button
 joined to the box ([0237](docs/decisions/0237-a-host-may-add-content-beside-a-fields-control.md)).
-The playground draws an Open beside the pickup point and a Clear beside the country.
+The playground draws an Open beside the pickup point and a Clear beside the country, which is
+unavailable while the country is empty and while a rule disables it, since the engine takes a value
+set on a disabled field.
 `FormancyFieldBeside`, `FormancyFieldBesideContext`, `FORMANCY_FIELD_BESIDE` and `injectFieldBeside`
 are exported from `@formancy/angular`.
 
