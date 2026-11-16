@@ -303,6 +303,20 @@ still opens and is named a combobox. Fixed in `0.14.0`: the select's rule outwei
 and each theme draws the arrow at the left right to left. Hazard D7a in
 [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md).
 
+**The schema `@formancy/spec` publishes in `0.8.0` to `0.13.0` calls version 5 open, and names a
+field's `description` as all it adds.** Its `specVersion` description, which an editor shows an
+author writing a document, says "version 5, which is open, a field's `description`" in the
+`formancy.schema.json` of each of those six releases, read from their tags on 2026-11-16; `0.7.0`'s
+and earlier name no version open. Version 5 froze on 2026-10-27, before `0.8.0`, holding a field's
+`autocomplete`, `placeholder`, `default` and `shuffle`, an option's `exclusive` and `keepPlace` and
+a rule's `message` too ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)).
+The sentence is prose, and validation does not read it; `MIGRATIONS.md` and this document said
+frozen throughout. A manufacturer characterising one of those releases should take the version's
+status and contents from them, not from the schema's description. Fixed in `0.14.0`, whose
+description says what each version added, version 6's `precision` among them, and no version's
+status; `apps/docs/src/claims.test.ts` fails while it calls any version open. Before the fix it
+called version 6 open too, in no release.
+
 **Under a content security policy whose `style-src` has no `'unsafe-inline'`, `0.4.0` to `0.12.0`
 draw the Angular signature surface without its `touch-action: none`, and `0.2.0` to `0.12.0` let
 the TipTap editor collapse runs of spaces.** The Angular surface wrote the property in its
@@ -673,9 +687,14 @@ stored documents for the key
   which keeps milliseconds, so the digits after the third are zeros added. Never rounded or cut: a
   computed answer with a non-zero digit beyond the field's width is not stored. Hazard B12.
 - **What the typed control does not keep, at its edges**: a supplied value wider than its field
-  shows the digits that fit, and an edit drops the rest; a wall clock that happens twice, on the
-  night the clocks go back, is the earlier instant; an instant whose local year leaves 0000–9999
-  shows an empty control. Hazard B12.
+  shows the digits that fit and looks complete, and an edit drops the hidden ones; a wall clock
+  that happens twice, on the night the clocks go back, is read as the earlier instant, so a
+  one-digit edit there can move the answer by an hour; an instant whose local year leaves
+  0000–9999 shows an empty control. Hazard B12.
+- **The typed control has no clock picker**, and its shape is fixed and ISO-like,
+  `YYYY-MM-DD HH:MM:SS` and the digits, not the person's locale; and **the error under it cannot
+  tell a missing digit from a missing day**, both being `shape`, so on a date and time with a
+  precision it asks for both (0238).
 - **A field without a precision keeps version 5's losses**: a date and time still resets supplied
   seconds to `00` when edited. Declaring a precision is the remedy (arc42 §11).
 - **Two temporal fields a rule compares with each other cannot be changed one at a time** in a
@@ -696,7 +715,7 @@ stored documents for the key
   reading one is checked as it was; declaring them by member would refuse documents valid today
   ([0231](../decisions/0231-a-variable-may-be-declared-by-member.md)).
 - **That a field's addition takes a row of its own, and none when empty, is held by nothing** but
-  the rules themselves: jsdom sees no CSS and the browser gate draws no addition
+  the rules themselves: jsdom sees no CSS and the browser gate checks no addition
   ([0233](../decisions/0233-a-host-may-add-content-under-a-field.md)).
 
 **Found while making `0.12.0`, and not changed by it or by a release since:**
@@ -839,11 +858,13 @@ select in a shipped theme draws its arrow (above, hazard D7a). What a *host* see
 - **`@formancy/spec` exports** `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`,
   `temporalAnyShapeRegExp`, `temporalExample`, `temporalDateExists`, `temporalEntryMask`,
   `typedFromStored`, `storedFromTyped`, `pasteOutcome` and `TypedTemporalType` (0238).
-- **`@formancy/expressions` exports** `comparedLiterals` (0236), and `comparedFields`,
-  `ComparedFields` and `rewriteComparedLiterals`, which refuses with `policy` errors coded
-  `rewrite_literal_not_plain`, `rewrite_broke_source` and `rewrite_changed_comparisons` (0238).
-- **`@formancy/core/authoring` exports** `misshapenTemporalLiterals` (0236), and
-  `crossWidthComparisons`, `CrossWidthComparison`, `inModel` and `rowScopeOf` (0238).
+- **`@formancy/expressions` exports** `comparedLiterals` and its types `ComparedLiteral` and
+  `ComparisonOperator` (0236), and `comparedFields`, `ComparedFields` and
+  `rewriteComparedLiterals`, which refuses with `policy` errors coded `rewrite_literal_not_plain`,
+  `rewrite_broke_source` and `rewrite_changed_comparisons` (0238).
+- **`@formancy/core/authoring` exports** `misshapenTemporalLiterals` and its type
+  `MisshapenTemporalLiteral` (0236), and `crossWidthComparisons`, `CrossWidthComparison`,
+  `inModel` and `rowScopeOf` (0238).
 - **The builders' condition editor writes a date and time as an instant in UTC** (0235), and on a
   field with a precision at its width. **Changing a field's precision carries** its bounds, its
   default and the literals in rules that compare it along, or refuses, in the words

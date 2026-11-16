@@ -18,7 +18,7 @@
 
 ## Context
 
-Version 6 opened on 2026-11-15 for one property: `precision` on a `time` or `datetime` field, how
+Version 6 opened on 2026-11-16 for one property: `precision` on a `time` or `datetime` field, how
 many digits follow the seconds, from 0 to 9 (0238). It is built: the validator, the engine, the
 publish check across widths, a typed control in both renderers, and both builders, whose condition
 editors write a literal at the field's width and which carry a field's bounds, default and rule

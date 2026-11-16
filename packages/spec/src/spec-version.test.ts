@@ -34,7 +34,7 @@ describe('what each version defines', () => {
     expect(CURRENT_SPEC_VERSION).toBe('6')
   })
 
-  test('and every type and widget belongs to a version by name, so a new one is version 5’s by name too', () => {
+  test('and every type and widget belongs to a version by name, so a new one needs the next version opened for it', () => {
     /*
      * The freeze, made mechanical. A version's constructs are its own list, and the version
      * check attributes a construct from those lists. While a version was open the newest one

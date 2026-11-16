@@ -19,10 +19,11 @@ refuses it, loudly. **Upgrade every reader before the documents**: `0.14.0` read
 and a version 5 document reads as it did. Besides spec 6, the condition editor writes a date and
 time as the instant its author chose, a publish names a date or time compared with text not written
 as its answers are, a host may draw content of its own beside a select's or a typeahead's box, and
-a select in a shipped theme no longer looks like a text box. It is a minor release because a host can see it,
-where a breaking change lands before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by
-choosing it**: one on `^0.13.0` keeps `0.13.0` until it moves to `^0.14.0`, and a server run from
-`compose.published.yaml` runs the tag `FORMANCY_VERSION` pins.
+a select in a shipped theme keeps room for its arrow, and in Blueprint has one. It is a minor
+release because a host can see it, where a breaking change lands before 1.0
+([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by choosing it**: one on `^0.13.0` keeps
+`0.13.0` until it moves to `^0.14.0`, and a server run from `compose.published.yaml` runs the tag
+`FORMANCY_VERSION` pins.
 
 **What a host sees change.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to do for the first three.
 
@@ -157,6 +158,13 @@ this release writes `"6"` for every new form, so upgrade the readers before the 
 submissions already stored keep the width they were written in. The builders' property panels
 offer `precision`.
 
+**Fixed: the published schema called version 5 open**, in every release from `0.8.0` through
+`0.13.0`. Its `specVersion` description, which an editor shows an author, said "version 5, which
+is open, a field's `description`" after version 5 froze on 2026-10-27, and named none of its other
+properties; validation never reads it. It now says what each version added and no version's
+status, which [`MIGRATIONS.md`](MIGRATIONS.md) holds, and a check fails while it calls any version
+open.
+
 **Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
 release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,
 `departs > "2026-10-08T10:30"`, and that was compared as text with answers stored in UTC with
@@ -176,7 +184,8 @@ The form is published all the same, because refusing would make documents valid 
 tomorrow
 ([0236](docs/decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
 `@formancy/expressions` exports `comparedLiterals`, every place an expression compares a field with
-a string, and `@formancy/core/authoring` exports `misshapenTemporalLiterals`.
+a string, with its types `ComparedLiteral` and `ComparisonOperator`, and `@formancy/core/authoring`
+exports `misshapenTemporalLiterals` and its type `MisshapenTemporalLiteral`.
 
 **Fixed: a select in a shipped theme looked like a text box**, in every release through `0.13.0`.
 Each theme takes the platform's arrow off a select and draws its own, with room kept for it at the
@@ -224,6 +233,12 @@ made in between, by whatever fills a field as soon as it appears, scheduled no s
 was started until something changed again. It now listens from that commit. Found when two of its
 tests, which change a field straight after finding it, failed now and then in CI; the drafts page
 now tells a host to subscribe before the form can be changed.
+
+**0.13.0 published with the token, so no release has yet used trusted publishing**, as 0.13.0's
+notes said the next would tell: its run logged pnpm's `Skipped OIDC` 404 for every package, and the
+registry names the maintainer's account as its publisher. The token stays
+([`RELEASING.md`](RELEASING.md),
+[0230](docs/decisions/0230-every-package-trusts-the-release-workflow-in-the-npm-environment-to-publish-it.md)).
 
 ### What 0.14.0 knowingly does not have
 
@@ -278,6 +293,16 @@ New, or found while making this release:
   seconds to `00` when edited. Declaring a precision is the remedy (0238; arc42 §11).
 - **A rule an earlier builder wrote on a date and time is named only when its form is published
   again** (0235, 0236; hazard A11).
+- **The typed control loses, at its edges** (0238; hazard B12):
+  - a supplied value wider than its field shows the digits that fit and looks complete, and an
+    edit drops the hidden ones;
+  - a wall clock that happens twice, on the night the clocks go back, is read as the earlier
+    instant, so a one-digit edit there can move the answer by an hour;
+  - an instant whose local year leaves 0000–9999 shows an empty control.
+- **The typed control has no clock picker**, and its shape is fixed and ISO-like,
+  `YYYY-MM-DD HH:MM:SS` and the digits, not the person's locale (0238).
+- **The error under it cannot tell a missing digit from a missing day**: both are `shape`, so on a
+  date and time with a precision it asks for both (0238).
 
 ## 0.13.0 — 2026-11-05
 

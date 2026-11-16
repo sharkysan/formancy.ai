@@ -463,6 +463,21 @@ describe('the spec version 2 freeze', () => {
     expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([])
   })
 
+  test('and the schema calls no version open, since the status is written in MIGRATIONS', () => {
+    // The schema's `specVersion` description ships in @formancy/spec's tarball, and an editor
+    // shows it to every author. 0.8.0 to 0.13.0 published it calling version 5 open, after
+    // version 5 froze, because the freeze rewrote MIGRATIONS and nothing read this sentence;
+    // 0.14.0 would have shipped it calling version 6 open. A status said in two places goes
+    // stale in one, so the description says what each version added and no version's status,
+    // and MIGRATIONS, held by the case above, is where the status lives.
+    const schema = JSON.parse(readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8')) as {
+      properties?: { specVersion?: { description?: unknown } }
+    }
+    const description = schema.properties?.specVersion?.description
+    expect(typeof description, 'no specVersion description was read out of the schema').toBe('string')
+    expect(description).not.toMatch(/\bopen\b/i)
+  })
+
   test('and names one version as the one this package writes: the one the code writes', () => {
     // When version 5 opened, version 4's section dropped "the version this package writes";
     // when 6 opened, version 5's kept it, so two sections each said a new document declared
