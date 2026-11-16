@@ -166,8 +166,10 @@ while somebody types is a form that stops saving exactly when they are working
 hardest.
 
 **Subscribe before the form can be changed.** A change made before the subscription schedules
-no save. In React that means a layout effect rather than `useEffect`, which React may run a task
-after the commit that draws the form: whatever fills a field the moment it appears gets there first.
+no save, and whatever fills a field the moment it appears can get there first: React may run a
+`useEffect` a task after the commit that draws the form. In React, subscribe in a layout effect,
+or read the answers with `useSyncExternalStore`, which reads them again once it has subscribed,
+so a change made before that is not lost.
 
 **Start the draft once, even while the first start is under way.** The quiet runs out again if
 the server is slow to answer the start and somebody types on, and that save finds no draft

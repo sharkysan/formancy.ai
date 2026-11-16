@@ -214,6 +214,8 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
    * A layout effect, so the pane listens from the commit that draws the form. React runs a plain
    * effect a task after that commit, and a change made in between — by whatever fills a field the
    * moment it appears — would schedule no save, and start no draft until something changed again.
+   * What it does not cover: React runs a child's layout effects before this one, so a control that
+   * wrote to the engine from its own layout effect would still be missed. None does today.
    */
   useLayoutEffect(() => {
     if (engine === undefined || readOnly) return
