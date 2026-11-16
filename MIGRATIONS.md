@@ -11,20 +11,21 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
-## Spec version 6 is OPEN
+## Spec version 6 is FROZEN
 
-Spec `"6"` is open as of 2026-11-15, and is the version this package writes: a new document
-declares it, and `upgradeSpecVersion` moves an older one to it unchanged but for the version
-line. **It is not frozen, and it is in no release yet.** A document written against it today is a
-document of a version that may still gain constructs; pin a reader to it knowing that, and freeze
-nothing on it until it says FROZEN here.
+Spec `"6"` is frozen as of 2026-11-16, with the property it was opened for, and is the version this
+package writes: a new document declares it, and `upgradeSpecVersion` moves an older one to it
+unchanged but for the version line. It is first released with `0.14.0`. No version is open:
+version 7 opens when a construct needs one
+([0239](docs/decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md), [0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
-It is a superset of version 5 and removes nothing. A reader pinned to spec 5, which every release
-up to 0.13.0 is, **refuses** a version 6 document rather than ignoring the part it does not know,
-as at every version before it ([0051](docs/decisions/0051-spec-2-adds-types.md)): upgrade the
-readers before the documents.
+It is a superset of version 5 and removes nothing, and adds one property only — no field type,
+widget, rule kind or layout kind. A reader pinned to spec 5, which every release up to 0.13.0 is,
+**refuses** a version 6 document rather than ignoring the part it does not know, as at every
+version before it ([0051](docs/decisions/0051-spec-2-adds-types.md)): upgrade the readers before
+the documents.
 
-### What version 6 adds so far
+### What version 6 added
 
 - `precision` on a `time` or `datetime` field — how many digits follow the seconds in the
   answer, 0 to 9, counted as a database counts them in `timestamp(p)`, so that a form can say
@@ -50,11 +51,23 @@ rule's own variable, `steps.all(s, s.at >= startedAt)`, is the one it does not s
 time, the field then also refuses an answer on a day the calendar does not have, which it
 accepted before.
 
+### What upgrading to version 6 costs you
+
+As for version 5: **every reader of your forms has to speak version 6** before your documents
+do. A deployment pinning `@formancy/*` at `0.13.0` or earlier anywhere — a server, a mobile build,
+a partner's embedded renderer — refuses a version 6 document, loudly, whether or not it uses
+`precision`, and the builder writes 6 for every new form. Upgrade the readers first.
+
+A field without a `precision` is version 5's in its answers, its control and its checks. Nothing
+migrates submissions; a submission stays bound to the version it was collected under, and changing
+a field's precision leaves the answers already stored at the width they were written in, so an
+export or a sort across that change mixes two widths.
+
 ## Spec version 5 is FROZEN
 
 Spec `"5"` is frozen as of 2026-10-27, with the batch it was opened for. It is first released with
 `0.8.0`. Version 6, opened by the next construct that needed one as this record said it would be,
-is open above
+is frozen above
 ([0201](docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md), [0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
 It is a superset of version 4 and removes nothing, and adds properties only — no field type,
@@ -397,14 +410,14 @@ again.
 
 ## Known pre-1.0 caveats
 
-- Every released spec version is frozen; the PACKAGES are not. Their APIs will still change
+- Every spec version is frozen; the PACKAGES are not. Their APIs will still change
   before 1.0, and those changes are documented here.
 - An asynchronous validator is not a property on a rule. It is `kind: "check"`, a rule kind
   in spec 3 that names a check the deployment answers
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
-## A condition on a date and time written by the editor before this release (Unreleased)
+## A condition on a date and time written by the editor before 0.14.0 (0.14.0)
 
 **If a form has a rule the builder's condition editor wrote on a `datetime` field**, the rule
 compares the author's wall clock as though it were UTC: its literal has no seconds and no `Z`,

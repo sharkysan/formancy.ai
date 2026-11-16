@@ -56,9 +56,9 @@ author the JSON directly or use a coding agent through MCP. The shared engine
 handles validation and calculations, so you do not need to implement each rule
 separately in your UI and the formancy backend.
 
-> **Status: beta, version 0.13.0.**
+> **Status: beta, version 0.14.0.**
 >
-> **Every released spec version is frozen; the newest is open and in no release yet.** Each only adds, so an older document
+> **Every spec version is frozen.** Each only adds, so an older document
 > keeps working and its submissions keep their shape — upgrading is one line and
 > nothing rebinds ([0051](./docs/decisions/0051-spec-2-adds-types.md),
 > [0140](./docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
@@ -682,7 +682,7 @@ cut, and what the pipeline signs and attests.
 Releases are published from CI with npm provenance, and each one carries a
 CycloneDX SBOM of what a consumer installs, signed with cosign.
 
-**`0.13.0` is the current beta.** Every package under the
+**`0.14.0` is the current beta.** Every package under the
 [`@formancy`](https://www.npmjs.com/org/formancy) scope moves on one version
 number, so any two of them at the same version are known to work together — which
 is what makes the support matrix size one

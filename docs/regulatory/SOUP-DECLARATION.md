@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.13.0`.** Everything below is true of that
+**This document describes version `0.14.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.13.0`, published to npm under the `@formancy` scope |
-| Spec version | `"5"`, **frozen as of 2026-10-27 and first released with 0.8.0** ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. Version `"6"` is open and in no release: the source writes it and it may still gain constructs. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 to 0.13.0 read and write version 5 as 0.8.0 does, so the six read each other's documents |
+| Package version | `0.14.0`, published to npm under the `@formancy` scope |
+| Spec version | `"6"`, **frozen as of 2026-11-16 and first released with 0.14.0** ([0239](../decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)), `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) and `"5"` ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open: a construct needing one opens version `"7"`. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). 0.8.0 reads version 5 and **writes** it, so a form authored with its builder is refused by a reader pinned to 0.7.0, as 0.4.0's was by 0.3.0. 0.9.0 to 0.13.0 read and write version 5 as 0.8.0 does, so the six read each other's documents. 0.14.0 reads version 6 and **writes** it for every new form, whether or not a field declares a `precision`, so such a form is refused by a reader pinned to 0.13.0, as 0.8.0's was by 0.7.0 |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. From 0.9.0 the release also attests the image with GitHub's build provenance, verified with `gh attestation verify`; every earlier image carries BuildKit's provenance inside its index and none of GitHub's ([0209](../decisions/0209-the-image-carries-githubs-build-provenance.md)). There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -35,13 +35,13 @@ submissions*, which is the artefact with real switching costs.
 > But a reader that speaks only one version cannot read a document written against a later
 > one — the failure is a validation error rather than a silent one
 > ([0051](../decisions/0051-spec-2-adds-types.md)). This document characterises the released
-> package, which writes version 5; the source writes version 6, which is open and in no release.
+> package, which writes version 6.
 >
-> **The data format is stable; the code is not.** Every released spec version — 1 to 5 — is
+> **The data format is stable; the code is not.** Every released spec version — 1 to 6 — is
 > frozen, so a form document written against any of them, and the submissions stored against
-> it, keeps its shape ([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). A
+> it, keeps its shape ([0239](../decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md)). A
 > deployment pinned to any of them is characterising a settled format whatever the source
-> does next. Version 6 is open and is not a version to pin yet. The *packages* are pre-1.0 and their APIs will still change. A manufacturer
+> does next. The *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.
 
@@ -199,8 +199,8 @@ after its seconds, keeps three of them, and cuts the rest rather than rounding t
 `…:56.789Z` for `…:56.789012345Z`, and for `…:56.7899Z` too. So `timestamp(a) < timestamp(b)` is
 `false` for `…:56.789012Z` and `…:56.789013Z`, a microsecond apart, and `timestamp(a) == timestamp(b)`
 is `true` for `…:56.7890121Z` and `…:56.789Z`; a millisecond apart, `…:56.788Z` before `…:56.789Z`,
-it is right. No answer `0.13.0` stores carries a fraction of a second, so none reaches the cut. From
-spec version 6, which is in no release, a `time` or `datetime` field may declare a `precision` of up
+it is right. No answer `0.13.0` stores carries a fraction of a second, so none reaches the cut there.
+From `0.14.0`, which reads spec version 6, a `time` or `datetime` field may declare a `precision` of up
 to nine digits, and comparing through `timestamp()` is what a publish offers, besides one precision,
 for two dates and times of different widths: a rule doing so cannot tell apart two answers closer
 than a millisecond. Not worked around; pinned by *compares timestamps to the millisecond, cutting
@@ -276,8 +276,32 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.13.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0` to `0.13.0` fix, so that one still running them knows what it is upgrading away from.
+manufacturer characterising `0.14.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` to `0.14.0` fix, so that one still running them knows what it is upgrading away from.
+
+**Every release through `0.13.0` has the builders' condition editor write a date and time as the
+author's own wall clock.** On a `datetime` field it wrote what its local date-and-time box held,
+`departs > "2026-10-08T10:30"`, and a rule compares that as text with answers stored in UTC with
+seconds: such a rule holds at the wrong moment, off by the author's offset from UTC on the day they
+wrote it, and one using *is* never holds. Every gate passed it, since the expression type-checks
+and decides something for every answer. Fixed in `0.14.0`: the editor writes the instant the
+author chose, `departs > "2026-10-08T08:30:00Z"`, and a publish names, as a warning, a rule
+comparing a date or a time with text not in its answers' shape. A rule an earlier builder wrote
+keeps its expression, because the author's zone was never recorded, and is named only when its form
+is published again. Hazard A11 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0235](../decisions/0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md) and
+[0236](../decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md).
+
+**Every release through `0.13.0` draws a select in a shipped theme without the room kept for its
+arrow, and in Blueprint without the arrow.** The rule every control shares outweighed the select's
+own, because `:is()` weighs as much as its heaviest branch. In Blueprint it took the drawn arrow
+away, so a select gave no sign that it opens, and typing into it changes the choice; in every
+theme it gave back the arrow's room, so a long choice ran under it; right to left, the arrow stayed
+at the right. Measured in Chromium on `0.13.0`, and read, not run, in `0.2.0`'s Blueprint stylesheet,
+whose shared rule outweighs its select's in the same way. Assistive technology is unaffected: the control
+still opens and is named a combobox. Fixed in `0.14.0`: the select's rule outweighs the shared one,
+and each theme draws the arrow at the left right to left. Hazard D7a in
+[`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md).
 
 **Under a content security policy whose `style-src` has no `'unsafe-inline'`, `0.4.0` to `0.12.0`
 draw the Angular signature surface without its `touch-action: none`, and `0.2.0` to `0.12.0` let
@@ -637,7 +661,31 @@ engine since `0.7.0` refuses it, so its public read answers `200` and every subm
 stored documents for the key
 ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
-**Found while making `0.13.0`, and not changed by it:**
+**Found while making `0.14.0`, and not changed by it:**
+
+- **A comparison through a list rule's own variable is not seen at publish.**
+  `steps.all(s, s.at >= startedAt)` publishes whatever the two fields' precisions are, and
+  compares as text, wrongly if they differ; the builders' condition editor writes no list rule, so
+  only a hand-written one reaches it. Give the fields compared there one precision, or compare two
+  dates and times with `timestamp()`. Hazard A12, and
+  [0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md).
+- **A computed instant above precision 3 is padded, not measured.** A rule computes through `Date`,
+  which keeps milliseconds, so the digits after the third are zeros added. Never rounded or cut: a
+  computed answer with a non-zero digit beyond the field's width is not stored. Hazard B12.
+- **What the typed control does not keep, at its edges**: a supplied value wider than its field
+  shows the digits that fit, and an edit drops the rest; a wall clock that happens twice, on the
+  night the clocks go back, is the earlier instant; an instant whose local year leaves 0000–9999
+  shows an empty control. Hazard B12.
+- **A field without a precision keeps version 5's losses**: a date and time still resets supplied
+  seconds to `00` when edited. Declaring a precision is the remedy (arc42 §11).
+- **Two temporal fields a rule compares with each other cannot be changed one at a time** in a
+  builder when the change would give them two shapes: it is refused, naming the other field, and
+  the author removes the rule, changes both and writes it again (0238).
+- **Angular's typed control, `FormancyTypedTemporalInput`, is not a `ControlValueAccessor`**: it
+  takes `value` and emits `valueChange`, so a host using it in a Reactive Forms form binds the two
+  itself.
+
+**Found while making `0.13.0`, and not changed by it or by `0.14.0`:**
 
 - **A program does not record that it was compiled reproducibly**, so a caller handed one cannot
   ask whether it was ([0228](../decisions/0228-an-expression-can-be-asked-to-be-reproducible.md)).
@@ -651,7 +699,7 @@ stored documents for the key
   the rules themselves: jsdom sees no CSS and the browser gate draws no addition
   ([0233](../decisions/0233-a-host-may-add-content-under-a-field.md)).
 
-**Found while making `0.12.0`, and not changed by it or by `0.13.0`:**
+**Found while making `0.12.0`, and not changed by it or by a release since:**
 
 - **A version stored before `0.12.0` is not analysed again until it is republished**, and nothing
   searches the stored documents for a pattern that backtracks; republishing an unchanged document
@@ -767,7 +815,52 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.12.0
+### Characterised by this document, and new since 0.13.0
+
+`0.14.0` reads versions `"1"` to `"6"` and **writes `specVersion: "6"`**, so every form it writes
+is refused by a reader on `0.13.0` or earlier — loudly, as the format means it to be, whether or not
+a field uses `precision`. A version 5 document reads as it did. Version 6 adds one optional
+property, `precision` on a `time` or `datetime` field, how many digits follow the seconds, 0 to 9
+([0238](../decisions/0238-a-time-or-an-instant-declares-its-precision.md),
+[0239](../decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md)). It adds no package,
+table, setting or route, and no third-party dependency. **What the server refuses changes**: a
+publish refuses, as `invalid_logic`, a rule comparing a field with a precision across widths, and
+names in the `201`'s `warnings` a rule comparing any other date or time with text not in its
+answers' shape, which it published without a word
+([0236](../decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
+**What a person sees changes**: a field with a precision is typed into, every digit shown, and a
+select in a shipped theme draws its arrow (above, hazard D7a). What a *host* sees is below;
+[`MIGRATIONS.md`](../../MIGRATIONS.md) has what must move.
+
+- **A `time` or `datetime` field may declare `precision`**, and every answer to it has that width.
+  The engine refuses another width, and on such a field a day the calendar does not have, as
+  `shape`; a bound at another width is `bounds.width`, and one on such a day `bounds.noSuchDay`
+  (0238).
+- **`@formancy/spec` exports** `temporalShape`, `temporalAnyShape`, `temporalShapeRegExp`,
+  `temporalAnyShapeRegExp`, `temporalExample`, `temporalDateExists`, `temporalEntryMask`,
+  `typedFromStored`, `storedFromTyped`, `pasteOutcome` and `TypedTemporalType` (0238).
+- **`@formancy/expressions` exports** `comparedLiterals` (0236), and `comparedFields`,
+  `ComparedFields` and `rewriteComparedLiterals`, which refuses with `policy` errors coded
+  `rewrite_literal_not_plain`, `rewrite_broke_source` and `rewrite_changed_comparisons` (0238).
+- **`@formancy/core/authoring` exports** `misshapenTemporalLiterals` (0236), and
+  `crossWidthComparisons`, `CrossWidthComparison`, `inModel` and `rowScopeOf` (0238).
+- **The builders' condition editor writes a date and time as an instant in UTC** (0235), and on a
+  field with a precision at its width. **Changing a field's precision carries** its bounds, its
+  default and the literals in rules that compare it along, or refuses, in the words
+  `refuse.precisionRule`, `refuse.precisionForm`, `refuse.precisionPair` and
+  `refuse.precisionDefault`. `@formancy/builder-core` exports `isTypedTemporal`, and
+  `ConditionField` carries `precision` (0238).
+- **`@formancy/react` exports `TypedTemporalInput`** and its props type, and **`@formancy/angular`
+  the directive `FormancyTypedTemporalInput`**, each taking and reporting the stored answer; the
+  renderers' words gain `error.shape.day` (0238).
+- **`FormancyForm` and `formancy-form` take `fieldBeside`**, drawn after a select's or a
+  typeahead's box, the two in `data-formancy-part="field-control-row"` and the content in
+  `data-formancy-part="field-beside"`; `@formancy/angular` exports `FormancyFieldBeside`,
+  `FormancyFieldBesideContext`, `FORMANCY_FIELD_BESIDE` and `injectFieldBeside` (0237).
+- **`@formancy/themes`' select rule weighs `select:not([multiple])`**, one attribute more than the
+  rule every control shares, and each theme draws the arrow at the left right to left (D7a).
+
+### Characterised by an earlier version of this document, and new in 0.13.0
 
 `0.13.0` reads and writes `specVersion: "5"`, as `0.12.0` does, and adds no package, table,
 setting or route, and no third-party dependency. What a *host* sees is below; nothing a host has
@@ -1137,8 +1230,8 @@ drawn in the landing page's shell, both builders laid out alike (D4a), a drop be
 on the preview, the Material starter's date button, where the relay's suggestions sit, a
 select's arrow inside the room it keeps under every theme and in both reading orders (D7a), a
 host's button beside a select's or a typeahead's box joined to it under every theme, in both
-reading orders, at rest, invalid and with the keyboard in the row (0237), and that no page asks
-another host for anything (C6). Nothing else of appearance: no pixel baselines by
+reading orders, at rest, invalid and with the keyboard in the row (0237), a time with a precision
+typed key by key in both renderers (0238), and that no page asks another host for anything (C6). Nothing else of appearance: no pixel baselines by
 choice, one engine rather than Safari, and one demo schema rather than the conformance suite. A manufacturer relying on visual correctness must still
 verify it in the browsers it ships to.
 

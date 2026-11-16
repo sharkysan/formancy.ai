@@ -111,13 +111,21 @@ field is shown because of it. The verdicts are tested to agree with the engine; 
 field in a repeater row is listed, and has no verdict, because it has one per row
 ([0128](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
 
+**Spec version 6 is frozen** ([0239](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md)), with one property: a
+`time`'s or a `datetime`'s `precision`, how many digits follow the seconds, 0 to 9, so that a test
+run timed to the second and a device's log to the microsecond are collected as they are. Every
+answer to such a field has that one width; it is typed into in both renderers, and both
+builders' condition editors use the renderers' own control for it
+([0238](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)). It is what a
+new document is written in, and `0.14.0` is the first release that reads it.
+
 **Spec version 5 is frozen** ([0201](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)), with seven properties: a field's `description`, help text
 read out with the control rather than as its name; its `autocomplete`, the input purpose
 WCAG 1.3.5 asks for, set on the control for a browser to fill ([0195](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)); its
 `placeholder`, an example of the answer that never stands in for the label ([0196](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)); and its
 `default`, the answer a new form, a new row or a field shown again starts with, which the field checks as an answer and nothing handed in is given ([0197](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0197-a-default-is-where-something-fresh-starts.md)) — the first three
-drawn by both renderers and the fourth applied by the engine, all offered by the builder's panel, and the texts extracted for translation ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)). A `validate` rule says its own `message`, in the form's language, for its code, where its code used to be shown as written, and the builder asks for it ([0198](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0198-a-rule-says-its-own-message.md)). An option of a list of ticks may be one chosen alone — "None of these" — which every control ticks by one function and the engine refuses with anything else ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)). And a choice's options may be shown in an order the engine chooses once, with the ones that keep their place where they are written, while the answer keeps the written order ([0200](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)). It is what a new
-document is written in, and `0.8.0` is the first release that reads it.
+drawn by both renderers and the fourth applied by the engine, all offered by the builder's panel, and the texts extracted for translation ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)). A `validate` rule says its own `message`, in the form's language, for its code, where its code used to be shown as written, and the builder asks for it ([0198](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0198-a-rule-says-its-own-message.md)). An option of a list of ticks may be one chosen alone — "None of these" — which every control ticks by one function and the engine refuses with anything else ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)). And a choice's options may be shown in an order the engine chooses once, with the ones that keep their place where they are written, while the answer keeps the written order ([0200](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)). `0.8.0` is the
+first release that reads it.
 
 **Spec version 4 is frozen**, with two field types, two widgets and three properties
 ([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). The types are the
@@ -308,9 +316,9 @@ than asserted.
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
 
-Version 5 is frozen with the batch it was opened for
-([0201](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)), as version 4 froze with the two survey
-types it was opened for ([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
+Version 6 is frozen with the property it was opened for
+([0239](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md)), as version 5 froze with the batch
+it was opened for ([0201](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)).
 
 ### Done since this list was written
 

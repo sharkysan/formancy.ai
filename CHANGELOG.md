@@ -10,8 +10,42 @@ later.
 
 ## Unreleased
 
+## 0.14.0 — 2026-11-16
+
+**A minor release, and the spec version moves to 6.** Version 6 is frozen with the property it was
+opened for, `precision` on a `time` or `datetime` field, and is what this release writes: every new
+form declares `6`, whether or not a field uses `precision`, and every release up to `0.13.0`
+refuses it, loudly. **Upgrade every reader before the documents**: `0.14.0` reads versions 1 to 6,
+and a version 5 document reads as it did. Besides spec 6, the condition editor writes a date and
+time as the instant its author chose, a publish names a date or time compared with text not written
+as its answers are, a host may draw content of its own beside a select's or a typeahead's box, and
+a select in a shipped theme no longer looks like a text box. It is a minor release because a host can see it,
+where a breaking change lands before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)). **A host takes it by
+choosing it**: one on `^0.13.0` keeps `0.13.0` until it moves to `^0.14.0`, and a server run from
+`compose.published.yaml` runs the tag `FORMANCY_VERSION` pins.
+
+**What a host sees change.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to do for the first three.
+
+- **A new form declares spec 6**, which every reader on `0.13.0` or earlier refuses (0238, 0239).
+- **The condition editor writes a date and time as an instant in UTC**,
+  `departs > "2026-10-08T08:30:00Z"`. A rule an earlier builder wrote keeps its wall clock, and is
+  named as a warning when its form is published again (0235, 0236).
+- **A publish refuses a rule comparing a field with a `precision` across widths**, as
+  `invalid_logic`, and names in the `201`'s `warnings` one comparing any other date or time with
+  text not in its shape (0238, 0236).
+- **A shipped theme's select rule weighs one attribute more**, so a host stylesheet restyling its
+  arrow needs a selector at least as strong as
+  `[data-formancy-theme] [data-formancy-part='field'] select:not([multiple])` (D7a).
+- **`FormancyForm` and `formancy-form` take `fieldBeside`**, drawn after a select's or a
+  typeahead's box; a form without it is unchanged (0237).
+- **New exports** for a time or an instant with a precision, in `@formancy/spec`,
+  `@formancy/expressions`, `@formancy/core/authoring` and `@formancy/builder-core`, and the typed
+  control itself in `@formancy/react` and `@formancy/angular`, listed below. Their new words,
+  `error.shape.day` and the builder's `refuse.precision*`, fall back to English where a host has not
+  translated them.
+
 **Added: a time or a date and time can be recorded to the second, or to a fraction of one, with
-`precision` on a `time` or `datetime` field, in spec version 6, which opens for it.** A test run's
+`precision` on a `time` or `datetime` field, in spec version 6, which is frozen with it.** A test run's
 start, its end and the steps between had no room below the minute: a `time` answer was `HH:MM`, and
 a date and time's control showed minutes, so an edit set its seconds to `00`. A reading from a
 device's log to the microsecond was refused as `shape`, since no answer could carry a fraction of a
@@ -115,11 +149,13 @@ control is still the browser's, to the minute
   that exists; its `{format}` is an answer as the person types it, `2026-10-08 09:30:00.000` on
   their own clock, since the stored form's `T` and `Z` have no place in the control's mask.
 
-Version 6 is open and in no release. `0.13.0` and earlier refuse every document declaring `"6"`, not
-only one using `precision`, and this source writes `"6"` for every new form, so upgrade the readers
-before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). A
-change to `precision` is `field.changed` and lossy, and submissions already stored keep the width
-they were written in. The builders' property panels offer `precision`.
+Version 6 is frozen with `precision` alone, and no version is open: version 7 opens when a
+construct needs one ([0239](docs/decisions/0239-spec-6-freezes-with-the-property-it-opened-for.md)).
+`0.13.0` and earlier refuse every document declaring `"6"`, not only one using `precision`, and
+this release writes `"6"` for every new form, so upgrade the readers before the documents
+([`MIGRATIONS.md`](MIGRATIONS.md)). A change to `precision` is `field.changed` and lossy, and
+submissions already stored keep the width they were written in. The builders' property panels
+offer `precision`.
 
 **Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
 release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,
@@ -188,6 +224,60 @@ made in between, by whatever fills a field as soon as it appears, scheduled no s
 was started until something changed again. It now listens from that commit. Found when two of its
 tests, which change a field straight after finding it, failed now and then in CI; the drafts page
 now tells a host to subscribe before the form can be changed.
+
+### What 0.14.0 knowingly does not have
+
+Everything 0.13.0 listed still holds. Among it:
+
+- **A default left alone is stored as the person's answer**, indistinguishable from one chosen
+  (0197; hazard A10).
+- **Nothing records that the person looked at the review** before sending (0204).
+- **A rule's message is said for its code wherever the field carries it**, and nothing checks a
+  message against its rule (0198; hazard D20).
+- **React's bundle is over its 4 kB budget**, and only core's budget is a gate (0208).
+- **A version stored with a field keyed `__proto__` cannot be opened**, and nothing finds such
+  versions for an operator (0185).
+- **Under Material, a field's description and its count sit outside the form field** (0211).
+- **The images published before `v0.9.0` keep only BuildKit's provenance** (0209).
+- **A computed field whose options come from a source is said by its stored value** (0216).
+- **A listing asked for no page is every submission** (0222; arc42 §11.2).
+- **A summary read while responses arrive counts a list that moved** (0224).
+- **Nothing is announced when a row is removed** (0219).
+- **A version stored before 0.12.0 is not analysed again until it is republished**, and nothing
+  searches the stored documents for a pattern that backtracks (0226).
+- **A tag picker's list has no row arrowed to**: Enter adds its first match, so a later match is
+  chosen by typing until it is first (0227).
+- **A program does not record that it was compiled reproducibly**, so a caller handed one cannot
+  ask (0228).
+- **`calls` and `inexact` are read from the checked expression**, so a value typed `dyn` is named
+  in neither (0229).
+- **A document's groups and rows are declared as before**, their members `dyn`, so a rule reading
+  one is checked as it was (0231).
+- **That a field's addition takes a row of its own, and none when empty, is held by nothing** but
+  the rules themselves, since jsdom sees no CSS and the browser gate checks no addition (0233).
+
+New, or found while making this release:
+
+- **A comparison through a list rule's own variable is not seen.**
+  `steps.all(s, s.at >= startedAt)` publishes whatever the two precisions are, and compares as
+  text, wrongly if they differ. Give the fields compared there one precision, or compare two dates
+  and times with `timestamp()` (0238; hazard A12).
+- **`timestamp()` compares to the millisecond**, cutting the rest, so a rule using it cannot tell
+  apart two answers closer than that; and **a rule computes an instant to the millisecond**, so
+  above precision 3 a computed answer's last digits are zeros added, not measured (0238; hazards
+  A12, B12).
+- **Formancy Data does not read a column's precision yet.** That is its own work, and not in this
+  release.
+- **Two temporal fields a rule compares with each other cost a step to change.** A change to one's
+  precision that would give them two shapes is refused in the builder, naming the other; the
+  author removes the rule, changes both and writes it again (0238).
+- **Angular's typed control is not a `ControlValueAccessor`.** `FormancyTypedTemporalInput` takes
+  `value` and emits `valueChange`, so a host using it in a Reactive Forms form binds the two
+  itself.
+- **A field without a precision keeps version 5's losses**: a date and time still resets supplied
+  seconds to `00` when edited. Declaring a precision is the remedy (0238; arc42 §11).
+- **A rule an earlier builder wrote on a date and time is named only when its form is published
+  again** (0235, 0236; hazard A11).
 
 ## 0.13.0 — 2026-11-05
 
