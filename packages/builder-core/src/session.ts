@@ -25,13 +25,13 @@ import { repathEverywhere, repathRules, unplaceEverywhere, unplaceOnly, unskipEv
  *
  * Three rules shape everything here.
  *
- * **A session may never hold a document the validator rejects.** Commands are
- * applied to a copy, validated, and only then committed; a command that would
- * produce an invalid document is refused with the validator's own
- * author-facing message and the held document is untouched. That is why
- * `canPublish()` is true by construction rather than by hope — and why legality
- * is decided by *trying* a command rather than by a second implementation of
- * the validator's rules, which would drift from it.
+ * **A session may never hold a document the validator rejects.** Commands are applied to a
+ * copy, validated, and only then committed; a command that would produce an invalid document
+ * is refused with the validator's own author-facing message and the held document is untouched.
+ * That is why `canPublish()`, the validator's verdict and no more, is true by construction. A
+ * rule publish refuses beyond the schema, one comparing a time across widths among them, is
+ * publish's (`crossWidthComparisons`), not the validator's. And legality is decided by *trying*
+ * a command rather than by a second implementation of the validator's rules, which would drift.
  *
  * **The document is frozen and copied at every boundary.** A builder UI is a
  * projection of this state, and a projection that can reach in and mutate the

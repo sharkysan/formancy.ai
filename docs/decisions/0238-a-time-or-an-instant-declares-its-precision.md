@@ -71,7 +71,10 @@
   - `packages/builder-react/src/logic-panel.test.tsx` and
     `packages/builder-angular/src/logic-panel.test.ts`, *a time or a date and time with a
     precision*: *digits typed are written as the instant at the field width* types into the
-    editor and asserts that the rule publishes, which failed with the editor at version 5's width;
+    editor, adds the rule and asserts that `crossWidthComparisons`, publish's own check, finds
+    nothing in the document, which failed with the editor writing the instant to the second, at
+    version 5's width. `canPublish` is the validator's verdict, which reads no rule, so it is not
+    asked;
     a paste and a drop of an instant in the hour the clocks repeat are kept as they were, which
     failed, reading the later 01:30Z as 00:30Z, while a row held the typed digits. A dropped
     instant failed with the shared control's drop handling removed.
@@ -257,8 +260,10 @@ line.
   type a literal on such a field into the renderers' own control, exported from `@formancy/react`
   and `@formancy/angular` so that the author and the respondent type through one implementation,
   and write the stored answer it reports as the literal, so the rule they write is not a
-  comparison across widths. Before that change a rule they wrote on a time with a precision, or on
-  an instant with one above 0, was refused at publish, loudly, rather than published wrong.
+  comparison across widths. The session's `canPublish` cannot say so, being the validator's
+  verdict, which reads no rule; publish's `crossWidthComparisons` is the check. Before that change
+  a rule they wrote on a time with a precision, or on an instant with one above 0, was refused at
+  publish, loudly, rather than published wrong.
 - **Changing a field's precision in a builder rewrites what is written at its width, or refuses.**
   The field's `earliest`, `latest` and `default`, the text of every literal a rule compares it with
   and the value the visual editor reopens that rule from are written at the new width when that is

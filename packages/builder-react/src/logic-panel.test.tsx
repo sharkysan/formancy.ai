@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
+import { crossWidthComparisons } from '@formancy/core/authoring'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { LogicPanel } from './logic-panel.js'
 
@@ -682,14 +683,16 @@ describe('a time or a date and time with a precision (0238)', () => {
   })
 
   test('digits typed are written as the instant at the field width', async () => {
-    // Written at version 5's width the rule is a comparison across widths and publish refuses it.
+    // Written at version 5's width, to the second, the rule is a comparison across widths, which
+    // the validator does not read and publish refuses. `canPublish` is the validator's verdict, so
+    // the check asked is publish's own.
     vi.stubEnv('TZ', 'Europe/Zurich')
     const { user, session, box } = await open('at')
     await user.type(box(), '20261115140327415')
-
-    expect(screen.getByText('at != null && at > "2026-11-15T13:03:27.415Z"')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Add rule' }))
-    expect(session.canPublish().valid).toBe(true)
+
+    expect(crossWidthComparisons(session.document())).toEqual([])
+    expect(rulesOf(session)).toMatchObject([{ cel: 'at != null && at > "2026-11-15T13:03:27.415Z"' }])
   })
 
   test('a pasted UTC instant is stored as that instant', async () => {

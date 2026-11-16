@@ -641,15 +641,17 @@ widths, and persists nothing* in `packages/server-core/src/use-cases.test.ts`, a
 `packages/mcp/src/tools.test.ts` and `packages/builder-core/src/authoring.test.ts`. A bound, which
 the engine compares as text, is held to its field's width by the validator (`bounds.width`) and to a
 day that exists (`bounds.noSuchDay`), in `packages/spec/src/temporal-bounds.test.ts`. Each was
-observed failing before its change. The constraint holds for a rule the builders' condition
-editors write too: they write a literal on such a field at its width, and each builder's *digits
-typed are written as the instant at the field width* (`packages/builder-react/src/logic-panel.test.tsx`,
-`packages/builder-angular/src/logic-panel.test.ts`) types into the control, reads the rule's CEL and
-asserts that `canPublish` is valid, which refuses a comparison across widths. Those are the cases
-that failed with the editor at version 5's width. The builder-core cases cannot: the answer the
-control reports is already the instant at the width, so version 5's path writes the same text for
-it, and *the rule written is not a comparison across widths* there records the property rather
-than guarding it.
+observed failing before its change. The constraint holds for a rule the builders' condition editors
+write too: they write a literal on such a field at its width, and each builder's *digits typed are
+written as the instant at the field width* (`packages/builder-react/src/logic-panel.test.tsx`,
+`packages/builder-angular/src/logic-panel.test.ts`) types into the control, adds the rule, asserts
+that `crossWidthComparisons`, the check publish applies, finds nothing in the document, and reads
+the rule's CEL. Those are the cases that failed with the editor writing the instant to the second,
+at version 5's width. The session's `canPublish` is not asked: it is the validator's verdict, which
+reads no rule, and is valid for a document holding a comparison across widths. The builder-core
+cases cannot fail so: the answer the control reports is already the instant at the width, so version
+5's path writes the same text for it, and *the rule written is not a comparison across widths* there
+records the property rather than guarding it.
 
 *Residual:*
 
