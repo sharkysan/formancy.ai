@@ -14,7 +14,7 @@ export {
   TEMPORAL_FIELD_TYPES,
   TEMPORAL_SHAPES,
 } from './types.js'
-export { temporalAnyShape, temporalDateExists, temporalExample, temporalShape } from './temporal.js'
+export { temporalAnyShape, temporalAnyShapeRegExp, temporalDateExists, temporalExample, temporalShape, temporalShapeRegExp } from './temporal.js'
 export { pasteOutcome, storedFromTyped, temporalEntryMask, typedFromStored } from './temporal-entry.js'
 export type { TypedTemporalType } from './temporal-entry.js'
 export { FIELD_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'

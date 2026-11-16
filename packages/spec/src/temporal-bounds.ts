@@ -1,4 +1,4 @@
-import { TEMPORAL_PRECISION_MAX, temporalDateExists, temporalExample, temporalShape } from './temporal.js'
+import { TEMPORAL_PRECISION_MAX, temporalDateExists, temporalExample, temporalShapeRegExp } from './temporal.js'
 import { schemaError } from './schema-errors.js'
 import type { SchemaError } from './schema-errors.js'
 import type { FieldDef, TemporalFieldType } from './types.js'
@@ -24,7 +24,7 @@ export function temporalBoundErrors(field: FieldDef, path: string): SchemaError[
   const { precision } = field
   if (precision !== undefined && (!Number.isInteger(precision) || precision < 0 || precision > TEMPORAL_PRECISION_MAX)) return []
 
-  const shape = new RegExp(temporalShape(type, precision))
+  const shape = temporalShapeRegExp(type, precision)
   const expected = temporalExample(type, precision)
   const errors: SchemaError[] = []
   for (const bound of ['earliest', 'latest'] as const) {

@@ -6,7 +6,7 @@ import {
   fitsAnswerShape,
   fitsMask,
   temporalDateExists,
-  temporalShape,
+  temporalShapeRegExp,
 } from '@formancy/spec'
 import type { FieldDef, FieldFormat, StoredFile, TemporalFieldType } from '@formancy/spec'
 import type { BuiltInErrorCode } from './error-codes.js'
@@ -259,18 +259,18 @@ function offers(def: FieldDef, value: unknown): boolean {
 }
 
 /**
- * The shape each temporal answer must take, compiled once per type and precision from the
- * format's own declaration.
+ * The shape each temporal answer must take, precompiled in the spec package for every
+ * type and precision, so nothing is compiled from a document's value here.
  *
- * Read from `temporalShape` rather than written again here: two closed
+ * Read from `temporalShapeRegExp` rather than written again here: two closed
  * descriptions of one rule is the drift this repository keeps finding, and a shape
  * that disagreed with the schema's would accept on the server what the document
  * refuses, or the reverse.
  *
- * **The precision is part of the key**, because a field of six digits and one of three are
+ * **The precision selects the entry**, because a field of six digits and one of three are
  * different shapes and a bound is a string comparison, right only between strings of one
  * width. The engine only ever sees a validated document, so a precision is absent or in 0..9
- * here, and `temporalShape` has nothing to throw about.
+ * here, and `temporalShapeRegExp` has nothing to throw about.
  *
  * **`date` is included, and that is a behaviour change to a frozen type.** Version 1
  * fixed `date` as a date-only ISO 8601 string and nothing ever checked it, so a
@@ -280,17 +280,9 @@ function offers(def: FieldDef, value: unknown): boolean {
  * cannot be bounded, sorted or exported without the reader guessing. Called out in
  * the changelog rather than slipped in.
  */
-const TEMPORAL_SHAPE_CHECKS = new Map<string, RegExp>()
-
 function temporalShapeCheck(def: FieldDef): RegExp | undefined {
   if (!(TEMPORAL_FIELD_TYPES as readonly string[]).includes(def.type)) return undefined
-  const key = `${def.type}:${def.precision ?? ''}`
-  let shape = TEMPORAL_SHAPE_CHECKS.get(key)
-  if (shape === undefined) {
-    shape = new RegExp(temporalShape(def.type as TemporalFieldType, def.precision))
-    TEMPORAL_SHAPE_CHECKS.set(key, shape)
-  }
-  return shape
+  return temporalShapeRegExp(def.type as TemporalFieldType, def.precision)
 }
 
 /**

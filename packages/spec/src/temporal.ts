@@ -37,6 +37,40 @@ export function temporalAnyShape(type: TemporalFieldType): string {
   return `^${DATE}T${CLOCK}${SECONDS}${any}Z$`
 }
 
+// Spelled here, not imported from types.ts: that module calls temporalShape while it loads, so
+// importing it back would read this one's constants before they exist. temporal.test.ts checks
+// that the list is TEMPORAL_FIELD_TYPES.
+const TYPES = ['date', 'time', 'datetime'] as const satisfies readonly TemporalFieldType[]
+const ANY_PRECISIONS = [undefined, ...Array.from({ length: TEMPORAL_PRECISION_MAX + 1 }, (_, n) => n)]
+
+/** Built at load from the literal types and precisions above, never from a caller's value. */
+const SHAPE_EXPRESSIONS = new Map<string, RegExp>(
+  TYPES.flatMap((type) => ANY_PRECISIONS.map((precision) => [`${type}:${precision ?? ''}`, new RegExp(temporalShape(type, precision))] as const)),
+)
+
+const ANY_SHAPE_EXPRESSIONS = new Map<TemporalFieldType, RegExp>(TYPES.map((type) => [type, new RegExp(temporalAnyShape(type))]))
+
+/**
+ * The answer's shape as a compiled expression: precompiled once, at load, for every type and
+ * precision, so no document value is ever compiled. A `RegExp` built per call from a document's
+ * precision is what CodeQL's regex-injection rule flags; here the precision only selects an entry.
+ * The expressions have no `g` or `y` flag, so `test` keeps no state between calls: keep it that way.
+ * An out-of-range precision throws the `RangeError` `temporalShape` does.
+ */
+export function temporalShapeRegExp(type: TemporalFieldType, precision?: number): RegExp {
+  fractionDigits(precision)
+  const expression = SHAPE_EXPRESSIONS.get(`${type}:${precision ?? ''}`)
+  if (expression === undefined) throw new RangeError(`no temporal shape for type ${type}`)
+  return expression
+}
+
+/** The any-width counterpart of `temporalShapeRegExp`, compiled once at load; stateless for the same reason. */
+export function temporalAnyShapeRegExp(type: TemporalFieldType): RegExp {
+  const expression = ANY_SHAPE_EXPRESSIONS.get(type)
+  if (expression === undefined) throw new RangeError(`no temporal shape for type ${type}`)
+  return expression
+}
+
 /**
  * Whether a `date` or `datetime` answer, already in its shape, names a day the calendar has.
  * The shape is digits in places, so 2026-02-30 passes it. The parts go through `Date.UTC`

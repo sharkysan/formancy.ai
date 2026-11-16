@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
-import { temporalAnyShape, temporalDateExists, temporalExample, temporalShape } from './temporal.js'
-import { FIELD_TYPES, SPEC_1_FIELD_TYPES, TEMPORAL_SHAPES } from './types.js'
+import { temporalAnyShape, temporalAnyShapeRegExp, temporalDateExists, temporalExample, temporalShape, temporalShapeRegExp } from './temporal.js'
+import { FIELD_TYPES, TEMPORAL_FIELD_TYPES, SPEC_1_FIELD_TYPES, TEMPORAL_SHAPES } from './types.js'
 import type { TemporalFieldType } from './types.js'
 import { validateSchema } from './validate.js'
 import schema from '../formancy.schema.json' with { type: 'json' }
@@ -329,5 +329,44 @@ describe('whether an answer in its shape names a day the calendar has', () => {
   test('a time names no day, so it always exists', () => {
     // A time of day has no calendar to fail; refusing one here would refuse every time.
     expect(temporalDateExists('time', '10:34:56.789')).toBe(true)
+  })
+})
+
+describe('the compiled shapes', () => {
+  const precisions = [undefined, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  // From the spec's own list, so a fourth temporal type without a table entry fails here.
+  const types: readonly TemporalFieldType[] = TEMPORAL_FIELD_TYPES
+
+  // A RegExp built per call from a document's precision is what CodeQL's regex-injection rule
+  // flags; the table compiles only constants, and must say the same thing temporalShape does,
+  // or two spellings of one shape would disagree without anybody finding out.
+  test.each(types)('%s: every precision compiles to the string temporalShape gives', (type) => {
+    for (const precision of precisions) {
+      expect(temporalShapeRegExp(type, precision).source).toBe(new RegExp(temporalShape(type, precision)).source)
+    }
+    expect(temporalAnyShapeRegExp(type).source).toBe(new RegExp(temporalAnyShape(type)).source)
+  })
+
+  // A lookup that compiled again would be the per-call construction this table replaces.
+  test('the same arguments give the same object', () => {
+    expect(temporalShapeRegExp('time', 3)).toBe(temporalShapeRegExp('time', 3))
+    expect(temporalAnyShapeRegExp('datetime')).toBe(temporalAnyShapeRegExp('datetime'))
+  })
+
+  // A shared expression with g or y keeps lastIndex between calls, and the second answer
+  // checked would fail for the first one's position.
+  test('a shared expression is stateless', () => {
+    for (const type of types) {
+      for (const precision of precisions) {
+        const { global, sticky } = temporalShapeRegExp(type, precision)
+        expect([global, sticky]).toEqual([false, false])
+      }
+    }
+  })
+
+  // The table has no entry for these; answering with one would validate documents no reader
+  // can parse, as temporalShape refuses.
+  test.each([-1, 10, 1.5, Number.NaN])('precision %s throws', (precision) => {
+    expect(() => temporalShapeRegExp('time', precision)).toThrow(RangeError)
   })
 })

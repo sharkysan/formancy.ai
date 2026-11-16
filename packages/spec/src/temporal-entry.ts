@@ -1,5 +1,5 @@
 import { fitsMask, fitsSlot, formatMasked, maskPositions } from './mask.js'
-import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalDateExists, temporalShape } from './temporal.js'
+import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalDateExists, temporalShapeRegExp } from './temporal.js'
 
 /**
  * Typed entry for a `time` or a `datetime` with a `precision`: the mask a person types the
@@ -98,7 +98,7 @@ const INSTANT = /^(?<whole>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(?<fraction>
 const TIME = /^(?<clock>\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d+))?$/
 
 /** A datetime's whole seconds as the stored shape checks them, so 25:00 and 13:60 are no instant. */
-const WHOLE_SECONDS = new RegExp(temporalShape('datetime', 0))
+const WHOLE_SECONDS = temporalShapeRegExp('datetime', 0)
 
 /** A wall clock to the second is fourteen digits, YYYYMMDDHHMMSS. */
 const WALL_DIGITS = 14
@@ -270,7 +270,7 @@ function answerPasted(type: TypedTemporalType, n: number, answer: string): strin
   const suffix = type === 'datetime' ? 'Z' : ''
   const offset = offsetMinutes(zone)
   // The clock checked as the stored shape checks it, so 25:00 is no time and no instant.
-  if (offset === undefined || !new RegExp(temporalShape(type, 0)).test(`${whole}${suffix}`)) return undefined
+  if (offset === undefined || !temporalShapeRegExp(type, 0).test(`${whole}${suffix}`)) return undefined
   // An instant's day asked of the calendar at every offset, Z included: 30 February is none.
   const utc = type === 'datetime' ? inUtc(whole, offset) : whole
   if (utc === undefined) return undefined

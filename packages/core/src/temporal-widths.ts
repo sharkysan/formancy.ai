@@ -1,6 +1,6 @@
 import { comparedFields, comparedLiterals, parse } from '@formancy/expressions'
 import type { ComparedFields, ComparisonOperator, ExpressionAst } from '@formancy/expressions'
-import { TEMPORAL_FIELD_TYPES, modelDataFields, temporalAnyShape, temporalExample, temporalShape } from '@formancy/spec'
+import { TEMPORAL_FIELD_TYPES, modelDataFields, temporalAnyShapeRegExp, temporalExample, temporalShape, temporalShapeRegExp } from '@formancy/spec'
 import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@formancy/spec'
 import { ROW_ITEM, inModel, rowScopeOf } from './unknown-paths.js'
 
@@ -93,7 +93,7 @@ function literalProblems(ast: ExpressionAst, rowScope: string | undefined, field
     const path = inModel(compared.path, rowScope)
     const field = fields.get(path)
     if (field?.precision === undefined) continue
-    if (new RegExp(temporalShape(field.type, field.precision)).test(compared.literal)) continue
+    if (temporalShapeRegExp(field.type, field.precision).test(compared.literal)) continue
     found.push({
       ...about,
       paths: [path],
@@ -115,7 +115,7 @@ function literalProblems(ast: ExpressionAst, rowScope: string | undefined, field
  * function rather than an expression to copy.
  */
 function literalTimestamp(field: TemporalField, literal: string): string {
-  if (field.type !== 'datetime' || !new RegExp(temporalAnyShape('datetime')).test(literal)) return ''
+  if (field.type !== 'datetime' || !temporalAnyShapeRegExp('datetime').test(literal)) return ''
   return ` Or, as both are a date and time, wrap each side in \`timestamp()\`, ${MILLISECOND}.`
 }
 
