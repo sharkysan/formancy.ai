@@ -1204,7 +1204,13 @@ not read. Verified by `packages/conformance/fixtures/temporal-precision.json`, w
 width, an entry that stops short refused — and which failed with the typed control taken out of each
 renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
 `typed-temporal-field` tests and Material's `controls.test.ts`; and, key by key in Chromium, by
-`scripts/temporal-entry-browser-test.mjs` in `pnpm test:browser`.
+`scripts/temporal-entry-browser-test.mjs` in `pnpm test:browser`. The shape error under a typed date
+and time, `error.shape.day`, gives its example as the person types it, on their own clock with a
+space, "Enter it as 2026-10-08 09:30:00.000, on a day the calendar has": given in the stored form,
+`…T09:30:00.000Z`, a person copying it would type a `T` and a `Z` the mask has no place for.
+Verified by *an instant of the wrong shape, on a field with a precision, is asked for as it is
+typed* in `packages/core/src/error-words.test.ts` and by the `error.shape.day` case of both
+renderers' `words` tests, which failed while it gave the stored form.
 
 *Residual:* every digit is kept at the field's width, and not beyond it.
 
@@ -1230,13 +1236,6 @@ renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
   digits a device gave. Measured on 2026-11-16 by a probe against the built `@formancy/core`, and
   pinned by *from an answer finer than a millisecond keeps the millisecond, padded to the width* in
   `packages/core/src/temporal-precision.test.ts`.
-- **The shape error under a typed date and time names the stored form**, `error.shape.day`:
-  "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has", in UTC with a `T` and a `Z`,
-  while the person types their own clock with a space. A person who copies it types a `T` the
-  mask has no place for. Pinned, as the sentence it is, by *an instant of the wrong shape, on a
-  field with a precision, is also asked for on a day that exists* in
-  `packages/core/src/error-words.test.ts`; saying it in the typed form is left to the builders'
-  change.
 - **A dropped fragment replaces the whole field**, wherever it was dropped: digits dropped onto
   the minutes are typed over the whole answer. Pinned by *dropped digits are typed over the whole
   field, not at the caret the drag left* in both renderers' tests.

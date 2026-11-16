@@ -124,7 +124,10 @@ export const FORM_WORDS = {
    * without a precision, and as an answer at its width for one with a precision (0238).
    */
   'error.shape': 'Enter it as {format}.',
-  /** An instant on a field with a precision, which refuses a day the calendar does not have as `shape` too. */
+  /**
+   * An instant on a field with a precision, which refuses a day the calendar does not have as
+   * `shape` too. `{format}` is an answer as the person types it, on their own clock with a space.
+   */
   'error.shape.day': 'Enter it as {format}, on a day the calendar has.',
   'error.earliest': 'Enter {earliest} or later.',
   'error.latest': 'Enter {latest} or earlier.',

@@ -150,8 +150,9 @@ reading from a device's log — a field declares `precision`: how many digits fo
 Every answer to the field has that one width, every digit always written, so two answers compare
 as text in the order they happened. On a `datetime`, `0` stores whole seconds, as no precision
 does; what changes is the control, the checks a field with a precision makes, below, and how an
-answer is said: its error, which gives an answer at the width and asks for a day that exists; its
-read-back, to the second rather than the minute; and the type `formancy types` prints for it.
+answer is said: its error, which gives an answer at the width, a date and time as the person types
+it (`2026-10-08 09:30:00.000`), and asks for a day that exists; its read-back, to the second rather
+than the minute; and the type `formancy types` prints for it.
 
 **The control is typed.** A field with a precision is a text box in its own shape — `__:__:__.___`
 for a time to the millisecond — showing and taking every declared digit. A date and time is typed on the person's own clock,

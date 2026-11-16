@@ -1,4 +1,4 @@
-import { temporalExample } from '@formancy/spec'
+import { formatMasked, temporalEntryMask, temporalExample } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
 import type { BuiltInErrorCode } from './error-codes.js'
 import type { FormText, FormWordId, FormWordValues } from './words.js'
@@ -101,7 +101,9 @@ const STORED_FORM: Partial<Record<FieldDef['type'], string>> = {
 /**
  * What `shape` asks for. A field without a precision is 0.13.0's, and its sentence with it. One
  * with a precision (0238) is asked for at its width, by an answer of that width, since letters
- * cannot say how many digits follow the seconds; and an instant there is refused as `shape` on a
+ * cannot say how many digits follow the seconds, and in the form its control is typed in: a time
+ * as it is stored, an instant on the person's own clock, `2026-10-08 09:30:00.000`, since the
+ * stored form's `T` and `Z` have no place in the mask. An instant there is refused as `shape` on a
  * day the calendar does not have as well, which the sentence cannot tell apart without the
  * answer, so it asks for both.
  */
@@ -109,7 +111,10 @@ function shapeSentence(def: FieldDef | undefined): ReturnType<Worded> {
   if (def === undefined) return { id: 'error.shape', values: {} }
   if ((def.type !== 'time' && def.type !== 'datetime') || def.precision === undefined)
     return { id: 'error.shape', values: { format: STORED_FORM[def.type] ?? '' } }
-  return { id: def.type === 'datetime' ? 'error.shape.day' : 'error.shape', values: { format: temporalExample(def.type, def.precision) } }
+  if (def.type === 'time') return { id: 'error.shape', values: { format: temporalExample('time', def.precision) } }
+  // The example's digits in the control's own mask: one answer, written as the person types it.
+  const typed = formatMasked(temporalEntryMask('datetime', def.precision), temporalExample('datetime', def.precision).replace(/\D/g, ''))
+  return { id: 'error.shape.day', values: { format: typed } }
 }
 
 /** A bound left out of the document leaves its placeholder visible, as every word does. */

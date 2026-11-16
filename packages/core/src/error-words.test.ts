@@ -124,9 +124,19 @@ describe('an error is said, not coded', () => {
   // for what the answer already has.
   test('an instant of the wrong shape, on a field with a precision, is also asked for on a day that exists', () => {
     const at: FieldDef = { key: 'd', type: 'datetime', precision: 6 }
-    expect(errorSentence(english, at, 'shape')).toBe('Enter it as 2026-10-08T09:30:00.000000Z, on a day the calendar has.')
-    expect(errorSentence(german, at, 'shape')).toBe('Geben Sie die Antwort als 2026-10-08T09:30:00.000000Z ein, an einem Tag, den es gibt.')
-    expect(errorSentence(french, at, 'shape')).toBe('Saisissez la réponse sous la forme 2026-10-08T09:30:00.000000Z, à une date qui existe.')
+    expect(errorSentence(english, at, 'shape')).toMatch(/, on a day the calendar has\.$/)
+    expect(errorSentence(german, at, 'shape')).toMatch(/ ein, an einem Tag, den es gibt\.$/)
+    expect(errorSentence(french, at, 'shape')).toMatch(/, à une date qui existe\.$/)
+  })
+
+  // The sentence sits under a control typed on the person's own clock, with a space and no zone.
+  // Given the stored form, `2026-10-08T09:30:00.000000Z`, a person copying it types a `T` the mask
+  // has no place for, and an instant in UTC that is not the clock they are asked for.
+  test('an instant of the wrong shape, on a field with a precision, is asked for as it is typed', () => {
+    const at: FieldDef = { key: 'd', type: 'datetime', precision: 6 }
+    expect(errorSentence(english, at, 'shape')).toBe('Enter it as 2026-10-08 09:30:00.000000, on a day the calendar has.')
+    expect(errorSentence(german, at, 'shape')).toBe('Geben Sie die Antwort als 2026-10-08 09:30:00.000000 ein, an einem Tag, den es gibt.')
+    expect(errorSentence(french, { ...at, precision: 0 }, 'shape')).toBe('Saisissez la réponse sous la forme 2026-10-08 09:30:00, à une date qui existe.')
   })
 
   // A validate rule's own code and its message are the author's words, and the catalogue

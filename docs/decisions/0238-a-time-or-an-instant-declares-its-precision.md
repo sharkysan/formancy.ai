@@ -14,7 +14,8 @@
   at the field's width. The consequence below that said they would not, and that a rule they wrote
   would be refused at publish, held for the length of the first change only. Amended again on
   2026-11-16, when changing a field's precision in a builder began to carry the field's bounds, its
-  default and the literals in rules along, or to refuse.
+  default and the literals in rules along, or to refuse, and the shape error under a typed date and
+  time began to give its example as the person types it.
 - **Verified by:**
   - `packages/spec/src/temporal.test.ts`, *the canonical shapes*: each type and precision accepts
     its own width and refuses its neighbours; answers of one width sort as text in the order they
@@ -50,7 +51,10 @@
     `packages/builder-core/src/authoring.test.ts` report it as publish refuses it.
   - `packages/core/src/default.test.ts`, *of the wrong shape on a time or an instant says how an
     answer there is written*: it failed before the refusal named the width, and a field without a
-    precision keeps 0.13.0's sentence.
+    precision keeps 0.13.0's sentence. `packages/core/src/error-words.test.ts`, *an instant of the
+    wrong shape, on a field with a precision, is asked for as it is typed*, and the `error.shape.day`
+    case of both renderers' `words` tests: the error under the control gives its example on the
+    person's clock, `2026-10-08 09:30:00.000`, and each failed while it gave the stored form.
   - `packages/expressions/src/evaluate.test.ts`, *compares timestamps to the millisecond, cutting
     the rest, as the documents say*: a cel-js release that compared finer, or rounded, would fail
     it.
@@ -252,9 +256,10 @@ line.
   supplied seconds to `00` when edited. Declaring a precision is the remedy.
 - **The error under the control cannot tell a missing digit from a missing day.** Both are
   `shape`, and the sentence is chosen without the answer, so on an instant with a precision it asks
-  for both: "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has." That example is the
-  stored form, in UTC with a `T` and a `Z`, under a control where the person types their own clock
-  with a space; saying it in the typed form is left to the builders' change.
+  for both: "Enter it as 2026-10-08 09:30:00.000, on a day the calendar has." The example is written
+  as the control takes it, on the person's own clock with a space, and not in the stored form,
+  whose `T` and `Z` the mask has no place for. It is an example of the form, the same digits in
+  every zone, not an instant converted to the person's clock.
 - **The builders followed in a second change** (see **History**). Their property panels offered
   `precision` from the first change, read from the schema; their condition editors, in this one,
   type a literal on such a field into the renderers' own control, exported from `@formancy/react`
