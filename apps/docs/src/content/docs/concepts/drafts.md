@@ -165,6 +165,10 @@ the same terms as submissions, so an undebounced save will start returning
 while somebody types is a form that stops saving exactly when they are working
 hardest.
 
+**Subscribe before the form can be changed.** A change made before the subscription schedules
+no save. In React that means a layout effect rather than `useEffect`, which React may run a task
+after the commit that draws the form: whatever fills a field the moment it appears gets there first.
+
 **Start the draft once, even while the first start is under way.** The quiet runs out again if
 the server is slow to answer the start and somebody types on, and that save finds no draft
 yet either. Started a second time, the second draft replaces the first in what the page keeps,

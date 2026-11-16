@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { FORM_WORDS, FORM_WORDS_DE } from '@formancy/core/words'
@@ -141,6 +141,35 @@ describe('filling in a published form', () => {
       expect(saves().length).toBeLessThan(typed.length)
       expect(saves().at(-1)?.body).toMatchObject({ email: typed })
     })()
+  })
+
+  test('a change made the moment the form is drawn is saved like any other', async () => {
+    // Whatever fills a field as soon as it appears — a password manager, an extension, a script —
+    // gets there before React runs an effect, which it does a task after the commit that drew the
+    // form. The pane began listening in such an effect, so a change made in between scheduled no
+    // save, and no draft was started until something changed again. CI met it now and then in two
+    // of the cases below that fire a change straight after finding the field. Here the change is
+    // made in the microtask after the field is drawn, before any later task can run.
+    const observer = new MutationObserver(() => {
+      const email = screen.queryByLabelText('Email')
+      if (email === null) return
+      observer.disconnect()
+      // As a filler does it, outside React's act(): the value set past React's own tracking of
+      // it, and the input event sent.
+      Reflect.set(HTMLInputElement.prototype, 'value', 'a@b.ch', email)
+      email.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    onTestFinished(() => {
+      observer.disconnect()
+    })
+
+    render(<FillPane path="contact" quietMs={60} />)
+
+    await waitFor(() => {
+      expect(saves()).toHaveLength(1)
+    })
+    expect(saves()[0]?.body).toMatchObject({ email: 'a@b.ch' })
   })
 
   test('starts the draft once however many times it saves, and keeps the token out of the URL', async () => {
