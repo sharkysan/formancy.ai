@@ -471,13 +471,25 @@ describe('a time or a date and time with a precision compared', () => {
   })
 
   test('a typed instant is the literal, unchanged', () => {
-    // Narrowed as a version 5 wall clock, the typed answer was not a wall clock and the literal
-    // lost its fraction or was read in the author's zone twice.
+    // What the control reports is already the instant at the field's width; this pins that the
+    // editor writes it as it is (the version 5 path gives the same text for it, so the guard
+    // against version 5's width is the builders' cases that check the rule publishes).
     vi.stubEnv('TZ', 'Europe/Zurich')
     const answer = storedFromTyped('datetime', 3, '20261115140327415')!
     const draft: ConditionDraft = { join: 'all', items: [{ field: 'at', operator: 'isAfter', text: answer }] }
 
     expect(compileGroup(groupOf(draft, logFields))).toBe('at != null && at > "2026-11-15T13:03:27.415Z"')
+  })
+
+  test('a wall clock composed through the API is not read in a zone', () => {
+    // A draft not made by the control may hold the text of a version 5 box. On a field with a
+    // precision it is written unchanged, and publish refuses it as a shape the field does not
+    // have, rather than the editor guessing the author's zone: version 5's path would have
+    // turned it into 13:03:27Z in Zurich.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const plain = conditionFields({ ...log, model: { fields: [{ key: 'at', type: 'datetime', label: 'At', precision: 0 }] } })
+
+    expect(conditionOf({ field: 'at', operator: 'isAfter', text: '2026-11-15T14:03:27' }, plain).value).toBe('2026-11-15T14:03:27')
   })
 
   test('the repeated hour is kept as the instant that was pasted', () => {

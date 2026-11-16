@@ -1,10 +1,10 @@
 import { formatMasked, maskIsNumeric, maskPlaceholder, pasteOutcome, storedFromTyped, temporalEntryMask, typedFromStored } from '@formancy/spec'
 import type { TypedTemporalType } from '@formancy/spec'
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentProps } from 'react'
 import { applyMaskedEdit } from './internals.js'
 
 /** What the control takes of an `input` itself: everything but what it decides. */
-type InputProps = Omit<ComponentPropsWithoutRef<'input'>, 'value' | 'onChange' | 'type' | 'inputMode' | 'onPaste' | 'onDrop' | 'defaultValue'>
+type InputProps = Omit<ComponentProps<'input'>, 'value' | 'onChange' | 'type' | 'inputMode' | 'onPaste' | 'onDrop' | 'defaultValue'>
 
 export interface TypedTemporalInputProps extends InputProps {
   type: TypedTemporalType

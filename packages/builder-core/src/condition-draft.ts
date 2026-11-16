@@ -198,7 +198,7 @@ export function updateRow(draft: ConditionDraft, place: DraftPlace, change: Part
     return {
       ...merged,
       operator: allowed.includes(merged.operator) ? merged.operator : allowed[0]!,
-      // Typed digits mean nothing at another width, or beside the browser's box.
+      // A typed answer means nothing at another width, or beside the browser's box.
       text: was === now && precisionOf(fields, row.field) === precisionOf(fields, change.field) ? merged.text : startingText(now),
     }
   }

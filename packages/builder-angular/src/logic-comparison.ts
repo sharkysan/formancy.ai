@@ -76,10 +76,10 @@ const INPUT_TYPE: Partial<Record<ConditionField['kind'], string>> = {
               </select>
             }
             @case ('typed') {
-              @if (typed(); as field) {
+              @if (typed(); as typedField) {
                 <input
-                  [formancyTypedTemporalInput]="field.kind"
-                  [precision]="field.precision"
+                  [formancyTypedTemporalInput]="typedField.kind"
+                  [precision]="typedField.precision"
                   [value]="row().text"
                   (valueChange)="changed.emit({ text: $event ?? '' })"
                 />

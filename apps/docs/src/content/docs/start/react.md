@@ -346,6 +346,34 @@ controls do, or the person types into a box that does not keep what they type
 a type with no read-only box — a tick box, a choice, a list — is not mounted for such a field: the
 renderer draws its answer in words instead. Register it for the field's path to draw it yourself.
 
+## A time or an instant of your own, at a precision
+
+`TypedTemporalInput` is the box a `time` or a `datetime` with a `precision` is typed into, without
+the form around it: the control `FormancyForm` draws for such a field, for a host that keeps the
+answer itself, in a form library or a settings screen of its own. It takes the stored answer and
+reports the stored answer, so what it hands back is what you keep and what you pass in again.
+
+```tsx
+import { TypedTemporalInput } from '@formancy/react'
+
+<TypedTemporalInput
+  type="datetime"
+  precision={3}
+  value={answer} // '' or an instant such as 2026-11-15T13:03:27.415Z
+  onChange={(next) => setAnswer(next ?? '')} // null when it is emptied
+  aria-label="Started"
+/>
+```
+
+- `type` is `time` or `datetime`, and `precision` is 0 to 9, the field's own.
+- `value` is the stored answer, and `onChange` receives the stored answer, or `null` when the box is
+  emptied. A `datetime` is typed on the person's own clock and reported as the UTC instant, its
+  fraction copied digit for digit; an entry that stops short is reported as the text typed, for a
+  shape check to refuse, never completed.
+- `readOnly`, `placeholder` and every other attribute of an `input`, including `ref`, are passed to
+  the box. Its placeholder is the mask unless you give one.
+- It reports only what the person types, pastes or drops, never on mount.
+
 ## The rest of the hook family
 
 - `useRepeater(path)` — row count, `addRow`, `removeRow` for a repeater, and `canAdd` and

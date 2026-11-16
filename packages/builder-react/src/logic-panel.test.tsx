@@ -722,6 +722,15 @@ describe('a time or a date and time with a precision (0238)', () => {
     expect(await screen.findByText('at != null && at > "2026-11-15T13:03:27.415Z"')).toBeTruthy()
   })
 
+  test('a dropped instant in the hour the clocks repeat is kept as it was', async () => {
+    // As for a paste: the later 01:30Z must not come back as the earlier 00:30Z.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { box } = await open('at', 'is')
+    fireEvent.drop(box(), { dataTransfer: { getData: () => '2026-10-25T01:30:00.000Z' } })
+
+    expect(await screen.findByText('at == "2026-10-25T01:30:00.000Z"')).toBeTruthy()
+  })
+
   test('digits pasted into part of the box are typed there', async () => {
     // A fragment is typing, placed by the mask as the same keystrokes, not an answer of its own.
     vi.stubEnv('TZ', 'Europe/Zurich')
