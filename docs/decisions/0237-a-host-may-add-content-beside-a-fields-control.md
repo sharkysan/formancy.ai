@@ -42,17 +42,20 @@
   - `scripts/field-beside-browser-test.mjs`, in `pnpm test:browser`: on the playground in Chromium,
     with each theme on both sheets, left to right and right to left, at 1180 and at 390 pixels, and
     each row at rest, invalid and with the keyboard in it: the button is the box's height, at least
-    44px wide, and touches the box at its inline end; the row is as wide as its field and casts no
-    shadow or the one a lone text box casts, and neither the box nor the button casts one of its
+    44px wide, and touches the box at its inline end; the row is as wide as its field and casts what
+    a lone text box casts, compared by the shadows each casts, nothing where a lone box casts nothing
+    and Pop's hard shadow where it casts that, and neither the box nor the button casts one of its
     own; at rest and invalid the button's upper and lower edges, fill and shadow are the box's; and
     the pickup point's list, opened from the keyboard, lies within its box and is what the browser
     hits across it. Watched failing: with Dusk's row rules taken out, 32 checks, the height and the
     touching on every row; without the rules that carry an invalid field's mark across the button,
     64, in every theme; with Pop's row shadows named again for right to left, the row's shadow right
-    to left, at rest (8 checks), with the keyboard in the row and invalid; without the rule that
-    keeps Pop's box from lifting inside its row, the box's own shadow and, with the keyboard in the
-    row, the height and the touching; without a `z-index` on Pop's row with the keyboard in it, the
-    tag picker's box drawn over the open list; with Blueprint's row positioned and its anchor not,
+    to left, at rest (8 checks), with the keyboard in the row and invalid; with Pop's row shadow
+    taken out, the row's shadow at rest, 16 checks, in both reading orders and at both widths (the
+    check had passed any row that cast nothing until it compared what each casts); without the rule
+    that keeps Pop's box from lifting inside its row, the box's own shadow and, with the keyboard in
+    the row, the height and the touching; without a `z-index` on Pop's row with the keyboard in it,
+    the tag picker's box drawn over the open list; with Blueprint's row positioned and its anchor not,
     the list outside its box; without Paper's button minimum, the 44px check, and with Paper's row
     narrowed to its content, the row's width (Dusk's button is 45px wide on its padding and icon
     alone, so taking its minimum away could not fail it); and without `fieldBeside` in the Angular

@@ -23,14 +23,16 @@ import { fileURLToPath } from 'node:url'
  * first (Blueprint's frame was red round the box and grey round the button, seen 2026-11-15); and
  * with the keyboard in the row, where Pop lifts the box and casts its blue shadow, and a box that
  * lifted inside the row as well as with it would sit off the button's line and cast its shadow onto
- * it. In each the row casts no shadow, or the one a box alone casts in that state: Pop's row first
- * had its shadow named again for right to left, and read right to left it fell left beside every
- * other box's, which fell right (seen 2026-11-15). A shadow a light casts does not move with the
- * language. Neither the box nor the button inside the row casts one of its own, offset from it,
- * which would fall between the two; a ring round one, as a theme's focus draws, is not one. At rest
- * and invalid, the button's upper and lower edges, its fill and its shadow are the box's, so the
- * frame, the underline, the fill and the mark run on across it. With the keyboard in the row they
- * need not be: the focus says which of the two has it.
+ * it. In each the row casts what a box alone casts in that state: nothing where a box casts
+ * nothing, and Pop's hard shadow where a box casts that, so a row that lost it, the pair then
+ * casting nothing, fails as one that casts another. Pop's row first had its shadow named again for
+ * right to left, and read right to left it fell left beside every other box's, which fell right
+ * (seen 2026-11-15). A shadow a light casts does not move with the language. Neither the box nor
+ * the button inside the row casts one of its own, offset from it, which would fall between the
+ * two; a ring round one, as a theme's focus draws, is not one. At rest and invalid, the button's
+ * upper and lower edges, its fill and its shadow are the box's, so the frame, the underline, the
+ * fill and the mark run on across it. With the keyboard in the row they need not be: the focus
+ * says which of the two has it.
  *
  * So, on the playground's form, which draws a button beside the pickup point's typeahead and beside
  * the country's select in both renderers, with each theme in turn on both sheets, left to right and
@@ -261,9 +263,12 @@ function judge({ direction, theme, sheet, label, state, box, button, row, field,
   )
   check(`${where}: the button is at least 44px wide`, button.width >= 44 - SLACK ? null : `${px(button.width)} wide`)
   check(`${where}: the row is as wide as its field`, Math.abs(row - field) <= SLACK ? null : `the row is ${px(row)} and the field ${px(field)}`)
+  // Compared by what each casts, so a row that casts nothing beside a box that casts a shadow fails
+  // as one that casts another does: Pop's hard shadow round the pair is held, and Blueprint's,
+  // Paper's and Dusk's insets and rings, which fall beside nothing, are not asked of the row.
   check(
-    `${where}: the row casts no shadow, or the one a box alone casts`,
-    shadow === 'none' || shadow === lone ? null : `the row casts ${shadow} and a text box alone ${String(lone)}`,
+    `${where}: the row casts what a box alone casts`,
+    JSON.stringify(cast(shadow)) === JSON.stringify(cast(lone)) ? null : `the row casts ${shadow} and a text box alone ${String(lone)}`,
   )
   const own = Object.entries(looks).filter(([, look]) => cast(look?.shadow ?? null).length > 0)
   check(
