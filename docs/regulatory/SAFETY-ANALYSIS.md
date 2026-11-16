@@ -612,19 +612,23 @@ observed failing before its change.
 - **A comparison through a list rule's own variable is not seen.**
   `steps.all(s, s.at >= startedAt)` publishes whatever the precisions of `steps[].at` and
   `startedAt` are, and compares as text: wrongly, when they differ. `@formancy/expressions` takes a
-  comprehension's variable for no field, as 0236 chose. The builders' condition editors write no
+  comprehension's variable for no field, as 0236 chose, pinned by *gives none through a
+  comprehension's variable* in `packages/expressions/src/compared-literals.test.ts`. The builders' condition editors write no
   list rule, so only a hand-written one reaches it, by an author or by an agent through
   `@formancy/mcp`. The advice, in the record and the documentation: give the fields compared in a
   list rule one precision, or compare them with `timestamp()`.
 - **`timestamp()` compares to the millisecond.** It is one of the ways out the refusal offers, and
   in `@marcbachmann/cel-js` 8.0.0 it cuts every digit after the third:
   `timestamp(a) < timestamp(b)` is `false` for two instants a microsecond apart, measured on
-  2026-11-16 ([`SOUP-DECLARATION.md`](SOUP-DECLARATION.md)). A rule using it cannot tell apart two
-  answers closer than that.
+  2026-11-16 ([`SOUP-DECLARATION.md`](SOUP-DECLARATION.md)), and pinned by *compares timestamps to
+  the millisecond, as the documents say* in `packages/expressions/src/evaluate.test.ts`. A rule
+  using it cannot tell apart two answers closer than that.
 - **Only a literal or a field compared directly is seen.** A literal built by a function, passed
   through `timestamp()`, held in a list for `in`, or compared through a computed index is not.
-- **A field without a precision is warned about, not refused** (A11): a version 5 document
-  comparing a `date` with a `datetime` behaves as it did in 0.13.0.
+- **A field without a precision is not refused.** A literal not in its shape is warned about
+  (A11), and a comparison of two such fields, a `date` with a `datetime`, is named by nothing, as
+  in 0.13.0 (*is not reported for two fields neither of which declares precision*, in
+  `temporal-widths.test.ts`).
 - **One form's submissions can hold two widths** once its precision changes, since submissions
   never migrate. A rule reads one submission at a time, at its version's width, but an export or a
   sort across the change mixes them. The diff calls every change to `precision` lossy.
@@ -2072,11 +2076,11 @@ that spliced the questions onto the top level, which is the one that reads corre
 *Residual, and it is the substantial one:* **the format still permits it.** A document
 written by hand, by an agent through `@formancy/mcp`, or by an older version of the
 builder can place a field beside a page, and it validates. Refusing it is a spec change,
-and versions `"1"` to `"5"` are frozen — so it would belong to **version `"6"`**, which is
-open and in no release yet, and was opened for a time's and an instant's `precision`
-([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)), not for this
-([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)), where it would be a migration with a report rather than a
-silent breakage. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
+and versions `"1"` to `"5"` are frozen — so it would belong to **version `"6"`**, where it
+would be a migration with a report rather than a silent breakage
+([0201](../decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md)). Version 6 is open and
+in no release yet, and was opened for a time's and an instant's `precision`
+([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)), not for this. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
 allowed without breaking a document that validates today, so the honest form of this is a
 warning on publish rather than a refusal
 ([0097](../decisions/0097-a-publish-may-warn.md)). Until then the constraint covers the

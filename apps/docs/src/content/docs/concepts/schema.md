@@ -148,8 +148,8 @@ reading from a device's log — a field declares `precision`: how many digits fo
 ```
 
 Every answer to the field has that one width, every digit always written, so two answers compare
-as text in the order they happened. On a `datetime`, `0` stores what no precision stores, whole
-seconds, and changes only the control.
+as text in the order they happened. On a `datetime`, `0` stores whole seconds, as no precision
+does; what changes is the control, and the checks a field with a precision makes, below.
 
 **The control is typed.** A field with a precision is a text box in its own shape — `__:__:__.___`
 for a time to the millisecond — showing and taking every declared digit. A date and time is typed on the person's own clock,
@@ -175,10 +175,12 @@ or the document is refused. A `default` of another width keeps the form from ope
 date and time is written padded to the width, and not at all when a digit other than zero would
 fall beyond it: never rounded.
 
-**In a rule**, compare it only with a literal at its width, or with a field of the same precision:
-a publish refuses anything else, and says how to write it. One comparison it cannot see is through
-a list rule's own variable — [Logic](/docs/concepts/logic/#a-time-or-an-instant-with-a-precision)
-says which, and what to do.
+**In a rule**, compare it with a literal at its width, or with a field whose answers have the same
+shape — the same precision, or, for a `datetime` at precision 0, one without a precision. A publish
+refuses a comparison with any other literal, or with a temporal field of another shape, and says
+how to write it; one through `timestamp()` it leaves alone, and that compares to the millisecond.
+One comparison it cannot see is through a list rule's own variable —
+[Logic](/docs/concepts/logic/#a-time-or-an-instant-with-a-precision) says which, and what to do.
 
 **Changing a field's precision** changes the width of every answer from then on. Submissions
 already stored keep the width they were written in, so an export across the change holds both, and

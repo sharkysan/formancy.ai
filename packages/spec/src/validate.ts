@@ -127,8 +127,9 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     // zero-padded: that is the property TEMPORAL_SHAPES exists to guarantee, and it
     // is why this rule can be three lines rather than a date parser.
     //
-    // Only between bounds written at the field's width: text of two widths has an order,
-    // but not the clock's, and naming both mistakes would send the author to fix the wrong one.
+    // Only between bounds written at the field's width, on a day that exists: text of two widths
+    // has an order, but not the clock's, and naming both mistakes would send the author to fix the
+    // wrong one.
     const widthErrors = temporalBoundErrors(field, path)
     errors.push(...widthErrors)
     if (widthErrors.length === 0 && field.earliest !== undefined && field.latest !== undefined && field.earliest > field.latest) {

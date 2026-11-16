@@ -203,7 +203,9 @@ it is right. No answer `0.13.0` stores carries a fraction of a second, so none r
 spec version 6, which is in no release, a `time` or `datetime` field may declare a `precision` of up
 to nine digits, and comparing through `timestamp()` is one of the ways out a publish offers for two
 fields of different widths: a rule doing so cannot tell apart two answers closer than a millisecond.
-Not worked around; named in hazard A12 of [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) and in
+Not worked around; pinned by *compares timestamps to the millisecond, as the documents say* in
+`packages/expressions/src/evaluate.test.ts`, which a release of the library that changed it would
+fail; named in hazard A12 of [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) and in
 [0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md).
 
 `recheck` decides whether a form's `pattern` may be published. It statically

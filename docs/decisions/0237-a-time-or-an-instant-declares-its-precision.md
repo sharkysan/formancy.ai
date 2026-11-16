@@ -7,7 +7,8 @@
   fractional part" and its one width per type, for a field that declares a `precision`. One width
   per *field* stays, and so does everything 0067 says of a field that does not.
 - **Extends:** [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md),
-  whose check this one refuses where 0236 warns, and
+  whose check this one refuses where 0236 warns, and whose `has()` for a field at the top it
+  corrects; and
   [0125](0125-a-mask-stores-what-was-typed.md), whose mask core the typed control is built on.
 - **Verified by:**
   - `packages/spec/src/temporal.test.ts`, *the canonical shapes*: each type and precision accepts
@@ -38,6 +39,10 @@
     compiled. `packages/server-core/src/use-cases.test.ts`, *refuses a rule comparing a temporal
     answer across widths, and persists nothing*; `packages/mcp/src/tools.test.ts` and
     `packages/builder-core/src/authoring.test.ts` report it as publish refuses it.
+  `packages/core/src/default.test.ts`, *of the wrong shape on a time or an instant says how an
+  answer there is written*, failed before the refusal named the width.
+  `packages/expressions/src/evaluate.test.ts`, *compares timestamps to the millisecond, as the
+  documents say*: a cel-js release that compared finer would fail it.
   - `packages/spec/src/temporal-entry.test.ts`: the mask, the conversion between a local wall
     clock and the stored instant with the fraction copied digit for digit, an incomplete entry held
     as typed, the night the clocks go back, a year before 100, and `pasteOutcome` against each
@@ -116,7 +121,8 @@ the schema's bound patterns and its bound descriptions' examples are held to the
   check compares shapes, not lengths. The publish, the MCP check and the builder's authoring loop
   all apply it. An empty literal, `opens != ""`, is refused too, and the sentence gives the test
   that asks whether the field was answered, on the read the rule wrote: `opens != null` at the top,
-  `item.at != null` in a row, `has(stay.at)` in a group. Refusing is possible here where 0236 could
+  `item.at != null` in a row, `has(stay.at)` in a group. That corrects 0236, which gave `has()` for
+  a field at the top, where it does not compile. Refusing is possible here where 0236 could
   only warn: no valid document could declare a precision before version 6, so nothing valid
   becomes invalid. A field without a precision keeps 0236's warning.
 
@@ -132,10 +138,11 @@ rather than superseded, since a mask is the default control's there.
 
 **A paste is decided once, by `pasteOutcome` in `@formancy/spec`,** for every control:
 
-1. a whole time or instant on its own — at any width, with `Z`, `±HH`, `±HHMM` or `±HH:MM`, a
-   space or a `T`, in lower case too — is the answer, wherever it lands: an offset becomes the same
-   instant in UTC, and a width other than the field's becomes the field's where that is exact
-   (zeros padded, only zeros cut) and stays its own otherwise, for the shape check to refuse;
+1. a whole time, or a whole instant with `Z`, `±HH`, `±HHMM` or `±HH:MM` and a space or a `T`
+   (in lower case too), pasted on its own at any width, is the answer wherever it lands; a time
+   with a zone is none. An offset becomes the same instant in UTC, and a width other than the
+   field's becomes the field's where that is exact (zeros padded, only zeros cut) and stays its
+   own otherwise, for the shape check to refuse;
 2. a paste of nothing, or of the selected text over itself, changes nothing;
 3. digits that fit the mask, or text with each separator exactly where the mask writes it, are
    typing;

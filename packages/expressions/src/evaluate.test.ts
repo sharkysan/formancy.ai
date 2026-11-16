@@ -59,6 +59,15 @@ describe('evaluate', () => {
     const values = { age: 1, name: 'a', items: [{ active: true }, { active: false }] }
     expect(valueOf('items.filter(i, i.active).size()', computed, values)).toBe(1)
   })
+
+  // The library's known anomaly, pinned: `timestamp()` keeps three digits after the seconds and
+  // cuts the rest, so two instants a microsecond apart are equal to it. 0237, the `precision`
+  // description in the schema, `concepts/logic.md`, the CHANGELOG and SOUP-DECLARATION.md say
+  // so; a cel-js release that changes it fails here, and those words with it.
+  test('compares timestamps to the millisecond, as the documents say', () => {
+    const answers: CompileOptions = { kind: 'visible', variables: { a: 'dyn', b: 'dyn' } }
+    expect(valueOf('timestamp(a) == timestamp(b)', answers, { a: '2026-10-08T10:34:56.789012Z', b: '2026-10-08T10:34:56.789013Z' })).toBe(true)
+  })
 })
 
 describe('injected capabilities', () => {

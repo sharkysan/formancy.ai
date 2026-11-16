@@ -12,9 +12,10 @@ later.
 
 **Added: a time or a date and time can be recorded to the second, or to a fraction of one, with
 `precision` on a `time` or `datetime` field, in spec version 6, which opens for it.** A test run's
-start, its end and the steps between, or a reading from a device's log to the microsecond, were cut
-to the minute: a `time` answer was `HH:MM`, and a date and time's control showed minutes, so an edit
-set its seconds to `00`. `precision` says how many digits follow the seconds, 0 to 9, counted as a
+start, its end and the steps between had no room below the minute: a `time` answer was `HH:MM`, and
+a date and time's control showed minutes, so an edit set its seconds to `00`. A reading from a
+device's log to the microsecond was refused as `shape`, since no answer could carry a fraction of a
+second. `precision` says how many digits follow the seconds, 0 to 9, counted as a
 database counts them in `timestamp(p)`, so that what is collected is what its storage keeps; every
 answer to the field has that width, `09:30:00.123` or `2026-10-08T09:30:00.123456Z`. Absent,
 nothing changes: a time is still `09:30`, a date and time still ends in whole seconds, and the
@@ -28,8 +29,8 @@ control is still the browser's, to the minute
   entry that stops short is refused as `shape`, never completed. Angular Material draws such a time
   with the default control, as it does a masked text
   ([0132](docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
-- **A paste** of a whole time or instant, at any width, with `Z` or an offset, is the answer, an
-  offset turned into the same instant in UTC. Digits that fit, or text with each separator where
+- **A paste** of a whole time, or of a whole instant with `Z` or an offset, is the answer at any
+  width, an offset turned into the same instant in UTC. Digits that fit, or text with each separator where
   the control writes it, are typed. Anything else, and a paste of nothing, changes nothing. It is
   decided once, by `pasteOutcome` in `@formancy/spec`, so no two controls read a paste two ways.
 - **The engine checks an answer at the field's width**, in the browser and on the replay, and on a
@@ -40,7 +41,7 @@ control is still the browser's, to the minute
   opening. A computed date and time is written padded to the width, and not at all when a digit
   other than zero falls beyond it: never rounded.
 - **A publish refuses a rule comparing such a field across widths**, with a literal or with another
-  field not at its width, because text of two widths orders wrongly and never compares equal; the
+  field of another shape, because text of two widths orders wrongly and never compares equal; the
   sentence gives three ways out. `opens != ""` on such a field is refused with the test that asks
   whether it was answered. A comparison through a list rule's own variable,
   `steps.all(s, s.at >= startedAt)`, is not seen: give the fields compared there one precision, or

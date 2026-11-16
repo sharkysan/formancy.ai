@@ -1,4 +1,4 @@
-import { modelDataFields } from '@formancy/spec'
+import { modelDataFields, temporalExample } from '@formancy/spec'
 import type { FieldDef, FormModel, FormSchema } from '@formancy/spec'
 import { modelViolations } from './model-validators.js'
 import type { Path } from './path.js'
@@ -102,11 +102,24 @@ export function refusedDefault(model: FormModel, computed: ReadonlySet<string>):
     if (codes.length > 0) {
       return (
         `The default of "${path}", ${JSON.stringify(def.default)}, is not an answer the field accepts (${codes.join(', ')}). ` +
-        'A default is submitted unless somebody changes it, so it must pass every check the field makes of an answer.'
+        'A default is submitted unless somebody changes it, so it must pass every check the field makes of an answer.' +
+        (codes.includes('shape') ? writtenAt(def) : '')
       )
     }
   }
   return undefined
+}
+
+/*
+ * How an answer to a time or an instant with a precision is written, as the validator and the
+ * publish say it for a bound and a literal (0237): `shape` alone leaves the width to be found out.
+ * On an instant `shape` is also a day the calendar does not have, so the day is asked for too. A
+ * field without a precision is 0.13.0's, its refusal with it.
+ */
+function writtenAt(def: FieldDef): string {
+  if ((def.type !== 'time' && def.type !== 'datetime') || def.precision === undefined) return ''
+  const day = def.type === 'datetime' ? ', on a day the calendar has' : ''
+  return ` An answer to it is written like ${JSON.stringify(temporalExample(def.type, def.precision))}${day}.`
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

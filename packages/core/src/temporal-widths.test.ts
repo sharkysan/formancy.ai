@@ -98,6 +98,12 @@ describe('two temporal fields compared', () => {
     expect(crossWidthComparisons(trip([visible('leave < coarse')]))).toHaveLength(1)
   })
 
+  test('is not reported through `timestamp()`, the way out the refusal itself offers', () => {
+    // A control, and a claim the guides make: refusing the remedy would leave an author comparing
+    // two precisions no rule that publishes.
+    expect(crossWidthComparisons(trip([visible('timestamp(fine) < timestamp(finer)')]))).toEqual([])
+  })
+
   test('is reported where only one field declares precision', () => {
     // A field without it is version 5's shape, which is a different width to any declared one.
     expect(crossWidthComparisons(trip([visible('plain < fine')]))).toHaveLength(1)

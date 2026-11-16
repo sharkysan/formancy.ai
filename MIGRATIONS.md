@@ -38,9 +38,10 @@ readers before the documents.
 its `earliest`, `latest` and `default`, and the literals in rules that compare it, as
 `opens > "09:00:00.000"` rather than `"09:00"`, and every field it is compared with at the same
 precision. The validator refuses a bound at another width, the engine a default, and a publish a
-rule, each naming what to write; a rule comparing through a list rule's own variable,
-`steps.all(s, s.at >= startedAt)`, is the one it does not see. On a date and time, the field then
-also refuses an answer on a day the calendar does not have, which it accepted before.
+rule, each naming how an answer at the width is written; a rule comparing through a list rule's
+own variable, `steps.all(s, s.at >= startedAt)`, is the one it does not see. On a date and time,
+the field then also refuses an answer on a day the calendar does not have, which it accepted
+before.
 
 ## Spec version 5 is FROZEN
 

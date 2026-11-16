@@ -190,6 +190,16 @@ describe('a default the field would refuse', () => {
     expect(refusal).toContain('computed')
   })
 
+  // `shape` alone sends the author to find out what a time at precision 3 looks like; the
+  // validator and the publish both name it, and a refusal that does not is the odd one out.
+  test('of the wrong shape on a time or an instant says how an answer there is written', () => {
+    expect(engineRefusal(withField({ type: 'time', precision: 3, default: '10:00' }))).toContain('"09:30:00.000"')
+    // On an instant with a precision, `shape` is also 30 February, so the day is asked for too.
+    const day = engineRefusal(withField({ type: 'datetime', precision: 0, default: '2026-02-30T10:00:00Z' }))
+    expect(day).toContain('"2026-10-08T09:30:00Z"')
+    expect(day).toContain('a day the calendar has')
+  })
+
   // The other half of the width check: a default at the declared width is the field's value, not a refusal.
   test('of the field’s precision is its value', () => {
     const schema = { ...withField({ type: 'datetime', precision: 3, default: '2026-10-27T10:00:00.000Z' }), specVersion: '6' } as FormSchema
