@@ -23,7 +23,7 @@ export const SCHEMA_ERRORS = {
   'grid.columnTwice': 'Two columns both show "{field}". One answer cannot fill two columns.',
   'bounds.crossed': 'The earliest allowed value "{earliest}" is after the latest allowed "{latest}", so no answer could be accepted. Swap them, or remove one.',
   'bounds.width':
-    'This bound is not written the way this field\'s answers are, and a bound is compared with an answer as text, so it would order wrongly. Write it in the same form, like "{expected}", with the same number of digits after the seconds.',
+    'This bound is not written the way this field\'s answers are, and a bound is compared with an answer as text, so it would order wrongly. Write it exactly as an answer is written, like "{expected}".',
   'bounds.noSuchDay':
     '"{bound}" falls on a day the calendar does not have. A field with a precision refuses such a day as an answer, so a bound written on one is no answer it could have. Write a day that exists.',
   'key.taken': 'Another field already uses the key "{key}". A key identifies one answer, so two fields cannot share one.',

@@ -53,6 +53,7 @@ export const FORM_WORDS_FR = {
   'error.url': 'Saisissez une adresse web commençant par https:// ou http://.',
   'error.uuid': 'Saisissez un identifiant de 32 chiffres hexadécimaux en cinq groupes.',
   'error.shape': 'Saisissez la réponse sous la forme {format}.',
+  'error.shape.day': 'Saisissez la réponse sous la forme {format}, à une date qui existe.',
   'error.earliest': 'Au plus tôt : {earliest}.',
   'error.latest': 'Au plus tard : {latest}.',
   'error.minItems.choices': { one: 'Choisissez-en au moins {count}.', other: 'Choisissez-en au moins {count}.' },

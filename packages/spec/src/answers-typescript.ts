@@ -1,6 +1,7 @@
 import { ANSWER_KINDS } from './answers.js'
 import { schemaHash } from './hash.js'
 import { resolveText } from './presentation.js'
+import { temporalExample } from './temporal.js'
 import { ROW_ID } from './types.js'
 import type { FieldDef, FieldOption, FormSchema, TemporalFieldType } from './types.js'
 
@@ -65,11 +66,22 @@ export function answersTypeName(formId: string): string {
 
 const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/
 
-/** The form each temporal answer takes, said where a reader of the type will look. */
+/** The form each temporal answer takes on a field without a precision, said where a reader of the type will look. */
 const TEMPORAL_FORMS: Record<TemporalFieldType, string> = {
   date: '`YYYY-MM-DD`',
   time: '`HH:MM`, a wall clock with no zone',
   datetime: '`YYYY-MM-DDTHH:MM:SSZ`, an instant in UTC',
+}
+
+/**
+ * The form a temporal field's answer takes. With a precision (0237) it is given by an answer at
+ * the field's width, since letters cannot say how many digits follow the seconds.
+ */
+function temporalForm(field: FieldDef): string | undefined {
+  if (field.type === 'date') return TEMPORAL_FORMS.date
+  if (field.type !== 'time' && field.type !== 'datetime') return undefined
+  if (field.precision === undefined) return TEMPORAL_FORMS[field.type]
+  return `like \`${temporalExample(field.type, field.precision)}\`, ${field.type === 'time' ? 'a wall clock with no zone' : 'an instant in UTC'}`
 }
 
 class Printer {
@@ -137,7 +149,7 @@ class Printer {
   /** The field's label, in the form's default language, and a temporal answer's form. */
   private describe(field: FieldDef, indent: string): string[] {
     const label = resolveText(this.schema, field.label, this.schema.i18n?.defaultLocale ?? '')
-    const temporal = TEMPORAL_FORMS[field.type as TemporalFieldType] as string | undefined
+    const temporal = temporalForm(field)
     const text = [label, temporal].filter((part) => part !== undefined && part !== '').join(': ')
     if (text === '') return []
     return [`${indent}/** ${text.replaceAll('*/', '*\\/').replace(/\s+/g, ' ')} */`]

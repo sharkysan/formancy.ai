@@ -1,7 +1,7 @@
 import { formatPath } from '@formancy/core'
 import type { BuiltInErrorCode } from '@formancy/core'
 import type { Scenario } from '@formancy/core/authoring'
-import { DECLINE_KEY, LIST_VALUED_FIELD_TYPES, resolveText } from '@formancy/spec'
+import { DECLINE_KEY, LIST_VALUED_FIELD_TYPES, resolveText, temporalExample } from '@formancy/spec'
 import type { FieldDef, FieldType, FormSchema, Text } from '@formancy/spec'
 import type { DraftProblem, UnusableDraft } from './scenario-drafts.js'
 
@@ -109,8 +109,9 @@ export const EXAMPLE_SCENARIO: Scenario = {
 /**
  * What an answer of each kind looks like as JSON, where the type's name does not say.
  *
- * The temporal ones are the spec's one shape for each type; `scenario-prompt.test.ts`
- * runs them through the engine as answers, so a shape that changed fails there.
+ * The temporal ones are each type's shape on a field without a precision; `scenario-prompt.test.ts`
+ * runs them through the engine as answers, so a shape that changed fails there. A field with
+ * a precision has a width of its own, and the list of fields says it beside the field (0237).
  */
 export const ANSWER_EXAMPLES: Partial<Record<FieldType, unknown>> = {
   number: 42,
@@ -273,6 +274,9 @@ function inventory(document: FormSchema): string {
       parts.push('its options come from a list this request does not show')
     } else if (LIST_VALUED.has(field.type)) {
       parts.push('a list')
+    } else if ((field.type === 'time' || field.type === 'datetime') && field.precision !== undefined) {
+      // The answers by type are version 5's shapes; a field with a precision has its own width (0237).
+      parts.push(`an answer like ${JSON.stringify(temporalExample(field.type, field.precision))}`)
     }
     return parts.join(', ')
   }

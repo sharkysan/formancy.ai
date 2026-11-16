@@ -1,5 +1,5 @@
 import { comparedLiterals, parse } from '@formancy/expressions'
-import { TEMPORAL_FIELD_TYPES, TEMPORAL_SHAPES, modelDataFields } from '@formancy/spec'
+import { TEMPORAL_FIELD_TYPES, TEMPORAL_SHAPES, modelDataFields, temporalExample } from '@formancy/spec'
 import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@formancy/spec'
 import { inModel, rowScopeOf } from './unknown-paths.js'
 
@@ -45,11 +45,15 @@ const SHAPES: Readonly<Record<TemporalFieldType, RegExp>> = {
   datetime: new RegExp(TEMPORAL_SHAPES.datetime),
 }
 
-/** Each type's answers, as a sentence says them, with an example in the shape. */
+/**
+ * Each type's answers, as a sentence says them, with an example in the shape: version 5's, since a
+ * field with a precision never reaches this. The example is `temporalExample`'s, the one every
+ * sentence about a temporal answer gives, rather than a copy of it.
+ */
 const WRITTEN: Readonly<Record<TemporalFieldType, string>> = {
-  date: 'a date, whose answers are written "YYYY-MM-DD", like "2026-10-08"',
-  time: 'a time of day, whose answers are written "HH:MM" on a 24-hour clock, like "09:30"',
-  datetime: 'a date and time, whose answers are written "YYYY-MM-DDTHH:MM:SSZ" in UTC, like "2026-10-08T08:30:00Z"',
+  date: `a date, whose answers are written "YYYY-MM-DD", like "${temporalExample('date')}"`,
+  time: `a time of day, whose answers are written "HH:MM" on a 24-hour clock, like "${temporalExample('time')}"`,
+  datetime: `a date and time, whose answers are written "YYYY-MM-DDTHH:MM:SSZ" in UTC, like "${temporalExample('datetime')}"`,
 }
 
 /** What to do about it. A date and time without its `Z` is most likely the editor's old literal. */

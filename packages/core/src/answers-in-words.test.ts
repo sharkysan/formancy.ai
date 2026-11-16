@@ -135,3 +135,42 @@ describe('a submission in words', () => {
     expect(said.map(({ said: words }) => words)).toEqual(['NaN', '{"amount":"1"}', '12'])
   })
 })
+
+/**
+ * A time and an instant said at their field's precision (0237).
+ *
+ * A field with a precision keeps seconds and the digits after them, and a reviewer reading it
+ * back to the minute, or through a `Date`, which keeps milliseconds, reads a moment the
+ * submission does not hold.
+ */
+describe('a temporal answer in words, at its field’s precision', () => {
+  const run = (type: 'time' | 'datetime', precision?: number): FormSchema => ({
+    specVersion: '6',
+    id: 'run',
+    title: 'Run',
+    model: { fields: [{ key: 'at', type, label: 'Started', ...(precision === undefined ? {} : { precision }) }] },
+  })
+  const said = (schema: FormSchema, at: string, locale = 'en'): string | undefined =>
+    answersInWords(schema, { at }, createFormText({ locale }), locale)[0]?.said
+
+  // A field without a precision is 0.13.0's in every respect, and its words said minutes.
+  test('an instant on a field without a precision is said to the minute, in UTC, as before', () => {
+    expect(said(run('datetime'), '2026-10-08T10:34:56Z')).toBe('8 October 2026 at 10:34 UTC')
+  })
+
+  // A test run timed to the second, read back to the minute, loses what it was declared to keep.
+  test('an instant at precision 0 is said to the second', () => {
+    expect(said(run('datetime', 0), '2026-10-08T10:34:56Z')).toBe('8 October 2026 at 10:34:56 UTC')
+  })
+
+  // Through `Date`, .789012 would be said as .789: a reading the device never gave.
+  test('an instant with a fraction is said with every digit it holds, as the language writes a fraction', () => {
+    expect(said(run('datetime', 6), '2026-10-08T10:34:56.789012Z')).toBe('8 October 2026 at 10:34:56.789012 UTC')
+    expect(said(run('datetime', 6), '2026-10-08T10:34:56.789012Z', 'de')).toBe('8. Oktober 2026 um 10:34:56,789012 UTC')
+  })
+
+  // A wall clock reads the same everywhere, so a time is said as stored, every digit with it.
+  test('a time with a precision is said as stored', () => {
+    expect(said(run('time', 7), '08:03:27.1234567')).toBe('08:03:27.1234567')
+  })
+})

@@ -104,6 +104,37 @@ describe('the canonical shapes', () => {
     }
   })
 
+  test("the schema's bound descriptions write each example at the precision they name", () => {
+    // A bound is written at its field's width, or the document is refused (`bounds.width`), and
+    // the description is where an author and the builder's property panel learn the width. Its
+    // examples are prose, so they are read back and held to the shape function: "09:30" alone,
+    // as each description said, is the one width a field with a precision refuses.
+    type Branch = { if?: { properties?: { type?: { const?: string } } }; then?: { properties?: Record<string, { description?: string }> } }
+    const named: string[] = []
+    for (const branch of (schema.$defs.field as unknown as { allOf: Branch[] }).allOf) {
+      const type = branch.if?.properties?.type?.const
+      if (type !== 'time' && type !== 'datetime') continue
+      for (const bound of ['earliest', 'latest']) {
+        const description = branch.then?.properties?.[bound]?.description ?? ''
+        const examples = [...description.matchAll(/(\S+?) (without a precision(?: or at precision (\d))?|at precision (\d))/g)]
+        const precisions = examples.flatMap(([, example, phrase, orAt, at]) => {
+          const levels = phrase!.startsWith('without') ? [undefined, ...(orAt === undefined ? [] : [Number(orAt)])] : [Number(at)]
+          return levels.map((precision) => ({ example: example!, precision }))
+        })
+        for (const { example, precision } of precisions) {
+          expect(new RegExp(temporalShape(type, precision)).test(example), `${type} ${bound}: ${example} at ${String(precision)}`).toBe(true)
+        }
+        // Both kinds named, or a description could keep its version-5 example alone and pass.
+        expect(
+          precisions.some(({ precision }) => precision === undefined) && precisions.some(({ precision }) => (precision ?? 0) > 0),
+          `${type} ${bound}`,
+        ).toBe(true)
+        named.push(`${type} ${bound}`)
+      }
+    }
+    expect(named).toHaveLength(4)
+  })
+
   test.each([
     ['time', '09:30', true],
     ['time', '23:59', true],

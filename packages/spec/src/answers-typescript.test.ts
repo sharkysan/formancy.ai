@@ -102,6 +102,14 @@ describe('each shape', () => {
     expect(typeOf({ key: 'a', type: 'datetime' })).toBe('/** `YYYY-MM-DDTHH:MM:SSZ`, an instant in UTC */\n  a?: string | null')
   })
 
+  // A reader of the type parses what it says. `HH:MM` over a time stored to the millisecond
+  // has every answer fail that parse, and `…SSZ` over an instant to the microsecond drops six digits.
+  test('a temporal answer with a precision says its form at that width', () => {
+    expect(typeOf({ key: 'a', type: 'time', precision: 3 })).toBe('/** like `09:30:00.000`, a wall clock with no zone */\n  a?: string | null')
+    expect(typeOf({ key: 'a', type: 'time', precision: 0 })).toBe('/** like `09:30:00`, a wall clock with no zone */\n  a?: string | null')
+    expect(typeOf({ key: 'a', type: 'datetime', precision: 6 })).toBe('/** like `2026-10-08T09:30:00.000000Z`, an instant in UTC */\n  a?: string | null')
+  })
+
   test('a matrix maps each of its rows to an offered value', () => {
     expect(
       typeOf({

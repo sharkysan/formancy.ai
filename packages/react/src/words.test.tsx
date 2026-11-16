@@ -377,6 +377,12 @@ describe('every error in a German form', () => {
     'error.url': { field: { type: 'text', format: 'url' }, value: 'x' },
     'error.uuid': { field: { type: 'text', format: 'uuid' }, value: 'x' },
     'error.shape': { field: { type: 'date' }, value: '2026-1-1', values: { format: 'YYYY-MM-DD' } },
+    // An instant on a field with a precision refuses 30 February as `shape` too, and says so.
+    'error.shape.day': {
+      field: { type: 'datetime', precision: 3 },
+      value: '2026-02-30T09:30:00.000Z',
+      values: { format: '2026-10-08T09:30:00.000Z' },
+    },
     'error.earliest': { field: { type: 'date', earliest: '2027-05-03' }, value: '2027-01-01', values: { earliest: '3. Mai 2027' } },
     'error.latest': { field: { type: 'date', latest: '2027-05-03' }, value: '2027-06-01', values: { latest: '3. Mai 2027' } },
     'error.minItems.choices': { field: { type: 'selectboxes', options, minItems: 2 }, value: ['a'], values: { count: 2 } },
