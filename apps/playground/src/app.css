@@ -1053,6 +1053,15 @@ formancy-playground-suggestions {
     backdrop-filter: blur(16px);
   }
 
+  /* The band the switch sticks over is not the window's to scroll things into. Without this a
+     box given the keyboard by Tab while its top lay under the switch stayed there, hidden whole,
+     and a list scrolled into view kept its first rows under the buttons. The switch's height,
+     its button, padding and border, and the gap it keeps below itself:
+     `pane-switch-browser-test.mjs` fails if the switch outgrows it. */
+  html {
+    scroll-padding-top: calc(2.5rem + 2 * 0.3125rem + 2px + 0.75rem);
+  }
+
   .show button {
     flex: 1;
     min-height: 2.5rem;
