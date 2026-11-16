@@ -77,8 +77,8 @@
     precision*: *digits typed are written as the instant at the field width* types into the
     editor, adds the rule and asserts that `crossWidthComparisons`, publish's own check, finds
     nothing in the document, which failed with the editor writing the instant to the second, at
-    version 5's width. `canPublish` is the validator's verdict, which reads no rule, so it is not
-    asked;
+    version 5's width. `canPublish` is the validator's verdict, which reads no rule's condition, so
+    it is not asked;
     a paste and a drop of an instant in the hour the clocks repeat are kept as they were, which
     failed, reading the later 01:30Z as 00:30Z, while a row held the typed digits. A dropped
     instant failed with the shared control's drop handling removed.
@@ -264,10 +264,10 @@ line.
   `precision` from the first change, read from the schema; their condition editors, in this one,
   type a literal on such a field into the renderers' own control, exported from `@formancy/react`
   and `@formancy/angular` so that the author and the respondent type through one implementation,
-  and write the stored answer it reports as the literal, so the rule they write is not a
-  comparison across widths. The session's `canPublish` cannot say so, being the validator's
-  verdict, which reads no rule; publish's `crossWidthComparisons` is the check. Before that change
-  a rule they wrote on a time with a precision, or on an instant with one above 0, was refused at
+  and write the stored answer it reports as the literal, so the rule they write is not a comparison
+  across widths. The session's `canPublish` cannot say so, being the validator's verdict, which
+  reads no rule's condition; publish's `crossWidthComparisons` is the check. Before that change a
+  rule they wrote on a time with a precision, or on an instant with one above 0, was refused at
   publish, loudly, rather than published wrong.
 - **Changing a field's precision in a builder rewrites what is written at its width, or refuses.**
   The field's `earliest`, `latest` and `default`, the text of every literal a rule compares it with
@@ -277,23 +277,24 @@ line.
   they are zero. Otherwise the change is refused and the document is left as it was, because a
   session never holds a document the validator rejects and the builder never guesses a value: a
   bound that cannot follow is refused in the validator's own sentence, `bounds.width`; a default,
-  which the validator does not hold to a width, in a sentence of the builder's naming it and
-  pointed at it, since left behind it was accepted and the form then refused to open; and a rule
-  literal in a sentence naming the rule, pointed at that rule, which the validator does not have,
-  since it reads no rules. It costs a step for the author who narrows a precision on a field whose
-  bound or default has a fraction: that is changed first. A literal that was not at the old width
-  is left, as it was a misshapen literal before. A comparison through a list rule's own variable is
-  not seen here, as it is not seen at publish, so it stays at the old width. Saved examples (0166)
-  are not rewritten; one that stops holding is named by publish's example warnings, as today. A
-  field inside a page is found by its data path, which has no page in it. **Two temporal fields
-  compared with each other** are refused, not rewritten: no edit to one changes the other, so a
-  change that would split a pair written in one shape is refused naming the other field, and the
-  author removes the rule, changes both and writes it again; a pair already split, or one that
-  stays alike (a date and time between 0 and none), is not refused. **Changing between two
-  precisions is one step**, by typing over the number: the panel reads a cleared box as removing
-  the precision, which is exact when nothing written at the field's width has digits the removal
-  would drop (a time's seconds and fraction, a date and time's fraction), and otherwise refused,
-  leaving the old precision in place.
+  which the validator does not hold to a width, in a sentence of the builder's naming it and pointed
+  at it, since left behind it was accepted and the form then refused to open; and a rule literal in
+  a sentence naming the rule, pointed at that rule, which the validator does not have, since it
+  reads no rule's condition. It costs a step for the author who narrows a precision on a field whose
+  bound or default has a fraction: that is changed first. When a default and a bound both cannot
+  follow, the default is refused first, and the bound on the next attempt. A literal that was not at
+  the old width is left, as it was a misshapen literal before. A comparison through a list rule's
+  own variable is not seen here, as it is not seen at publish, so it stays at the old width. Saved
+  examples (0166) are not rewritten; one that stops holding is named by publish's example warnings,
+  as today. A field inside a page is found by its data path, which has no page in it. **Two temporal
+  fields compared with each other** are refused, not rewritten: no edit to one changes the other, so
+  a change that would split a pair written in one shape is refused naming the other field, and the
+  author removes the rule, changes both and writes it again; a pair already split, or one that stays
+  alike (a date and time between 0 and none), is not refused. **Changing between two precisions is
+  one step**, by typing over the number: the panel reads a cleared box as removing the precision,
+  which is exact when nothing written at the field's width has digits the removal would drop (a
+  time's seconds and fraction, a date and time's fraction), and otherwise refused, leaving the old
+  precision in place.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.

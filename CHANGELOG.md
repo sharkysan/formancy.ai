@@ -80,9 +80,9 @@ control is still the browser's, to the minute
   `08:00:00.250` at precision 3 cannot become precision 0 without moving by a quarter of a second,
   so the change is refused, and the document is left as it was: a bound in the validator's own
   sentence, and a default and a rule literal each in a sentence of the builder's naming it, pointed
-  at that default or that rule, since the validator holds no default to a width and reads no rule.
-  A default left behind used to be accepted, and the form then refused to open. A field inside a
-  page is carried like any other. A rule comparing two such fields with each other,
+  at that default or that rule, since the validator holds no default to a width and reads no rule's
+  condition. A default left behind used to be accepted, and the form then refused to open. A field
+  inside a page is carried like any other. A rule comparing two such fields with each other,
   `opens < closes`, is right only while both have one shape and no edit to one field changes the
   other, so a change that would split a pair that is alike is refused, naming the other field; the
   author removes the rule, changes both and writes it again. To go from one precision to another,

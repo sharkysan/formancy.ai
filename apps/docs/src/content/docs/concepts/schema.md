@@ -199,14 +199,16 @@ with, come along: each is written at the new width when that names the same mome
 zeros, `08:00:00` becoming `08:00:00.000`; narrowing takes off only zeros; and a time that loses its
 precision becomes `HH:MM` when its seconds are zero, since `HH:MM` has always meant seconds 00. A
 value that would move is not guessed at. `08:00:00.250` cannot become precision 0, so the change is
-refused and the form is left as it was, with a sentence naming the bound, the default or the rule
-that holds it, for you to change first. A rule comparing two such fields with each other,
-`opens < closes`, is right only while both have one shape, so a change that would give them two is
-refused, naming the other field: remove the rule, change both fields, and write the rule again. To
-go from one precision to another, type over the number; clearing the box first removes the
-precision, which is refused if anything written at the field's width has digits that would be
-dropped. A comparison through a list rule's own variable, and the form's saved examples, are not
-rewritten.
+refused and the form is left as it was, for you to change what holds it first: a bound with the
+sentence any misshapen bound gets, shown at that bound and asking for it written like an answer at
+the new width; a default with a sentence naming the field and its default; and a text a rule
+compares the field with, with a sentence naming the rule and the text. A rule comparing two such
+fields with each other, `opens < closes`, is right only while both have one shape, so a change that
+would give them two is refused, naming the other field: remove the rule, change both fields, and
+write the rule again. To go from one precision to another, type over the number; clearing the box
+first removes the precision, which is refused if anything written at the field's width has digits
+that would be dropped. A comparison through a list rule's own variable, and the form's saved
+examples, are not rewritten.
 
 ## Formatted text is not HTML
 

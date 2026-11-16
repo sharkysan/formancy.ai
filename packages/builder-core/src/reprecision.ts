@@ -40,9 +40,9 @@ import type { Refusal } from './session.js'
  *
  * **Refused with the validator's words where it has them.** A bound that cannot follow is left at
  * its width, so the validator that has to accept the document refuses it, in the sentence it
- * always uses (`bounds.width`). It holds no default to a width and reads no rule, so a default and
- * a rule that cannot follow are refused by the builder, in sentences of its own: a default left
- * behind was committed, and the form then refused to open.
+ * always uses (`bounds.width`). It holds no default to a width and reads no rule's condition, so a
+ * default and a rule that cannot follow are refused by the builder, in sentences of its own: a
+ * default left behind was committed, and the form then refused to open.
  */
 type Precision = number | undefined
 
