@@ -39,10 +39,12 @@
     compiled. `packages/server-core/src/use-cases.test.ts`, *refuses a rule comparing a temporal
     answer across widths, and persists nothing*; `packages/mcp/src/tools.test.ts` and
     `packages/builder-core/src/authoring.test.ts` report it as publish refuses it.
-  `packages/core/src/default.test.ts`, *of the wrong shape on a time or an instant says how an
-  answer there is written*, failed before the refusal named the width.
-  `packages/expressions/src/evaluate.test.ts`, *compares timestamps to the millisecond, as the
-  documents say*: a cel-js release that compared finer would fail it.
+  - `packages/core/src/default.test.ts`, *of the wrong shape on a time or an instant says how an
+    answer there is written*: it failed before the refusal named the width, and a field without a
+    precision keeps 0.13.0's sentence.
+  - `packages/expressions/src/evaluate.test.ts`, *compares timestamps to the millisecond, cutting
+    the rest, as the documents say*: a cel-js release that compared finer, or rounded, would fail
+    it.
   - `packages/spec/src/temporal-entry.test.ts`: the mask, the conversion between a local wall
     clock and the stored instant with the fraction copied digit for digit, an incomplete entry held
     as typed, the night the clocks go back, a year before 100, and `pasteOutcome` against each

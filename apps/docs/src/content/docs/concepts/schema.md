@@ -149,7 +149,9 @@ reading from a device's log — a field declares `precision`: how many digits fo
 
 Every answer to the field has that one width, every digit always written, so two answers compare
 as text in the order they happened. On a `datetime`, `0` stores whole seconds, as no precision
-does; what changes is the control, and the checks a field with a precision makes, below.
+does; what changes is the control, the checks a field with a precision makes, below, and how an
+answer is said: its error, which gives an answer at the width and asks for a day that exists; its
+read-back, to the second rather than the minute; and the type `formancy types` prints for it.
 
 **The control is typed.** A field with a precision is a text box in its own shape — `__:__:__.___`
 for a time to the millisecond — showing and taking every declared digit. A date and time is typed on the person's own clock,
@@ -175,10 +177,11 @@ or the document is refused. A `default` of another width keeps the form from ope
 date and time is written padded to the width, and not at all when a digit other than zero would
 fall beyond it: never rounded.
 
-**In a rule**, compare it with a literal at its width, or with a field whose answers have the same
-shape — the same precision, or, for a `datetime` at precision 0, one without a precision. A publish
-refuses a comparison with any other literal, or with a temporal field of another shape, and says
-how to write it; one through `timestamp()` it leaves alone, and that compares to the millisecond.
+**In a rule**, compare it with text at its width, or with a field whose answers have the same
+shape: a field of the same type and precision, or, for a `datetime` at precision 0, one without a
+precision. A `time` and a `datetime` of one precision are two shapes. A publish refuses a
+comparison with any other text, or with a temporal field of another shape, and says what to do;
+one through `timestamp()` it leaves alone, and that compares to the millisecond.
 One comparison it cannot see is through a list rule's own variable —
 [Logic](/docs/concepts/logic/#a-time-or-an-instant-with-a-precision) says which, and what to do.
 

@@ -198,6 +198,8 @@ describe('a default the field would refuse', () => {
     const day = engineRefusal(withField({ type: 'datetime', precision: 0, default: '2026-02-30T10:00:00Z' }))
     expect(day).toContain('"2026-10-08T09:30:00Z"')
     expect(day).toContain('a day the calendar has')
+    // A field without a precision is 0.13.0's, and its refusal says what it said.
+    expect(engineRefusal(withField({ type: 'date', default: '27.10.2026' }))).not.toContain('written like')
   })
 
   // The other half of the width check: a default at the declared width is the field's value, not a refusal.

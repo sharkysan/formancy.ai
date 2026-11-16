@@ -621,7 +621,8 @@ observed failing before its change.
   in `@marcbachmann/cel-js` 8.0.0 it cuts every digit after the third:
   `timestamp(a) < timestamp(b)` is `false` for two instants a microsecond apart, measured on
   2026-11-16 ([`SOUP-DECLARATION.md`](SOUP-DECLARATION.md)), and pinned by *compares timestamps to
-  the millisecond, as the documents say* in `packages/expressions/src/evaluate.test.ts`. A rule
+  the millisecond, cutting the rest, as the documents say* in
+  `packages/expressions/src/evaluate.test.ts`. A rule
   using it cannot tell apart two answers closer than that.
 - **Only a literal or a field compared directly is seen.** A literal built by a function, passed
   through `timestamp()`, held in a list for `in`, or compared through a computed index is not.

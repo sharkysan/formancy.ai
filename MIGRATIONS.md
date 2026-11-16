@@ -37,9 +37,12 @@ readers before the documents.
 **Giving an existing field a precision** means writing what compares with it at the new width:
 its `earliest`, `latest` and `default`, and the literals in rules that compare it, as
 `opens > "09:00:00.000"` rather than `"09:00"`, and every field it is compared with at the same
-precision. The validator refuses a bound at another width, the engine a default, and a publish a
-rule, each naming how an answer at the width is written; a rule comparing through a list rule's
-own variable, `steps.all(s, s.at >= startedAt)`, is the one it does not see. On a date and time,
+precision. The validator refuses a bound at another width and the engine a default, each naming
+how an answer at the width is written. A publish refuses a rule: one comparing text not at the
+width is told how the text is written there; one comparing two fields of different widths is told
+both widths and the three ways out; one comparing `""` is told the test that asks whether the field
+was answered. A rule comparing through a list rule's own variable,
+`steps.all(s, s.at >= startedAt)`, is the one it does not see. On a date and time,
 the field then also refuses an answer on a day the calendar does not have, which it accepted
 before.
 
