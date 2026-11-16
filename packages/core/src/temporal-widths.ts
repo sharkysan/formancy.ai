@@ -182,9 +182,10 @@ function fieldProblems(ast: ExpressionAst, rowScope: string | undefined, fields:
  *
  * - **Two dates and times:** one precision, or `timestamp()` on both.
  * - **Two times:** one precision. `timestamp()` errors on a time of day.
- * - **A date and a date and time:** the instant's own day, its first ten characters, is a date
- *   and compares as one. It is the day in UTC, which the sentence says, since that can be
- *   another than the respondent's.
+ * - **A date and a date and time:** nothing. The day an instant falls on depends on a zone,
+ *   which the rule does not have. The instant's first ten characters, offered once, are its
+ *   day in UTC, and an instant late at night in New York is the next day there, so a rule
+ *   copied from the sentence held on the wrong day for part of the world.
  * - **A time with either:** nothing. A time of day names no day and is the respondent's own
  *   clock, so no expression on the two compares what the rule means.
  */
@@ -198,11 +199,7 @@ function pairRemedy(compared: ComparedFields, a: TemporalField, b: TemporalField
   const both = `${kindOf(a)} and ${kindOf(b)}`
   const kinds = `${both.charAt(0).toUpperCase()}${both.slice(1)} are different kinds of answer, which compare as text only within one kind.`
   if (a.type === 'time' || b.type === 'time') return `${kinds} Compare each with a value of its own kind.`
-  const day = (read: string, field: TemporalField): string => (field.type === 'datetime' ? `${read}.substring(0, 10)` : read)
-  return (
-    `${kinds} To compare the day of the date and time, in UTC, with the date, write ` +
-    `\`${day(compared.left, a)} ${compared.operator} ${day(compared.right, b)}\`; in UTC it can be another day than the respondent’s own.`
-  )
+  return `${kinds} Which day an instant falls on depends on a time zone, so no expression means "the same day" without choosing one.`
 }
 
 /** A kind of answer, in a sentence. */

@@ -129,9 +129,12 @@ the schema's bound patterns and its bound descriptions' examples are held to the
   all apply it. **The sentence says what works for what is compared**, written on the rule's own
   reads where it is an expression: a literal at the field's width; one precision for two fields of
   one type; `timestamp()` only where both sides are a date and time, because on a time or a date it
-  is an error and a `visible` rule that errors shows its field; for a date against a date and time,
-  the instant's day in UTC, `endedAt.substring(0, 10)`; and for a time against either, nothing to
-  write, since a time of day names no day. An empty literal, `opens != ""`, is refused too, and the
+  is an error and a `visible` rule that errors shows its field; and for a date against a date and
+  time, or a time against either, nothing to write. Which day an instant falls on depends on a time
+  zone the rule does not have, and a time of day names no day. The instant's first ten characters,
+  offered for a date while this was built, are its day in UTC, and an instant late at night in New
+  York is the next day there: a rule copied from the sentence held on the wrong day for part of the
+  world, which is worse than no remedy. An empty literal, `opens != ""`, is refused too, and the
   sentence gives the test that asks whether the field was answered, on the read the rule wrote:
   `opens != null` at the top, `item.at != null` in a row, `has(stay.at)` in a group; for `==`, the
   opposite, since the answered test copied into it would turn the rule round. That corrects 0236,

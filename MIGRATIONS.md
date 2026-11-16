@@ -41,8 +41,8 @@ precision. The validator refuses a bound at another width and the engine a defau
 how an answer at the width is written. A publish refuses a rule: one comparing text not at the
 width is told how the text is written there; one comparing two fields of different widths is told
 both widths and what to write for those two kinds — one precision for two fields of one type,
-`timestamp()` too for two dates and times and nowhere else, the instant's day for a date against a
-date and time; one comparing `""` is told the test that asks whether the field was answered, or for
+`timestamp()` too for two dates and times and nowhere else, and for a date against a date and
+time nothing, since which day an instant falls on depends on a zone; one comparing `""` is told the test that asks whether the field was answered, or for
 `==`, whether it was not. A rule comparing through a list rule's own variable,
 `steps.all(s, s.at >= startedAt)`, is the one it does not see. On a date and time,
 the field then also refuses an answer on a day the calendar does not have, which it accepted

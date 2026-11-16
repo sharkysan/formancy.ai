@@ -370,8 +370,9 @@ compared:
 - **Two fields of one type:** give both one precision. For a date and time, comparing
   `timestamp(startedAt) < timestamp(endedAt)` works too.
 - **A date and a date and time:** different kinds of answer, which compare as text only within one
-  kind. The instant's day, `endedAt.substring(0, 10)`, is a date and compares with one; it is the
-  day in UTC, which can be another than the person's own.
+  kind. Which day an instant falls on depends on a time zone, so there is no expression to copy
+  that means "the same day" without choosing one, and the sentence offers none. The instant's first
+  ten characters are its day in UTC: an instant late at night in New York is the next day there.
 - **A time and either:** different kinds too, and there is nothing to write that compares them;
   compare each with a value of its own kind.
 

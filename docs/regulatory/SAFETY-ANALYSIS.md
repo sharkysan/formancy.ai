@@ -601,8 +601,11 @@ authoring loop report it as the publish refuses it
 ([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)). The sentence says what
 to write for what is compared, and offers `timestamp()` only between two dates and times: on a time
 or a date it is an error, and a `visible` rule that errors shows its field, so the advice would
-have published this hazard's own outcome. Every expression it offers is run on answers at the
-fields' widths by *each expression a refusal offers runs on answers at the fields' widths*, which
+have published this hazard's own outcome. For a date against a date and time it offers nothing:
+which day an instant falls on depends on a zone the rule does not have, and the instant's day in
+UTC, offered while this was built, held on the wrong day for part of the world. Every expression
+it offers is run on answers at the fields' widths by *each expression a refusal offers runs on
+answers at the fields' widths*, which
 failed on the old sentence's `timestamp(a) < timestamp(b)`, written on no field of the form; the
 cases for a time failed while a time was offered `timestamp()`. An empty literal, `opens != ""`,
 is refused with the test that asks whether the field was answered, and `opens == ""` with the one

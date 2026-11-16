@@ -49,8 +49,8 @@ control is still the browser's, to the minute
   sentence says what to write for what is compared: a literal at the field's width; one precision
   for two fields of one type; `timestamp()` only between two dates and times, since on a time or a
   date it is an error and a `visible` rule that errors shows its field; and for a date against a date
-  and time, the instant's day in UTC. `opens != ""` on such a field is refused with the test that
-  asks whether it was answered, and `opens == ""` with the one that asks whether it was not. A
+  and time nothing, since which day an instant falls on depends on a zone the rule does not have.
+  `opens != ""` on such a field is refused with the test that asks whether it was answered, and `opens == ""` with the one that asks whether it was not. A
   comparison through a list rule's own variable, `steps.all(s, s.at >= startedAt)`, is not seen:
   give the fields compared there one precision, or, for two dates and times, compare them with
   `timestamp()`, which compares to the millisecond and no finer.

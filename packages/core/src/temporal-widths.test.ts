@@ -135,21 +135,23 @@ describe('two temporal fields compared', () => {
     expect(found?.message).not.toContain('timestamp(')
   })
 
-  test.each([
-    ['leave < fine', 'leave < fine.substring(0, 10)'],
-    ['fine >= leave', 'fine.substring(0, 10) >= leave'],
-  ])('a date with a date and time is told they are different kinds, and how to compare the instant’s day: %s', (cel, written) => {
-    // Neither remedy for one kind works: a date has no precision to give, and `timestamp()`
-    // errors on it, so the rule would fail open. The instant's own day is a date, and compares
-    // as one, on whichever side the rule put it.
-    const [found] = crossWidthComparisons(trip([visible(cel)]))
+  test.each(['leave < fine', 'fine >= leave'])(
+    'a date with a date and time is told they are different kinds, and offered nothing that would choose a zone: %s',
+    (cel) => {
+      // Neither remedy for one kind works: a date has no precision to give, and `timestamp()`
+      // errors on it, so the rule would fail open. Nor does the instant's first ten characters,
+      // offered once: that is its day in UTC, and an instant late at night in New York is the
+      // next day there, so a copied rule held on the wrong day for part of the world.
+      const [found] = crossWidthComparisons(trip([visible(cel)]))
 
-    expect(found?.message).toContain('different kinds of answer')
-    expect(found?.message).toContain('UTC')
-    expect(found?.message).not.toContain('one precision')
-    expect(found?.message).not.toContain('timestamp(')
-    expect(offered(found?.message)).toEqual([written])
-  })
+      expect(found?.message).toContain('different kinds of answer')
+      expect(found?.message).toContain('zone')
+      expect(found?.message).not.toContain('one precision')
+      expect(found?.message).not.toContain('timestamp(')
+      expect(found?.message).not.toContain('substring')
+      expect(offered(found?.message)).toEqual([])
+    },
+  )
 
   test.each(['leave < coarse', 'opens < fine'])(
     'a time with a date, or with a date and time, is told they are different kinds, and offered nothing to write: %s',
@@ -168,7 +170,8 @@ describe('two temporal fields compared', () => {
 
   test('each expression a refusal offers runs on answers at the fields’ widths', () => {
     // An offered expression that errors is the defect this check exists to refuse, a rule
-    // that fails open, delivered by the check's own sentence.
+    // that fails open, delivered by the check's own sentence. The date pairs offer none, and
+    // stay here so that one offered again is run too.
     const schema = trip([visible('fine < finer'), visible('leave < fine'), visible('fine >= leave'), visible('item.at < finer', 'legs[].at')])
     const values = {
       fine: '2026-10-08T09:30:00.000Z',
@@ -178,7 +181,7 @@ describe('two temporal fields compared', () => {
     }
     const expressions = crossWidthComparisons(schema).flatMap(({ message }) => offered(message))
 
-    expect(expressions).toHaveLength(4)
+    expect(expressions).toEqual(['timestamp(fine) < timestamp(finer)', 'timestamp(item.at) < timestamp(finer)'])
     for (const expression of expressions) {
       const compiled = compile(expression, { kind: 'visible', variables: { fine: 'dyn', finer: 'dyn', leave: 'dyn', item: 'dyn' } })
       expect(compiled.ok, expression).toBe(true)
