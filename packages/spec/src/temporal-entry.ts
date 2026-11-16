@@ -6,10 +6,11 @@ import { TEMPORAL_PRECISION_MAX, fractionDigits, temporalDateExists, temporalSha
  * answer into, and the conversions between what that mask holds and what is stored.
  *
  * The control is the mask core's (0125), so the mask's answer is the digits alone and
- * `editMasked` decides where each one lands. Here, in the data contract, because five
- * things type into it and must agree — React's, Angular's and Material's controls and both
- * builders' condition editors — and two implementations would be two answers to one
- * keystroke ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
+ * `editMasked` decides where each one lands. Here, in the data contract, because more than
+ * one thing types into it and must agree — React's control and Angular's, which a Material
+ * form draws too (0132), and the builders' condition editors once they type a literal at a
+ * field's width — and two implementations would be two answers to one keystroke
+ * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
  *
  * - **A `time` is typed exactly as it is stored**, `HH:MM:SS` and the declared digits.
  * - **A `datetime` is typed on the person's own wall clock** as `YYYY-MM-DD HH:MM:SS` and the

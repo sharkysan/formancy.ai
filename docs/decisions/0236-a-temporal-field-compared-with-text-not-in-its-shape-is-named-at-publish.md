@@ -1,6 +1,7 @@
 # 0236 — A date or time compared with text not written as its answers are is named at publish, not refused
 
-- **Status:** accepted
+- **Status:** accepted; extended by [0237](0237-a-time-or-an-instant-declares-its-precision.md): on a field
+  that declares a `precision`, such a comparison refuses the publish
 - **Date:** 2026-11-15
 - **Deciders:** Daniel Bacher
 - **Extends:** [0235](0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md),

@@ -192,6 +192,20 @@ that type anywhere but where a member is selected from it
 would let a whole read through unrefused; `declared-members.test.ts` fails if one does, measured
 by spelling the prefix otherwise, which failed ten of its cases.
 
+**Its `timestamp()` compares to the millisecond.** Version 8.0.0 reads a timestamp given nine digits
+after its seconds, keeps three of them, and cuts the rest rather than rounding them: measured on
+2026-11-16, on Node 24.21.0, through the built `@formancy/expressions` of the source that follows
+`0.13.0` (its manifest still says `0.13.0`), by a throwaway probe. `string(timestamp(a))` is
+`…:56.789Z` for `…:56.789012345Z`, and for `…:56.7899Z` too. So `timestamp(a) < timestamp(b)` is
+`false` for `…:56.789012Z` and `…:56.789013Z`, a microsecond apart, and `timestamp(a) == timestamp(b)`
+is `true` for `…:56.7890121Z` and `…:56.789Z`; a millisecond apart, `…:56.788Z` before `…:56.789Z`,
+it is right. No answer `0.13.0` stores carries a fraction of a second, so none reaches the cut. From
+spec version 6, which is in no release, a `time` or `datetime` field may declare a `precision` of up
+to nine digits, and comparing through `timestamp()` is one of the ways out a publish offers for two
+fields of different widths: a rule doing so cannot tell apart two answers closer than a millisecond.
+Not worked around; named in hazard A12 of [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) and in
+[0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md).
+
 `recheck` decides whether a form's `pattern` may be published. It statically
 analyses each expression for catastrophic backtracking, which is the only
 moment that cost can be refused — a JavaScript regular expression cannot be

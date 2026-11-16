@@ -108,6 +108,7 @@ Each encodes semantics the engine and the renderers must implement, and
 | wizard with layout | a paged form drawn with a layout shows the page somebody is on, arranged as the layout says, and leaves out what the layout leaves out |
 | placed group | a group a layout places whole is drawn as its fields, on the page they are on — where both renderers threw |
 | masked answer | a mask fills every position, and the answer holds only what was typed |
+| temporal precision | a time or an instant with a `precision` keeps every digit it was given, byte for byte, stores typed digits at its width, and refuses an entry that stops short |
 | select boxes | several answers from one list, stored in the list's own order |
 | ranking | the order chosen is the answer, and an untouched ranking holds nothing |
 | matrix | a group per row of radios named by column, the answer per row, and a required one needs every row |

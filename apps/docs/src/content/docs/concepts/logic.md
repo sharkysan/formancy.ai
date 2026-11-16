@@ -356,6 +356,30 @@ A publish names each such rule in a warning, and any rule comparing a date or a 
 with text in another shape
 ([0236](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md)).
 
+### A time or an instant with a precision
+
+A field with a `precision` ([Schema](/docs/concepts/schema/#a-time-or-a-date-and-time-to-the-second-or-finer))
+has answers of one width, `"09:30:00.000"` at precision 3, and text of two widths does not order as
+time does: `"2026-10-08T10:34:56.000Z" < "2026-10-08T10:34:56Z"` is `true` for the same instant.
+So for such a field **a publish refuses** a rule comparing it with a literal not at its width, or
+with a temporal field of another shape, and says the three ways out: write the literal at the
+field's width, give both fields one precision, or compare `timestamp(a) < timestamp(b)`. A field
+without a precision is warned about instead, as above.
+
+`timestamp()` compares to the millisecond and no finer: it keeps three digits after the seconds
+and cuts the rest, so two answers a microsecond apart compare equal. Where the digits matter, give
+the fields one precision and compare them as they are.
+
+`opens != ""` on such a field is refused too, because an unanswered field holds null, never `""`:
+ask `opens != null`, or `item.at != null` in a row, or `has(stay.at)` inside a group.
+
+**One comparison is not seen: through a list rule's own variable.** In
+`steps.all(s, s.at >= startedAt)`, `s.at` is not a field to the check, so the rule publishes
+whatever the precisions of `steps[].at` and `startedAt` are, and if they differ it compares wrongly.
+Give the fields a list rule compares one precision, or compare them with `timestamp()`. The
+condition editor writes no list rule, so only one written by hand meets this
+([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-time-or-an-instant-declares-its-precision.md)).
+
 ## Nothing ambient
 
 `now()`, `today()` and `random()` do not read a clock — they read values the

@@ -173,7 +173,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0064](0064-an-object-store-behind-the-same-interface.md) | An object store behind the same interface, and our own signer | accepted |
 | [0065](0065-a-widget-is-authored-not-registered.md) | A widget is authored, not registered | accepted |
 | [0066](0066-a-widget-may-be-configured.md) | A widget may be configured, and `datagrid` stays one | accepted |
-| [0067](0067-a-temporal-answer-is-one-fixed-width-string.md) | A temporal answer is one fixed-width string | accepted |
+| [0067](0067-a-temporal-answer-is-one-fixed-width-string.md) | A temporal answer is one fixed-width string | accepted; its one width per type and its "never a fractional part", for a field that declares a `precision`, superseded in part by 0237 |
 | [0068](0068-a-row-keeps-its-own-state.md) | A row keeps its own state | accepted |
 | [0069](0069-contributions-under-a-cla.md) | Contributions under a CLA | accepted |
 | [0070](0070-a-code-is-an-arrangement-not-a-field.md) | A code is an arrangement, not a field | accepted |
@@ -336,4 +336,5 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0233](0233-a-host-may-add-content-under-a-field.md) | A host may add content of its own under a field, inside the field's wrapper | accepted |
 | [0234](0234-the-website-is-served-under-a-policy-for-each-section.md) | The website is served under a content security policy for each of its sections, which the build writes and the browser gate serves it under | accepted |
 | [0235](0235-a-date-and-time-in-a-condition-is-the-instant-its-author-chose.md) | A date and time in a condition is the instant its author chose, written as every answer is | accepted; extended by 0236 |
-| [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md) | A date or time compared with text not written as its answers are is named at publish, not refused | accepted |
+| [0236](0236-a-temporal-field-compared-with-text-not-in-its-shape-is-named-at-publish.md) | A date or time compared with text not written as its answers are is named at publish, not refused | accepted; extended by 0237, which refuses such a comparison on a field with a precision |
+| [0237](0237-a-time-or-an-instant-declares-its-precision.md) | A time or an instant declares its precision, and every answer to it has that width | accepted |
