@@ -162,12 +162,13 @@ zeros. A field without a precision keeps the browser's control, to the minute; A
 draws a time with a precision with the default control, as it draws a masked text. The typed
 control has no clock picker, and its shape is fixed rather than the person's locale.
 
-**A paste.** A whole time, or a whole instant with `Z` or an offset (`+01:00`, `+0100`, `+01`)
-and a `T` or a space, pasted anywhere in the box is the answer, at any width; an instant is stored
+**A paste, or a drop.** A whole time, or a whole instant with `Z` or an offset (`+01:00`,
+`+0100`, `+01`) and a `T` or a space, pasted anywhere in the box is the answer, at any width; an instant is stored
 in UTC. One at another width is brought to the field's where that is exact — zeros added, or only
 zeros taken off — and otherwise kept as it was, which the field refuses as `shape`. Digits that fit, or text with each
 separator where the box writes it, are typed as the keys would be. Anything else, and a paste of
-nothing, changes nothing.
+nothing, changes nothing. Text dragged and dropped into the box is read the same way, as if pasted
+over everything in it, wherever it was dropped.
 
 **What is checked.** The answer, at the field's width, in the browser and again on the server. On
 a date and time with a precision, a day the calendar does not have — 30 February, month 13 — is
@@ -175,13 +176,16 @@ refused as `shape` too; a field without a precision accepts it, as version 5 alw
 written at the field's width, `"08:00:00"` above rather than `"08:00"`, and on a day that exists,
 or the document is refused. A `default` of another width keeps the form from opening. A computed
 date and time is written padded to the width, and not at all when a digit other than zero would
-fall beyond it: never rounded.
+fall beyond it: never rounded. A rule computes to the millisecond, so above precision 3 the digits
+past it are zeros added, not measured: one second after `…:56.789012Z` is stored `…:57.789000Z`.
 
 **In a rule**, compare it with text at its width, or with a field whose answers have the same
 shape: a field of the same type and precision, or, for a `datetime` at precision 0, one without a
 precision. A `time` and a `datetime` of one precision are two shapes. A publish refuses a
 comparison with any other text, or with a temporal field of another shape, and says what to do;
-one through `timestamp()` it leaves alone, and that compares to the millisecond.
+one through `timestamp()` it leaves alone, and that compares to the millisecond. `timestamp()`
+takes a date and time only: on a time or a date it is an error, and a `visible` rule that errors
+shows its field.
 One comparison it cannot see is through a list rule's own variable —
 [Logic](/docs/concepts/logic/#a-time-or-an-instant-with-a-precision) says which, and what to do.
 

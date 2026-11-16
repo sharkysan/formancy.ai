@@ -40,18 +40,19 @@ its `earliest`, `latest` and `default`, and the literals in rules that compare i
 precision. The validator refuses a bound at another width and the engine a default, each naming
 how an answer at the width is written. A publish refuses a rule: one comparing text not at the
 width is told how the text is written there; one comparing two fields of different widths is told
-both widths and the three ways out; one comparing `""` is told the test that asks whether the field
-was answered. A rule comparing through a list rule's own variable,
+both widths and what to write for those two kinds — one precision for two fields of one type,
+`timestamp()` too for two dates and times and nowhere else, the instant's day for a date against a
+date and time; one comparing `""` is told the test that asks whether the field was answered, or for
+`==`, whether it was not. A rule comparing through a list rule's own variable,
 `steps.all(s, s.at >= startedAt)`, is the one it does not see. On a date and time,
 the field then also refuses an answer on a day the calendar does not have, which it accepted
 before.
 
 ## Spec version 5 is FROZEN
 
-Spec `"5"` is frozen as of 2026-10-27, with the batch it was opened for, and is the version this
-package writes: a new document declares it, and `upgradeSpecVersion` moves an older one to it
-unchanged but for the version line. It is first released with `0.8.0`. Version 6, opened by the
-next construct that needed one as this record said it would be, is open above
+Spec `"5"` is frozen as of 2026-10-27, with the batch it was opened for. It is first released with
+`0.8.0`. Version 6, opened by the next construct that needed one as this record said it would be,
+is open above
 ([0201](docs/decisions/0201-spec-5-freezes-with-the-batch-it-opened-for.md), [0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
 It is a superset of version 4 and removes nothing, and adds properties only — no field type,

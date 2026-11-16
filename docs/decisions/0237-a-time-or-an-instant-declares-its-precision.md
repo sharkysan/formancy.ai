@@ -33,10 +33,14 @@
     it. `packages/core/src/default.test.ts`: a `default` of the wrong width keeps the form from
     opening.
   - `packages/core/src/temporal-widths.test.ts`: a literal not at a precision field's width, and two
-    fields of different shapes where either declares a precision, are reported with the remedies;
-    shapes are compared, not lengths (a `date` and a precision-1 `time`); a field without a
-    precision is left to 0236; an empty literal is answered with the test that asks, each idiom
-    compiled. `packages/server-core/src/use-cases.test.ts`, *refuses a rule comparing a temporal
+    fields of different shapes where either declares a precision, are reported, each told what
+    works for its two kinds and `timestamp()` only between two dates and times, and *each
+    expression a refusal offers runs on answers at the fields' widths*, which failed on the old
+    sentence's `timestamp(a) < timestamp(b)`, written on no field of the form, as the cases for a
+    time did while a time was offered `timestamp()`; shapes are compared, not lengths (a `date`
+    and a precision-1 `time`); a field without a precision is left to 0236; an empty literal is
+    answered with the test that asks, `==` with its opposite, each idiom compiled.
+    `packages/server-core/src/use-cases.test.ts`, *refuses a rule comparing a temporal
     answer across widths, and persists nothing*; `packages/mcp/src/tools.test.ts` and
     `packages/builder-core/src/authoring.test.ts` report it as publish refuses it.
   - `packages/core/src/default.test.ts`, *of the wrong shape on a time or an instant says how an
@@ -52,7 +56,8 @@
   - `packages/react/src/fields/typed-temporal-field.test.tsx`,
     `packages/angular/src/typed-temporal-field.test.ts` and
     `packages/angular/material/src/controls.test.ts`: the typed control in each renderer, Material's
-    being the default control's.
+    being the default control's; in React and Angular, *a dropped UTC instant is stored as that
+    instant, in Zurich*, which failed an hour off while a drop reached the mask as typing.
   - `packages/conformance/fixtures/temporal-precision.json`, run by every driver: a supplied
     six-digit instant and seven-digit time submitted byte for byte, typed digits stored at the
     width, and an entry that stops short refused as `shape`. Removing the typed control from a
@@ -121,12 +126,18 @@ the schema's bound patterns and its bound descriptions' examples are held to the
 - **A rule comparing it across widths refuses the publish** (`invalid_logic`): a literal not at
   its width, or two temporal fields of different shapes where either declares a precision. The
   check compares shapes, not lengths. The publish, the MCP check and the builder's authoring loop
-  all apply it. An empty literal, `opens != ""`, is refused too, and the sentence gives the test
-  that asks whether the field was answered, on the read the rule wrote: `opens != null` at the top,
-  `item.at != null` in a row, `has(stay.at)` in a group. That corrects 0236, which gave `has()` for
-  a field at the top, where it does not compile. Refusing is possible here where 0236 could
-  only warn: no valid document could declare a precision before version 6, so nothing valid
-  becomes invalid. A field without a precision keeps 0236's warning.
+  all apply it. **The sentence says what works for what is compared**, written on the rule's own
+  reads where it is an expression: a literal at the field's width; one precision for two fields of
+  one type; `timestamp()` only where both sides are a date and time, because on a time or a date it
+  is an error and a `visible` rule that errors shows its field; for a date against a date and time,
+  the instant's day in UTC, `endedAt.substring(0, 10)`; and for a time against either, nothing to
+  write, since a time of day names no day. An empty literal, `opens != ""`, is refused too, and the
+  sentence gives the test that asks whether the field was answered, on the read the rule wrote:
+  `opens != null` at the top, `item.at != null` in a row, `has(stay.at)` in a group; for `==`, the
+  opposite, since the answered test copied into it would turn the rule round. That corrects 0236,
+  which gave `has()` for a field at the top, where it does not compile. Refusing is possible here
+  where 0236 could only warn: no valid document could declare a precision before version 6, so
+  nothing valid becomes invalid. A field without a precision keeps 0236's warning.
 
 **Its control is typed**, in React and Angular, on the mask core (0125): every declared digit is
 shown and typed into, a `time` as stored and a `datetime` as the person's own
@@ -138,7 +149,11 @@ the text typed, which the shape check refuses, and never completed by a guess. *
 Material draws such a time with the default control**, as it does a masked text: 0132 is followed
 rather than superseded, since a mask is the default control's there.
 
-**A paste is decided once, by `pasteOutcome` in `@formancy/spec`,** for every control:
+**A paste is decided once, by `pasteOutcome` in `@formancy/spec`,** for every control, and **a
+drop is decided by it too**, as a paste over the whole field: where a drop lands is a pointer
+position, which a binding cannot turn into a place in the text and no gate here could check. Read
+as typing instead, through `input`, a dropped `2026-11-15T13:03:27.415Z` lost its `Z` to the mask
+and was stored in Zurich an hour off. The rules:
 
 1. a whole time, or a whole instant with `Z`, `±HH`, `±HHMM` or `±HH:MM` and a space or a `T`
    (in lower case too), pasted on its own at any width, is the answer wherever it lands; a time
@@ -159,17 +174,24 @@ line.
 
 **What it costs:**
 
-- **A rule using `timestamp()` cannot tell apart two answers closer than a millisecond.** It is
-  the remedy the publish sentence offers for comparing two widths, and it is exact only to the
-  millisecond in this build of `@marcbachmann/cel-js`, which cuts the rest. Named in
-  `SOUP-DECLARATION.md` as the library's anomaly and in arc42 §11.
+- **A rule using `timestamp()` cannot tell apart two answers closer than a millisecond.** The
+  publish sentence offers it for two dates and times of different widths, and nowhere else, and
+  it is exact only to the millisecond in this build of `@marcbachmann/cel-js`, which cuts the
+  rest. Named in `SOUP-DECLARATION.md` as the library's anomaly and in arc42 §11.
+- **A computed instant above precision 3 is padded, not measured.** A rule computes through
+  `Date`, which keeps milliseconds, so one second after `…:56.789012Z` is stored, on a field of
+  precision 6, as `…:57.789000Z`: three zeros that read like digits a device gave, and the
+  `012` it started from gone. Measured on 2026-11-16 by a probe against the built
+  `@formancy/core`, pinned by *from an answer finer than a millisecond keeps the millisecond,
+  padded to the width* in `packages/core/src/temporal-precision.test.ts`, and named in
+  `SAFETY-ANALYSIS.md`, B12.
 - **A comparison through a list rule's own variable is not seen.** `steps.all(s, s.at >= startedAt)`
   publishes whatever the two precisions are, and compares as text: wrongly, if they differ.
   `@formancy/expressions` takes `s.at` for no field, as 0236 chose, and teaching it what a
   comprehension's variable stands for is what 0236 avoided. The builders' condition editor writes
   no list rule, so only a hand-written one reaches it. The advice, given wherever this is
-  documented: give fields compared in a list rule one precision, or compare them with
-  `timestamp()`.
+  documented: give fields compared in a list rule one precision, or, for two dates and times,
+  compare them with `timestamp()`.
 - **One form's submissions can hold two widths.** Submissions never migrate, so changing a
   field's precision leaves the answers already stored at the width they were written in, and an
   export or a sort across that change mixes them. The diff calls every change to `precision`,
@@ -186,13 +208,16 @@ line.
   supplied seconds to `00` when edited. Declaring a precision is the remedy.
 - **The error under the control cannot tell a missing digit from a missing day.** Both are
   `shape`, and the sentence is chosen without the answer, so on an instant with a precision it asks
-  for both: "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has."
+  for both: "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has." That example is the
+  stored form, in UTC with a `T` and a `Z`, under a control where the person types their own clock
+  with a space; saying it in the typed form is left to the builders' change.
 - **The builders follow separately.** Their property panels offer `precision`, read from the
   schema; their condition editors still write a time to the minute and an instant to the second,
   so a rule they write on a time with a precision, or on an instant with one above 0, is refused at
   publish, loudly, rather than published wrong.
-- **A document using `precision` cannot be read by 0.13.0 or earlier**, which refuses it as a
-  validation error, as at every version.
+- **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
+  `precision`, which refuses it as a validation error, as at every version; and this source writes
+  `"6"` for every new form.
 
 ## Alternatives considered
 

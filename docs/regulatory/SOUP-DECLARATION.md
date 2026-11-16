@@ -201,10 +201,10 @@ after its seconds, keeps three of them, and cuts the rest rather than rounding t
 is `true` for `…:56.7890121Z` and `…:56.789Z`; a millisecond apart, `…:56.788Z` before `…:56.789Z`,
 it is right. No answer `0.13.0` stores carries a fraction of a second, so none reaches the cut. From
 spec version 6, which is in no release, a `time` or `datetime` field may declare a `precision` of up
-to nine digits, and comparing through `timestamp()` is one of the ways out a publish offers for two
-fields of different widths: a rule doing so cannot tell apart two answers closer than a millisecond.
-Not worked around; pinned by *compares timestamps to the millisecond, cutting the rest, as the
-documents say* in `packages/expressions/src/evaluate.test.ts`, which a release of the library that
+to nine digits, and comparing through `timestamp()` is what a publish offers, besides one precision,
+for two dates and times of different widths: a rule doing so cannot tell apart two answers closer
+than a millisecond. Not worked around; pinned by *compares timestamps to the millisecond, cutting
+the rest, as the documents say* in `packages/expressions/src/evaluate.test.ts`, which a release of the library that
 compared finer, or rounded, would fail; named in hazard A12 of [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) and in
 [0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md).
 

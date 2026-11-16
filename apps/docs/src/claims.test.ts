@@ -465,6 +465,22 @@ describe('the spec version 2 freeze', () => {
     expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([newest])
   })
 
+  test('and names one version as the one this package writes: the one the code writes', () => {
+    // When version 5 opened, version 4's section dropped "the version this package writes";
+    // when 6 opened, version 5's kept it, so two sections each said a new document declared
+    // them. Exactly one section says it, so a rewording that drops it everywhere fails too. Read
+    // with its line breaks as spaces: version 5's was wrapped mid-phrase, and a pattern on the
+    // raw text passed it.
+    const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8').replace(/\s+/g, ' ')
+    const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
+    const current = /export const CURRENT_SPEC_VERSION: SpecVersion = '(\d+)'/.exec(types)?.[1]
+    expect(current, 'no current version was read out of the code').toBeDefined()
+
+    const sections = text.split(/(?=## Spec version \d+ is )/).filter((section) => section.startsWith('## Spec version'))
+    const writing = sections.filter((section) => /the version this package writes/.test(section)).map((section) => /^## Spec version (\d+)/.exec(section)?.[1])
+    expect(writing).toEqual([current])
+  })
+
   test('says the version is frozen and what a version 1 document may not carry', () => {
     // The properties, which are the half that caught people out: `widget`, a temporal
     // bound and `optionsSource` are not types, and a version 1 reader refuses the whole

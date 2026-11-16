@@ -598,10 +598,17 @@ field that declares a precision with a literal not in its shape, and of two temp
 different shapes where either declares one; shapes are compared, not lengths. A publish
 refuses such a rule with `invalid_logic` and stores nothing, and the MCP check and the builder's
 authoring loop report it as the publish refuses it
-([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)). An empty literal,
-`opens != ""`, is refused with the test that asks whether the field was answered. Verified by
-`packages/core/src/temporal-widths.test.ts`, by *refuses a rule comparing a temporal answer across
-widths, and persists nothing* in `packages/server-core/src/use-cases.test.ts`, and by
+([0237](../decisions/0237-a-time-or-an-instant-declares-its-precision.md)). The sentence says what
+to write for what is compared, and offers `timestamp()` only between two dates and times: on a time
+or a date it is an error, and a `visible` rule that errors shows its field, so the advice would
+have published this hazard's own outcome. Every expression it offers is run on answers at the
+fields' widths by *each expression a refusal offers runs on answers at the fields' widths*, which
+failed on the old sentence's `timestamp(a) < timestamp(b)`, written on no field of the form; the
+cases for a time failed while a time was offered `timestamp()`. An empty literal, `opens != ""`,
+is refused with the test that asks whether the field was answered, and `opens == ""` with the one
+that asks whether it was not. Verified by `packages/core/src/temporal-widths.test.ts`, by *refuses
+a rule comparing a temporal answer across widths, and persists nothing* in
+`packages/server-core/src/use-cases.test.ts`, and by
 `packages/mcp/src/tools.test.ts` and `packages/builder-core/src/authoring.test.ts`. A bound, which
 the engine compares as text, is held to its field's width by the validator (`bounds.width`) and to a
 day that exists (`bounds.noSuchDay`), in `packages/spec/src/temporal-bounds.test.ts`. Each was
@@ -616,8 +623,8 @@ observed failing before its change.
   comprehension's variable* in `packages/expressions/src/compared-literals.test.ts`. The builders' condition editors write no
   list rule, so only a hand-written one reaches it, by an author or by an agent through
   `@formancy/mcp`. The advice, in the record and the documentation: give the fields compared in a
-  list rule one precision, or compare them with `timestamp()`.
-- **`timestamp()` compares to the millisecond.** It is one of the ways out the refusal offers, and
+  list rule one precision, or, for two dates and times, compare them with `timestamp()`.
+- **`timestamp()` compares to the millisecond.** The refusal offers it for two dates and times, and
   in `@marcbachmann/cel-js` 8.0.0 it cuts every digit after the third:
   `timestamp(a) < timestamp(b)` is `false` for two instants a microsecond apart, measured on
   2026-11-16 ([`SOUP-DECLARATION.md`](SOUP-DECLARATION.md)), and pinned by *compares timestamps to
@@ -1148,7 +1155,12 @@ that stops short is stored as typed for the shape check to refuse, never complet
 paste is decided once, by `pasteOutcome` in `@formancy/spec`: a whole time or instant is the answer,
 brought to the field's width only where that is exact; text that could have been typed is typing;
 anything else changes nothing, so no paste stores a mix of pasted and existing digits that nobody
-wrote. Verified by `packages/conformance/fixtures/temporal-precision.json`, which every driver runs
+wrote. A drop is decided by `pasteOutcome` as a paste over the whole field, and a read-only field
+takes none: read as typing, through `input`, a dropped `2026-11-15T13:03:27.415Z` lost its `Z` to
+the mask and was stored in Zurich as `…T12:03:27.415Z`, complete, valid and an hour off, which *a
+dropped UTC instant is stored as that instant, in Zurich* in both renderers' tests failed on. The
+whole field rather than a caret, because where a drop lands is a pointer position the bindings do
+not read. Verified by `packages/conformance/fixtures/temporal-precision.json`, which every driver runs
 — a six-digit instant and a seven-digit time submitted byte for byte, typed digits stored at the
 width, an entry that stops short refused — and which failed with the typed control taken out of each
 renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
@@ -1173,6 +1185,22 @@ renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
   precision is the remedy. A `time` without one has no seconds to lose.
 - **The typed control has no clock picker**, and its shape is fixed, `YYYY-MM-DD HH:MM:SS` and the
   digits, rather than the person's locale.
+- **A computed date and time above precision 3 is padded, not measured.** A rule computes through
+  `Date`, which keeps milliseconds, so one second after `…:56.789012Z` is stored, on a field of
+  precision 6, as `…:57.789000Z`: the `012` gone, and three zeros in their place that read like
+  digits a device gave. Measured on 2026-11-16 by a probe against the built `@formancy/core`, and
+  pinned by *from an answer finer than a millisecond keeps the millisecond, padded to the width* in
+  `packages/core/src/temporal-precision.test.ts`.
+- **The shape error under a typed date and time names the stored form**, `error.shape.day`:
+  "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has", in UTC with a `T` and a `Z`,
+  while the person types their own clock with a space. A person who copies it types a `T` the
+  mask has no place for. Pinned, as the sentence it is, by *an instant of the wrong shape, on a
+  field with a precision, is also asked for on a day that exists* in
+  `packages/core/src/error-words.test.ts`; saying it in the typed form is left to the builders'
+  change.
+- **A dropped fragment replaces the whole field**, wherever it was dropped: digits dropped onto
+  the minutes are typed over the whole answer. Pinned by *dropped digits are typed over the whole
+  field, not at the caret the drag left* in both renderers' tests.
 
 
 

@@ -33,27 +33,43 @@ control is still the browser's, to the minute
   width, an offset turned into the same instant in UTC. Digits that fit, or text with each separator where
   the control writes it, are typed. Anything else, and a paste of nothing, changes nothing. It is
   decided once, by `pasteOutcome` in `@formancy/spec`, so no two controls read a paste two ways.
+  **A drop is read the same way**, as a paste over the whole field: read as typing instead, a
+  dropped `2026-11-15T13:03:27.415Z` lost its `Z` to the mask and was stored in Zurich as
+  `…T12:03:27.415Z`, complete, valid and an hour off.
 - **The engine checks an answer at the field's width**, in the browser and on the replay, and on a
   field with a precision **refuses a day the calendar does not have**, such as 30 February, as
   `shape`. A field without a precision accepts it, as `0.13.0` does.
 - **A bound is written at the field's width**, or the document is refused as `bounds.width`, and
   on a day that exists, `bounds.noSuchDay`. A `default` of another width keeps the form from
   opening. A computed date and time is written padded to the width, and not at all when a digit
-  other than zero falls beyond it: never rounded.
+  other than zero falls beyond it: never rounded. A rule computes to the millisecond, so above
+  precision 3 the digits past it are zeros added, not measured.
 - **A publish refuses a rule comparing such a field across widths**, with a literal or with another
-  field of another shape, because text of two widths orders wrongly and never compares equal; the
-  sentence gives three ways out. `opens != ""` on such a field is refused with the test that asks
-  whether it was answered. A comparison through a list rule's own variable,
-  `steps.all(s, s.at >= startedAt)`, is not seen: give the fields compared there one precision, or
-  compare them with `timestamp()`, which compares to the millisecond and no finer.
+  field of another shape, because text of two widths orders wrongly and never compares equal. The
+  sentence says what to write for what is compared: a literal at the field's width; one precision
+  for two fields of one type; `timestamp()` only between two dates and times, since on a time or a
+  date it is an error and a `visible` rule that errors shows its field; and for a date against a date
+  and time, the instant's day in UTC. `opens != ""` on such a field is refused with the test that
+  asks whether it was answered, and `opens == ""` with the one that asks whether it was not. A
+  comparison through a list rule's own variable, `steps.all(s, s.at >= startedAt)`, is not seen:
+  give the fields compared there one precision, or, for two dates and times, compare them with
+  `timestamp()`, which compares to the millisecond and no finer.
 - **An error, a submission read back, the type `formancy types` prints and a model's briefing for
   examples** each say the answer at the field's width; a date and time with a precision is read back
   to the second, with every digit after it.
 - **The playground's starter** has a date and time to the millisecond and a time to the second
   with a bound.
+- **For an integrator**, new and public: `temporalShape`, `temporalAnyShape`, `temporalExample`,
+  `temporalDateExists`, `temporalEntryMask`, `typedFromStored`, `storedFromTyped`, `pasteOutcome`
+  and the type `TypedTemporalType` in `@formancy/spec`; `comparedFields` and its type
+  `ComparedFields` in `@formancy/expressions`; `crossWidthComparisons` and its type
+  `CrossWidthComparison` in `@formancy/core/authoring`. A host that translates the renderer's
+  words adds one, `error.shape.day`, the shape error on a date and time with a precision, which
+  also asks for a day that exists.
 
-Version 6 is open and in no release; `0.13.0` and earlier refuse a document using `precision` as a
-validation error, so upgrade the readers before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). A
+Version 6 is open and in no release. `0.13.0` and earlier refuse every document declaring `"6"`, not
+only one using `precision`, and this source writes `"6"` for every new form, so upgrade the readers
+before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). A
 change to `precision` is `field.changed` and lossy, and submissions already stored keep the width
 they were written in. The builders' property panels offer `precision`; their condition editors still
 write a time to the minute and a date and time to the second, so a rule they write on a time with a

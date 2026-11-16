@@ -116,6 +116,29 @@ describe('a computed datetime at its field’s precision', () => {
     expect(stored(0, 'timestamp("2026-10-08T10:34:56.789Z")')).toEqual({})
   })
 
+  // The residual B12 names, pinned so that it changes on purpose: a rule computes through `Date`,
+  // which keeps milliseconds, so from an answer to the microsecond the result keeps three digits
+  // and is padded to six. The zeros are padding, not a measurement, and the documents say so.
+  test('from an answer finer than a millisecond keeps the millisecond, padded to the width', () => {
+    const engine = createFormEngine({
+      schema: {
+        specVersion: '6',
+        id: 'precise',
+        title: 'Precise',
+        model: {
+          fields: [
+            { key: 'start', type: 'datetime', precision: 6 },
+            { key: 'at', type: 'datetime', precision: 6 },
+          ],
+        },
+        logic: { rules: [{ kind: 'computed', target: 'at', cel: 'timestamp(start) + duration("1s")' }] },
+      },
+      capabilities,
+      initialValue: { start: '2026-10-08T10:34:56.789012Z' },
+    })
+    expect(engine.value()).toEqual({ start: '2026-10-08T10:34:56.789012Z', at: '2026-10-08T10:34:57.789000Z' })
+  })
+
   // A field with no precision is version 5's: whole seconds, and a rule's milliseconds are not its shape.
   test('on a field with no precision is stored as the rule wrote it', () => {
     expect(stored(undefined, 'timestamp("2026-10-08T10:34:56Z")')).toEqual({ at: '2026-10-08T10:34:56Z' })
