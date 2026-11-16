@@ -280,26 +280,8 @@ function answerPasted(type: TypedTemporalType, n: number, answer: string): strin
 }
 
 /**
- * A whole text, as a paste was first read: the answer it names, undefined when a person
- * could have typed it into this mask, and anything else held exactly as given, for the
- * shape check to refuse. Whitespace around it is not part of it.
- *
- * It is not how a control reads a paste, and it is not in the package's index: a control
- * asks `pasteOutcome`, which ignores what this would hold rather than storing it, and judges
- * the text the paste makes rather than the pasted text alone. It stays because its cases pin
- * what `couldBeTyped` refuses, which is how `pasteOutcome` decides typing too: at precision
- * 4, `20261115140327-0100` read as typing was stored complete and valid as 14:03:27.0100 on
- * the person's clock, the offset's digits as the fraction.
- */
-export function pastedInstant(type: TypedTemporalType, precision: number, text: string): string | undefined {
-  const answer = text.trim()
-  const taken = recognisedAnswer(type, precision, answer)
-  if (taken !== undefined) return taken
-  return couldBeTyped(type, precision, answer) ? undefined : answer
-}
-
-/**
- * The answer a pasted text names on its own, or undefined when it names none. Whitespace
+ * The answer a pasted text names on its own, or undefined when it names none. `pasteOutcome`
+ * asks it first, and it is exported for that function's tests, not from the package. Whitespace
  * around it is not part of it: a copied log line brings its line break.
  *
  * - A time, `HH:MM:SS` and any number of digits after the seconds.
