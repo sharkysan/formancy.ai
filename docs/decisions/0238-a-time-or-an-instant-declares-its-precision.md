@@ -214,10 +214,11 @@ line.
   for both: "Enter it as 2026-10-08T09:30:00.000Z, on a day the calendar has." That example is the
   stored form, in UTC with a `T` and a `Z`, under a control where the person types their own clock
   with a space; saying it in the typed form is left to the builders' change.
-- **The builders follow separately.** Their property panels offer `precision`, read from the
-  schema; their condition editors still write a time to the minute and an instant to the second,
-  so a rule they write on a time with a precision, or on an instant with one above 0, is refused at
-  publish, loudly, rather than published wrong.
+- **The builders followed in a second change.** Their property panels offer `precision`, read from
+  the schema, and their condition editors type a literal on such a field into the same mask and write
+  it at the field's width (`storedFromTyped`), so the rule they write is not a comparison across
+  widths. Until that change a rule they wrote on a time with a precision, or on an instant with one
+  above 0, was refused at publish, loudly, rather than published wrong.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.

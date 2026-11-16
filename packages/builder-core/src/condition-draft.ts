@@ -1,5 +1,5 @@
-import { resolveText } from '@formancy/spec'
-import type { FieldDef, FormSchema } from '@formancy/spec'
+import { resolveText, storedFromTyped, typedFromStored } from '@formancy/spec'
+import type { FieldDef, FormSchema, TypedTemporalType } from '@formancy/spec'
 import { answerKindOf, operatorTakesValue, operatorsFor } from './conditions.js'
 import type { AnswerKind, Condition, ConditionGroup, Operator } from './conditions.js'
 import type { BuilderText } from './messages.js'
@@ -30,6 +30,12 @@ export interface ConditionField {
   kind: AnswerKind
   /** For a choice or a list: what may be compared with, as the field offers it. */
   options: ReadonlyArray<{ value: string; label: string }>
+  /**
+   * A `time` or a `datetime` field's declared `precision` (0238). Present, `row.text` holds the
+   * digits typed into the mask `@formancy/spec` derives from it, and the literal is written at
+   * the field's width; absent, the field is version 5's and its box is the browser's.
+   */
+  precision?: number
 }
 
 /**
@@ -74,6 +80,7 @@ export function conditionFields(document: FormSchema, about?: { target: string; 
         path: `${scope}${field.key}`,
         label: inRow && about !== undefined ? about.text('logic.field.inRow', { field: name }) : name,
         kind: answerKindOf(field),
+        ...(typeof field.precision === 'number' && (field.type === 'time' || field.type === 'datetime') ? { precision: field.precision } : {}),
         options: (field.options ?? []).map((option) => ({
           value: option.value,
           label: resolveText(document, option.label, locale) || option.value,
@@ -117,6 +124,8 @@ export interface DraftPlace {
   at: number
   group?: number
 }
+
+const precisionOf = (fields: readonly ConditionField[], path: string): number | undefined => fields.find((field) => field.path === path)?.precision
 
 const kindOf = (fields: readonly ConditionField[], path: string): AnswerKind => fields.find((field) => field.path === path)?.kind ?? 'other'
 
@@ -189,7 +198,8 @@ export function updateRow(draft: ConditionDraft, place: DraftPlace, change: Part
     return {
       ...merged,
       operator: allowed.includes(merged.operator) ? merged.operator : allowed[0]!,
-      text: was === now ? merged.text : startingText(now),
+      // Typed digits mean nothing at another width, or beside the browser's box.
+      text: was === now && precisionOf(fields, row.field) === precisionOf(fields, change.field) ? merged.text : startingText(now),
     }
   }
   if (place.group !== undefined) {
@@ -230,7 +240,31 @@ function mapGroup(draft: ConditionDraft, at: number, change: (group: RowGroup) =
 export function conditionOf(row: ConditionRow, fields: readonly ConditionField[]): Condition {
   const answer = kindOf(fields, row.field)
   if (!operatorTakesValue(row.operator)) return { field: row.field, operator: row.operator, answer }
-  return { field: row.field, operator: row.operator, value: narrowed(answer, row.text), answer }
+  const field = fields.find((candidate) => candidate.path === row.field)
+  const typed = typedField(field)
+  const value = typed === undefined ? narrowed(answer, row.text) : (storedFromTyped(typed.type, typed.precision, row.text) ?? '')
+  return { field: row.field, operator: row.operator, value, answer }
+}
+
+/**
+ * The field's type and precision when its box is typed, not the browser's. Decided here, in
+ * the one place both panels and the conversions read, so a field is typed in both directions
+ * or in neither.
+ */
+function typedField(field: ConditionField | undefined): { type: TypedTemporalType; precision: number } | undefined {
+  if (field?.precision === undefined) return undefined
+  return field.kind === 'time' || field.kind === 'datetime' ? { type: field.kind, precision: field.precision } : undefined
+}
+
+/**
+ * The text a row holds for a stored literal: on a field with a precision, the digits that
+ * were typed, so a rule reopened shows the author's own wall clock rather than the UTC text
+ * it was stored as, and the first edit does not shift it by their offset. On any other field
+ * the literal as it is.
+ */
+export function textOfLiteral(field: ConditionField | undefined, literal: string): string {
+  const typed = typedField(field)
+  return typed === undefined ? literal : typedFromStored(typed.type, typed.precision, literal)
 }
 
 function narrowed(answer: AnswerKind, text: string): string | number | boolean {

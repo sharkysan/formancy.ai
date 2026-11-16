@@ -3,6 +3,7 @@ import { comparisonLabel, operatorLabel, operatorTakesValue, operatorsFor } from
 import type { BuilderText, ConditionField, ConditionRow, Operator } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
+import { typedTemporalEntry } from './typed-temporal-entry.js'
 
 /** The box a value is typed into, by what the field holds. */
 const INPUT_TYPE: Partial<Record<ConditionField['kind'], string>> = {
@@ -74,6 +75,17 @@ const INPUT_TYPE: Partial<Record<ConditionField['kind'], string>> = {
                 </option>
               </select>
             }
+            @case ('typed') {
+              <input
+                type="text"
+                [value]="entry.shown()"
+                [attr.placeholder]="entry.placeholder()"
+                [attr.inputmode]="entry.inputMode()"
+                (input)="entry.onInput($event)"
+                (paste)="entry.onPaste($event)"
+                (drop)="entry.onDrop($event)"
+              />
+            }
             @default {
               <input
                 [type]="inputType()"
@@ -109,8 +121,20 @@ export class FormancyLogicComparison {
   protected readonly takesValue = computed(() => operatorTakesValue(this.row().operator))
   protected readonly control = computed(() => {
     const kind = this.field()?.kind ?? 'other'
+    if (this.precision() !== undefined) return 'typed'
     return kind === 'choice' || kind === 'list' ? 'choice' : kind === 'boolean' ? 'boolean' : 'box'
   })
+  /** A time or a date and time that declares one is typed into a mask (0238), not the browser's box. */
+  private readonly precision = computed(() => {
+    const field = this.field()
+    return field?.kind === 'time' || field?.kind === 'datetime' ? field.precision : undefined
+  })
+  protected readonly entry = typedTemporalEntry(
+    computed(() => (this.field()?.kind === 'datetime' ? 'datetime' : 'time')),
+    computed(() => this.precision() ?? 0),
+    computed(() => this.row().text),
+    (typed) => this.changed.emit({ text: typed }),
+  )
   protected readonly inputType = computed(() => INPUT_TYPE[this.field()?.kind ?? 'other'] ?? 'text')
 
   constructor() {

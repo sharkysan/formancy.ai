@@ -1,6 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
@@ -426,5 +426,75 @@ describe('a rule on a field in a repeater row', () => {
 
     expect(session.document().logic?.rules).toMatchObject([{ target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty >= 3.0' }])
     expect(session.canPublish().valid).toBe(true)
+  })
+})
+
+describe('a time or a date and time with a precision (0238)', () => {
+  const log = {
+    specVersion: '6',
+    id: 'log',
+    title: 'Log',
+    model: {
+      fields: [
+        { key: 'at', type: 'datetime', label: 'At', precision: 3 },
+        { key: 'plain', type: 'datetime', label: 'Plain' },
+        { key: 'note', type: 'text', label: 'Note' },
+      ],
+    },
+  } as unknown as FormSchema
+
+  const started = Intl.DateTimeFormat().resolvedOptions().timeZone
+  afterEach(() => {
+    vi.stubEnv('TZ', started)
+    vi.unstubAllEnvs()
+  })
+
+  const open = async (field: string) => {
+    const mounted = await mountOn(['note'], log)
+    await mounted.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await mounted.select(screen.getByLabelText('Field'), field)
+    await mounted.select(screen.getByLabelText('Comparison'), 'isAfter')
+    return mounted
+  }
+
+  test('its value box is typed, with the mask as the hint', async () => {
+    // Left as the browser's datetime-local, a seventh digit cannot be typed and the rule
+    // written is refused at publish.
+    await open('at')
+    const box = screen.getByLabelText<HTMLInputElement>('Value')
+
+    expect(box.type).toBe('text')
+    expect(box.placeholder).toBe('____-__-__ __:__:__.___')
+    expect(box.inputMode).toBe('numeric')
+  })
+
+  test('digits typed are written as the instant at the field width', async () => {
+    // Written at version 5's width the rule is a comparison across widths and publish refuses it.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { session, type, click } = await open('at')
+    await type(screen.getByLabelText('Value'), '20261115140327415')
+
+    expect(screen.getByText('at != null && at > "2026-11-15T13:03:27.415Z"')).toBeTruthy()
+    await click(screen.getByRole('button', { name: 'Add rule' }))
+    expect(session.canPublish().valid).toBe(true)
+  })
+
+  test('a pasted UTC instant is stored as that instant', async () => {
+    // Read as typing, an instant's Z is dropped and its digits become the author's own clock.
+    vi.stubEnv('TZ', 'Europe/Zurich')
+    const { click } = await open('at')
+    const box = screen.getByLabelText('Value')
+    await click(box)
+    await userEvent.paste('2026-11-15T13:03:27.415Z')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(screen.getByText('at != null && at > "2026-11-15T13:03:27.415Z"')).toBeTruthy()
+  })
+
+  test('a field without a precision keeps the browser box', async () => {
+    // The version 5 control is unchanged for a field that declares none.
+    await open('plain')
+
+    expect(screen.getByLabelText<HTMLInputElement>('Value').type).toBe('datetime-local')
   })
 })

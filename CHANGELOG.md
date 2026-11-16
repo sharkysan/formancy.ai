@@ -75,9 +75,15 @@ Version 6 is open and in no release. `0.13.0` and earlier refuse every document 
 only one using `precision`, and this source writes `"6"` for every new form, so upgrade the readers
 before the documents ([`MIGRATIONS.md`](MIGRATIONS.md)). A
 change to `precision` is `field.changed` and lossy, and submissions already stored keep the width
-they were written in. The builders' property panels offer `precision`; their condition editors still
-write a time to the minute and a date and time to the second, so a rule they write on a time with a
-precision, or on a date and time with one above 0, is refused at publish, not published wrong.
+they were written in. The builders' property panels offer `precision`.
+
+- **The condition editors write a literal at the field's width.** On a time or a date and time that
+  declares a `precision`, both builders' value box is the typed entry the renderers use, with its
+  mask as the hint, and the literal is written at that width: digits typed on the author's own clock
+  become the UTC instant with the fraction copied, `at > "2026-11-15T13:03:27.415Z"`, and a pasted
+  instant is kept as that instant. Before, a rule on such a field was written at version 5's width
+  and refused at publish as a comparison across widths. A field without a `precision` keeps the
+  browser's box ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)).
 
 **Fixed: the condition editor wrote a date and time as the author's own wall clock**, in every
 release through `0.13.0`. On a date-and-time field it wrote what its local date-and-time box held,
