@@ -95,7 +95,10 @@ without styling the paper: Formancy Data can draw a lookup's Open there, as an i
 a line of text under the field. Each theme continues the control's own look across the button:
 Blueprint's frame goes round both, Paper's underline runs under both, Dusk's fill covers both with a
 hairline between them, and Pop's line and hard shadow go round the pair, the shadow cast by the row
-and not between the two. An invalid field's mark runs across the button too. A button there is the
+and not between the two. Pop's row casts its shadow and lifts as a lone box in the theme does, in
+both reading orders, and is not mirrored right to left: a shadow that is not inset is cast by the
+theme's light, which does not move with the language, and `apps/docs/src/themes.test.ts` mirrors
+only an inset one. An invalid field's mark runs across the button too. A button there is the
 box's height and at least 44px wide; an `svg` in it is sized to the text and filled in the button's
 colour, so a host's icon needs no styling of its own; and it is drawn unavailable alike as `:disabled`
 and as `aria-disabled`, which a host uses to keep an unavailable button in the keyboard's order. On a
@@ -121,7 +124,8 @@ which is how Pop's right-to-left shadow and Blueprint's focus ring round three s
 were found. It measures in Chromium alone, on the playground's form, and not a row under the pointer,
 since a theme switched under a resting pointer is not reliably hovered again. And it draws no empty
 place beside, so that every theme hides one, and the box then keeps its corners, is held by the rules
-alone.
+alone. Only a button there is dressed: a link or any other element a host puts beside the box is laid
+out on its line and given none of the theme's look.
 
 **What it does not do.** It is no part of the document: a form says nothing about it, and the spec and
 the engine are untouched. It adds no role, no name and no id, and describes no control, for the

@@ -48,11 +48,12 @@ line.** `FormancyForm` in `@formancy/react` and `formancy-form` in `@formancy/an
 a React node, or a template, which Angular gives the path and the field's binding. A select and a
 typeahead draw it after their box, the two wrapped in `data-formancy-part="field-control-row"` and the
 content in `data-formancy-part="field-beside"`; the field's status and error stay under the box, and
-no other control draws it. Every theme draws the pair as one field, its frame, underline, fill or
-shadow, and an invalid field's mark, carried across what is beside the box; a button there is the
-box's height and at least 44px wide, its icon sized to the text, and drawn unavailable alike as
-`:disabled` and as `aria-disabled`, which keeps it in the keyboard's order. Nothing is wrapped where
-it gives nothing, so a form without it is unchanged. Formancy Data asked for it: under each lookup
+no other control draws it. Every theme draws the box and a button there as one field, its frame,
+underline, fill or shadow, and an invalid field's mark, carried across the button; anything else
+there is laid out on the box's line and not dressed. The button is the box's height and at least
+44px wide, its icon sized to the text, and drawn unavailable alike as `:disabled` and as
+`aria-disabled`, which keeps it in the keyboard's order. Nothing is wrapped where it gives nothing,
+so a form without it is unchanged. Formancy Data asked for it: under each lookup
 its host draws a text button that opens the record the answer points to, on a line of its own that
 reads as the form's rather than the answer's, and it will draw the first of those as an icon button
 joined to the box ([0237](docs/decisions/0237-a-host-may-add-content-beside-a-fields-control.md)).

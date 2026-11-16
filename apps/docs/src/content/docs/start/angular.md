@@ -169,11 +169,12 @@ controls are disabled with the field.
 opens the record a lookup points to, or one that clears the answer. It is called with the path of
 each select and each typeahead, a row's by its own, and the template it returns is drawn after the
 box, the two in a `data-formancy-part="field-control-row"` and yours in a
-`data-formancy-part="field-beside"`, which every theme draws with the box as one field. The field's
-status and error stay under the box. Return nothing and nothing is wrapped, so the field is drawn as
-without it. No other control asks: a text field, a select whose source the deployment lacks, the
-fieldsets and Angular Material's controls draw no row. The template is given the path and the
-field's binding, as the addition's is
+`data-formancy-part="field-beside"`. Every theme draws a button there with the box as one field;
+anything else is laid out on the box's line and not dressed. The field's status and error stay under
+the box. Return nothing and nothing is wrapped, so the field is drawn as without it. No other
+control asks: a text field, a select whose source the deployment lacks, the fieldsets and Angular
+Material's controls draw no row. The template is given the path and the field's binding, as the
+addition's is
 ([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-host-may-add-content-beside-a-fields-control.md)):
 
 ```ts

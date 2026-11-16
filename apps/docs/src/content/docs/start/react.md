@@ -156,10 +156,11 @@ fieldset disabled with its field, your controls are disabled with the field.
 `fieldBeside` draws something of yours beside a field's box, on the box's own line: a button that
 opens the record a lookup points to, or one that clears the answer. It is called with the path of
 each select and each typeahead, a row's by its own, and what it returns is drawn after the box, the
-two in a `data-formancy-part="field-control-row"` and yours in a `data-formancy-part="field-beside"`,
-which every theme draws with the box as one field. The field's status and error stay under the box.
-Return nothing and nothing is wrapped, so the field is drawn as without it. No other control asks:
-a text field, a select whose source the deployment lacks and the fieldsets draw no row
+two in a `data-formancy-part="field-control-row"` and yours in a
+`data-formancy-part="field-beside"`. Every theme draws a button there with the box as one field;
+anything else is laid out on the box's line and not dressed. The field's status and error stay under
+the box. Return nothing and nothing is wrapped, so the field is drawn as without it. No other
+control asks: a text field, a select whose source the deployment lacks and the fieldsets draw no row
 ([0237](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0237-a-host-may-add-content-beside-a-fields-control.md)):
 
 ```tsx
