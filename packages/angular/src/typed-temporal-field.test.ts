@@ -106,6 +106,35 @@ describe('a time with a precision', () => {
     expect(value(engine)).toBe('14:03:27.415')
   })
 
+  test('a Backspace pressed before Angular renders takes the digit before the colon', async () => {
+    // Angular renders on a later task, and a key can reach the control first, as the browser
+    // check's sometimes did in Chromium. Read against the answer last rendered rather than the
+    // text the control showed, deleting the colon looked like retyping the digits after it, and
+    // the key did nothing: 08:03:27 stayed. No render runs between these edits.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 0 })
+
+    type(control(), '080327')
+    control().setSelectionRange(6, 6)
+    backspace(control())
+
+    expect(control().value).toBe('08:02:7')
+    expect(value(engine)).toBe('08:02:7')
+  })
+
+  test('a paste before Angular renders keeps the digits typed after the last render', async () => {
+    // A paste is judged against the text around the selection. Taken from the answer last
+    // rendered, that text was missing what had been typed since, and pasting over the hour of
+    // 08:03:27 stored 15 and nothing after it.
+    const engine = await mount({ key: 'at', type: 'time', label: 'At', precision: 0 })
+
+    type(control(), '080327')
+    control().setSelectionRange(0, 2)
+    paste('15')
+
+    expect(value(engine)).toBe('15:03:27')
+    expect(control().value).toBe('15:03:27')
+  })
+
   test('is offered as its shape, with a keypad', async () => {
     // The placeholder is the statement of the shape (0125), and a numeric keypad is the
     // reason to have a mask of digits at all.

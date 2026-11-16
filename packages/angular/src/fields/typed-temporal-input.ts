@@ -1,4 +1,4 @@
-import { Directive, computed, input, output } from '@angular/core'
+import { Directive, computed, input, linkedSignal, output } from '@angular/core'
 import { formatMasked, maskIsNumeric, maskPlaceholder, pasteOutcome, storedFromTyped, temporalEntryMask, typedFromStored } from '@formancy/spec'
 import type { TypedTemporalType } from '@formancy/spec'
 import { applyMaskedEdit } from './masked-edit.js'
@@ -48,7 +48,16 @@ export class FormancyTypedTemporalInput {
   readonly valueChange = output<string | null>()
 
   private readonly mask = computed(() => temporalEntryMask(this.type(), this.precision()))
-  private readonly typed = computed(() => typedFromStored(this.type(), this.precision(), this.value()))
+  /**
+   * The digits behind the text the control shows, which every edit is read against. Linked to
+   * `value` rather than computed from it, because the two disagree for a while after each edit:
+   * the edit is written to the control at once, and `value` comes back only when the host is
+   * next rendered, on a later task in a zoneless application. A key pressed in between, read
+   * against `value`, was read against the answer one keystroke behind what the person saw, and a
+   * Backspace across a colon did nothing. So an edit sets it as it writes the control, and a new
+   * `value` replaces it.
+   */
+  private readonly typed = linkedSignal(() => typedFromStored(this.type(), this.precision(), this.value()))
 
   /** The answer in its shape: every digit it holds, whatever its width. */
   protected readonly shown = computed(() => formatMasked(this.mask(), this.typed()))
@@ -73,24 +82,31 @@ export class FormancyTypedTemporalInput {
       // When the answer shows as the text the field now holds, the control is written and
       // the caret placed before the binding renders, as typing leaves it; the binding would
       // write the same text and leave the caret at the end.
-      const text = formatMasked(mask, typedFromStored(type, precision, outcome.answer))
+      const typed = typedFromStored(type, precision, outcome.answer)
+      const text = formatMasked(mask, typed)
       if (text === `${before}${pasted}${after}`) {
         element.value = text
         element.setSelectionRange(before.length + pasted.length, before.length + pasted.length)
+        this.typed.set(typed)
       }
       this.valueChange.emit(outcome.answer)
     } else if ('typed' in outcome) {
       const caret = before.length + pasted.length
-      this.valueChange.emit(storedFromTyped(type, precision, applyMaskedEdit(element, mask, this.typed(), outcome.typed, { caret, forward: false })))
+      this.edited(applyMaskedEdit(element, mask, this.typed(), outcome.typed, { caret, forward: false }))
     }
     // Ignored, the default is prevented and nothing else happens, as for a key the mask cannot place.
+  }
+
+  /** The digits an edit wrote to the control: kept as what the next edit is read against, and reported as the stored answer. */
+  private edited(typed: string): void {
+    this.typed.set(typed)
+    this.valueChange.emit(storedFromTyped(this.type(), this.precision(), typed))
   }
 
   protected onInput(event: Event): void {
     const element = event.target as HTMLInputElement
     const forward = (event as InputEvent).inputType === 'deleteContentForward'
-    const edited = applyMaskedEdit(element, this.mask(), this.typed(), element.value, { caret: element.selectionStart, forward })
-    this.valueChange.emit(storedFromTyped(this.type(), this.precision(), edited))
+    this.edited(applyMaskedEdit(element, this.mask(), this.typed(), element.value, { caret: element.selectionStart, forward }))
   }
 
   protected onPaste(event: ClipboardEvent): void {

@@ -1205,7 +1205,14 @@ not read. Verified by `packages/conformance/fixtures/temporal-precision.json`, w
 width, an entry that stops short refused — and which failed with the typed control taken out of each
 renderer; by `packages/spec/src/temporal-entry.test.ts`, the React and Angular
 `typed-temporal-field` tests and Material's `controls.test.ts`; and, key by key in Chromium, by
-`scripts/temporal-entry-browser-test.mjs` in `pnpm test:browser`. The shape error under a typed date
+`scripts/temporal-entry-browser-test.mjs` in `pnpm test:browser`. Each edit is read against the text
+the control shows: Angular renders the answer an edit reported on a later task, and a key that
+reached the control first was read against the answer one keystroke behind, so a Backspace across a
+colon did nothing, which the browser check failed on intermittently, and a paste over the hour of
+`08:03:27` stored `15` and nothing after it. Verified by *a Backspace pressed before Angular renders
+takes the digit before the colon* and *a paste before Angular renders keeps the digits typed after
+the last render* in Angular's `typed-temporal-field` tests, which failed while the directive read
+its `value`. The shape error under a typed date
 and time, `error.shape.day`, gives its example as the person types it, on their own clock with a
 space, "Enter it as 2026-10-08 09:30:00.000, on a day the calendar has": given in the stored form,
 `…T09:30:00.000Z`, a person copying it would type a `T` and a `Z` the mask has no place for.

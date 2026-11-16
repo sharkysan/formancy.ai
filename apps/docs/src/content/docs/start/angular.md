@@ -316,6 +316,9 @@ export class Started {
   `input`, `paste` and `drop`. Any other attribute you put on the element, its `id`, `name` and
   `aria-*` among them, is kept.
 - It emits only what the person types, pastes or drops, never on mount.
+- Each edit is read against the text the box shows, not against `value`, so a key pressed before
+  your `value` comes back, a render later, is not lost. A `value` that differs from the last one you
+  passed replaces what the box shows.
 
 ## The other inject helpers
 
