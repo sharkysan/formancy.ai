@@ -328,3 +328,25 @@ of pasted and existing digits that nobody wrote.
 
 **Rounding to the field's width**, for a computed instant or a paste. Rejected: a rounded value is
 a reading the device never gave, and the next sort places it wrongly. Exact or refused.
+
+**Each builder binding its own typed box**, a local copy of the mask's handling in each condition
+editor, mirroring the renderers'. Built first and replaced: a paste and a drop are decided by
+`pasteOutcome`, but where the caret goes and what a deletion removes are each control's binding,
+and two more copies of that binding are 0091's silent divergence again. Exporting the renderers'
+control makes it public surface in `@formancy/react` and `@formancy/angular`, which is what it
+costs; the author and the respondent type through one implementation, which is what it buys.
+
+**A condition row holding the typed digits**, converted to the instant when the rule is written.
+Built first and replaced: a pasted or dropped instant became the author's clock in the row, and on
+the night the clocks go back that clock names two instants, so the later 01:30Z came back as the
+earlier 00:30Z. The row holds the stored answer the control reports, as the renderer's field does,
+and only the control converts, on the person's input.
+
+**Rewriting both fields of a compared pair**, or a command that changes both at once. Rejected:
+the author changes one field's precision and would find another field changed that they did not
+touch, its bounds, default and rules carried too, with refusals of its own to explain; and one
+change cannot always say which precision the author meant the pair to share. **Allowing the change
+and leaving the rule to publish** was rejected too: the builder would hold a document it knows
+publish refuses, the refusal far from the box that caused it, which is what carrying the precision
+exists to stop. Refusing, naming the other field, costs the author removing the rule, changing
+both and writing it again.
