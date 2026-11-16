@@ -46,20 +46,29 @@
     a lone text box casts, compared by the shadows each casts, nothing where a lone box casts nothing
     and Pop's hard shadow where it casts that, and neither the box nor the button casts one of its
     own; at rest and invalid the button's upper and lower edges, fill and shadow are the box's; and
-    the pickup point's list, opened from the keyboard, lies within its box and is what the browser
-    hits across it. Watched failing: with Dusk's row rules taken out, 32 checks, the height and the
-    touching on every row; without the rules that carry an invalid field's mark across the button,
-    64, in every theme; with Pop's row shadows named again for right to left, the row's shadow right
-    to left, at rest (8 checks), with the keyboard in the row and invalid; with Pop's row shadow
-    taken out, the row's shadow at rest, 16 checks, in both reading orders and at both widths (the
-    check had passed any row that cast nothing until it compared what each casts); without the rule
-    that keeps Pop's box from lifting inside its row, the box's own shadow and, with the keyboard in
-    the row, the height and the touching; without a `z-index` on Pop's row with the keyboard in it,
-    the tag picker's box drawn over the open list; with Blueprint's row positioned and its anchor not,
-    the list outside its box; without Paper's button minimum, the 44px check, and with Paper's row
-    narrowed to its content, the row's width (Dusk's button is 45px wide on its padding and icon
-    alone, so taking its minimum away could not fail it); and without `fieldBeside` in the Angular
-    preview, the check that both renderers draw their rows.
+    the pickup point's list, opened from the keyboard, lies within its box, is what the browser hits
+    across it, and covers the field's status, which says how many points it shows: the status's
+    inline end no further than the list's, and its upper and lower edges between the list's.
+    Watched failing: with each theme's status as wide as its field, as it was before the themes
+    ended it where the box ends, 32 checks, the status's, in every theme, both reading orders, both
+    renderers and both widths, its end past the list's by the width of the theme's button, 44px in
+    Blueprint and Paper, 45px in Dusk and 50px in Pop (measured 2026-11-16); with Pop's status
+    ending where its box ends rather than 2px short of it, 4, left to right with the keyboard in the
+    row, whose lift takes the list 2px to the left; with Dusk's row rules taken out, 32 checks, the
+    height and the touching on every row; without the rules that carry an invalid field's mark
+    across the button, 64, in every theme; with Pop's row shadows named again for right to left, the
+    row's shadow right to left, at rest (8 checks), with the keyboard in the row and invalid; with
+    Pop's row shadow taken out, the row's shadow at rest, 16 checks, in both reading orders and at
+    both widths (the check had passed any row that cast nothing until it compared what each casts);
+    without the rule that keeps Pop's box from lifting inside its row, the box's own shadow and,
+    with the keyboard in the row, the height and the touching; without a `z-index` on Pop's row with
+    the keyboard in it, the tag picker's box drawn over the open list; with Blueprint's row
+    positioned and its anchor not, the list outside its box; without Paper's button minimum, the
+    44px check, and with Paper's row narrowed to its content, the row's width; without Dusk's, 48
+    checks, the 44px check on every Dusk row, once its padding was narrowed to fit its size (until
+    then its button was 45px wide on its padding and icon alone, so taking its minimum away could
+    not fail it); and without `fieldBeside` in the Angular preview, the check that both renderers
+    draw their rows.
 
 ## Context
 
@@ -102,7 +111,7 @@ only an inset one. An invalid field's mark runs across the button too. A button 
 box's height and at least 44px wide; an `svg` in it is sized to the text and filled in the button's
 colour, so a host's icon needs no styling of its own; and it is drawn unavailable alike as `:disabled`
 and as `aria-disabled`, which a host uses to keep an unavailable button in the keyboard's order. On a
-narrow screen the box shrinks and the button keeps its 44px. Content that draws nothing leaves the
+narrow screen the box shrinks and the button keeps its width. Content that draws nothing leaves the
 place beside empty, which every theme hides, and the box keeps its own corners.
 
 **What it costs.** Two controls draw it, the select and the typeahead, because a lookup is one or the
@@ -118,7 +127,12 @@ then, which keeps the box; both bindings' documentation says so, and a case in e
 keeps it. In React the function is called on every render of those two controls, so a host keeps it
 constant. With the keyboard in it, Pop's row is lifted, which makes it a stacking context the
 typeahead's list can rise only within, so the row is raised with it, or a later field's box is drawn
-over the open list. The browser gate measures edges, fills, heights and shadows, which only approach
+over the open list. The list opens against the box and is only as wide as it, so a field's status
+under the row ends where the box ends, the theme's `--fm-beside-size` short of the field's end, and
+the open list covers it as it did when the list was the field's width. Content a host draws wider
+than that, a button with words on it, leaves the status's end showing beside the open list; and a
+select's status, which ends there too, is measured on no form, the playground's country having no
+source. The browser gate measures edges, fills, heights and shadows, which only approach
 the judgement that matters, that the pair reads as one field; that is made by eye on the playground,
 which is how Pop's right-to-left shadow and Blueprint's focus ring round three sides of its button
 were found. It measures in Chromium alone, on the playground's form, and not a row under the pointer,

@@ -27,6 +27,9 @@
   --fm-sans: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --fm-radius: 10px;
   --fm-step: 1.375rem;
+  /* How wide a button beside a field's box is (0237): the 44px a pointer and a finger need, which
+     its padding and an icon the size of the box's text fit inside. */
+  --fm-beside-size: 44px;
 
   /* The fill of a control. Lighter than the ground it sits on, and darker
      than a raised card — so a control reads as cut into whatever surface it
@@ -141,6 +144,13 @@
    own corners, since the rule below squares them only when something is beside it. */
 [data-formancy-theme='dusk'] [data-formancy-part='field-beside']:empty {
   display: none;
+}
+
+/* A field's status is a line of its own under the row, and would run on under the button; the
+   typeahead's list, opened against the box, is only as wide as the box. So the status ends where
+   the box does, and the open list covers it whole rather than leaving its end beside the list. */
+[data-formancy-theme='dusk'] [data-formancy-part='field']:has(> [data-formancy-part='field-control-row'] > [data-formancy-part='field-beside']:not(:empty)) > :is([data-formancy-part='typeahead-status'], [data-formancy-part='select-status']) {
+  margin-inline-end: var(--fm-beside-size);
 }
 
 /* One well cut into the surface, the box and what is beside it: the box's end corners
@@ -1817,9 +1827,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-inline-size: 44px;
+  min-inline-size: var(--fm-beside-size);
   margin: 0;
-  padding: 0 0.875rem;
+  padding: 0 0.75rem;
   border: 1px solid transparent;
   border-inline-start-color: var(--fm-edge);
   border-radius: 0;

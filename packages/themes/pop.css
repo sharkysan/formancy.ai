@@ -31,6 +31,10 @@
   --fm-radius: 12px;
   --fm-lift: 4px 4px 0 var(--fm-ink);
   --fm-step: 1.5rem;
+  /* How wide a button beside a field's box is (0237): the box's height, so the button is square,
+     and more than the 44px a pointer and a finger need. Its padding, its line and an icon the
+     size of the box's text fit inside. */
+  --fm-beside-size: 3rem;
 
   color: var(--fm-ink);
   font-family: var(--fm-sans);
@@ -191,6 +195,16 @@
    something is beside it. */
 [data-formancy-theme='pop'] [data-formancy-part='field-beside']:empty {
   display: none;
+}
+
+/* A field's status is a line of its own under the row, and would run on under the button; the
+   typeahead's list, opened against the box, is only as wide as the box. So the status ends where
+   the box does, and the open list covers it whole rather than leaving its end beside the list.
+   And 2px short of that: with the keyboard in it the row lifts 2px to the left, the list with it,
+   and the status does not, so read left to right the list's end would stop 2px short of the
+   status's. */
+[data-formancy-theme='pop'] [data-formancy-part='field']:has(> [data-formancy-part='field-control-row'] > [data-formancy-part='field-beside']:not(:empty)) > :is([data-formancy-part='typeahead-status'], [data-formancy-part='select-status']) {
+  margin-inline-end: calc(var(--fm-beside-size) + 2px);
 }
 
 /* One shape, the box and what is beside it: the box's end corners square and its end line
@@ -1922,9 +1936,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-inline-size: 44px;
+  min-inline-size: var(--fm-beside-size);
   margin: 0;
-  padding: 0 0.875rem;
+  padding: 0 0.75rem;
   border: var(--fm-line);
   border-radius: 0;
   border-start-end-radius: var(--fm-radius);

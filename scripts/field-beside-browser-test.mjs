@@ -16,7 +16,11 @@ import { fileURLToPath } from 'node:url'
  * row would open under the button too. Nothing later in the form is drawn over the open list: with
  * the keyboard in it Pop's row is lifted, and so a stacking context of its own that the list can
  * rise only within, and until the row rose with it the tag picker's box under the pickup point was
- * drawn across the list (seen 2026-11-15).
+ * drawn across the list (seen 2026-11-15). And the open list covers the field's status, the line
+ * under the row that says how many points it shows: the status is a row of the field and was as
+ * wide as the field, the list now only as wide as the box, so the status's end showed beside the
+ * open list, under the button, cut mid-word, in every theme (seen 2026-11-16). Before the row the
+ * list was the field's width and covered it whole.
  *
  * A row is judged in three states, since a theme draws each with rules of its own: at rest; while
  * its field is invalid, the mark a failed submit leaves, which no theme carried onto the button at
@@ -38,13 +42,15 @@ import { fileURLToPath } from 'node:url'
  * the country's select in both renderers, with each theme in turn on both sheets, left to right and
  * then right to left, at a desk's width and at a phone's: the button is the box's height, at least
  * 44px wide, and touches the box at the box's inline end; the row is as wide as its field and casts
- * the shadows above; and the pickup point's list, opened from the keyboard, lies within its box and
- * is what the browser hits at every point sampled across it. Neither field is required, so a field
- * is made invalid the way a theme reads it, by its wrapper's `data-state`, for the measurement and
- * put back after it in the same task. Where each lies is the browser's layout, read from the boxes
- * it drew. Not held here: a row under the pointer, which lifts in Pop, since a theme switched under
- * a resting pointer is not reliably hovered again; and whether the pair *reads* as one field, a
- * judgement of the eye that edges and fills only approach.
+ * the shadows above; and the pickup point's list, opened from the keyboard, lies within its box, is
+ * what the browser hits at every point sampled across it, and holds the field's status, saying
+ * something, inside its own edges. Neither field is required, so a field is made invalid the way a
+ * theme reads it, by its wrapper's `data-state`, for the measurement and put back after it in the
+ * same task. Where each lies is the browser's layout, read from the boxes it drew. Not held here: a
+ * row under the pointer, which lifts in Pop, since a theme switched under a resting pointer is not
+ * reliably hovered again; whether the pair *reads* as one field, a judgement of the eye that edges
+ * and fills only approach; and a select's status, which every theme ends where a row's box ends as
+ * it does the typeahead's, since the playground's country has no source and so no status.
  */
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -132,6 +138,7 @@ function measure({ themes, invalid = false, held = null }) {
         const list = first?.querySelector(':scope > [data-formancy-part="typeahead-listbox"]') ?? null
         const drawn = list !== null && getComputedStyle(list).display !== 'none' && list.childElementCount > 0
         const field = row.closest('[data-formancy-part="field"]')
+        const status = field.querySelector(':scope > :is([data-formancy-part="typeahead-status"], [data-formancy-part="select-status"])')
         const style = getComputedStyle(field)
         const sheet = row.closest('[data-formancy-theme]')
         const keyboard = row.contains(document.activeElement)
@@ -153,6 +160,9 @@ function measure({ themes, invalid = false, held = null }) {
           // The field's content box, which a row stretched across it fills.
           field: field.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd),
           list: drawn ? edges(list) : null,
+          // Read before `over` scrolls the list into view, as the list's edges are, so the two are
+          // compared where they lay together.
+          status: status === null ? null : { ...edges(status), says: status.textContent?.trim() ?? '' },
           covered: drawn ? over(list) : null,
         })
       }
@@ -314,7 +324,27 @@ function judgeHeld(measured, { at, renderer, kind }, check) {
       `${where}: the list is drawn over what lies under it`,
       list === null ? 'the list is not drawn' : one.covered === null ? null : `${one.covered} is drawn over it`,
     )
+    check(`${where}: the list covers the field’s status`, coversStatus(list, one.status, one.direction))
   }
+}
+
+/**
+ * What of the field's status lies outside the open list, or null where the list covers it: the
+ * status's inline end, its right edge left to right and its left edge right to left, no further
+ * than the list's, and its upper and lower edges between the list's. The list starts where the box
+ * does, as the status does, so it is the end that can stick out. A status saying nothing has no
+ * line to show beside the list, and a check of it would pass whatever the theme does, so it fails.
+ */
+function coversStatus(list, status, direction) {
+  if (list === null) return 'the list is not drawn'
+  if (status === null || status.says === '') return 'the field’s status says nothing while its list is open'
+  const px = (value) => `${value.toFixed(1)}px`
+  const [ends, listEnds] = direction === 'rtl' ? [status.left, list.left] : [status.right, list.right]
+  const past = direction === 'rtl' ? listEnds - ends : ends - listEnds
+  if (past > SLACK) return `“${status.says}” ends at ${px(ends)}, ${px(past)} past the list’s end at ${px(listEnds)}`
+  if (status.top < list.top - SLACK || status.bottom > list.bottom + SLACK)
+    return `“${status.says}” runs ${px(status.top)}–${px(status.bottom)} down the page and the list ${px(list.top)}–${px(list.bottom)}`
+  return null
 }
 
 /** One viewport: every row, every theme, both directions, at rest and invalid, and each renderer's two boxes given the keyboard. */
