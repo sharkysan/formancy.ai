@@ -33,7 +33,7 @@ const BUDGET = 600
 const CEILINGS: Record<string, { lines: number; why: string }> = {
   'packages/builder-core/src/session.ts': {
     lines: 1114,
-    why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core. The repath family left for `repath.ts` when this budget refused the rule rewriting, which is the seam working as intended. Finding things — a field by key path, a container, a layout node by position — left for `navigate.ts` when the builder’s words moved into the catalogue: none of it is a command. The body of the property command left for `reprecision.ts` when changing a precision needed to carry the bounds and rules of a field along, which freed six lines. The translation commands left for `translation.ts` the day one of them needed a line this ceiling would not give.',
+    why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core. The repath family left for `repath.ts` when this budget refused the rule rewriting, which is the seam working as intended. Finding things — a field by key path, a container, a layout node by position — left for `navigate.ts` when the builder’s words moved into the catalogue: none of it is a command. The generic property setter left for `properties.ts`, and the precision carry (a field’s bounds, default and rules) went to `reprecision.ts`, which freed six lines. The translation commands left for `translation.ts` the day one of them needed a line this ceiling would not give.',
   },
   'packages/core/src/engine.ts': {
     lines: 1208,

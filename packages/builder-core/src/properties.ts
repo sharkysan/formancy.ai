@@ -16,6 +16,9 @@ import type { Refusal } from './session.js'
  * already says which properties belong to which type — that is what its
  * `allOf` / `if` / `then` branches are — so reading them is both less code and
  * the only version that cannot drift.
+ *
+ * `setProperty` is the other half: how one edited property reaches the field. The precision of a
+ * time is the exception, which `reprecision.ts` carries along with its bounds and rules.
  */
 
 export type PropertyKind = 'string' | 'number' | 'boolean' | 'enum' | 'options' | 'columns' | 'strings'

@@ -158,7 +158,7 @@ export const BUILDER_MESSAGES_DE = {
   'refuse.precisionForm':
     'Regel {number} („{kind}“ für „{target}“) vergleicht „{field}“ mit einem Text, der in einer Form geschrieben ist, die der Builder nicht umschreibt, etwa mit einem Escape darin. Schreib den Text schlicht, dann ändere die Genauigkeit.',
   'refuse.precisionPair':
-    'Regel {number} („{kind}“ für „{target}“) vergleicht „{field}“ mit „{other}“, und eine Regel vergleicht zwei Antworten als Text, was nur stimmt, solange beide dieselbe Genauigkeit haben. Gib beiden dieselbe Genauigkeit: Entferne die Regel, ändere beide Felder und schreib die Regel dann neu.',
+    'Regel {number} („{kind}“ für „{target}“) vergleicht „{field}“ mit „{other}“, und eine Regel vergleicht zwei Antworten als Text, was nur stimmt, solange beide in derselben Form geschrieben sind. Gib beiden dieselbe Genauigkeit: Entferne die Regel, ändere beide Felder und schreib die Regel dann neu.',
   'said.removed': '{name} entfernt.',
   'said.cannotRemove': '{name} lässt sich nicht entfernen: {reason}',
   'said.added': 'Hinzugefügt: {what} – {where}.',

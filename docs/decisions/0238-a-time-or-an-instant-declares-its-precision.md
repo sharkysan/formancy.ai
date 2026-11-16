@@ -88,7 +88,11 @@
     `packages/expressions/src/compared-literals.test.ts`, *rewriteComparedLiterals*: only the
     literal's characters move. The panels offer the property on a time and a date and time only, in
     German and French, and a typed digit carries the bound: `property-panel.test.tsx` and
-    `property-panel.test.ts` in the two builders.
+    `property-panel.test.ts` in the two builders. In `reprecision.test.ts` also: a field inside a
+    page, a group under one and a repeater under one, each failing with the rules looked up by the
+    key path; two fields compared with each other, refused when the change would split them and
+    not when they already differ or stay alike, failing with that check removed; and a literal
+    written with an escape, refused for its form, failing with that sentence routed to the width's.
   - `packages/react/src/fields/typed-temporal-input.test.tsx`: the exported control reports the
     stored answer, not the digits, and a `ref` reaches its input.
 
@@ -268,8 +272,8 @@ line.
   would split a pair written in one shape is refused naming the other field, and the author removes
   the rule, changes both and writes it again; a pair already split, or one that stays alike (a date
   and time between 0 and none), is not refused. **Changing between two precisions is one step**, by
-  typing over the number: the panel reads a cleared box as removing the precision, which is exact
-  only for a time whose seconds are zero and otherwise refused, leaving the old precision in place.
+  typing over the number: the panel reads a cleared box as removing the precision, which is exact when nothing written at the field's width has digits the removal would drop (a time's seconds and fraction, a date and time's fraction), and otherwise refused, leaving the old
+  precision in place when refused.
 - **A document declaring version 6 cannot be read by 0.13.0 or earlier**, whether or not it uses
   `precision`, which refuses it as a validation error, as at every version; and this source writes
   `"6"` for every new form.

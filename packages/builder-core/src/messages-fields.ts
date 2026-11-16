@@ -23,5 +23,5 @@ export const FIELD_EDIT_MESSAGES = {
   'refuse.precisionForm':
     'Rule {number} (“{kind}” on “{target}”) compares “{field}” with a text written in a form the builder does not rewrite, such as one with an escape in it. Write the text plainly, then change the precision.',
   'refuse.precisionPair':
-    'Rule {number} (“{kind}” on “{target}”) compares “{field}” with “{other}”, and a rule compares two answers as text, which is right only while both have one precision. Give both the same precision: remove the rule, change both fields, then write the rule again.',
+    'Rule {number} (“{kind}” on “{target}”) compares “{field}” with “{other}”, and a rule compares two answers as text, which is right only while both are written in one shape. Give both the same precision: remove the rule, change both fields, then write the rule again.',
 } as const satisfies Record<string, Message>

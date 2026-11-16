@@ -81,10 +81,10 @@ control is still the browser's, to the minute
   so the change is refused, with the validator's own sentence for a bound and a sentence naming the
   rule for a literal, and the document is left as it was. A field inside a page is carried like any
   other. A rule comparing two such fields with each other, `opens < closes`, is right only while
-  both have one precision and no edit to one field changes the other, so a change that would split a
+  both have one shape and no edit to one field changes the other, so a change that would split a
   pair that is alike is refused, naming the other field; the author removes the rule, changes both
   and writes it again. To go from one precision to another, type over the number: clearing the box
-  first removes the precision, which is exact only for a time whose seconds are zero. The builder never guesses a value. The
+  first removes the precision, which is exact when nothing written at the field's width has digits the removal would drop (a time's seconds and fraction, a date and time's fraction), and otherwise refused. The builder never guesses a value. The
   rewrite changes only the characters of the literal, so the author's spacing and quotes survive
   ([0238](docs/decisions/0238-a-time-or-an-instant-declares-its-precision.md)). Saved examples are
   not rewritten.
