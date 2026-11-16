@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider, ResumeNotice } from '@formancy/react'
@@ -210,7 +210,14 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
     [path, readOnly],
   )
 
-  useEffect(() => {
+  /*
+   * A layout effect, so the pane listens from the commit that draws the form. React runs a plain
+   * effect a task after that commit, and a change made in between — by whatever fills a field the
+   * moment it appears — would schedule no save, and start no draft until something changed again.
+   * What it does not cover: React runs a child's layout effects before this one, so a control that
+   * wrote to the engine from its own layout effect would still be missed. None does today.
+   */
+  useLayoutEffect(() => {
     if (engine === undefined || readOnly) return
     return engine.subscribe(() => {
       clearTimeout(pending.current)

@@ -182,6 +182,13 @@ typeahead's list scrolled into view kept its first rows under the switch's butto
 over the pickup point's open list failed on it now and then, whenever the starter's shuffled *Add to
 your order* took a line more and left the list there.
 
+**Fixed: the admin's fill pane saves a change made the moment it draws the form.** It began
+listening in an effect, which React runs a task after the commit that draws the form, so a change
+made in between, by whatever fills a field as soon as it appears, scheduled no save, and no draft
+was started until something changed again. It now listens from that commit. Found when two of its
+tests, which change a field straight after finding it, failed now and then in CI; the drafts page
+now tells a host to subscribe before the form can be changed.
+
 ## 0.13.0 — 2026-11-05
 
 **A minor release; the spec version stays 5.** `0.13.0` reads and writes what `0.12.0` does, so a
