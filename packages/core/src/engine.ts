@@ -582,9 +582,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   /** One value bag per pass: every declared top-level name present, read as the root's own
    *  (0185), with null standing in for an empty leaf so expressions bind rather than throw. */
   function buildBag(): Record<string, unknown> {
-    const bag: Record<string, unknown> = {}
-    for (const { key } of topLevel) bag[key] = readBack(key)
-    return bag
+    return Object.fromEntries(topLevel.map(({ key }) => [key, readBack(key)]))
   }
 
   /** A row bag follows the same convention as the top-level bag: every leaf
