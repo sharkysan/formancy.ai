@@ -184,9 +184,43 @@ which makes drift a test failure rather than a discovery.
 implementation must reimplement the engine against the spec — which is part of
 why a portable expression language was chosen.
 
-**Expressions cannot reference runtime-computed paths.** The cost of
-[0018](../decisions/0018-static-dependencies.md). Dynamic indirection is simply
-not expressible, in exchange for cycles being impossible.
+**A path computed at run time is read whole.** The cost of
+[0018](../decisions/0018-static-dependencies.md), in the form
+[0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md) gives it.
+`lines[int(n)].qty` and `addr[k]` can be written, and are read as the whole
+collection and the variable, so a computed field reading one runs after every
+computed field inside it, and at the top level a row rule reading its own list
+that way is refused as a cycle whichever row it means. Over-reporting is the
+direction that cannot leave a value stale; this record said until 2026-11-22 that
+such a path could not be expressed at all.
+
+**Inside a group, a row's whole read of what row rules compute depends on the order they run in.**
+Accepted debt, from
+[0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md). Inside a
+group, a row rule reading a list inside a group, or a group, whole waits for no row rule
+of a list inside a group, and is placed where every release's code ran it, after the
+rules on every top-level field and then in the document's order, because a row count,
+the row before, the last row and another list's count computed right that way and
+versions published with one must go on opening. The order keeps main's place for these
+rules where it can, and gives main's values on every case the tests measure but one,
+which it computes this pass where main was a pass behind (A5 names them); it is not
+shown to equal main's order in general. It reads those rows as the order leaves them: a
+member another row rule computes is this pass's value if that rule runs first and the
+pass before's otherwise, and its own member always the pass before's, so it can read a
+computed member a pass behind where main read it fresh, or fresh where main read it a
+pass behind. Measured on
+2026-11-22, at `main`'s figures: a running total, `order.lines[index - 1].x + item.qty`,
+showed 7 where 8 was due, and the replay stored the first row's total and no other; a
+count of what another list inside a group computes, `order.other.filter(o, o.y > 2.0)`
+or the same over `other.lines`, and a count over the row's own list of a member another
+row rule computes, each stayed 0 where 1 was due with the writing rule listed after
+them, and the replay stored none, and were right with it listed before (A5). At the top
+level the running total and the own list's count are refused. Paying it off means
+telling these from a row count, which the reads alone cannot, or retiring the versions
+that hold one; the engine tests *debt: a running total down the rows of a repeater
+inside a group is a pass behind, as on main* and *debt: a whole read of a member another
+row rule computes is this pass's when that rule runs first, the pass before's after, as
+on main* fail the day either is done.
 
 **Visibility rules fail open.** The cost of
 [0022](../decisions/0022-fail-open-fail-closed.md). A form whose visibility

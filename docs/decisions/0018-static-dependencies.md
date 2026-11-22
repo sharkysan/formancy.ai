@@ -1,6 +1,7 @@
 # 0018 — Extract dependencies statically and reject cycles at save time
 
-- **Status:** accepted
+- **Status:** accepted; its graph's nodes made fields, and its "cannot be expressed" corrected, by
+  [0240](0240-a-computed-rule-depends-on-the-fields-it-reads.md)
 - **Date:** 2026-09-19
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/core/src/graph.test.ts` — "rejects a cycle with the

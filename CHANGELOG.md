@@ -46,11 +46,93 @@ its group around it (hazard A5). From the upgrade, a form version published befo
 accepted, fills a computed field it left empty and strips a hidden value it kept; responses stored
 before keep what they were stored with, and never migrate.
 
+**Fixed: a computed field reading a row of a repeater inside a group showed a value the server did
+not store**, in every release through `0.14.0`, read from their engines' code. The pass runs the
+computed rules in the order of what they read, and that order was worked out on top-level names: a
+read of `order.lines[0].twice` was a read of `order`, and nothing ordered it after the row rule
+writing `order.lines[].twice`. So the field ran first and read the rows as the pass before had left
+them. Measured on `main`, with `first = size(order.lines) == 0 ? 0.0 : order.lines[0].twice`: the
+quantity changed from 2 to 3, the row showed 6 and `first` 4, and the server's replay of those
+answers stored no `first` at all; earlier releases were not run. At the top level the
+order was right. A computed rule now depends on the fields it reads, not on their top-level names
+(0240, hazard A5). From the upgrade, a form version published before computes such a field from the
+rows as they stand, in the browser and on the replay; responses stored before keep what they were
+stored with, and never migrate. A row rule in a repeater inside a group that reads a list inside
+a group, or any group, whole keeps what every release's code gave it: it waits for no row rule of a
+list inside a group, and runs at main's place, after the rules on every top-level field and then in
+the document's order. The order keeps main's place for these rules where it can. In the cases
+measured it gives main's values — a row count, the row before, the last row, two lists counting each
+other, a count between a row rule and the member it reads through `item`, a top-level rule waiting
+for a row rule in a group, and the running total and the counts below in both document orders — but
+in the one measured case where a read into a row now waits for the rule it names, which then
+computes this pass where main was a pass behind; it is not shown to equal main's order in general. A member another row rule
+computes is this pass's value if that rule runs first and the pass before's otherwise, and the rule's
+own member always the pass before's, so such a read can take a computed member a pass behind where
+main took it fresh, or fresh where main took it a pass behind: a running total down such rows, a
+count of another list's computed members, or of the row's own list's, can change with the order the
+document lists the rules in, and the replay can store none. Recorded as debt, not fixed.
+
+- **A computed field in a group may read another field of its group**, and a chain through a group
+  that does not come back to the field it started from is accepted. `addr.label = "in " + addr.city`
+  was refused as `Dependency cycle: addr -> addr`, and `addr.zip = code` beside `code = addr.city`
+  as `addr -> code -> addr`, since a field and its group were one node, and nothing said so. A cycle
+  is named by its fields now, as `addr.label -> addr.label`, rather than by their top-level names,
+  which said which group and not which rule.
+- **A rule writing inside a field another rule computes whole runs after it**, so a row rule on a
+  list computed whole fills its field at the top level. It could run before the rule writing the
+  list, which then replaced what it had written, and the field stayed empty in the browser and on
+  the replay; inside a group it ran last, and was right. Measured on `main`; the same order is in
+  every release's code, and whether each release let a rule write a whole list was not checked.
+- **A row reading a member of a group another rule computes whole in its row waits for it.**
+  `lines[].x = item.sub.z * 2.0` beside `lines[].sub` computed whole: `item.sub.z` was a node of its
+  own on `main`, not `lines[].sub`, so nothing ordered the two: the browser showed 4 and 10, and
+  the server's replay of those answers stored no `x`. Both show and store 4 and 10 now. Measured on
+  `main` only.
+- **A row at the top level may read another row of its list by position.**
+  `lines[].x = lines[0].qty * 1.0`, and `lines[].y = lines[0].x + 1.0` beside
+  `lines[].x = item.qty * 2.0`, were refused as `lines -> lines[].x -> lines` and
+  `lines -> lines[].y -> lines`, since the read was cut to the list. Read as the field it names, the first reads nothing a rule writes and the second waits
+  for the member it reads, so both are accepted and compute the same in the browser and on the
+  replay.
+
 - **The Angular starter's preview says why the engine refused a document, instead of throwing.** A saved
   or half-written form whose rule does not compile is a valid document the builder can hold, and the
   engine only refuses it when the preview builds it; the effect threw and the pane went blank with the
   reason in the console. The pane now shows the engine's message, as the admin's build pane does, and
   draws the form again once the document builds.
+
+**Breaking, for a server with published forms.** [`MIGRATIONS.md`](MIGRATIONS.md) says how to find
+one and what to write instead.
+
+- **A version whose computed rules form a loop field by field, which every release's graph of
+  top-level names did not see, no longer opens.** A read now waits for every computed rule that
+  writes what it reads, by field path. The one exception is a row rule in a repeater inside a
+  group reading a list inside a group, or a group, whole, which waits for no row rule of a list
+  inside a group, only for the other rules writing into what it reads (above). So a
+  loop main's graph missed is refused, at the top level as well as inside groups, and every release
+  through `0.14.0` published one. A rule outside a group's rows that reads them, a top-level row
+  among them, waits for their row rules as a field outside a top-level list's rows always waited
+  for those. Measured on `main`, where each was accepted:
+  - inside a group, `count = double(size(order.lines))` read as
+    `order.lines[].share = item.qty / count`, which computed right, is refused as
+    `count -> order.lines[].share -> count`; its rewrite reads the count in the row,
+    `order.lines[].share = item.qty / double(size(order.lines))`, which is accepted. The same count
+    kept inside the group, `order.count`, was refused already, as `order -> order`, and still is;
+  - `first` computed from `order.lines[0].x` and read back by the rows computed nothing once a row
+    was there;
+  - a row reading another row's member by position, `order.lines[0].x`, showed values the replay
+    did not store;
+  - at the top level, `lines[].sub.z = double(size(item.sub))`, and `lines[].x` reading
+    `size(item.sub)` beside `lines[].sub.z = item.x * 2.0`: `item.sub` holds the member;
+  - loops that reach into a row, or read a list or a group across levels whole: two lists of one
+    group by position, a top-level row and a row in a group by position, a row in a group reading a
+    top-level list whole that its row reads back, and a top-level row reading a group whole whose
+    list reads the top-level list back.
+
+  A version stored with one still answers its public read, the engine refuses to open it in the
+  browser, every submission is a `500` storing nothing, and publishing it again is a `422`
+  `invalid_logic` naming the cycle, which leaves the version in place. Building each stored version
+  with this release's engine finds every one; `MIGRATIONS.md` gives the steps.
 
 ## 0.14.0 — 2026-11-16
 

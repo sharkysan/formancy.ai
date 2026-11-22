@@ -288,6 +288,493 @@ describe('what a computed rule writes inside a group, read by the rules after it
   })
 })
 
+/**
+ * The pass runs the computed rules in the order of what they read. That order was worked out on
+ * top-level names: a rule writing inside a group was the group's, and a read of a field in it was
+ * a read of the group. So a reader of a row member in a repeater inside a group was not ordered
+ * after the row rule, and read the rows as the pass before had left them; and a computed field in
+ * a group reading another field of the group read itself, and the form was refused as a cycle.
+ */
+describe('a computed rule is ordered by the field it writes and the fields it reads, not their top-level names', () => {
+  const form = (fields: FieldDef[], rules: LogicRule[]): FormSchema => ({
+    specVersion: '1',
+    id: 'ordered',
+    title: 'Ordered',
+    model: { fields },
+    logic: { rules },
+  })
+  /** The server's replay: an engine on that side, built from the answers the browser sends. */
+  const replayed = (schema: FormSchema, answers: unknown): unknown => {
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, mode: 'server', initialValue: answers })
+    expect(engine.submit().ok).toBe(true)
+    return engine.value()
+  }
+
+  const order = (rules: LogicRule[]): FormSchema =>
+    form(
+      [
+        {
+          key: 'order',
+          type: 'group',
+          fields: [
+            { key: 'note', type: 'text' },
+            {
+              key: 'lines',
+              type: 'repeater',
+              fields: [
+                { key: 'qty', type: 'number' },
+                { key: 'twice', type: 'number' },
+                { key: 'label', type: 'text' },
+              ],
+            },
+          ],
+        },
+        { key: 'first', type: 'number' },
+        { key: 'remark', type: 'text' },
+      ],
+      rules,
+    )
+  const twice: LogicRule = { target: 'order.lines[].twice', kind: 'computed', cel: 'item.qty * 2.0' }
+  const first: LogicRule = { target: 'first', kind: 'computed', cel: 'size(order.lines) == 0 ? 0.0 : order.lines[0].twice' }
+
+  test('a field reading a row member in a repeater inside a group shows what the server stores', () => {
+    // `first` ran before the row rule and read the rows as the pass before had left them: with the
+    // quantity changed from 2 to 3 the row said 6 and `first` still 4. The server's replay of those
+    // answers, in whose pass the member it reads was not computed yet, stored no `first` at all.
+    const schema = order([twice, first])
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { order: { lines: [{ qty: 2 }] } } })
+    engine.setValue(['order', 'lines', 0, 'qty'], 3)
+
+    expect(engine.getFieldSnapshot(['order', 'lines', 0, 'twice']).value).toBe(6)
+    expect(engine.getFieldSnapshot(['first']).value).toBe(6)
+    const stored = replayed(schema, engine.value())
+    expect(stored).toEqual(engine.value())
+    expect(stored).toMatchObject({ first: 6 })
+  })
+
+  test('the form of the group fix with an aggregate over the rows, in the browser and on the replay', () => {
+    // Ordering the group after its rows, the obvious repair of the case above, makes the label,
+    // which reads `order.note`, depend on itself, and refuses this form.
+    const schema = order([
+      twice,
+      { target: 'order.lines[].label', kind: 'computed', cel: 'order.note + " " + string(item.twice)' },
+      first,
+      { target: 'remark', kind: 'visible', cel: 'has(order.note) && order.note != "Probe"' },
+    ])
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { order: { note: 'Probe', lines: [{ qty: 2 }] } } })
+    engine.setValue(['order', 'lines', 0, 'qty'], 3)
+
+    expect(engine.getFieldSnapshot(['order', 'lines', 0, 'label']).value).toBe('Probe 6')
+    expect(engine.getFieldSnapshot(['first']).value).toBe(6)
+    expect(engine.getFieldSnapshot(['remark']).visible).toBe(false)
+    expect(replayed(schema, engine.value())).toEqual(engine.value())
+  })
+
+  test('a loop through a row rule in a repeater inside a group is refused, as it was at the top level', () => {
+    // Not seen, so the form was accepted, and opened with a row in it computed neither field.
+    const loop = order([{ target: 'order.lines[].twice', kind: 'computed', cel: 'item.qty * 2.0 + first' }, first])
+
+    expect(() => createFormEngine({ schema: loop, capabilities: FIXED_CLOCK })).toThrow('Dependency cycle: first -> order.lines[].twice -> first')
+  })
+
+  test('a row rule on a list another rule computes whole fills its field, in the browser and on the replay', () => {
+    // At the top level the row rule ran first, and the list written whole after it replaced what
+    // it wrote, so the field stayed empty on both sides. Inside a group it ran last, and was right.
+    const schema = form(
+      [
+        {
+          key: 'lines',
+          type: 'repeater',
+          fields: [
+            { key: 'qty', type: 'number' },
+            { key: 'twice', type: 'number' },
+          ],
+        },
+      ],
+      [
+        { target: 'lines[].twice', kind: 'computed', cel: 'item.qty * 2.0' },
+        { target: 'lines', kind: 'computed', cel: '[{"qty": 3.0}]' },
+      ],
+    )
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK })
+
+    expect(engine.getFieldSnapshot(['lines', 0, 'twice']).value).toBe(6)
+    expect(replayed(schema, engine.value())).toEqual(engine.value())
+  })
+
+  const address = form(
+    [
+      {
+        key: 'addr',
+        type: 'group',
+        fields: [
+          { key: 'city', type: 'text' },
+          { key: 'label', type: 'text' },
+        ],
+      },
+    ],
+    [{ target: 'addr.label', kind: 'computed', cel: '"in " + addr.city' }],
+  )
+
+  test('a computed field in a group reads another field of its group, in the browser and on the replay', () => {
+    // Refused as "Dependency cycle: addr -> addr": the write and the read were both the group.
+    const engine = createFormEngine({ schema: address, capabilities: FIXED_CLOCK, initialValue: { addr: { city: 'Bern' } } })
+    expect(engine.getFieldSnapshot(['addr', 'label']).value).toBe('in Bern')
+
+    engine.setValue(['addr', 'city'], 'Thun')
+    expect(engine.getFieldSnapshot(['addr', 'label']).value).toBe('in Thun')
+    expect(replayed(address, engine.value())).toEqual({ addr: { city: 'Thun', label: 'in Thun' } })
+  })
+
+  test('a computed field reading its group whole is refused, with the field named', () => {
+    // `size(addr)` reads the field being computed. The cycle named the group, which says which
+    // group and not which of its rules.
+    const whole = form(address.model.fields, [{ target: 'addr.label', kind: 'computed', cel: 'string(size(addr))' }])
+
+    expect(() => createFormEngine({ schema: whole, capabilities: FIXED_CLOCK })).toThrow('Dependency cycle: addr.label -> addr.label')
+  })
+})
+
+/**
+ * What the order keeps from main's, and what it refuses that main accepted, run in the browser and
+ * on the replay. A row rule in a repeater inside a group reading a list or a group inside a group
+ * whole depended on none of their rows on main, and still does (0240): a row count, the row before,
+ * the last row and another list's count computed right, and a version published with one must go
+ * on opening.
+ */
+describe('a row rule in a repeater inside a group reading a list inside a group whole, and the loops it is not', () => {
+  const lines = (key: string): FieldDef => ({
+    key,
+    type: 'repeater',
+    fields: [
+      { key: 'qty', type: 'number' },
+      { key: 'x', type: 'number' },
+      { key: 'y', type: 'number' },
+      { key: 'share', type: 'number' },
+    ],
+  })
+  const form = (fields: FieldDef[], rules: LogicRule[]): FormSchema => ({ specVersion: '1', id: 'rows', title: 'Rows', model: { fields }, logic: { rules } })
+  const inGroup = (rules: LogicRule[]): FormSchema =>
+    form(
+      [
+        { key: 'order', type: 'group', fields: [{ key: 'note', type: 'text' }, { key: 'count', type: 'number' }, lines('lines'), lines('other')] },
+        { key: 'count', type: 'number' },
+        { key: 'other', type: 'group', fields: [lines('lines')] },
+      ],
+      rules,
+    )
+  const atTop = (rules: LogicRule[]): FormSchema => form([lines('lines')], rules)
+  const x = (cel: string, target = 'order.lines[].x'): LogicRule => ({ target, kind: 'computed', cel })
+  const column = (value: unknown, path: readonly string[], member: string): unknown[] =>
+    (path.reduce<unknown>((held, key) => (held as Record<string, unknown> | undefined)?.[key], value) as Array<Record<string, unknown>>).map(
+      (row) => row[member],
+    )
+  const xs = (value: unknown, path: readonly string[]): unknown[] => column(value, path, 'x')
+  const replayed = (schema: FormSchema, answers: unknown): unknown =>
+    createFormEngine({ schema, capabilities: FIXED_CLOCK, mode: 'server', initialValue: answers }).value()
+
+  test('a row count, the row before and the last row compute as on main, in the browser and on the replay', () => {
+    // Refused as `order.lines[].x -> order.lines[].x` by the change before this ruling, though each
+    // computed right on main. Their figures here are main's, measured on 2026-11-22.
+    for (const [cel, built, edited] of [
+      ['double(size(order.lines))', [2, 2], [3, 3, 3]],
+      ['index == 0 ? 0.0 : order.lines[index - 1].qty * 1.0', [0, 2], [0, 3, 5]],
+      ['index == size(order.lines) - 1 ? 1.0 : 0.0', [0, 1], [0, 0, 1]],
+      // A row's share of the count, read in the row itself: the rewrite of the share below.
+      ['item.qty / double(size(order.lines))', [1, 2.5], [1, 5 / 3, 1 / 3]],
+    ] as const) {
+      const schema = inGroup([x(cel)])
+      const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { order: { lines: [{ qty: 2 }, { qty: 5 }] } } })
+      expect(xs(engine.value(), ['order', 'lines']), cel).toEqual(built)
+
+      engine.setValue(['order', 'lines', 0, 'qty'], 3)
+      engine.addRow(['order', 'lines'])
+      engine.setValue(['order', 'lines', 2, 'qty'], 1)
+      expect(xs(engine.value(), ['order', 'lines']), cel).toEqual(edited)
+      expect(xs(replayed(schema, engine.value()), ['order', 'lines']), cel).toEqual(edited)
+    }
+  })
+
+  test('debt: a running total down the rows of a repeater inside a group is a pass behind, as on main', () => {
+    // Accepted because refusing it would retire versions main published, and wrong because the
+    // row before is read as the pass before left it: after the first quantity goes from 2 to 3 the
+    // second row says 7 where 8 is due, and the replay, one pass from nothing, stores no second
+    // row's total at all. 0240, A5 and §11 call it debt; this fails the day it is fixed.
+    const schema = inGroup([x('index == 0 ? item.qty * 1.0 : order.lines[index - 1].x + item.qty')])
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { order: { lines: [{ qty: 2 }, { qty: 5 }] } } })
+    engine.setValue(['order', 'lines', 0, 'qty'], 3)
+
+    expect(xs(engine.value(), ['order', 'lines'])).toEqual([3, 7])
+    expect(xs(replayed(schema, engine.value()), ['order', 'lines'])).toEqual([3, undefined])
+  })
+
+  test('control: at the top level the same rules are refused, as they were on main', () => {
+    // Passed before as after, the trace's wording aside: `concepts/logic.md` says a row rule that
+    // reads its own list reads its own row.
+    for (const cel of ['double(size(lines))', 'index == 0 ? 0.0 : lines[index - 1].qty * 1.0', 'index == size(lines) - 1 ? 1.0 : 0.0']) {
+      expect(() => createFormEngine({ schema: atTop([x(cel, 'lines[].x')]), capabilities: FIXED_CLOCK }), cel).toThrow(
+        'Dependency cycle: lines[].x -> lines[].x',
+      )
+    }
+  })
+
+  test('the loops through a repeater inside a group main did not see are refused', () => {
+    // Accepted on main, refused at the top level and now in a group alike. A row's share of a count
+    // computed from its own list computed right on main; it reads `size(order.lines)` in the row
+    // now, as above. A row reading another row's member by position showed what the replay did not
+    // store.
+    const refused = (rules: LogicRule[]) => () => createFormEngine({ schema: inGroup(rules), capabilities: FIXED_CLOCK })
+
+    expect(refused([x('item.qty / count', 'order.lines[].share'), { target: 'count', kind: 'computed', cel: 'double(size(order.lines))' }])).toThrow(
+      'Dependency cycle: count -> order.lines[].share -> count',
+    )
+    expect(refused([x('index == 0 ? 1.0 : order.lines[0].x + 1.0')])).toThrow('Dependency cycle: order.lines[].x -> order.lines[].x')
+    // The total kept inside the group was refused on main already, as `order -> order`, and still is.
+    expect(
+      refused([x('item.qty / order.count', 'order.lines[].share'), { target: 'order.count', kind: 'computed', cel: 'double(size(order.lines))' }]),
+    ).toThrow('Dependency cycle: order.count -> order.lines[].share -> order.count')
+  })
+
+  test('two lists of the group each reading the other whole compute as on main, in the browser and on the replay', () => {
+    // Refused as `order.lines[].x -> order.other[].y -> order.lines[].x` by the first ruling, which
+    // kept only a row's read of its own list whole; main opened it. Its figures here are main's.
+    const schema = inGroup([x('double(size(order.other))'), x('double(size(order.lines))', 'order.other[].y')])
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { order: { lines: [{ qty: 2 }, { qty: 5 }], other: [{ qty: 1 }] } } })
+    const both = (value: unknown) => [xs(value, ['order', 'lines']), column(value, ['order', 'other'], 'y')]
+    expect(both(engine.value())).toEqual([[1, 1], [2]])
+
+    engine.addRow(['order', 'lines'])
+    engine.addRow(['order', 'other'])
+    expect(both(engine.value())).toEqual([
+      [2, 2, 2],
+      [3, 3],
+    ])
+    expect(both(replayed(schema, engine.value()))).toEqual(both(engine.value()))
+  })
+
+  test('lists of two groups each reading the other whole compute as on main, in the browser and on the replay', () => {
+    // Refused as `order.lines[].x -> other.lines[].y -> order.lines[].x` by the second ruling, which
+    // kept only a read of the rule's own group whole; main opened it. Its figures here are main's.
+    const schema = inGroup([x('double(size(other.lines))'), x('double(size(order.lines))', 'other.lines[].y')])
+    const engine = createFormEngine({
+      schema,
+      capabilities: FIXED_CLOCK,
+      initialValue: { order: { lines: [{ qty: 2 }, { qty: 5 }] }, other: { lines: [{ qty: 1 }] } },
+    })
+    const both = (value: unknown) => [xs(value, ['order', 'lines']), column(value, ['other', 'lines'], 'y')]
+    expect(both(engine.value())).toEqual([[1, 1], [2]])
+
+    engine.addRow(['order', 'lines'])
+    engine.addRow(['other', 'lines'])
+    expect(both(engine.value())).toEqual([
+      [2, 2, 2],
+      [3, 3],
+    ])
+    expect(both(replayed(schema, engine.value()))).toEqual(both(engine.value()))
+  })
+
+  test("debt: a whole read of a member another row rule computes is this pass's when that rule runs first, the pass before's after, as on main", () => {
+    // A row rule in a repeater inside a group, reading rows whole, waits for no row rule of a list
+    // inside a group, so it reads the rows as the order leaves them when it runs, which for these forms is main's: a member a
+    // rule listed before it computes is this pass's, one listed after it the pass before's, and the
+    // replay, one pass from the answers, then stores none. A list of the same group, a list of
+    // another group, and the reader's own list alike; moving a rule in the document flips the
+    // value. Main's figures, measured on 2026-11-22; 0240, A5 and §11 call it debt, and this fails
+    // the day it changes.
+    const start = { order: { lines: [{ qty: 1 }, { qty: 2 }], other: [{ qty: 1 }] }, other: { lines: [{ qty: 1 }] } }
+    const cases = [
+      // Another list's computed members, counted: the quantity goes from 1 to 2, and 4 is over 2.
+      ...(['order.other', 'other.lines'] as const).map((wire) => ({
+        wire,
+        reader: x(`double(${wire}.filter(o, o.y > 2.0).size())`),
+        writer: x('item.qty * 2.0', `${wire}[].y`),
+        edit: [...wire.split('.'), 0, 'qty'],
+        read: (value: unknown) => xs(value, ['order', 'lines']),
+      })),
+      // The reader's own list, another member of it counted: the first quantity goes to 3, and 6 is over 4.
+      {
+        wire: 'order.lines',
+        reader: x('double(order.lines.filter(l, l.x > 4.0).size())', 'order.lines[].y'),
+        writer: x('item.qty * 2.0'),
+        edit: ['order', 'lines', 0, 'qty'],
+        read: (value: unknown) => column(value, ['order', 'lines'], 'y'),
+      },
+    ]
+    for (const { wire, reader, writer, edit, read } of cases) {
+      for (const [listed, rules, browser, stored] of [
+        ['writer after', [reader, writer], [0, 0], [undefined, undefined]],
+        ['writer before', [writer, reader], [1, 1], [1, 1]],
+      ] as const) {
+        const schema = inGroup([...rules])
+        const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: start })
+        engine.setValue(edit, wire === 'order.lines' ? 3 : 2)
+
+        expect(read(engine.value()), `${wire}, ${listed}`).toEqual(browser)
+        expect(read(replayed(schema, engine.value())), `${wire}, ${listed}, replay`).toEqual(stored)
+      }
+    }
+  })
+
+  test('a whole read inside a group reads as on main when a top-level rule waits for its row rule', () => {
+    // `lines[].x` or `first` reading `g.lines` whole waits for `g.lines[].x`. The depth-first order
+    // then ran `g.lines[].x` ahead of `g.other[].y`, listed before it, where main ran it after: with
+    // the quantity going from 1 to 2 it counted 0 where 1 is due, and the replay stored none. Main's
+    // figures, measured on 2026-11-22.
+    const model: FieldDef[] = [{ key: 'first', type: 'number' }, lines('lines'), { key: 'g', type: 'group', fields: [lines('lines'), lines('other')] }]
+    const start = { lines: [{ qty: 1 }], g: { lines: [{ qty: 1 }], other: [{ qty: 1 }] } }
+    for (const waiting of [x('double(size(g.lines))', 'lines[].x'), x('double(size(g.lines))', 'first')]) {
+      const schema = form(model, [x('item.qty * 2.0', 'g.other[].y'), x('double(g.other.filter(o, o.y > 2.0).size())', 'g.lines[].x'), waiting])
+      const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: start })
+      engine.setValue(['g', 'other', 0, 'qty'], 2)
+
+      expect(xs(engine.value(), ['g', 'lines']), waiting.target).toEqual([1])
+      expect(xs(replayed(schema, engine.value()), ['g', 'lines']), waiting.target).toEqual([1])
+    }
+  })
+
+  test('a whole read beside a wait main did not have is pinned where the order leaves it', () => {
+    // A read into a row now waits for the rule it names, a wait main did not have. Pinned at what
+    // this order gives, measured on 2026-11-22, so that a change to the order fails here first.
+    // Writer: `h.lines[].x` waits for `g.other[].x`, which takes its place and runs first, then x,
+    // then `g.lines[].y` counting `h.lines` whole: x 3 and y 1, both stored. Main ran x before
+    // `g.other[].x` and gave x 2 where 3 is due and y 1, storing neither. Reader: `g.lines[].x` also
+    // reads `g.third[0].z`, a rule of its rank listed last, which takes its place; it still counts
+    // `g.other` before `g.other[].y` runs, 0 where 1 is due and none stored, as main counted.
+    const model: FieldDef[] = [
+      {
+        key: 'g',
+        type: 'group',
+        fields: [
+          lines('lines'),
+          lines('other'),
+          {
+            key: 'third',
+            type: 'repeater',
+            fields: [
+              { key: 'qty', type: 'number' },
+              { key: 'z', type: 'number' },
+            ],
+          },
+        ],
+      },
+      { key: 'h', type: 'group', fields: [lines('lines')] },
+    ]
+    const start = { g: { lines: [{ qty: 1 }], other: [{ qty: 1 }], third: [{ qty: 1 }] }, h: { lines: [{ qty: 1 }] } }
+
+    const held = form(model, [
+      x('g.other[0].x + 1.0', 'h.lines[].x'),
+      x('double(h.lines.filter(l, l.x > 1.0).size())', 'g.lines[].y'),
+      x('double(index) + item.qty', 'g.other[].x'),
+    ])
+    const writer = createFormEngine({ schema: held, capabilities: FIXED_CLOCK, initialValue: start })
+    writer.setValue(['g', 'other', 0, 'qty'], 2)
+    expect([xs(writer.value(), ['h', 'lines']), column(writer.value(), ['g', 'lines'], 'y')]).toEqual([[3], [1]])
+    const stored = replayed(held, writer.value())
+    expect([xs(stored, ['h', 'lines']), column(stored, ['g', 'lines'], 'y')]).toEqual([[3], [1]])
+
+    const late = form(model, [
+      x('double(g.other.filter(o, o.y > 2.0).size()) + g.third[0].z', 'g.lines[].x'),
+      x('item.qty * 2.0', 'g.other[].y'),
+      x('item.qty * 0.0', 'g.third[].z'),
+    ])
+    const reader = createFormEngine({ schema: late, capabilities: FIXED_CLOCK, initialValue: start })
+    reader.setValue(['g', 'other', 0, 'qty'], 2)
+    expect(xs(reader.value(), ['g', 'lines'])).toEqual([0])
+    expect(xs(replayed(late, reader.value()), ['g', 'lines'])).toEqual([undefined])
+  })
+
+  test('a count placed between a row rule and the member it reads through item reads it as on main', () => {
+    // `g.lines[].x` reads `item.y`, a wait main had too, and main's depth-first order ran `y`'s rule
+    // just before it, ahead of the count `g.other[].share` listed between them. Held back by place
+    // alone, x ran after the count: with the first quantity going from 1 to 2 the count said 0 where
+    // 1 is due, and the replay stored none. Main's figures, measured on 2026-11-22.
+    const model: FieldDef[] = [{ key: 'g', type: 'group', fields: [lines('lines'), lines('other')] }]
+    const schema = form(model, [
+      x('item.y * 1.0', 'g.lines[].x'),
+      x('double(g.lines.filter(l, l.x > 2.0).size())', 'g.other[].share'),
+      x('item.qty * 2.0', 'g.lines[].y'),
+    ])
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { g: { lines: [{ qty: 1 }], other: [{ qty: 1 }] } } })
+    engine.setValue(['g', 'lines', 0, 'qty'], 2)
+
+    expect(column(engine.value(), ['g', 'other'], 'share')).toEqual([1])
+    expect(column(replayed(schema, engine.value()), ['g', 'other'], 'share')).toEqual([1])
+  })
+
+  test('a row reading the group in its own row whole waits for what is written in it, so a loop through it is refused, at the top level too', () => {
+    // Main resolved `item.sub` to a node of that exact name, so it never reached `lines[].sub.z`,
+    // and accepted both; at field granularity each is a loop. The same principle refuses every
+    // loop main's top-level names hid, wherever the list is.
+    const sub: FieldDef = {
+      key: 'lines',
+      type: 'repeater',
+      fields: [
+        { key: 'qty', type: 'number' },
+        { key: 'x', type: 'number' },
+        { key: 'sub', type: 'group', fields: [{ key: 'z', type: 'number' }] },
+      ],
+    }
+    const refused = (rules: LogicRule[]) => () => createFormEngine({ schema: form([sub], rules), capabilities: FIXED_CLOCK })
+
+    expect(refused([x('double(size(item.sub))', 'lines[].sub.z')])).toThrow('Dependency cycle: lines[].sub.z -> lines[].sub.z')
+    expect(refused([x('double(size(item.sub))', 'lines[].x'), x('item.x * 2.0', 'lines[].sub.z')])).toThrow(
+      'Dependency cycle: lines[].x -> lines[].sub.z -> lines[].x',
+    )
+  })
+
+  test('a row reading a member of a group computed whole in its row waits for it, which main did not, at the top level', () => {
+    // `item.sub.z` named a node of its own on main, not `lines[].sub`, so the row read the sub-group
+    // as the pass before left it, and the replay, one pass from the answers, stored no `x`.
+    const sub: FieldDef = {
+      key: 'lines',
+      type: 'repeater',
+      fields: [
+        { key: 'qty', type: 'number' },
+        { key: 'x', type: 'number' },
+        { key: 'sub', type: 'group', fields: [{ key: 'z', type: 'number' }] },
+      ],
+    }
+    const schema = form([sub], [x('item.sub.z * 2.0', 'lines[].x'), x('{"z": item.qty}', 'lines[].sub')])
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { lines: [{ qty: 2 }, { qty: 5 }] } })
+
+    expect(xs(engine.value(), ['lines'])).toEqual([4, 10])
+    expect(xs(replayed(schema, engine.value()), ['lines'])).toEqual([4, 10])
+  })
+
+  test('a top-level row reading another row by position is accepted now, and waits for what it reads', () => {
+    // Main read `lines[0].qty` as `lines`, whose node every row rule of the list fed, and refused
+    // them as `lines -> lines[].x -> lines` and `lines -> lines[].y -> lines`. Read as the field it
+    // names, the first reads nothing a rule writes and the second waits for the row rule it reads;
+    // neither is a loop.
+    const top = (rules: LogicRule[]) => form([lines('lines')], rules)
+    const first = top([x('lines[0].qty * 1.0', 'lines[].x')])
+    const second = top([x('lines[0].x + 1.0', 'lines[].y'), x('item.qty * 2.0', 'lines[].x')])
+    const initialValue = { lines: [{ qty: 2 }, { qty: 5 }] }
+
+    const one = createFormEngine({ schema: first, capabilities: FIXED_CLOCK, initialValue })
+    expect(xs(one.value(), ['lines'])).toEqual([2, 2])
+    expect(xs(replayed(first, one.value()), ['lines'])).toEqual([2, 2])
+    const two = createFormEngine({ schema: second, capabilities: FIXED_CLOCK, initialValue })
+    expect(column(two.value(), ['lines'], 'y')).toEqual([5, 5])
+    expect(column(replayed(second, two.value()), ['lines'], 'y')).toEqual([5, 5])
+  })
+
+  test('a row rule reading nothing of its row keeps its field under a list or a group computed whole', () => {
+    // Listed before the rule writing the whole, it ran first and was replaced: at the top level on
+    // main, and in a group once the change before this edge gave it its group's place.
+    for (const [schema, path] of [
+      [atTop([x('2.0', 'lines[].x'), { target: 'lines', kind: 'computed', cel: '[{"qty": 3.0}]' }]), ['lines']],
+      [inGroup([x('2.0'), { target: 'order.lines', kind: 'computed', cel: '[{"qty": 3.0}]' }]), ['order', 'lines']],
+      [inGroup([x('2.0'), { target: 'order', kind: 'computed', cel: '{"lines": [{"qty": 3.0}]}' }]), ['order', 'lines']],
+    ] as const) {
+      const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK })
+
+      expect(xs(engine.value(), path)).toEqual([2])
+      expect(xs(replayed(schema, engine.value()), path)).toEqual([2])
+    }
+  })
+})
+
 describe('required and validate rules', () => {
   test('an expression can make a field required, and the snapshot reflects it live', () => {
     const engine = engineWith()

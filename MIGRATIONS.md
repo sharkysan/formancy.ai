@@ -417,6 +417,75 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A loop between computed fields that only field paths show is refused (Unreleased)
+
+**If you run a server that has published a form with computed rules**, one of its versions may hold
+a loop the engine did not see before, which every release through `0.14.0` published
+([0240](docs/decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md)). The order of the
+computed rules was worked out on top-level names: a read of anything inside a group was a read of
+the group, and a row's read of a group in its row was a node of its own. Now a read waits for every
+computed rule that writes what it reads, by field path, so a loop at field granularity is refused,
+at the top level as well as inside groups. The one exception is a row rule in a repeater inside a
+group reading a list inside a group, or a group, whole: it waits for no row rule of a list inside a
+group, only for the other rules writing into what it reads.
+
+What a stored version with such a loop does after the upgrade, measured: its public read answers
+`200`, but the engine refuses to open it in the browser; every submission to it is a `500` with a
+line at `error`, and nothing is stored; publishing it again is a `422` `invalid_logic` naming the
+cycle, and the version stays. Responses stored before keep what they were stored with.
+
+**Finding one.** Build every stored version with the new release's engine. The refusal is the
+engine's own, so this finds every one:
+
+1. Take the document of each stored version — at the least each form's current version, which is
+   the one that takes submissions.
+2. Before upgrading, pass each to `engineRefusal` from the new release's `@formancy/core`. It builds
+   the engine, whose cycle check the browser, the server's replay and its publish all run, and
+   answers `undefined`, or the reason it refuses. Or, after
+   upgrading, publish each form again: the publish builds the same engine before it compares the
+   document with the one it holds.
+3. A refusal beginning `Dependency cycle:` names the loop field by field, as
+   `Dependency cycle: first -> order.lines[].x -> first`. That version does not open from the
+   upgrade.
+4. Publish a version without the loop. A row that needs a count of its own list reads it itself,
+   `item.qty / double(size(order.lines))`; anything else the rows need, compute from what they are
+   given rather than from what they compute.
+
+Loops measured on `main`, where each was accepted, as illustrations rather than a list:
+
+- **a total over the list read back in its rows**: `count` computed as
+  `double(size(order.lines))`, with `order.lines[].share` computed as `item.qty / count`. It
+  computed right. It is refused now as `count -> order.lines[].share -> count`; the row's own read
+  above is the rewrite. The same total kept inside the group, `order.count`, was refused already, as
+  `order -> order`;
+- **a field outside the rows computed from them and read back into them**: `first` computed as
+  `order.lines[0].x`, with `order.lines[].x` reading `first`. Once a row was there, neither was
+  computed;
+- **a row reading another row's member by position**: `order.lines[].x` computed as
+  `index == 0 ? 1.0 : order.lines[0].x + 1.0`. The browser showed values the replay did not store;
+- **at the top level, a row reading the group in its own row whole**: `lines[].sub.z` computed as
+  `double(size(item.sub))`, or `lines[].x` reading `size(item.sub)` beside `lines[].sub.z` computed
+  as `item.x * 2.0`;
+- **loops that reach into a row, or read a list or a group across levels whole**: two lists of one
+  group by position; a top-level row and a row in a group by position; a row in a group reading a
+  top-level list whole that its row reads back; a top-level row reading a group whole whose list
+  reads the top-level list back.
+
+**Not affected**: a row rule in a repeater inside a group reading a list inside a group, or a
+group, whole — a row count `size(order.lines)`, the row before `order.lines[index - 1].qty`, the
+last row `index == size(order.lines) - 1`, another list's count `size(order.other)` or
+`size(other.lines)`. Those open and compute as before, and two such lists that each read the other
+whole open too, in one group or in two. Such a read takes the rows as the order leaves them when it
+runs. The new order keeps every release's place for these rules where it can, and gave the old
+values on every case measured but one, which it computes this pass where the old order was a pass
+behind; it is not shown to equal the old order in general. A member another row rule computes is
+this pass's value if that rule runs first and the pass before's otherwise, and the rule's own member
+always the pass before's, so a value can be a pass behind where it was fresh, or fresh where it was
+a pass behind. A running
+total down the rows, `order.lines[index - 1].x + item.qty`, a count of another list's computed
+members, or of the row's own list's, is therefore wrong in some document orders and on the replay;
+do not write a new one.
+
 ## A condition on a date and time written by the editor before 0.14.0 (0.14.0)
 
 **If a form has a rule the builder's condition editor wrote on a `datetime` field**, the rule

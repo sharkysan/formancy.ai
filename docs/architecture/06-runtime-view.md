@@ -191,6 +191,8 @@ validateSchema           structural (ajv) then semantic:
    ▼
 compile every expression, build the dependency graph
    ├─ cycle ──▶ refused, with the trace   ([0018](../decisions/0018-static-dependencies.md))
+   │                     a node per field, so the trace names fields
+   │                     ([0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md))
    ▼
 re-check every expression with leaves typed as the MODEL says
    │                     the engine types them `dyn`, so an unfinished answer

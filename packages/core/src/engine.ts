@@ -2,8 +2,7 @@ import type { FieldDef, FormSchema, LogicRule, Text } from '@formancy/spec'
 import { resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type { Capabilities, CapabilitySource, DeclaredType, ExpressionKind, Program, VariableDeclarations } from '@formancy/expressions'
-import { buildGraph } from './graph.js'
-import type { GraphNode } from './graph.js'
+import { computedOrder } from './computed-order.js'
 import { fieldIds } from './ids.js'
 import type { Check } from './checks.js'
 import type { BuiltInErrorCode, ValidationReport } from './error-codes.js'
@@ -418,70 +417,15 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     }
   })
 
-  /** The graph node a computed rule writes. Row rules keep their `[]` form:
-   *  one node stands for the member across all rows, which is sound because
-   *  every row runs the same rule. */
-  function ruleNodeId(entry: CompiledRule): string {
-    return entry.row ? entry.rule.target : topSegment(entry.rule.target)
-  }
-
-  /** The graph nodes a reference reads, from inside a given rule. */
-  function referenceNodeIds(entry: CompiledRule, reference: string): string[] {
-    if (entry.row) {
-      if (reference === 'index') return []
-      if (reference === 'item' || reference.startsWith('item.') || reference.startsWith('item[')) {
-        // A row-relative read: `item.qty` inside `items[]` reads `items[].qty`.
-        const member = reference === 'item' ? '' : reference.slice('item.'.length)
-        return member === ''
-          ? // Reading the whole row conservatively depends on every computed
-            // member of the same repeater.
-            compiledRules.filter((other) => other.rule.kind === 'computed' && other.row?.repeater === entry.row!.repeater).map(ruleNodeId)
-          : [`${entry.row.repeater.wire}[].${member}`]
-      }
-    }
-    return [topSegment(reference)]
-  }
-
-  // The cycle gate. Only computed rules WRITE, so only they can loop — and the
-  // graph is known before any evaluation, so a form that can loop is rejected
-  // here, cycle trace in the error, never persisted, never shipped to a user.
-  // An aggregate ordering edge makes each repeater depend on its row-computed
-  // members: whoever reads `items` reads the rows AFTER they are computed.
-  const computedOrderIndex = (() => {
-    const mentioned = new Set<string>(Object.keys(declarations))
-    const edges = new Map<string, Set<string>>()
-    const edge = (from: string, to: string): void => {
-      mentioned.add(from)
-      mentioned.add(to)
-      let set = edges.get(from)
-      if (!set) edges.set(from, (set = new Set()))
-      set.add(to)
-    }
-
-    for (const entry of compiledRules) {
-      const id = ruleNodeId(entry)
-      mentioned.add(id)
-      const reads = entry.program.references.flatMap((reference) => referenceNodeIds(entry, reference))
-      if (entry.rule.kind === 'computed') {
-        for (const read of reads) edge(id, read)
-        if (entry.row) edge(entry.row.repeater.wire, id)
-      } else {
-        for (const read of reads) mentioned.add(read)
-      }
-    }
-
-    const graphNodes: GraphNode[] = [...mentioned].map((id) => ({
-      id,
-      dependsOn: [...(edges.get(id) ?? [])],
-    }))
-    const graph = buildGraph(graphNodes) // throws GraphCycleError with the trace
-    return new Map(graph.order.map((id, position) => [id, position]))
-  })()
-
+  // The cycle gate. Only computed rules WRITE, so only they can loop — and the graph is known
+  // before any evaluation, so a form that can loop is refused here, the cycle named, never
+  // persisted and never shipped to a user. What a rule depends on is `computed-order.ts`'s (0240).
   /** Computed rules in dependency order, so one settled pass suffices. */
-  const computedInOrder: CompiledRule[] = compiledRules
-    .filter((entry) => entry.rule.kind === 'computed')
-    .sort((a, b) => (computedOrderIndex.get(ruleNodeId(a)) ?? 0) - (computedOrderIndex.get(ruleNodeId(b)) ?? 0))
+  const computedInOrder: CompiledRule[] = computedOrder(
+    compiledRules.filter((entry) => entry.rule.kind === 'computed'),
+    (entry) => ({ target: entry.rule.target, references: entry.program.references }),
+    Object.keys(declarations),
+  )
 
   const metaRules = compiledRules.filter((entry) => entry.rule.kind === 'visible' || entry.rule.kind === 'required' || entry.rule.kind === 'disabled')
   // A rule that does not run on this side is dropped at compile time rather
