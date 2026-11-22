@@ -2,7 +2,7 @@ import { comparedFields, comparedLiterals, parse } from '@formancy/expressions'
 import type { ComparedFields, ComparisonOperator, ExpressionAst } from '@formancy/expressions'
 import { TEMPORAL_FIELD_TYPES, modelDataFields, temporalAnyShapeRegExp, temporalExample, temporalShape, temporalShapeRegExp } from '@formancy/spec'
 import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@formancy/spec'
-import { ROW_ITEM, inModel, rowScopeOf } from './unknown-paths.js'
+import { ROW_ITEM, inModel, rowScopeOf } from './row-reads.js'
 
 /**
  * Rules that compare a temporal answer with something of another width (spec 6, 0238).

@@ -1,7 +1,7 @@
 import { comparedLiterals, parse } from '@formancy/expressions'
 import { TEMPORAL_FIELD_TYPES, TEMPORAL_SHAPES, modelDataFields, temporalExample } from '@formancy/spec'
 import type { FieldType, FormSchema, LogicRule, TemporalFieldType } from '@formancy/spec'
-import { inModel, rowScopeOf } from './unknown-paths.js'
+import { inModel, rowScopeOf } from './row-reads.js'
 
 /**
  * Rules that compare a date, a time or a date and time with text not written as its answers are.
