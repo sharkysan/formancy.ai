@@ -576,7 +576,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
    *  field must not keep wearing yesterday's error either. */
   let validatedOnce = false
 
-  /** What a rule writes is read back whole at its top-level name, as the bag reads it: written inside a group it is one field of the answer, and a null list is no rows. */
+  /** A rule's write is read back whole at its top-level name, as the bag reads it: a group in one piece, a null list as no rows. */
   const readBack = (top: string): unknown => readNullListAsNoRows(fieldsByKey.get(top)!, store.get([top]))
 
   /** One value bag per pass: every declared top-level name present, read as the root's own
