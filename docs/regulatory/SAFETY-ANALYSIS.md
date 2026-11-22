@@ -362,8 +362,8 @@ and that order was worked out on top-level names. A read of `order.lines[0].twic
 `order`, and the one edge ordering an aggregate after its rows led from `order.lines`, which
 nothing read under that cut. So `first = size(order.lines) == 0 ? 0.0 : order.lines[0].twice` ran
 before the rule writing `order.lines[].twice`, and read the rows as the pass before had left them.
-Measured on 2026-11-22 on `main` after the fix above: with the quantity changed from 2 to 3 the row
-showed 6 and `first` 4, and the server's replay of the browser's answers, which carry the rows'
+Measured on 2026-11-22 on `main` at #355, the group fix two paragraphs up, before the null list's:
+with the quantity changed from 2 to 3 the row showed 6 and `first` 4, and the server's replay of the browser's answers, which carry the rows'
 ids, stored no `first`: in its pass the member `first` reads was not computed yet. The browser
 showed a value the server did not store, A3's first residual reached with every input answered. A
 body sent without the rows' ids stored 6. At the top level the read and the edge met at `lines`,
