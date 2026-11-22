@@ -664,7 +664,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             const stored = outcome.ok ? storable(entry.rule.target, outcome.value) : undefined
             if (stored !== undefined) store.set(instancePath(entry, index), stored.value)
           })
-          // Aggregates downstream must see the rows as just written, and a group around them whole; with nothing stored, the group the bag has, or no rows.
+          // Aggregates see the rows as just written, and their group whole; with none stored, the bag's group, or at the top, null too, no rows, as always.
           bag[topSegment(repeater.wire)] = store.get([topSegment(repeater.wire)]) ?? (repeater.path.length > 1 ? bag[topSegment(repeater.wire)] : [])
         }
 

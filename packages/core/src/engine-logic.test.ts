@@ -114,7 +114,8 @@ describe('computed rules', () => {
  * the rules after it. It went in at the target's top-level name, which for a field inside a group
  * is the group's: a rule writing `addr.zip` left `addr` as "3000", and a row rule in a repeater
  * inside a group left the group as the list of rows. Every rule after it that read a member of the
- * group could not be evaluated, and since the write is made again on every pass, never was.
+ * group could not be evaluated whenever the computed rule had written, which once its inputs are
+ * answered is every pass.
  */
 describe('what a computed rule writes inside a group, read by the rules after it in the same pass', () => {
   const form = (fields: FieldDef[], rules: LogicRule[]): FormSchema => ({
@@ -154,8 +155,8 @@ describe('what a computed rule writes inside a group, read by the rules after it
     createFormEngine({ schema: address, capabilities: FIXED_CLOCK, mode, initialValue: { addr: { city: 'Bern' }, note: 'typed' } })
 
   test('a rule after it reads the value it wrote', () => {
-    // `addr.zip` read a member of the string "3000", could not be evaluated, and the label was
-    // never written, though the zip it reads was stored.
+    // With "3000" where the group belongs, `addr.zip` could not be evaluated, and the label was not
+    // written, though the zip it reads was stored.
     expect(inBern().getFieldSnapshot(['label']).value).toBe('PLZ 3000')
   })
 
@@ -215,7 +216,7 @@ describe('what a computed rule writes inside a group, read by the rules after it
   const probe = () => createFormEngine({ schema: order, capabilities: FIXED_CLOCK, initialValue: { order: { note: 'Probe', lines: [{ qty: 2 }] } } })
 
   test('a row rule after another, in a repeater inside a group, reads the group', () => {
-    // The group was left as its rows, so `order.note` read a member of a list and every row's
+    // The group was left as its rows, so `order.note` could not be evaluated and every row's
     // label stayed empty.
     expect(probe().getFieldSnapshot(['order', 'lines', 0, 'label']).value).toBe('Probe 4')
   })

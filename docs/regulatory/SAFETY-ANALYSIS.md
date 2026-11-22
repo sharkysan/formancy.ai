@@ -290,26 +290,32 @@ always true in a row. Both are corrected, and `apps/docs/src/empty-answer-guards
 evaluates the row cases of the guide's table and asks the engine whether a fresh row is
 presented as that table assumes ([0129](../decisions/0129-a-row-rule-is-written-in-the-row.md)).
 
-*And the engine itself handed a rule part of a group where the whole group belongs, in every release
-through `0.14.0`.* The rules of one pass read one set of answers, and what a computed rule wrote was put
-into it at its target's top-level name. For a field inside a group that name is the group's, so a
-rule computing `addr.zip` left `addr` as the zip itself for every rule after it in the pass, and a
-row rule in a repeater inside a group left the group as the repeater's rows. A rule after it that
-read a member of the group could not be evaluated, and since the write is made on every pass, never
-was: a computed rule wrote nothing, and a `visible`, `required` or `disabled` rule failed open, in
-the browser and on the server's replay alike. The guard recommended above did not help, since
-`has(addr.city)` did not hold either. Measured on 2026-11-22 against `0.14.0`'s engine in server
-mode, as the replay runs it: a submission leaving out a field a rule made required was accepted,
-and what was typed into a field a rule hides was in the value it stores — A1 and A4 by another
-road. A `validate` rule reads a set of answers of its own and was not affected, measured the same
-day. The two lines that put the value there are as they were in `0.1.0`, read from its code; no
-release before `0.14.0` was run. What a rule writes is now read back whole at its top-level name,
-so a field is read with the group around it and a repeater's rows likewise, and a group nothing is
-stored in yet stays as the pass began with it. Held by the *what a computed rule writes inside a
-group, read by the rules after it in the same pass* block of `packages/core/src/engine-logic.test.ts`,
-whose six cases failed against `0.14.0`'s engine and whose two controls, a target and a repeater at
-the top level, passed before as after; each of the two lines reverted on its own was caught by the
-cases meant for it.
+*And the engine itself handed a rule part of a group where the whole group belongs, in every
+release through `0.14.0`.* The rules of one pass read one set of answers, and what a computed rule
+wrote was put into it at its target's top-level name. For a field inside a group that name is the
+group's, so a rule computing `addr.zip` left `addr` as the zip itself for every rule after it in the
+pass, and a row rule in a repeater inside a group left the group as the repeater's rows. A rule
+after it that read a member of the group could not be evaluated whenever the computed rule had
+written, which once its inputs are answered is every pass, and so on the replay of any response
+that answers them: a computed rule wrote nothing, so its field kept what it had, and a `visible`,
+`required` or `disabled` rule failed open, in the browser and on the server's replay alike. While
+the computed rule's own inputs were unanswered it wrote nothing, and the rules after it read the
+group as it was. The guard recommended above did not help, since `has(addr.city)` could not be
+evaluated either. Measured on 2026-11-22 against `0.14.0`'s engine, in server mode as the replay
+runs it: a submission leaving out a field a rule made required was accepted, and what was typed
+into a field a rule hides was in the value it stores — A1 and A4 by another road. A `validate` rule
+reads a set of answers of its own and was not affected, measured the same day. Both lines have put
+what was written at the target's top-level name since `0.1.0` — the field's wrote the rule's result
+unconverted until `0.8.0` — read from each release's code; no release before `0.14.0` was run. What
+a rule writes is now read back whole at its top-level name, so a field is read with the group
+around it and a repeater's rows likewise, and a group nothing is stored in yet stays as the pass
+began with it. A form version published before is held to its rules from the upgrade, so the same
+version refuses a body it accepted, fills a computed field it left empty and strips a value it kept
+under a field its rule hides. Responses stored before keep what they were stored with, and are
+never migrated. Held by the *what a computed rule writes inside a group, read by the rules after it
+in the same pass* block of `packages/core/src/engine-logic.test.ts`, whose six cases failed against
+`0.14.0`'s engine and whose two controls, a target and a repeater at the top level, passed before
+as after; each of the two lines reverted on its own was caught by the cases meant for it.
 
 ### A6. A presentation hint changes what the field collects
 

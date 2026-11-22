@@ -15,11 +15,14 @@ release through `0.14.0`, read from their engines' code. The rules of one pass r
 answers, and what a computed rule wrote went into it at its target's top-level name, which for a
 field in a group is the group's: a rule computing `addr.zip` left `addr` as the zip itself for every
 rule after it, and a row rule in a repeater inside a group left the group as the repeater's rows. So
-a computed field reading the group after it was never filled, and a `visible`, `required` or
-`disabled` rule reading it failed open, on every pass and on the server's replay too: a field the
-rule hides was shown and what was typed into it stored, and a field it makes required was not asked
-for and a submission without it stored. What a rule writes is now read back into the pass whole, a
-field with its group around it (hazard A5).
+whenever the computed rule had written, which once its inputs are answered is every pass, a computed
+field reading the group after it was not written (it kept what it had), and a `visible`, `required`
+or `disabled` rule reading it failed open, on the server's replay too: a field the rule hides was
+shown and what was typed into it stored, and a field it makes required was not asked for and a
+submission without it stored. What a rule writes is now read back into the pass whole, a field with
+its group around it (hazard A5). From the upgrade, a form version published before refuses a body it
+accepted, fills a computed field it left empty and strips a hidden value it kept; responses stored
+before keep what they were stored with, and never migrate.
 
 - **The Angular starter's preview says why the engine refused a document, instead of throwing.** A saved
   or half-written form whose rule does not compile is a valid document the builder can hold, and the
