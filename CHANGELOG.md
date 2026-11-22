@@ -64,8 +64,8 @@ the document's order. The order keeps main's place for these rules where it can.
 measured it gives main's values — a row count, the row before, the last row, two lists counting each
 other, a count between a row rule and the member it reads through `item`, a top-level rule waiting
 for a row rule in a group, and the running total and the counts below in both document orders — but
-not where a read into a row now waits for the rule it names, which then computes this pass where
-main was a pass behind; it is not shown to equal main's order in general. A member another row rule
+in the one measured case where a read into a row now waits for the rule it names, which then
+computes this pass where main was a pass behind; it is not shown to equal main's order in general. A member another row rule
 computes is this pass's value if that rule runs first and the pass before's otherwise, and the rule's
 own member always the pass before's, so such a read can take a computed member a pass behind where
 main took it fresh, or fresh where main took it a pass behind: a running total down such rows, a

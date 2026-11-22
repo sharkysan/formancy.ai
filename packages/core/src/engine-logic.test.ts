@@ -575,7 +575,7 @@ describe('a row rule in a repeater inside a group reading a list inside a group 
 
   test("debt: a whole read of a member another row rule computes is this pass's when that rule runs first, the pass before's after, as on main", () => {
     // A row rule in a repeater inside a group, reading rows whole, waits for no row rule of a list
-    // inside a group, so it reads the rows as main's order leaves them when it runs: a member a
+    // inside a group, so it reads the rows as the order leaves them when it runs, which for these forms is main's: a member a
     // rule listed before it computes is this pass's, one listed after it the pass before's, and the
     // replay, one pass from the answers, then stores none. A list of the same group, a list of
     // another group, and the reader's own list alike; moving a rule in the document flips the

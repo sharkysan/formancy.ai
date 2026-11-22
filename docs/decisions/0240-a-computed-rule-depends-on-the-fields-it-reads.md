@@ -159,9 +159,9 @@ every other kind runs after them all, as before.
 whole**: a read that does not reach into a row — `order.lines`, `order.other`, `other.lines` or
 `order` for a rule on `order.lines[].x` — waits for no row rule of a list inside a group, its own
 or another, only for the other computed rules writing into what it reads. Such a rule ranks after
-the rules on every top-level field, then in the document's order. That is main's order for such a
-read and such a rule, so a form main accepted through one is still accepted, and computes what it
-did. A member of another row, `order.other[0].y`, is read as a field, and a list at the top level,
+the rules on every top-level field, then in the document's order. That is main's place for such a
+rule, so a form main accepted through one is still accepted; what it computes is main's on every
+case measured but one (below), and not shown to be main's in general. A member of another row, `order.other[0].y`, is read as a field, and a list at the top level,
 `items`, is waited for, as on `main`. At the top level a row rule reading its own list is refused,
 as it was on `main`.
 
