@@ -17,11 +17,11 @@
       computed whole after it;
     - *a computed rule writing inside a field another computes whole runs after it* — a row rule
       reading nothing of its row, at the top level and in a group, under the list or the group;
-    - *a row rule in a repeater inside a group reading a list of its group, or the group, whole* —
-      a row count, the row before, the last row, the group, a running total, and two lists of the
-      group each reading the other accepted; no row rule waited for, of its own list or another; a
-      field computed into the group still waited for; a list of another group, and a member of
-      another row, read as fields; and the same reads refused at the top level;
+    - *a row rule in a repeater inside a group reading a list or a group inside a group, whole* —
+      a row count, the row before, the last row, the group, a running total, and two lists each
+      reading the other, in one group or in two, accepted; no row rule waited for, of its own list
+      or another; a field computed into the group still waited for; a member of another row, and a
+      list at the top level, read as fields; and the same reads refused at the top level;
     - *what is still refused as a cycle, named by the fields in it* — two fields computed from each
       other, a row rule reading its own repeater whole at the top level, a computed row member
       reading its whole row, a computed member of a group reading the group whole, a row rule
@@ -35,12 +35,13 @@
     must. Against the first version of this change, which made those reads a cycle and gave a row
     rule in a group its group's place, the own-list cases failed, and so did every case of the
     edge. Against the second, which kept only a row's read of its own list, the two lists of one
-    group each reading the other failed. *A read is cut where it stops being keys and indices*
+    group each reading the other failed, and against the third, which kept a read of the rule's own
+    group, the lists of two groups did. *A read is cut where it stops being keys and indices*
     passes before as after and fails when the cut resumes past what it cannot read, as a
     global rather than a sticky pattern does.
   - **`packages/core/src/engine-logic.test.ts`**, *a computed rule is ordered by the field it writes
     and the fields it reads, not their top-level names* and *a row rule in a repeater inside a group
-    reading a list of its group whole, and the loops it is not*, which run each form in the browser
+reading a list inside a group whole, and the loops it is not*, which run each form in the browser
     and build the server's replay from the browser's answers. The first block's cases each failed
     against main's order; the second's row count, row before, last row, share of the count, two
     lists counting each other, running total and count of another list's computed members compute
@@ -96,8 +97,11 @@ been accepted by every release, depended on none of the rows, and computed right
 on the replay. Versions published with one would have stopped opening. Daniel's ruling was to keep
 main's order for those reads. The second version kept it for a row's read of its own list and
 refused two lists of one group each reading the other whole, which main had also opened; the
-ruling on that was to keep main's order for a row's whole read of anything in its group. Daniel
-accepted the rest of what is refused: a rule outside the rows that reads a list inside a group
+ruling on that was to keep main's order for a row's whole read of anything in its group. The
+third refused lists of two groups each reading the other whole, which main had opened too; the
+ruling on that was to keep main's order for a row's whole read of any list or group inside a
+group, and to leave the lists at the top level as they were. Daniel accepted the rest of what is
+refused: a rule outside the rows that reads a list inside a group
 waits for that list's row rules, as at the top level, and a row reading back what was computed
 from its own list is a loop.
 
@@ -114,13 +118,13 @@ other or lies inside it. That relation replaces both the cut and the edge: `size
 reads `order.lines`, which `order.lines[].twice` lies inside. The graph holds only computed rules;
 every other kind runs after them all, as before.
 
-**Except a row rule in a repeater inside a group reading a list of its group, or the group,
-whole**: a read under the rule's own top-level group that does not reach into a row —
-`order.lines`, `order.other` or `order` for a rule on `order.lines[].x` — waits for no row
-rule, of its own list or another, only for the other computed rules writing into what it reads.
-That is main's order for such a read, so a form main accepted through one is still accepted. A
-list of another group, `other.lines`, and a member of another row, `order.other[0].y`, are read
-as fields. At the top level a row rule reading its own list is refused, as it was on `main`.
+**Except a row rule in a repeater inside a group reading a list or a group inside a group
+whole**: a read that does not reach into a row — `order.lines`, `order.other`, `other.lines` or
+`order` for a rule on `order.lines[].x` — waits for no row rule of a list inside a group, its own
+or another, only for the other computed rules writing into what it reads. That is main's order for
+such a read, so a form main accepted through one is still accepted. A member of another row,
+`order.other[0].y`, is read as a field, and a list at the top level, `items`, is waited for, as on
+`main`. At the top level a row rule reading its own list is refused, as it was on `main`.
 
 **And a rule writing inside a field another rule computes whole depends on that rule**, so the
 whole is written first and the part into it.
@@ -151,9 +155,7 @@ it was reached from one, so loops through those rows went unseen and published. 
 - `first` computed as `order.lines[0].x` and read back by `order.lines[].x`: with a row there,
   neither was computed;
 - a row reading another row's member by position, `index == 0 ? 1.0 : order.lines[0].x + 1.0`:
-  the browser showed values the replay did not store;
-- lists of two different groups, `order.lines[].x` reading `other.lines` and `other.lines[].y`
-  reading `order.lines`: accepted.
+  the browser showed values the replay did not store.
 
 Each is refused now, as the same loop at the top level was on `main`. The engine refuses a stored
 version with one in the browser and on every submission's replay, which answers `500`, and the
@@ -172,18 +174,18 @@ Measured on `main` and unchanged:
 - a running total down the rows, `order.lines[index - 1].x + item.qty`: with quantities 2 and 5,
   the first changed to 3, the browser shows 3 and 7 where 8 is due, and the replay stores 3 and no
   second total;
-- a count of what another list of the group computes, `order.other.filter(o, o.y > 2.0)` beside
+- a count of what another list inside a group computes, `order.other.filter(o, o.y > 2.0)` beside
   `order.other[].y = item.qty * 2.0`: with that list's quantity changed from 1 to 2, the count
   stays 0 where 1 is due, and the replay stores none.
 
-Both are kept as main had them, because the ruling keeps main's order for a row's whole read of its
-group: telling them from a row count would take more than the reads say. At the top level the
+Both are kept as main had them, because the ruling keeps main's order for a row's whole read inside
+a group: telling them from a row count would take more than the reads say. At the top level the
 running total is refused. Debt, in §11 of the architecture and A5.
 
 **The edge for a field written inside another closes no cycle the reads did not.** For a loop to
 pass through it, some rule's read must reach the inner field, and a read overlapping the inner
 field overlaps the outer one too, which is its prefix, so that rule already waited for the outer
-rule. A row's whole read of its group skips row rules only, so it waits for an outer field a rule
+rule. A row's whole read inside a group skips row rules only, so it waits for an outer field a rule
 writes into what it reads, and reaches no row rule to close a loop through. With the edge, a row rule reading nothing of its row is written
 after the list or group computed whole around it, at the top level and in a group.
 

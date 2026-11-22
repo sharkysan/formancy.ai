@@ -443,16 +443,15 @@ The loops, each measured on `main` and each refused at the top level there alrea
   computed.
 - **A row reading another row's member by position**: `order.lines[].x` computed as
   `index == 0 ? 1.0 : order.lines[0].x + 1.0`. The browser showed values the replay did not store.
-- **Lists of two different groups, each reading the other whole**: `order.lines[].x` reading
-  `other.lines` beside `other.lines[].y` reading `order.lines`.
 
-**Not affected**: a row rule in a repeater inside a group reading a list of its own group, or the
+**Not affected**: a row rule in a repeater inside a group reading a list inside a group, or a
 group, whole — a row count `size(order.lines)`, the row before `order.lines[index - 1].qty`, the
-last row `index == size(order.lines) - 1`, another list's count `size(order.other)`. Those open and
-compute as before. Two lists of one group that each read the other whole open too, since neither
-waits for the other. What such a read takes from rows a rule computes is the pass before's, as it was: a running
-total down the rows, `order.lines[index - 1].x + item.qty`, or a count of another list's computed
-members, is a pass behind; do not write a new one.
+last row `index == size(order.lines) - 1`, another list's count `size(order.other)` or
+`size(other.lines)`. Those open and compute as before. Two such lists that each read the other
+whole open too, in one group or in two, since neither waits for the other. What such a read takes
+from rows a rule computes is the pass before's, as it was: a running total down the rows,
+`order.lines[index - 1].x + item.qty`, or a count of another list's computed members, is a pass
+behind; do not write a new one.
 
 **Finding one.** Nothing finds such a version for you. Publish each form with a repeater inside a
 group again after upgrading: an unchanged document is compiled again before the server compares

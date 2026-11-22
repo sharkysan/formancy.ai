@@ -437,12 +437,12 @@ describe('a computed rule is ordered by the field it writes and the fields it re
 
 /**
  * What the order keeps from main's, and what it refuses that main accepted, run in the browser and
- * on the replay. A row rule in a repeater inside a group reading a list of its group, or the group,
- * whole depended on none of the rows on main, and still does (0240): a row count, the row before,
+ * on the replay. A row rule in a repeater inside a group reading a list or a group inside a group
+ * whole depended on none of their rows on main, and still does (0240): a row count, the row before,
  * the last row and another list's count computed right, and a version published with one must go
  * on opening.
  */
-describe('a row rule in a repeater inside a group reading a list of its group whole, and the loops it is not', () => {
+describe('a row rule in a repeater inside a group reading a list inside a group whole, and the loops it is not', () => {
   const lines = (key: string): FieldDef => ({
     key,
     type: 'repeater',
@@ -529,10 +529,6 @@ describe('a row rule in a repeater inside a group reading a list of its group wh
       'Dependency cycle: order.lines[].share -> count -> order.lines[].share',
     )
     expect(refused([x('index == 0 ? 1.0 : order.lines[0].x + 1.0')])).toThrow('Dependency cycle: order.lines[].x -> order.lines[].x')
-    // Lists of two groups each reading the other whole: only a read of the rule's own group is kept.
-    expect(refused([x('double(size(other.lines))'), x('double(size(order.lines))', 'other.lines[].y')])).toThrow(
-      'Dependency cycle: order.lines[].x -> other.lines[].y -> order.lines[].x',
-    )
     // The total kept inside the group was refused on main already, as `order -> order`, and still is.
     expect(
       refused([x('item.qty / order.count', 'order.lines[].share'), { target: 'order.count', kind: 'computed', cel: 'double(size(order.lines))' }]),
@@ -556,17 +552,46 @@ describe('a row rule in a repeater inside a group reading a list of its group wh
     expect(both(replayed(schema, engine.value()))).toEqual(both(engine.value()))
   })
 
-  test('debt: a row reading another list of its group whole reads what that list computed a pass before, as on main', () => {
+  test('lists of two groups each reading the other whole compute as on main, in the browser and on the replay', () => {
+    // Refused as `order.lines[].x -> other.lines[].y -> order.lines[].x` by the second ruling, which
+    // kept only a read of the rule's own group whole; main opened it. Its figures here are main's.
+    const schema = inGroup([x('double(size(other.lines))'), x('double(size(order.lines))', 'other.lines[].y')])
+    const engine = createFormEngine({
+      schema,
+      capabilities: FIXED_CLOCK,
+      initialValue: { order: { lines: [{ qty: 2 }, { qty: 5 }] }, other: { lines: [{ qty: 1 }] } },
+    })
+    const both = (value: unknown) => [xs(value, ['order', 'lines']), column(value, ['other', 'lines'], 'y')]
+    expect(both(engine.value())).toEqual([[1, 1], [2]])
+
+    engine.addRow(['order', 'lines'])
+    engine.addRow(['other', 'lines'])
+    expect(both(engine.value())).toEqual([
+      [2, 2, 2],
+      [3, 3],
+    ])
+    expect(both(replayed(schema, engine.value()))).toEqual(both(engine.value()))
+  })
+
+  test('debt: a row reading another list inside a group whole reads what that list computed a pass before, as on main', () => {
     // The other list's rows are read as the pass left them, so a member it computes is the pass
     // before's: with a quantity going from 1 to 2 its row computes 4, and the count of rows over 2
-    // stays 0 in the browser where 1 is due, and the replay stores no count at all. Debt, beside the
-    // running total (0240, A5, §11); this fails the day it changes.
-    const schema = inGroup([x('double(order.other.filter(o, o.y > 2.0).size())'), x('item.qty * 2.0', 'order.other[].y')])
-    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { order: { lines: [{ qty: 2 }, { qty: 5 }], other: [{ qty: 1 }] } } })
-    engine.setValue(['order', 'other', 0, 'qty'], 2)
+    // stays 0 in the browser where 1 is due, and the replay stores no count at all, for a list of
+    // the same group and of another group alike. Debt, beside the running total (0240, A5, §11);
+    // this fails the day it changes.
+    for (const list of [
+      ['order', 'other'],
+      ['other', 'lines'],
+    ] as const) {
+      const wire = list.join('.')
+      const schema = inGroup([x(`double(${wire}.filter(o, o.y > 2.0).size())`), x('item.qty * 2.0', `${wire}[].y`)])
+      const initialValue = { order: { lines: [{ qty: 2 }, { qty: 5 }], other: [{ qty: 1 }] }, other: { lines: [{ qty: 1 }] } }
+      const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue })
+      engine.setValue([...list, 0, 'qty'], 2)
 
-    expect([xs(engine.value(), ['order', 'lines']), column(engine.value(), ['order', 'other'], 'y')]).toEqual([[0, 0], [4]])
-    expect(xs(replayed(schema, engine.value()), ['order', 'lines'])).toEqual([undefined, undefined])
+      expect([xs(engine.value(), ['order', 'lines']), column(engine.value(), list, 'y')], wire).toEqual([[0, 0], [4]])
+      expect(xs(replayed(schema, engine.value()), ['order', 'lines']), wire).toEqual([undefined, undefined])
+    }
   })
 
   test('a row rule reading nothing of its row keeps its field under a list or a group computed whole', () => {

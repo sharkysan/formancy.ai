@@ -10,7 +10,7 @@ export interface Computation {
   readonly references: readonly string[]
 }
 
-/** One read of a rule: the model path it names, and whether it waits for the row rules it overlaps. */
+/** One read of a rule: the model path it names, and whether it waits for every row rule it overlaps, or only for those of lists at the top level. */
 interface Read {
   readonly path: readonly string[]
   readonly rows: boolean
@@ -36,15 +36,16 @@ interface Read {
  * reports as the whole list, every row rule too. Conservative on purpose: a missed dependency is
  * a stale value, an extra one at most a form refused as a cycle that would not have looped.
  *
- * **But a row rule in a repeater inside a group, reading a list of its group or the group
- * whole, waits for no row rule** — `size(order.lines)`, `order.lines[index - 1].qty`, which is
- * reported as `order.lines`, `size(order.other)` or `size(order)`. Main's order cut such a read to
- * the group's name, which no row rule's node was, so it read the rows as the pass had left them
- * when it ran: right for a row count, the row before, the last row and another list's count, a
- * pass behind for a running total down the rows or a member another list computes. Every
- * release's code opened such a form and versions published with one are stored, so the split is
- * kept rather than made a cycle (0240); what is a pass behind is debt. At the top level the same
- * read was refused, and still is.
+ * **But a row rule in a repeater inside a group, reading a list inside a group or a group whole,
+ * waits for no row rule of a list inside a group** — `size(order.lines)`, `order.lines[index - 1].qty`,
+ * which is reported as `order.lines`, `size(order.other)`, `size(other.lines)` or `size(order)`.
+ * Main's order cut such a read to a group's name, which no such row rule's node was, so it read
+ * the rows as the pass had left them when it ran: right for a row count, the row before, the last
+ * row and another list's count, a pass behind for a running total down the rows or a member another
+ * list computes. Every release's code opened such a form and versions published with one are
+ * stored, so the split is kept rather than made a cycle (0240); what is a pass behind is debt. A
+ * list at the top level it waits for, as main did, and at the top level a row reading its own list
+ * whole is refused, as it was.
  *
  * **And a rule writing inside a field another computes whole runs after it**, or the whole,
  * written later, replaces what it wrote. That edge closes no cycle the reads did not: a read
@@ -72,7 +73,7 @@ export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => 
     for (const reference of references) {
       if (scope !== undefined && reference === 'index') continue
       const path = segments(inModel(reference, scope))
-      node.reads.push({ path, rows: !groupReadWhole(path, list) })
+      node.reads.push({ path, rows: !wholeInGroups(path, list) })
     }
     nodes.set(target, node)
   }
@@ -86,11 +87,11 @@ export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => 
     else under.push({ target, written })
   }
 
-  /** The fields written that the reads overlap, in the order they are read, each once, a row rule's only where the read waits for rows. */
+  /** The fields written that the reads overlap, in the order they are read, each once; a row rule of a list inside a group only where the read waits for rows. */
   const writersOf = (reads: readonly Read[]): string[] => {
     const found = new Set<string>()
     for (const { path, rows } of reads) {
-      for (const { target, written } of writtenUnder.get(path[0]) ?? []) if ((rows || !written.includes('[]')) && overlaps(path, written)) found.add(target)
+      for (const { target, written } of writtenUnder.get(path[0]) ?? []) if ((rows || !inGroupRow(written)) && overlaps(path, written)) found.add(target)
     }
     return [...found]
   }
@@ -132,11 +133,17 @@ function overlaps(a: readonly string[], b: readonly string[]): boolean {
 }
 
 /**
- * Whether a row rule in a repeater inside a group reads something of its group whole — a list of
- * the group, the group, or a field of it, never into a row: `order.lines`, `order.other` and
- * `order` for a rule on `order.lines[].x`, not `order.lines[].qty` and not `other.lines`, nor
- * anything for one on `lines[].x`. `list` is the rule's repeater, undefined outside a row.
+ * Whether a row rule in a repeater inside a group reads whole, never into a row — a list, a group,
+ * or a field: `order.lines`, `order.other`, `other.lines` and `order` for a rule on
+ * `order.lines[].x`, not `order.lines[].qty`, nor anything for one on `lines[].x`. Such a read
+ * waits for no row rule of a list inside a group (`inGroupRow`); a list at the top level it still
+ * waits for, as main did. `list` is the rule's repeater, undefined outside a row.
  */
-function groupReadWhole(read: readonly string[], list: readonly string[] | undefined): boolean {
-  return list !== undefined && list.length > 1 && read[0] === list[0] && !read.includes('[]')
+function wholeInGroups(read: readonly string[], list: readonly string[] | undefined): boolean {
+  return list !== undefined && list.length > 1 && !read.includes('[]')
+}
+
+/** Whether a field written is a member of the rows of a list inside a group: `order.lines[].x`, not `lines[].x`. */
+function inGroupRow(written: readonly string[]): boolean {
+  return written.indexOf('[]') > 1
 }
