@@ -2,7 +2,9 @@
 
 - **Status:** accepted; a document valid today staying valid, for one holding the key `__proto__`,
   which no release could store an answer under, narrowed by
-  [0185](0185-an-answer-is-what-the-value-holds-as-its-own.md)
+  [0185](0185-an-answer-is-what-the-value-holds-as-its-own.md); a form written now that keeps
+  working, for a version whose computed rules loop through a repeater inside a group, which the
+  engine no longer opens, narrowed by [0240](0240-a-computed-rule-depends-on-the-fields-it-reads.md)
 - **Date:** 2026-09-20
 - **Deciders:** Daniel Bacher
 - **Verified by:** `specVersion` is the literal type `'1'` in

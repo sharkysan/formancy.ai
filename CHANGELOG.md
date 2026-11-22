@@ -57,26 +57,41 @@ answers stored no `first` at all; earlier releases were not run. At the top leve
 order was right. A computed rule now depends on the fields it reads, not on their top-level names
 (0240, hazard A5). From the upgrade, a form version published before computes such a field from the
 rows as they stand, in the browser and on the replay; responses stored before keep what they were
-stored with, and never migrate. A loop through such a row rule — one reading a field computed from
-its rows — was accepted, and with a row in the form computed neither field; it is refused now, as
-the same loop at the top level was, so the engine no longer opens a version published with one.
+stored with, and never migrate. A row rule in a repeater inside a group that reads its own list,
+or the group around it, whole keeps the order every release's code gave it, so a row count, the
+row before and the last row compute as they did, and a running total down such rows stays a pass
+behind, as it was: recorded as debt, not fixed.
 
-- **A computed field in a group may read another field of its group.**
-  `addr.label = "in " + addr.city` was refused as `Dependency cycle: addr -> addr`, since a field
-  and its group were one node, and nothing said so. It is accepted now, and a cycle is named by its
-  fields, as `addr.label -> addr.label`, rather than by their top-level names, which said which
-  group and not which rule.
-- **A row rule reading its row, on a list another rule computes whole, fills its field at the top
-  level.** It ran before the rule writing the list, which then replaced what it had written, so the
-  field stayed empty in the browser and on the replay; inside a group it ran last, and was right.
-  Measured on `main`; the same order is in every release's code, and whether each release let a
-  rule write a whole list was not checked.
+- **A computed field in a group may read another field of its group**, and a chain through a group
+  that does not come back to the field it started from is accepted. `addr.label = "in " + addr.city`
+  was refused as `Dependency cycle: addr -> addr`, and `addr.zip = code` beside `code = addr.city`
+  as `addr -> code -> addr`, since a field and its group were one node, and nothing said so. A cycle
+  is named by its fields now, as `addr.label -> addr.label`, rather than by their top-level names,
+  which said which group and not which rule.
+- **A rule writing inside a field another rule computes whole runs after it**, so a row rule on a
+  list computed whole fills its field at the top level. It could run before the rule writing the
+  list, which then replaced what it had written, and the field stayed empty in the browser and on
+  the replay; inside a group it ran last, and was right. Measured on `main`; the same order is in
+  every release's code, and whether each release let a rule write a whole list was not checked.
 
 - **The Angular starter's preview says why the engine refused a document, instead of throwing.** A saved
   or half-written form whose rule does not compile is a valid document the builder can hold, and the
   engine only refuses it when the preview builds it; the effect threw and the pane went blank with the
   reason in the console. The pane now shows the engine's message, as the admin's build pane does, and
   draws the form again once the document builds.
+
+**Breaking, for a server with published forms.** [`MIGRATIONS.md`](MIGRATIONS.md) says how to find
+one and what to write instead.
+
+- **A version whose computed rules loop through a repeater inside a group by any read but a row's
+  own read of its list no longer opens.** The order did not see such a loop, so every release
+  through `0.14.0` published it. Measured on `main`: `first` read back into the rows it is computed
+  from computed nothing once a row was there; a count computed from the list and read in its rows
+  computed right; a row reading another row's member by position showed values the replay did not
+  store; and two lists of one group each reading the other were accepted. Each is refused now, as
+  the same loop at the top level was on `main`. A version stored with one still answers its public
+  read, the engine refuses to open it in the browser too, and the server answers every submission
+  with a `500` until a version without the loop is published.
 
 ## 0.14.0 — 2026-11-16
 

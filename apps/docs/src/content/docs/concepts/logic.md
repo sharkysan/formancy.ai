@@ -148,9 +148,33 @@ read is something that holds it. `size(addr)` reads the whole group, the field
 being computed included, and `item` the whole row, so a computed field reading
 either is refused as a cycle, named by its fields: `addr.label -> addr.label`. A
 field computed from a list's rows runs after the rules that compute them,
-wherever the list is. Before 2026-11-22 a dependency was the field's top-level
-name, which refused a group's field reading a sibling, and ran a field reading
-the rows of a list inside a group before those rows were computed.
+wherever the list is, and a rule writing inside a field another rule computes
+whole runs after that rule.
+
+A row rule reads its own list one way at the top level and another inside a
+group. At the top level a row that reads its list reads its own row, so
+`lines[].count` computed as `double(size(lines))` is refused. Inside a group a
+row rule may read its own list, or the group around it, whole, and waits for
+none of the rows: `order.lines[].count` computed as `double(size(order.lines))`
+is accepted, and so are the row before, `order.lines[index - 1].qty`, and the
+last row, `index == size(order.lines) - 1`. Every release's code reads such a
+rule that way, and it is kept so that the versions published with one go on
+opening.
+Any other loop through a repeater inside a group is refused, as at the top
+level: a field outside the rows computed from them and read back into them, a
+count computed as `double(size(order.lines))` and read in the rows (read the
+count in the row itself instead), or a row reading another row's member, so
+`order.lines[].count` computed as `index == 0 ? 1.0 : order.lines[0].count + 1.0`
+is refused.
+
+Before 2026-11-22 a dependency was the field's top-level name. That refused a
+group's field reading a sibling, ran a field reading the rows of a list inside a
+group before those rows were computed, and accepted those loops through a list
+inside a group: they computed nothing, or values the server's replay did not
+store, or, for a count read back into its rows, the right one. A version
+published with one no longer opens;
+[`MIGRATIONS.md`](https://github.com/sharkysan/formancy.ai/blob/main/MIGRATIONS.md)
+says how to find one.
 
 ## What an expression may call
 
@@ -260,10 +284,14 @@ and a form that kept the rule keeps working: it refuses the same fourth row, und
 rather than on the repeater.
 
 A running total down the rows does not get round it: a row rule that reads `fees` reads its own
-row, and the form is refused as a cycle. Counting characters — a string per row as long as its
-amount, joined, and `size()` taken — adds up whole numbers no larger than the longest string
-literal an expression may hold, and nothing else. It is a trick and not a total, and nobody
-reading the rule would see a sum in it.
+row, and the form is refused as a cycle. Inside a group it is not refused, because a row rule
+there may read its own list whole, and it is wrong: the row before is read as the pass before left
+it, so a total is a change behind in the browser, and the server's replay, one pass from the
+answers, stores the first row's and none after it. Every release's code reads it so, and it is kept
+only so that versions published with one go on opening; do not write one. Counting characters — a
+string per row as long as its amount, joined, and `size()` taken — adds up whole numbers no larger
+than the longest string literal an expression may hold, and nothing else. It is a trick and not a
+total, and nobody reading the rule would see a sum in it.
 
 A function that adds a list up is not in the format, and adding one costs a spec version; the
 [roadmap](/docs/project/roadmap/) says what else it takes.

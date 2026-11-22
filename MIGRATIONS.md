@@ -417,6 +417,44 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
+## A loop through a repeater inside a group is refused (Unreleased)
+
+**If you run a server that has published a form with a repeater inside a group**, one of its
+versions may hold computed rules that loop through the repeater's rows, which every release
+through `0.14.0` published: a read of the rows was cut to the group's name, and the loop was not
+seen ([0240](docs/decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md)). The engine
+refuses such a version now. Its public read still answers, but the engine refuses to open it in the
+browser, and every submission to it is a `500` with a line at `error`, storing nothing, until a
+version without the loop is published. Responses stored before keep what they were stored with.
+
+The loops, each measured on `main` and each refused at the top level already:
+
+- **A field outside the rows computed from them and read back into them**: `first` computed as
+  `order.lines[0].x`, with `order.lines[].x` reading `first`. Once a row was there, neither was
+  computed.
+- **A count computed from the list and read in its rows**: `count` computed as
+  `double(size(order.lines))`, with `order.lines[].x` computed as `count`. It computed right. Read
+  `double(size(order.lines))` in the row itself, which is accepted.
+- **A row reading another row's member by position**: `order.lines[].x` computed as
+  `index == 0 ? 1.0 : order.lines[0].x + 1.0`. The browser showed values the replay did not store.
+- **Two lists of one group, each reading the other**: `order.lines[].x` reading `order.other`
+  beside `order.other[].y` reading `order.lines`.
+
+**Not affected**: a row rule reading its own list, or the group around it, whole, inside a group —
+a row count `size(order.lines)`, the row before `order.lines[index - 1].qty`, the last row
+`index == size(order.lines) - 1`. Those open and compute as before. A running total down such rows,
+`order.lines[index - 1].x + item.qty`, opens too, and is a pass behind, as it was; do not
+write a new one.
+
+**Finding one.** Nothing finds such a version for you. Publish each form with a repeater inside a
+group again after upgrading: an unchanged document is compiled again before the server compares
+it with the one it holds, so a loop is refused as `invalid_logic` with the cycle named, as
+`Dependency cycle: order.lines[].x -> first -> order.lines[].x`, and the form keeps its current
+version. Before upgrading, `engineRefusal` from the new release's `@formancy/core`, run over each
+stored version's document, names the same cycle without publishing anything. Then publish a
+version without the loop: compute what the rows need from what they are given rather than from
+what they compute.
+
 ## A condition on a date and time written by the editor before 0.14.0 (0.14.0)
 
 **If a form has a rule the builder's condition editor wrote on a `datetime` field**, the rule

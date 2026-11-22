@@ -4,34 +4,51 @@
 - **Date:** 2026-11-22
 - **Deciders:** Daniel Bacher
 - **Extends:** [0018](0018-static-dependencies.md), whose graph this keeps and whose nodes it makes
-  fields
+  fields, and narrows [0042](0042-freeze-the-spec.md)'s promise that a form written now keeps
+  working, for a version whose computed rules loop through a repeater inside a group
 - **Verified by:**
   - **`packages/core/src/computed-order.test.ts`**, the order built from each rule's target and
     from what `referencedPaths` reports its expression reads:
     - *a computed rule runs after every computed rule whose field it reads* — a reader of a row
       member in a repeater inside a group after the row rule, an aggregate and an index computed
-      at run time after every row rule, a field in a group reading a sibling accepted, two fields
-      of one group in the order one reads the other, and the form of #355 with an aggregate added;
-    - *what is still refused as a cycle, named by the fields in it* — two fields computed from
-      each other, a row rule reading its own repeater whole, a computed row member reading its whole
-      row, a computed member of a group reading the group whole, a row rule reading the aggregate
-      that reads the rows, and a loop through a row rule in a repeater inside a group.
+      at run time after every row rule, a key held in a variable after every field computed in its
+      group, a field in a group reading a sibling accepted, two fields of one group in the order
+      one reads the other, the form of #355 with an aggregate added, and a row rule on a list
+      computed whole after it;
+    - *a computed rule writing inside a field another computes whole runs after it* — a row rule
+      reading nothing of its row, at the top level and in a group, under the list or the group;
+    - *a row rule in a repeater inside a group reading its own list or a group holding it, whole* —
+      a row count, the row before, the last row, the group and a running total accepted; no row
+      rule waited for, of its own list or another; a field computed into the group still waited
+      for; and the same reads refused at the top level;
+    - *what is still refused as a cycle, named by the fields in it* — two fields computed from each
+      other, a row rule reading its own repeater whole at the top level, a computed row member
+      reading its whole row, a computed member of a group reading the group whole, a row rule
+      reading the aggregate that reads the rows, and the loops through a repeater inside a group
+      that main did not see.
 
-    Against the order as it was, moved unchanged into the same module, every case of the first
-    group failed but its control and *a read is cut where it stops being keys and indices*, which
-    passed because the old cut was coarser and fails when the cut resumes past what it cannot
-    read, as a global rather than a sticky pattern does. Of the refusals, the loop inside a group
-    failed because it was accepted; three failed on the cycle's wording alone, which named `fees`,
-    `addr` and `items` where it now names `fees[].x`, `addr.label` and `items[].line`; and the top-level
-    loop and the whole row passed before as after, as did the controls on the order of rules that
-    do not read each other.
+    Against main's order, moved unchanged into the same module, the cases that order a reader after
+    a row rule in a group, a sibling read and a list computed whole at the top level failed, and so
+    did the loops main accepted; the top-level refusals failed on the cycle's wording alone; the
+    cases that accept a group's own-list reads, and the edge's cases in a group, passed, as they
+    must. Against the first version of this change, which made those reads a cycle and gave a row
+    rule in a group its group's place, the own-list cases failed, and so did every case of the edge. *A read is cut where it stops being keys and
+    indices* passes before as after and fails when the cut resumes past what it cannot read, as a
+    global rather than a sticky pattern does.
   - **`packages/core/src/engine-logic.test.ts`**, *a computed rule is ordered by the field it writes
-    and the fields it reads, not their top-level names*, which runs each form in the browser and
-    builds the server's replay from the browser's answers. Each case failed against the order as it
-    was.
-  - **`apps/docs/src/logic-dependencies.test.ts`**, which takes the example and the cycle
-    `concepts/logic.md` gives out of the page and runs them; both failed against the order as it
-    was.
+    and the fields it reads, not their top-level names* and *a row rule in a repeater inside a group
+    reading its own list whole, and the loops it is not*, which run each form in the browser and
+    build the server's replay from the browser's answers. The first block's cases each failed
+    against main's order; the second's row count, row before, last row and running total compute
+    main's figures, and its loops were accepted on main.
+  - **`packages/core/src/engine-refusal.test.ts`**, *names a loop through a repeater inside a group,
+    field by field*, and **`packages/server/src/refused-version.test.ts`**, which stores such a
+    version as an earlier release did: its public read answers `200`, a submission `500` with a
+    line at `error` and nothing stored, and publishing it again `422` `invalid_logic` with the
+    cycle, keeping the version. Each failed against main's order.
+  - **`apps/docs/src/logic-dependencies.test.ts`**, which takes every rule `concepts/logic.md` says
+    is accepted or refused out of the page and builds it, and the cycle it quotes. Its three cases
+    failed against main's order.
 
 ## Context
 
@@ -54,17 +71,26 @@ Two defects came from that granularity, and the code shows both since `0.1.0`:
   right.
 - **A computed field in a group could not read another field of the group.**
   `addr.label = "in " + addr.city` was the node `addr` reading `addr`, refused as
-  `Dependency cycle: addr -> addr`. Nothing documented it.
+  `Dependency cycle: addr -> addr`, and so was a chain through the group that never came back,
+  `addr.zip = code` beside `code = addr.city`, as `addr -> code -> addr`. Nothing documented it.
 
 Found while fixing them, and measured on `main` the same way: the edge ran a row rule on a list
 that another rule computes whole, `lines[].twice` beside `lines`, before the rule writing the list,
 since the list's own node was the one the row rules ran before. The list written whole replaced
 what the row rule had written, and its field stayed empty in the browser and on the replay. Inside
-a group the row rule ran last, and was right.
+a group the row rule ran after every top-level field, and was right.
 
 The obvious repair of the first, an edge from the group's top-level name to each row rule inside
 it, refuses #355's own form: its row rule `order.lines[].label` reads `order.note`, which that cut
 makes `order`, which would then depend on the label.
+
+The first version of this decision made every read a field, the row's own read of its list
+included. Review measured what that refused: inside a group, a row rule reading its own list or the
+group around it whole — a row count, `size(order.lines)`; the row before,
+`order.lines[index - 1].qty`, which `referencedPaths` reports as `order.lines`; the last row — had
+been accepted by every release, depended on none of the rows, and computed right in the browser and
+on the replay. Versions published with one would have stopped opening. Daniel's ruling was to keep
+main's order for those reads.
 
 ## Decision
 
@@ -79,6 +105,15 @@ other or lies inside it. That relation replaces both the cut and the edge: `size
 reads `order.lines`, which `order.lines[].twice` lies inside. The graph holds only computed rules;
 every other kind runs after them all, as before.
 
+**Except a row rule in a repeater inside a group reading its own list, or a group holding it,
+whole**: the read is the repeater's path or a prefix of it, and it waits for no row rule, of that
+list or of another in the group, only for the other computed rules writing into what it reads. That
+is main's order for such a read, so a form main accepted through one is still accepted. At the top
+level a row rule reading its own list is refused, as it was on `main`.
+
+**And a rule writing inside a field another rule computes whole depends on that rule**, so the
+whole is written first and the part into it.
+
 It lives in `packages/core/src/computed-order.ts`, apart from the engine, because what a rule
 depends on changes for reasons of its own, and this was one. How a row's read names a model path
 left `unknown-paths.ts` for `row-reads.ts`, which the authoring checks import as the order does:
@@ -89,36 +124,58 @@ loads, which 0217 had taken it out of.
 
 **What it buys.** A computed value reading a row member in a repeater inside a group agrees with the
 rows it reads, in the browser and on the replay alike. A computed field in a group may read another
-field of it. A row rule reading its row on a list computed whole runs after the list is written,
-at the top level as in a group. And a refusal names fields: `Dependency cycle: addr.label -> addr.label`, where it
+field of it, and a chain through a group that does not come back is accepted. A rule writing inside
+a field computed whole keeps what it writes, at the top level, where main lost it in either order,
+as in a group. And a refusal names fields: `Dependency cycle: addr.label -> addr.label`, where it
 named the group, which said where and not which rule.
 
-**What it costs.** A loop the old graph could not see is refused now: a row rule in a repeater
-inside a group reading a field computed from its rows. The same loop at the top level was refused
-already; inside a group it was accepted, and opened with a row in it, neither field was computed.
-From the upgrade the engine refuses to open a form version published with one, as it refuses any
-cycle, and the browser and the server's replay both build that engine. A form refused as a cycle
-that no longer is — a group's field reading a sibling — is accepted, and nothing published through
-the server can have held one, because publishing builds the same engine and was refused.
+**What it costs: a version published with a loop through a repeater inside a group no longer
+opens.** Every read inside a group was the group's on main, and no row rule of a repeater inside
+it was reached from one, so loops through those rows went unseen and published. Measured on `main`:
 
-The order among rules that do not read each other is kept, by the model's order of the top-level
-field each writes and then the document's, so the cycle a refused form is named with starts where
-it did. One case moved: a row rule in a repeater inside a group ran after the rules on every
-top-level field, and now runs at its group's place. Rules that neither read each other nor write
-one inside the other compute the same values in either order. Two that write one inside the other
-are ordered by what they read and by nothing else: a row rule reading its row runs after the list
-computed whole, and one reading nothing of it, `lines[].twice = 2.0`, runs in the document's
-order: listed before the list's rule, its field is replaced and stays empty, measured the same day
-at the top level and in a group.
+- `first` computed as `order.lines[0].x` and read back by `order.lines[].x`: with a row there,
+  neither was computed;
+- a count computed as `double(size(order.lines))` and read in its rows as `count`: it computed
+  right, and its rewrite is to read `size(order.lines)` in the row, which is accepted;
+- a row reading another row's member by position, `index == 0 ? 1.0 : order.lines[0].x + 1.0`:
+  the browser showed values the replay did not store;
+- two lists of one group, `order.lines[].x` reading `order.other` and `order.other[].y` reading
+  `order.lines`: accepted.
+
+Each is refused now, as the same loop at the top level was on `main`. The engine refuses a stored
+version with one in the browser and on every submission's replay, which answers `500`, and the
+author's only remedy is a new version, since a published one is immutable. `MIGRATIONS.md` says
+how to find one. **This narrows 0042.** Its letter holds — `validateSchema` accepts the same
+documents, and the spec version does not move — but what it says it buys, that somebody can write
+forms now and know they keep working, does not hold for these, as it did not for 0185's
+`__proto__`. A form refused as a cycle that no longer is, such as a group's field reading a
+sibling, is accepted; nothing published through the server can have held one, because publishing
+builds the same engine and was refused.
+
+**What it keeps, on purpose: a running total down the rows of a repeater inside a group is a pass
+behind.** `order.lines[index - 1].x + item.qty` is a row rule's read of its own list, so it waits
+for none of the rows, and reads the row before as the pass before left it. Measured on `main` and
+unchanged: with quantities 2 and 5, the first changed to 3, the browser shows 3 and 7 where 8 is
+due, and the replay stores 3 and no second total. It is accepted because refusing it would retire
+versions main published; at the top level it is refused. Debt, in §11 of the architecture and A5.
+
+**The edge for a field written inside another closes no cycle the reads did not.** For a loop to
+pass through it, some rule's read must reach the inner field, and a read overlapping the inner
+field overlaps the outer one too, which is its prefix, so that rule already waited for the outer
+rule. A row rule's own-list read waits for neither, row rules being skipped and the outer field
+being written into what it reads. With the edge, a row rule reading nothing of its row is written
+after the list or group computed whole around it, at the top level and in a group.
+
+The order among rules that nothing orders is by the model's order of the top-level field each
+writes and then the document's, so the cycle a refused form is named with starts where it did.
 
 Overlap is conservative where a read is: the whole `item`, a computed index such as `lines[i]` and
-a whole group each read every computed field inside them. A row rule reading its own list, a
-running total down the rows, is refused as before. Comparing each read with every computed field
-under its top-level name costs time where many fields sit under one name. Measured on 2026-11-22
-on a developer machine, this order alone took under 30 ms for a chain of 3,000 top-level rules,
-and between a quarter and a third of a second for the same chain inside one group; a figure to
-re-measure, not to keep. And the barrel every form loads weighs more: 16.7 kB where it was 16.4,
-inside its 18 kB budget, the figure §9.3 of the architecture records and `bundles.test.ts` holds.
+a whole group each read every computed field inside them. Comparing each read with every computed
+field under its top-level name costs time where many fields sit under one name. Measured on
+2026-11-22 on a developer machine, this order alone took 25 ms for a chain of 3,000 top-level
+rules, and 315 ms for the same chain inside one group; a figure to re-measure, not to keep. And the
+barrel every form loads weighs more, inside its 18 kB budget: §9.3 of the architecture records the
+figure, and `bundles.test.ts` holds it.
 
 [0018](0018-static-dependencies.md) says a path computed at run time cannot be expressed. It can,
 measured the same day: `addr[k]` reads the member of `addr` whose key `k` holds, and
@@ -130,6 +187,11 @@ collection and of the variable, which this order reads as every computed field i
 **Keep the top-level nodes and add an edge from the group's name to each row rule inside it.** It
 orders the aggregate, and refuses #355's form, whose row rule reads a field of the same group, as a
 cycle through it.
+
+**Make a row rule's read of its own list a field read inside a group too, as at the top level.**
+The first version of this decision. It refuses every row count, row before and last row in a
+repeater inside a group, which computed right, and stops the versions published with one from
+opening. Uniform, and paid for by forms that worked.
 
 **Keep the order as it was and document the two limits.** A value the browser shows and the server
 does not store is not a limit somebody can design around, and the second limit had no reason
