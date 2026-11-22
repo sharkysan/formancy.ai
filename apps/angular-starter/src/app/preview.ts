@@ -4,6 +4,7 @@ import {
   Component,
   EnvironmentInjector,
   InjectionToken,
+  computed,
   createEnvironmentInjector,
   effect,
   inject,
@@ -59,13 +60,21 @@ export const inTabUploader: Uploader = (file) => {
  * environment injector of its own, which is where `provideFormancy` puts the form's
  * lifetime: destroying the previous one when the document changes stops that form's
  * uploads rather than leaving them to finish into an engine nobody shows.
+ *
+ * **A document the engine refuses is said, not thrown.** The builder holds any document the
+ * schema accepts, and the schema takes a rule's expression as a string: one that does not
+ * compile, or a form saved half-written, is only refused when the engine is built. The
+ * reason is shown in the pane, as the admin's build pane shows it, and the form is drawn
+ * again as soon as the document builds.
  */
 @Component({
   selector: 'starter-preview',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgComponentOutlet],
   template: `
-    @if (injector(); as injector) {
+    @if (built().error; as error) {
+      <p role="alert">{{ error }}</p>
+    } @else if (injector(); as injector) {
       <ng-container *ngComponentOutlet="form; injector: injector" />
     }
   `,
@@ -78,20 +87,36 @@ export class StarterPreview {
   protected readonly injector = signal<EnvironmentInjector | undefined>(undefined)
   private readonly parent = inject(EnvironmentInjector)
 
+  /** The engine for the document, or the engine's own reason for refusing it. */
+  protected readonly built = computed(() => {
+    try {
+      return {
+        engine: createFormEngine({
+          schema: this.document(),
+          // The application's own clock: this is the composition root, where ambient
+          // time may enter. The engine never reads it on its own.
+          capabilities: {
+            now: () => Date.now(),
+            today: () => new Date().toISOString().slice(0, 10),
+            random: () => Math.random(),
+          },
+        }),
+        error: undefined,
+      }
+    } catch (error) {
+      return { engine: undefined, error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
   constructor() {
     // A resource with a lifetime, so an effect with a cleanup: the previous form's
     // injector is destroyed when the document changes and when this preview goes.
     effect((onCleanup) => {
-      const engine = createFormEngine({
-        schema: this.document(),
-        // The application's own clock: this is the composition root, where ambient
-        // time may enter. The engine never reads it on its own.
-        capabilities: {
-          now: () => Date.now(),
-          today: () => new Date().toISOString().slice(0, 10),
-          random: () => Math.random(),
-        },
-      })
+      const { engine } = this.built()
+      if (engine === undefined) {
+        this.injector.set(undefined)
+        return
+      }
       const injector = createEnvironmentInjector(
         [
           provideFormancy(engine),

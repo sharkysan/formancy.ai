@@ -137,11 +137,13 @@ export abstract class FieldComponentBase {
   })
 
   /**
-   * Whether THIS component is the one that will render the field.
+   * Whether THIS component is the one that asks the field's options source for a page.
    *
-   * True for every control but the select that hands over to the typeahead, which
-   * overrides it. Both extend this base, so without the distinction a sourced
-   * typeahead asked its source twice and read one set of answers.
+   * True unless the control has nothing to ask for: it hands the field over to a
+   * component that asks for itself (the typeahead behind a select, the tag picker behind
+   * a list of ticks), or it chooses nothing (a computed answer). All of them extend this base,
+   * so without the distinction a handed-over control asked the source too, twice per
+   * search, and read one set of answers (0215).
    */
   protected sourceEnabled(): boolean {
     return true
