@@ -322,19 +322,32 @@ takes a repeater handed `null` for no rows, so an API body can carry one, but th
 top-level name as stored and gave the empty value only to an absent one. `size(lines)` against
 `null` could not be evaluated: a computed field over it was never written, and a `visible` rule
 reading it failed open, in the browser and on the server's replay alike, so a field the rule hides
-was shown and what was typed into it stored. A repeater inside a group did the same. Where the form
-also had a row rule the pass read the list back as `[]` and answered correctly, so the same form
-read two ways. Measured on 2026-11-22 against the engine as it stood, with `lines: null` stored: the
-form without a row rule gave no count and a visible field, the one with it a count of 0 and a hidden
-field; the repeater inside a group gave no count and a visible field. The line that reads the
-answers has been as it is since `0.1.0`, read from each release's code; no release before `0.14.0`
-was run. A list stored as `null` now reads as no rows in every rule, at the top level and inside
-groups and pages, and not inside a repeater's rows, where an untouched list is `null` as the
-guide's table of empty answers says. **A group stored as `null` is not read as empty**: validation
-refuses it as `type`, so no accepted form reaches a rule with one, and a test holds that it is
-refused. Held by the *a list stored as null, read by the rules* block of
-`packages/core/src/engine-logic.test.ts`, whose five cases failed against the unchanged engine.
-Stored responses keep what they were stored with, and are never migrated.
+was shown and what was typed into it stored. A `required` rule failed open the same way, so a field
+it makes required was not asked for and a submission without it was stored — A1 by another road —
+while a `validate` or a `skip` rule failed closed, and a body with no rows was refused. Inside a
+group the `has(order.lines)` guard recommended above answered for an absent list and failed open
+for a null one. Where the form at the top level also had a row rule the pass read the list back as
+`[]` and answered correctly, so the same form read two ways. Measured on 2026-11-22 with `lines:
+null` stored, against main at `f4bc69aa`: the form without a row rule gave no count and a visible
+field, the one with it a count of 0 and a hidden field; the repeater inside a group gave no count
+and a visible field. The line that reads the answers has been as it is since `0.1.0`, read from
+each release's code. The new tests were also run on 2026-11-22 against `0.14.0`'s `engine.ts` and
+`top-level-fields.ts`, set into the tree as it stands on main; no other release was run. A list
+stored as `null` now reads as no rows in every rule — at the top level, and inside groups and pages,
+where the `has()` guard answers for it as for an absent list — and also in what the pass reads back
+after a computed write and after a row rule, which had brought the null back for every rule after
+it. A repeater's rows are left as stored, where an untouched list is `null` as the guide's table of
+empty answers says. **A group stored as `null` is not read as empty**: validation refuses it as
+`type`, in the browser and on the replay, so no accepted form reaches a rule with one, and tests hold
+that it is refused. A form version published before is held to its rules from the upgrade: it
+refuses a body it accepted, since a field a `required` rule makes required over such a list is now
+asked for; it fills a computed field it left empty and strips a hidden value it kept; and it accepts
+a body that a `validate` or `skip` rule refused because it could not be evaluated. Held by the *a
+list stored as null, read by the rules* block of `packages/core/src/engine-logic.test.ts`, whose
+thirteen cases for the null list failed against both `0.14.0`'s engine and main's, and whose
+remaining three, the stored value and the null group in each mode, passed before as after; the two
+read-backs reverted on their own were caught by the cases meant for them. Stored responses keep what
+they were stored with, and are never migrated.
 
 ### A6. A presentation hint changes what the field collects
 

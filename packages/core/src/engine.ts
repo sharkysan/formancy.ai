@@ -24,7 +24,7 @@ import { ruleMessages } from './rule-messages.js'
 import { optionOrders } from './option-order.js'
 import { createRows, repeaterViolations } from './rows.js'
 import type { RepeaterNode } from './rows.js'
-import { bagType, readAsStored, topLevelDataFields } from './top-level-fields.js'
+import { bagType, readNullListAsNoRows, topLevelDataFields } from './top-level-fields.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
 
@@ -576,12 +576,14 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
    *  field must not keep wearing yesterday's error either. */
   let validatedOnce = false
 
+  /** What a rule writes is read back whole at its top-level name, as the bag reads it: written inside a group it is one field of the answer, and a null list is no rows. */
+  const readBack = (top: string): unknown => readNullListAsNoRows(fieldsByKey.get(top)!, store.get([top]))
+
   /** One value bag per pass: every declared top-level name present, read as the root's own
    *  (0185), with null standing in for an empty leaf so expressions bind rather than throw. */
   function buildBag(): Record<string, unknown> {
-    const root = store.root()
     const bag: Record<string, unknown> = {}
-    for (const def of topLevel) bag[def.key] = readAsStored(def, getAt(root, [def.key]))
+    for (const { key } of topLevel) bag[key] = readBack(key)
     return bag
   }
 
@@ -649,8 +651,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             const stored = outcome.ok ? storable(entry.rule.target, outcome.value) : undefined
             if (stored !== undefined) {
               store.set(entry.targetPath, stored.value)
-              // Read back whole at the top: written inside a group, it is one field of the answer the rules after it read.
-              bag[topSegment(entry.rule.target)] = store.get([topSegment(entry.rule.target)])
+              bag[topSegment(entry.rule.target)] = readBack(topSegment(entry.rule.target))
             }
             continue
           }
@@ -661,8 +662,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             const stored = outcome.ok ? storable(entry.rule.target, outcome.value) : undefined
             if (stored !== undefined) store.set(instancePath(entry, index), stored.value)
           })
-          // Aggregates see the rows as just written, and their group whole; with none stored, the bag's group, or at the top, null too, no rows, as always.
-          bag[topSegment(repeater.wire)] = store.get([topSegment(repeater.wire)]) ?? (repeater.path.length > 1 ? bag[topSegment(repeater.wire)] : [])
+          bag[topSegment(repeater.wire)] = readBack(topSegment(repeater.wire))
         }
 
         const applyMeta = (entry: CompiledRule, wire: string, path: Path, ok: boolean, value: unknown): void => {

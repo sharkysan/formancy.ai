@@ -524,18 +524,100 @@ describe('a list stored as null, read by the rules', () => {
     }
   })
 
-  test.each(modes)('a repeater inside a group stored as null counts as no rows (%s)', (mode) => {
-    // Measured on main before the fix: the same defect one level down — the group was read as
-    // stored, `order.lines` was null, the field stayed visible and the count was not written.
-    const engine = createFormEngine({
-      schema: form([{ key: 'order', type: 'group', fields: [lines] }, ...tail], aggregates('order.lines')),
+  const order: FieldDef = {
+    key: 'order',
+    type: 'group',
+    fields: [{ key: 'note', type: 'text' }, lines],
+  }
+  // The guard the guide recommends for a path inside a group.
+  const guarded: LogicRule[] = [
+    { target: 'count', kind: 'computed', cel: 'has(order.lines) ? double(size(order.lines)) : 0.0' },
+    { target: 'gone', kind: 'visible', cel: 'has(order.lines) && size(order.lines) > 0' },
+  ]
+  const inGroup = (mode: 'client' | 'server', rules: LogicRule[], held: unknown) =>
+    createFormEngine({
+      schema: form([order, ...tail], rules),
       capabilities: FIXED_CLOCK,
       mode,
-      initialValue: { order: { lines: null }, gone: 'typed' },
+      initialValue: { order: held, gone: 'typed' },
+    })
+  const noteRule: LogicRule = { target: 'order.note', kind: 'computed', cel: '"n"' }
+  const groupRowRule: LogicRule = { target: 'order.lines[].twice', kind: 'computed', cel: 'item.qty * 2.0' }
+
+  test.each(modes)('inside a group, the has() guard answers for a list stored as null as for an absent one (%s)', (mode) => {
+    // The guard the guide recommends for a path in a group answered for an absent list and failed
+    // open for a null one: `has(order.lines)` is true for null, `size(null)` could not be
+    // evaluated, the field a rule hides was shown and the count was never written.
+    for (const held of [{ lines: null }, {}]) {
+      const engine = inGroup(mode, guarded, held)
+
+      expect(engine.getFieldSnapshot(['count']).value).toBe(0)
+      expect(engine.getFieldSnapshot(['gone']).visible).toBe(false)
+    }
+  })
+
+  test.each(modes)('inside a group, a null list still reads as no rows after a row rule or a computed write into the group (%s)', (mode) => {
+    // Read back raw after a write, the group brought its null list back and every rule after it
+    // failed open: inside a group the same form read two ways, by whether it had a row rule or a
+    // computed rule beside the list.
+    for (const rules of [
+      [groupRowRule, ...guarded],
+      [noteRule, ...guarded],
+    ]) {
+      const engine = inGroup(mode, rules, { lines: null })
+
+      expect(engine.getFieldSnapshot(['count']).value).toBe(0)
+      expect(engine.getFieldSnapshot(['gone']).visible).toBe(false)
+    }
+  })
+
+  test.each(modes)('a required rule over a list stored as null asks for the answer, and refuses a body without it (%s)', (mode) => {
+    // A required rule that could not be evaluated failed open: the field was not asked for and a
+    // submission without it was stored, as hazard A1 has it.
+    const engine = createFormEngine({
+      schema: form([lines, { key: 'reason', type: 'text' }], [{ target: 'reason', kind: 'required', cel: 'size(lines) == 0' }]),
+      capabilities: FIXED_CLOCK,
+      mode,
+      initialValue: { lines: null },
     })
 
-    expect(engine.getFieldSnapshot(['count']).value).toBe(0)
-    expect(engine.getFieldSnapshot(['gone']).visible).toBe(false)
+    expect(engine.getFieldSnapshot(['reason']).required).toBe(true)
+    expect(engine.submit()).toEqual({ ok: false, errors: { reason: ['required'] } })
+  })
+
+  test.each(modes)('a validate rule over a list stored as null is judged, not failed closed (%s)', (mode) => {
+    // A validate rule that could not be evaluated failed closed, and refused a body whose list
+    // holds no rows, which no limit on the rows was ever broken by.
+    const engine = createFormEngine({
+      schema: form([lines, { key: 'note', type: 'text' }], [{ target: 'note', kind: 'validate', cel: 'size(lines) <= 3', code: 'tooMany' }]),
+      capabilities: FIXED_CLOCK,
+      mode,
+      initialValue: { lines: null, note: 'x' },
+    })
+
+    expect(engine.submit()).toEqual({ ok: true, errors: {} })
+  })
+
+  test.each(modes)('a skip rule over a list stored as null skips the page, so its required field is not asked for (%s)', (mode) => {
+    // A skip rule that could not be evaluated did not skip, and the page nobody sees held a
+    // required answer: a body that could not be accepted, without a reason anyone could act on.
+    const engine = createFormEngine({
+      schema: {
+        ...form(
+          [
+            { key: 'p1', type: 'page', fields: [lines] },
+            { key: 'p2', type: 'page', fields: [{ key: 'why', type: 'text', required: true }] },
+          ],
+          [{ target: 'p2', kind: 'skip', cel: 'size(lines) == 0' }],
+        ),
+        specVersion: '3',
+      },
+      capabilities: FIXED_CLOCK,
+      mode,
+      initialValue: { lines: null },
+    })
+
+    expect(engine.submit()).toEqual({ ok: true, errors: {} })
   })
 
   test('what was stored is not rewritten: the value still says null', () => {
@@ -551,7 +633,8 @@ describe('a list stored as null, read by the rules', () => {
   })
 
   test('a repeater stored as null inside a page reads as no rows too', () => {
-    // A page scopes nothing; a walk that stopped at one would leave the list inside it as null.
+    // A page scopes nothing: its list sits at the top level, and a walk of the declared fields that
+    // stopped at a page would leave it as null.
     const engine = createFormEngine({
       schema: form([{ key: 'p', type: 'page', fields: [lines] }, ...tail], aggregates('lines')),
       capabilities: FIXED_CLOCK,
@@ -570,6 +653,18 @@ describe('a list stored as null, read by the rules', () => {
         [{ target: 'gone', kind: 'visible', cel: 'has(addr.city)' }],
       ),
       capabilities: FIXED_CLOCK,
+      initialValue: { addr: null },
+    })
+
+    expect(engine.submit()).toEqual({ ok: false, errors: { addr: ['type'] } })
+  })
+
+  test('control: the same group stored as null is refused on the server replay too', () => {
+    // The ruling rests on validation refusing it wherever it runs, and A5 says so.
+    const engine = createFormEngine({
+      schema: form([{ key: 'addr', type: 'group', fields: [{ key: 'city', type: 'text' }] }, ...tail], []),
+      capabilities: FIXED_CLOCK,
+      mode: 'server',
       initialValue: { addr: null },
     })
 
