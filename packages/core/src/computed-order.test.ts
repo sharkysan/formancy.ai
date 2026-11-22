@@ -156,7 +156,7 @@ describe('a computed rule writing inside a field another computes whole runs aft
  * a repeater inside a group could read its own list, or the group around it, whole, and depended
  * on none of the rows: a row count, the row before, the last row. That is kept, on purpose (0240).
  */
-describe('a row rule in a repeater inside a group reading its own list or a group holding it, whole', () => {
+describe('a row rule in a repeater inside a group reading a list of its group, or the group, whole', () => {
   const rows = (cel: string): Computation[] => [rule('order.lines[].x', cel)]
 
   test('is accepted, as main accepted it, for a row count, the row before, the last row and the group', () => {
@@ -186,6 +186,29 @@ describe('a row rule in a repeater inside a group reading its own list or a grou
 
     expect(cycle([x, y], ['order'])).toBeUndefined()
     expect(ordered([x, rule('order.lines[].qty', '1.0')], ['order'])).toEqual(['order.lines[].x', 'order.lines[].qty'])
+  })
+
+  test('is accepted for two lists of the group each reading the other whole, as main accepted it', () => {
+    // Refused as `order.lines[].x -> order.other[].y -> order.lines[].x` by the first ruling, which
+    // kept only a row's read of its own list: main opened it, and counting each other it computed
+    // right. Read whole, the other list's rows are taken as the pass left them, which for a member
+    // the other list computes is the pass before's, as on main: debt beside the running total.
+    const x = rule('order.lines[].x', 'double(size(order.other))')
+    const y = rule('order.other[].y', 'double(size(order.lines))')
+    expect(cycle([x, y], ['order'])).toBeUndefined()
+
+    const counted = rule('order.lines[].x', 'double(order.other.filter(o, o.y > 2.0).size())')
+    expect(ordered([counted, rule('order.other[].y', 'item.qty * 2.0')], ['order'])).toEqual(['order.lines[].x', 'order.other[].y'])
+  })
+
+  test('a list in another group, or a member of another row, is read as a field and waits for its row rule', () => {
+    // Only a read of the rule's own group as a whole is kept as main had it; `other.lines` is
+    // another group's, and `order.other[0].y` reaches into a row. Main ordered neither, both cut to
+    // a group's name, so each read what the other list's rule wrote the pass before.
+    const y = rule('order.other[].y', 'item.qty * 2.0')
+    expect(ordered([rule('order.lines[].x', 'order.other[0].y * 1.0'), y], ['order'])).toEqual(['order.other[].y', 'order.lines[].x'])
+    const z = rule('other.lines[].z', 'item.qty * 2.0')
+    expect(ordered([rule('order.lines[].x', 'double(size(other.lines))'), z], ['order', 'other'])).toEqual(['other.lines[].z', 'order.lines[].x'])
   })
 
   test('and still runs after a field computed into what it reads', () => {
@@ -255,13 +278,10 @@ describe('what is still refused as a cycle, named by the fields in it', () => {
     // Each was accepted on main and is refused at the top level. A count computed from the list
     // and read back in its rows computed right there, and reading `size(order.lines)` in the row
     // itself is its rewrite; a row reading another row's member by position showed values the
-    // replay did not store; two lists reading each other were accepted too.
+    // replay did not store.
     const count = rule('count', 'double(size(order.lines))')
     expect(cycle([rule('order.lines[].x', 'count'), count], ['order', 'count'])).toEqual(['order.lines[].x', 'count', 'order.lines[].x'])
     expect(cycle([rule('order.lines[].x', 'index == 0 ? 1.0 : order.lines[0].x + 1.0')], ['order'])).toEqual(['order.lines[].x', 'order.lines[].x'])
-    const x = rule('order.lines[].x', 'double(size(order.other))')
-    const y = rule('order.other[].y', 'double(size(order.lines))')
-    expect(cycle([x, y], ['order'])).toEqual(['order.lines[].x', 'order.other[].y', 'order.lines[].x'])
   })
 })
 

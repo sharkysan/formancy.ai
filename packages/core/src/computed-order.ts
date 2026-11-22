@@ -36,14 +36,15 @@ interface Read {
  * reports as the whole list, every row rule too. Conservative on purpose: a missed dependency is
  * a stale value, an extra one at most a form refused as a cycle that would not have looped.
  *
- * **But a row rule in a repeater inside a group, reading its own list or a group holding it
+ * **But a row rule in a repeater inside a group, reading a list of its group or the group
  * whole, waits for no row rule** — `size(order.lines)`, `order.lines[index - 1].qty`, which is
- * reported as `order.lines`, or `size(order)`. Main's order cut such a read to the group's name,
- * which no row rule's node was, so it read the rows as the pass had left them when it ran: right
- * for a row count, the row before and the last row, a pass behind for a running total down the
- * rows. Every release's code opened such a form and versions published with one are stored, so
- * the split is kept rather than made a cycle (0240); the running total is debt. At the top level
- * the same read was refused, and still is.
+ * reported as `order.lines`, `size(order.other)` or `size(order)`. Main's order cut such a read to
+ * the group's name, which no row rule's node was, so it read the rows as the pass had left them
+ * when it ran: right for a row count, the row before, the last row and another list's count, a
+ * pass behind for a running total down the rows or a member another list computes. Every
+ * release's code opened such a form and versions published with one are stored, so the split is
+ * kept rather than made a cycle (0240); what is a pass behind is debt. At the top level the same
+ * read was refused, and still is.
  *
  * **And a rule writing inside a field another computes whole runs after it**, or the whole,
  * written later, replaces what it wrote. That edge closes no cycle the reads did not: a read
@@ -71,7 +72,7 @@ export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => 
     for (const reference of references) {
       if (scope !== undefined && reference === 'index') continue
       const path = segments(inModel(reference, scope))
-      node.reads.push({ path, rows: !ownListWhole(path, list) })
+      node.reads.push({ path, rows: !groupReadWhole(path, list) })
     }
     nodes.set(target, node)
   }
@@ -131,10 +132,11 @@ function overlaps(a: readonly string[], b: readonly string[]): boolean {
 }
 
 /**
- * Whether a row rule's read is its own list whole, or a group holding it, with the list inside a
- * group: `order.lines` and `order` for a rule on `order.lines[].x`, never `lines` for one on
- * `lines[].x`. `list` is the rule's repeater, undefined for a rule outside a row.
+ * Whether a row rule in a repeater inside a group reads something of its group whole — a list of
+ * the group, the group, or a field of it, never into a row: `order.lines`, `order.other` and
+ * `order` for a rule on `order.lines[].x`, not `order.lines[].qty` and not `other.lines`, nor
+ * anything for one on `lines[].x`. `list` is the rule's repeater, undefined outside a row.
  */
-function ownListWhole(read: readonly string[], list: readonly string[] | undefined): boolean {
-  return list !== undefined && list.length > 1 && read.length <= list.length && overlaps(read, list)
+function groupReadWhole(read: readonly string[], list: readonly string[] | undefined): boolean {
+  return list !== undefined && list.length > 1 && read[0] === list[0] && !read.includes('[]')
 }
