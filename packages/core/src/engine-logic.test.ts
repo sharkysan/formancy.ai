@@ -632,14 +632,14 @@ describe('a row rule in a repeater inside a group reading a list inside a group 
     }
   })
 
-  test('residual: where an edge main did not have holds a writer or a reader back, a whole read is pinned where the order leaves it', () => {
-    // Taken by place, the order is main's wherever no edge forbids it. A read into a row now waits for
-    // the rule it names, and that can hold either side of a whole read back. Held writer:
-    // `h.lines[].x` waits for `g.other[].x`, and `g.lines[].y`, counting `h.lines` whole, runs first;
-    // main gave x 2 where 3 is due and y 1, storing neither, and this gives x 3 and y 1, storing x
-    // alone. Held reader: `g.lines[].x` also reads `g.third[0].z`, so it runs after `g.other[].y`;
-    // main counted 0 where 1 is due, storing none, and this counts 1 on both. Measured on
-    // 2026-11-22; a change to the order fails here first.
+  test('a whole read beside a wait main did not have is pinned where the order leaves it', () => {
+    // A read into a row now waits for the rule it names, a wait main did not have. Pinned at what
+    // this order gives, measured on 2026-11-22, so that a change to the order fails here first.
+    // Writer: `h.lines[].x` waits for `g.other[].x`, which takes its place and runs first, then x,
+    // then `g.lines[].y` counting `h.lines` whole: x 3 and y 1, both stored. Main ran x before
+    // `g.other[].x` and gave x 2 where 3 is due and y 1, storing neither. Reader: `g.lines[].x` also
+    // reads `g.third[0].z`, a rule of its rank listed last, which takes its place; it still counts
+    // `g.other` before `g.other[].y` runs, 0 where 1 is due and none stored, as main counted.
     const model: FieldDef[] = [
       {
         key: 'g',
@@ -670,7 +670,7 @@ describe('a row rule in a repeater inside a group reading a list inside a group 
     writer.setValue(['g', 'other', 0, 'qty'], 2)
     expect([xs(writer.value(), ['h', 'lines']), column(writer.value(), ['g', 'lines'], 'y')]).toEqual([[3], [1]])
     const stored = replayed(held, writer.value())
-    expect([xs(stored, ['h', 'lines']), column(stored, ['g', 'lines'], 'y')]).toEqual([[3], [undefined]])
+    expect([xs(stored, ['h', 'lines']), column(stored, ['g', 'lines'], 'y')]).toEqual([[3], [1]])
 
     const late = form(model, [
       x('double(g.other.filter(o, o.y > 2.0).size()) + g.third[0].z', 'g.lines[].x'),
@@ -679,8 +679,26 @@ describe('a row rule in a repeater inside a group reading a list inside a group 
     ])
     const reader = createFormEngine({ schema: late, capabilities: FIXED_CLOCK, initialValue: start })
     reader.setValue(['g', 'other', 0, 'qty'], 2)
-    expect(xs(reader.value(), ['g', 'lines'])).toEqual([1])
-    expect(xs(replayed(late, reader.value()), ['g', 'lines'])).toEqual([1])
+    expect(xs(reader.value(), ['g', 'lines'])).toEqual([0])
+    expect(xs(replayed(late, reader.value()), ['g', 'lines'])).toEqual([undefined])
+  })
+
+  test('a count placed between a row rule and the member it reads through item reads it as on main', () => {
+    // `g.lines[].x` reads `item.y`, a wait main had too, and main's depth-first order ran `y`'s rule
+    // just before it, ahead of the count `g.other[].share` listed between them. Held back by place
+    // alone, x ran after the count: with the first quantity going from 1 to 2 the count said 0 where
+    // 1 is due, and the replay stored none. Main's figures, measured on 2026-11-22.
+    const model: FieldDef[] = [{ key: 'g', type: 'group', fields: [lines('lines'), lines('other')] }]
+    const schema = form(model, [
+      x('item.y * 1.0', 'g.lines[].x'),
+      x('double(g.lines.filter(l, l.x > 2.0).size())', 'g.other[].share'),
+      x('item.qty * 2.0', 'g.lines[].y'),
+    ])
+    const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: { g: { lines: [{ qty: 1 }], other: [{ qty: 1 }] } } })
+    engine.setValue(['g', 'lines', 0, 'qty'], 2)
+
+    expect(column(engine.value(), ['g', 'other'], 'share')).toEqual([1])
+    expect(column(replayed(schema, engine.value()), ['g', 'other'], 'share')).toEqual([1])
   })
 
   test('a row reading the group in its own row whole waits for what is written in it, so a loop through it is refused, at the top level too', () => {

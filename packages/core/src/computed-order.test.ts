@@ -362,32 +362,67 @@ describe('a top-level row reading another row of its list by position', () => {
   })
 })
 
-describe('the order keeps each field at its place wherever no edge forbids it', () => {
-  test('is the smallest order by place that runs every field after what it waits for', () => {
-    // The depth-first order put what a field waits for just before it, wherever that field ranked,
-    // so a field placed late pulled its waits ahead of fields placed before them. Of the fields free
-    // to run, the one with the earliest place runs first: checked against picking it by hand, over
-    // acyclic sets of fields each reading some of those a random order puts before it.
+describe("the order keeps a rule's place in main's order where it can", () => {
+  /**
+   * The order by hand: of the rules free to run, the one with the least key, then the earliest
+   * place, where a rule's key is the earliest place among it and the rules of its own rank waiting
+   * for it, through any chain of them. Worked out here by a search rather than the engine's pass.
+   */
+  function byHand(places: readonly string[], rankOf: (place: number) => number, reads: ReadonlyArray<readonly number[]>): string[] {
+    const waiters = (place: number): number[] => reads.flatMap((read, waiter) => (read.includes(place) && rankOf(waiter) === rankOf(place) ? [waiter] : []))
+    const key = (place: number): number => Math.min(place, ...waiters(place).map(key))
+    const done: number[] = []
+    while (done.length < places.length) {
+      const free = places.map((_, place) => place).filter((place) => !done.includes(place) && reads[place]!.every((read) => done.includes(read)))
+      done.push(free.reduce((best, place) => (key(place) < key(best) || (key(place) === key(best) && place < best) ? place : best)))
+    }
+    return done.map((place) => places[place]!)
+  }
+
+  test("runs the free rule with the least key, its own rank's waiters pulling it to their place, as main did", () => {
+    // The depth-first order put what a rule waits for just before it, wherever that rule ranked. The
+    // order by place alone held a waiting rule back instead, so a row rule in a group waiting for one
+    // placed later let a whole read placed between them run first and read a pass behind where main
+    // read this pass. Checked against the order by hand, over acyclic sets of top-level fields, each
+    // its own rank, and row rules of one list inside a group, all of one rank and placed by the
+    // document's order, each reading some of those a random order puts before it.
     fc.assert(
       fc.property(
         fc
-          .integer({ min: 1, max: 9 })
-          .chain((size) =>
-            fc.tuple(
+          .tuple(fc.integer({ min: 0, max: 4 }), fc.integer({ min: 0, max: 5 }))
+          .filter(([top, row]) => top + row > 0)
+          .chain(([top, row]) => {
+            const size = top + row
+            return fc.tuple(
+              fc.constant(top),
+              fc.shuffledSubarray([...Array(size).keys()], { minLength: size, maxLength: size }),
               fc.shuffledSubarray([...Array(size).keys()], { minLength: size, maxLength: size }),
               fc.array(fc.boolean(), { minLength: size * size, maxLength: size * size }),
-            ),
-          ),
-        ([rank, picks]) => {
-          const size = rank.length
-          const fields = rank.map((_, index) => `f${String(index)}`)
-          const reads = fields.map((_, i) => fields.filter((_, j) => rank[j]! < rank[i]! && picks[i * size + j]!))
-          const rules = fields.map((field, i) => rule(field, reads[i]!.length === 0 ? '1.0' : reads[i]!.map((read) => `${read} * 1.0`).join(' + ')))
+            )
+          }),
+        ([top, dependency, listed, picks]) => {
+          const size = dependency.length
+          const targets = dependency.map((_, index) => (index < top ? `f${String(index)}` : `g.lines[].m${String(index - top)}`))
+          const fields = [...targets.slice(0, top), 'g']
+          const readOf = (reader: number, read: number): string => {
+            const name = targets[read]!
+            if (read < top) return `${name} * 1.0`
+            const member = name.slice('g.lines[].'.length)
+            return reader < top ? `g.lines[0].${member} * 1.0` : `item.${member} * 1.0`
+          }
+          const reads = targets.map((_, i) => targets.flatMap((_, j) => (dependency[j]! < dependency[i]! && picks[i * size + j]! ? [j] : [])))
+          const rules = targets.map((target, i) => rule(target, reads[i]!.length === 0 ? '1.0' : reads[i]!.map((read) => readOf(i, read)).join(' + ')))
+          const documentOrder = listed.map((index) => rules[index]!)
 
-          const expected: string[] = []
-          while (expected.length < size)
-            expected.push(fields.find((field, i) => !expected.includes(field) && reads[i]!.every((read) => expected.includes(read)))!)
-          expect(ordered(rules, fields)).toEqual(expected)
+          // Places: the top-level fields in the model's order, then the row rules in the document's.
+          const placesOf = [...Array(size).keys()].sort((a, b) => (a < top ? a : top) - (b < top ? b : top) || listed.indexOf(a) - listed.indexOf(b))
+          const place = (index: number): number => placesOf.indexOf(index)
+          const expected = byHand(
+            placesOf.map((index) => targets[index]!),
+            (at) => (placesOf[at]! < top ? placesOf[at]! : top),
+            placesOf.map((index) => reads[index]!.map(place)),
+          )
+          expect(ordered(documentOrder, fields)).toEqual(expected)
         },
       ),
     )
@@ -396,7 +431,8 @@ describe('the order keeps each field at its place wherever no edge forbids it', 
   test('a top-level row waiting for a row rule in a group leaves that rule at its place', () => {
     // `lines[].x` reads `g.lines` whole and waits for its row rule, which reads `g.other` whole and
     // waits for none. The depth-first order ran `g.lines[].x` just before `lines[].x`, ahead of
-    // `g.other[].y` listed before it, where main ran it after; it read the pass before's value.
+    // `g.other[].y` listed before it, where main ran it after; it read the pass before's value. A
+    // waiter of another rank pulls nothing.
     const y = rule('g.other[].y', 'item.qty * 2.0')
     const x = rule('g.lines[].x', 'double(g.other.filter(o, o.y > 2.0).size())')
 
@@ -404,18 +440,31 @@ describe('the order keeps each field at its place wherever no edge forbids it', 
     expect(ordered([y, x, rule('first', 'double(size(g.lines))')], ['first', 'lines', 'g'])).toEqual(['g.other[].y', 'g.lines[].x', 'first'])
   })
 
-  test('residual: an edge main did not have can hold a writer behind a whole read that main ran after it', () => {
-    // Main ran the three in the document's order. `h.lines[].x` now waits for `g.other[].x`, which
-    // its read into a row names, and the whole read `g.lines[].y`, free from the start, runs at its
-    // place ahead of both. Taken greedily by place, the order cannot keep main's relative order for
-    // that pair too; this pins where it is, so that a change to the order fails here first.
+  test('a row rule waiting through `item` for one listed later pulls it ahead of a whole read between them, as main did', () => {
+    // `g.lines[].x` reads `item.y`, a wait main had too, and main's depth-first order ran `y`'s rule
+    // just before it. Held back by place alone, `x` ran after the count `g.other[].w` listed between
+    // them, which then read x a pass behind and stored none on the replay.
+    const rules = [
+      rule('g.lines[].x', 'item.y * 1.0'),
+      rule('g.other[].w', 'double(g.lines.filter(l, l.x > 2.0).size())'),
+      rule('g.lines[].y', 'item.qty * 2.0'),
+    ]
+
+    expect(ordered(rules, ['g'])).toEqual(['g.lines[].y', 'g.lines[].x', 'g.other[].w'])
+  })
+
+  test('a writer a wait main did not have holds back is pulled ahead of a whole read, where main ran it', () => {
+    // `h.lines[].x` now waits for `g.other[].x`, which its read into a row names. Taken by place
+    // alone, the whole read `g.lines[].y` ran ahead of both; pulled to `h.lines[].x`'s place,
+    // `g.other[].x` runs first and the writer before the reader, as main ran that pair. Pinned, so
+    // that a change to the order fails here first.
     const rules = [
       rule('h.lines[].x', 'double(size(g.other[0].x))'),
       rule('g.lines[].y', 'double(size(h.b)) + double(size(h))'),
       rule('g.other[].x', 'double(index)'),
     ]
 
-    expect(ordered(rules, ['g', 'h'])).toEqual(['g.lines[].y', 'g.other[].x', 'h.lines[].x'])
+    expect(ordered(rules, ['g', 'h'])).toEqual(['g.other[].x', 'h.lines[].x', 'g.lines[].y'])
   })
 })
 
