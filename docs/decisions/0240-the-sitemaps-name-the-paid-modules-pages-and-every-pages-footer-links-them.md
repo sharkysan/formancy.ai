@@ -106,9 +106,11 @@ links Report's Studio rather than its product page. The two name the same module
 addresses of Data and Health twice. `site.test.tsx` writes out every module address the landing
 page links, so a change to one is made beside the other, but nothing derives one from the other.
 
-The privacy notice describes the demonstrations at `/data/examples/`, `/report/` and `/health/` as
-read on 2026-11-04. It says nothing of `/data/demo/` or of Report's product pages, which this site
-now lists or links, and nothing here checks what they keep or send.
+The privacy notice names what `/data/demo/` and Report's product pages, which this site now lists
+or links, keep and send: Report's pages as read from the live site on 2026-11-22, the live demo as
+its repository's guide and code say on that day -- a cookie at sign-in, what a visitor types held
+by a server of their own until it stops, their choices in local storage. Nothing here checks either:
+the notice is read again when one of them changes.
 
 **What it forecloses.** A module page in a sitemap that `paid-modules.json` does not list, and a
 link to a module in the footer without its terms beside it. As 0179 and 0180 already foreclose, the

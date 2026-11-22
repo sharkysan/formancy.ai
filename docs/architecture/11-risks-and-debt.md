@@ -303,9 +303,9 @@ The sitemaps list those repositories' pages too, and every page's footer links t
 The build holds the sitemaps to `apps/site/src/paid-modules.json` and cannot read the pages
 that list names, so nothing here fails when one moves, stops being served or asks not to be
 indexed, and the index names Formancy Report's sitemap whether or not it is there. A search
-engine reports such an address; no gate here does. The privacy notice describes the
-demonstrations at `/data/examples/`, `/report/` and `/health/` as read on 2026-11-04, and says
-nothing of `/data/demo/` or of Report's product pages, which the site now lists or links.
+engine reports such an address; no gate here does. The privacy notice says what
+`/data/demo/` and Report's product pages keep and send as read on 2026-11-22, and nothing here
+checks it again when they change.
 
 ## 11.4 The spec freeze, and what it locked in
 
