@@ -474,3 +474,105 @@ describe('runsOn', () => {
     expect(codesIn(undefined)).toEqual(codesIn('client'))
   })
 })
+
+/**
+ * A list stored as `null` reads as no rows, as an absent one does. Validation takes `null` for a
+ * repeater as no rows, so an API body can send it; but only a row rule's read-back turned it into
+ * `[]`, so one form answered two ways depending on whether it had a row rule.
+ */
+describe('a list stored as null, read by the rules', () => {
+  const lines: FieldDef = {
+    key: 'lines',
+    type: 'repeater',
+    fields: [
+      { key: 'qty', type: 'number' },
+      { key: 'twice', type: 'number' },
+    ],
+  }
+  const form = (fields: FieldDef[], rules: LogicRule[]): FormSchema => ({
+    specVersion: '1',
+    id: 'nulls',
+    title: 'Nulls',
+    model: { fields },
+    logic: { rules },
+  })
+  const rowRule: LogicRule = { target: 'lines[].twice', kind: 'computed', cel: 'item.qty * 2.0' }
+  const aggregates = (path: string): LogicRule[] => [
+    { target: 'count', kind: 'computed', cel: `double(size(${path}))` },
+    { target: 'gone', kind: 'visible', cel: `size(${path}) > 0` },
+  ]
+  const tail: FieldDef[] = [
+    { key: 'count', type: 'number' },
+    { key: 'gone', type: 'text' },
+  ]
+  const modes = ['client', 'server'] as const
+
+  test.each(modes)('a top-level repeater stored as null counts as no rows, with or without a row rule (%s)', (mode) => {
+    // Without a row rule the bag held null: `size(lines)` could not be evaluated, the visible rule
+    // failed open and showed its field, and the count was never written. With a row rule the same
+    // form answered 0 and hid the field, because that pass reads the list back as `[]`.
+    for (const rules of [aggregates('lines'), [rowRule, ...aggregates('lines')]]) {
+      const engine = createFormEngine({
+        schema: form([lines, ...tail], rules),
+        capabilities: FIXED_CLOCK,
+        mode,
+        initialValue: { lines: null, gone: 'typed' },
+      })
+
+      expect(engine.getFieldSnapshot(['count']).value).toBe(0)
+      expect(engine.getFieldSnapshot(['gone']).visible).toBe(false)
+    }
+  })
+
+  test.each(modes)('a repeater inside a group stored as null counts as no rows (%s)', (mode) => {
+    // Measured on main before the fix: the same defect one level down — the group was read as
+    // stored, `order.lines` was null, the field stayed visible and the count was not written.
+    const engine = createFormEngine({
+      schema: form([{ key: 'order', type: 'group', fields: [lines] }, ...tail], aggregates('order.lines')),
+      capabilities: FIXED_CLOCK,
+      mode,
+      initialValue: { order: { lines: null }, gone: 'typed' },
+    })
+
+    expect(engine.getFieldSnapshot(['count']).value).toBe(0)
+    expect(engine.getFieldSnapshot(['gone']).visible).toBe(false)
+  })
+
+  test('what was stored is not rewritten: the value still says null', () => {
+    // Reading null as no rows is the bag's business. Writing `[]` back would change what a
+    // stored response says, and a submission is what was sent.
+    const engine = createFormEngine({
+      schema: form([lines, ...tail], aggregates('lines')),
+      capabilities: FIXED_CLOCK,
+      initialValue: { lines: null },
+    })
+
+    expect((engine.value() as Record<string, unknown>).lines).toBeNull()
+  })
+
+  test('a repeater stored as null inside a page reads as no rows too', () => {
+    // A page scopes nothing; a walk that stopped at one would leave the list inside it as null.
+    const engine = createFormEngine({
+      schema: form([{ key: 'p', type: 'page', fields: [lines] }, ...tail], aggregates('lines')),
+      capabilities: FIXED_CLOCK,
+      initialValue: { lines: null, gone: 'typed' },
+    })
+
+    expect(engine.getFieldSnapshot(['count']).value).toBe(0)
+  })
+
+  test('control: a group stored as null is refused by validation, so no rule reads it', () => {
+    // Ruling: a null group is NOT read as `{}`, because validation does not take it for an empty
+    // one. If this starts passing validation, the ruling is wrong and the bag must read it as `{}`.
+    const engine = createFormEngine({
+      schema: form(
+        [{ key: 'addr', type: 'group', fields: [{ key: 'city', type: 'text' }] }, ...tail],
+        [{ target: 'gone', kind: 'visible', cel: 'has(addr.city)' }],
+      ),
+      capabilities: FIXED_CLOCK,
+      initialValue: { addr: null },
+    })
+
+    expect(engine.submit()).toEqual({ ok: false, errors: { addr: ['type'] } })
+  })
+})

@@ -24,7 +24,7 @@ import { ruleMessages } from './rule-messages.js'
 import { optionOrders } from './option-order.js'
 import { createRows, repeaterViolations } from './rows.js'
 import type { RepeaterNode } from './rows.js'
-import { bagType, topLevelDataFields } from './top-level-fields.js'
+import { bagType, readAsStored, topLevelDataFields } from './top-level-fields.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
 
@@ -581,10 +581,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   function buildBag(): Record<string, unknown> {
     const root = store.root()
     const bag: Record<string, unknown> = {}
-    for (const [name, type] of Object.entries(declarations)) {
-      const raw = getAt(root, [name])
-      bag[name] = raw !== undefined ? raw : type === 'map' ? {} : type === 'list' ? [] : null
-    }
+    for (const def of topLevel) bag[def.key] = readAsStored(def, getAt(root, [def.key]))
     return bag
   }
 
