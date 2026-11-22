@@ -10,6 +10,12 @@ later.
 
 ## Unreleased
 
+- **The Angular starter's preview says why the engine refused a document, instead of throwing.** A saved
+  or half-written form whose rule does not compile is a valid document the builder can hold, and the
+  engine only refuses it when the preview builds it; the effect threw and the pane went blank with the
+  reason in the console. The pane now shows the engine's message, as the admin's build pane does, and
+  draws the form again once the document builds.
+
 ## 0.14.0 — 2026-11-16
 
 **A minor release, and the spec version moves to 6.** Version 6 is frozen with the property it was

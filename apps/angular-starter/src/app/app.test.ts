@@ -165,4 +165,44 @@ describe('saving and reloading the form', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Expense claim' })).toBeTruthy()
   })
+
+  /**
+   * The form with a rule the engine cannot compile. It is a valid document — the schema only
+   * asks that `cel` be a string — so it reaches the builder session from a saved form or a
+   * half-finished edit, and is refused only when the engine is built from it.
+   */
+  const unbuildable = {
+    ...EXPENSE_CLAIM,
+    title: 'Half-written claim',
+    logic: { rules: [{ target: 'reason', kind: 'visible' as const, cel: 'items.exists(' }] },
+  }
+
+  test('a document the engine refuses is said in the preview, not thrown out of it', async () => {
+    // An effect that throws on a refused document takes the preview's injector with it: the
+    // pane keeps drawing the form before, or nothing, and the reason is only in the console.
+    const { fill, settle } = await open()
+    localStorage.setItem('formancy-starter:form', JSON.stringify(unbuildable))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reload saved' }))
+    await settle()
+
+    expect(within(fill).getByRole('alert').textContent).toContain('reason')
+    expect(within(fill).queryByLabelText('Your name')).toBeNull()
+  })
+
+  test('and the form is back when the document builds again', async () => {
+    // A refusal that stuck would leave the pane saying "cannot be built" about a document
+    // that now can be, until the page was reloaded.
+    const { fill, settle } = await open()
+    localStorage.setItem('formancy-starter:form', JSON.stringify(unbuildable))
+    fireEvent.click(screen.getByRole('button', { name: 'Reload saved' }))
+    await settle()
+
+    localStorage.setItem('formancy-starter:form', JSON.stringify(edited))
+    fireEvent.click(screen.getByRole('button', { name: 'Reload saved' }))
+    await settle()
+
+    expect(within(fill).queryByRole('alert')).toBeNull()
+    expect(within(fill).getByLabelText('Email')).toBeTruthy()
+  })
 })
