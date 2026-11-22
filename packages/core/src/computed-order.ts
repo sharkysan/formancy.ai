@@ -42,10 +42,11 @@ interface Read {
  * Main's order cut such a read to a group's name, which no such row rule's node was, and ran every
  * row rule of a list inside a group after the rules on every top-level field, as the document listed
  * them. Both are kept: such a rule ranks after every top-level field, and its whole read takes the
- * rows as main's order leaves them when it runs. That is right for a row count, the row before, the
- * last row and another list's count. For a member another row rule computes it is this pass's value
- * if that rule runs first and the pass before's otherwise, and for the rule's own member always the
- * pass before's: debt (0240), kept because every release's code opened such a form and versions
+ * rows as the order leaves them when it runs, which is main's order except where an edge main did
+ * not have holds a writer or the reader back (`inPlace`). That is right for a row count, the row
+ * before, the last row and another list's count. For a member another row rule computes it is this
+ * pass's value if that rule runs first and the pass before's otherwise, and for the rule's own member
+ * always the pass before's: debt (0240), kept because every release's code opened such a form and versions
  * published with one are stored. A list at the top level it waits for, as main did, and at the top
  * level a row reading its own list whole is refused, as it was.
  *
@@ -54,9 +55,10 @@ interface Read {
  * reaching the inner field overlaps the outer one too, its prefix, so its rule already waited for
  * the outer rule.
  *
- * Rules that nothing orders run by the model's order of the top-level field they write, a row rule
- * of a list inside a group after them all, then as the document lists them, which is also where the
- * cycle a form is refused with starts.
+ * Rules run by place — the model's order of the top-level field each writes, a row rule of a list
+ * inside a group after them all, then as the document lists them — the earliest placed of those
+ * free to run first: the rank keeps main's order wherever no edge forbids it. The cycle a form is
+ * refused with is `buildGraph`'s, which walks the same places.
  */
 export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => Computation, fields: readonly string[]): T[] {
   const placed = rules
@@ -108,11 +110,75 @@ export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => 
       .filter((other) => other.written.length < written.length && overlaps(other.written, written))
       .map(({ target }) => target)
 
-  const graph = buildGraph(
-    [...nodes].map(([target, { written, reads }]) => ({ id: target, dependsOn: [...new Set([...writersOf(reads), ...containersOf(written)])] })),
-  )
-  const position = new Map(graph.order.map((target, index) => [target, index]))
+  const edges = [...nodes].map(([target, { written, reads }]) => ({ id: target, dependsOn: [...new Set([...writersOf(reads), ...containersOf(written)])] }))
+  buildGraph(edges) // the cycle gate: throws GraphCycleError with the trace
+  const position = new Map(inPlace(edges).map((target, index) => [target, index]))
   return placed.toSorted((a, b) => position.get(a.target)! - position.get(b.target)!).map(({ rule }) => rule)
+}
+
+/**
+ * The order that keeps each field at its place wherever no edge forbids it: Kahn's algorithm, the
+ * waiting fields freed one by one, the free one with the earliest place taken first. `nodes` is in
+ * place order, rank and then the document, and holds no cycle, which `buildGraph` has refused.
+ *
+ * Not the depth-first order `buildGraph` gives, which puts what a field waits for just before it,
+ * wherever that field ranks. Once a top-level rule waits for a row rule in a group, that pulled the
+ * row rule, and every row rule it waited for, ahead of the row rules in groups main ran before them;
+ * and a whole read in a group, which waits for none of those, then read their rows a pass behind
+ * where main read them this pass. Taken by place, a field runs no earlier than its own place and
+ * its waits allow.
+ */
+function inPlace(nodes: ReadonlyArray<{ id: string; dependsOn: readonly string[] }>): string[] {
+  const at = new Map(nodes.map(({ id }, index) => [id, index]))
+  const waiting = nodes.map(({ dependsOn }) => dependsOn.length)
+  const dependents: number[][] = nodes.map(() => [])
+  nodes.forEach(({ dependsOn }, index) => {
+    for (const id of dependsOn) dependents[at.get(id)!]!.push(index)
+  })
+  const free = new PlaceQueue()
+  waiting.forEach((count, index) => {
+    if (count === 0) free.push(index)
+  })
+  const order: string[] = []
+  for (let next = free.pop(); next !== undefined; next = free.pop()) {
+    order.push(nodes[next]!.id)
+    for (const dependent of dependents[next]!) if (--waiting[dependent]! === 0) free.push(dependent)
+  }
+  return order
+}
+
+/** The free fields by place, the earliest first: a binary heap of their indices. */
+class PlaceQueue {
+  private readonly heap: number[] = []
+
+  push(index: number): void {
+    const heap = this.heap
+    heap.push(index)
+    for (let at = heap.length - 1; at > 0;) {
+      const parent = (at - 1) >> 1
+      if (heap[parent]! <= heap[at]!) break
+      ;[heap[parent], heap[at]] = [heap[at]!, heap[parent]!]
+      at = parent
+    }
+  }
+
+  pop(): number | undefined {
+    const heap = this.heap
+    if (heap.length <= 1) return heap.pop()
+    const top = heap[0]!
+    heap[0] = heap.pop()!
+    for (let at = 0; ;) {
+      const left = 2 * at + 1
+      const right = left + 1
+      let least = at
+      if (left < heap.length && heap[left]! < heap[least]!) least = left
+      if (right < heap.length && heap[right]! < heap[least]!) least = right
+      if (least === at) break
+      ;[heap[least], heap[at]] = [heap[at]!, heap[least]!]
+      at = least
+    }
+    return top
+  }
 }
 
 /** One key, after a dot unless it is the first, or one `[]`, exactly where the last one ended. */

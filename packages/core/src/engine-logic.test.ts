@@ -615,6 +615,74 @@ describe('a row rule in a repeater inside a group reading a list inside a group 
     }
   })
 
+  test('a whole read inside a group reads as on main when a top-level rule waits for its row rule', () => {
+    // `lines[].x` or `first` reading `g.lines` whole waits for `g.lines[].x`. The depth-first order
+    // then ran `g.lines[].x` ahead of `g.other[].y`, listed before it, where main ran it after: with
+    // the quantity going from 1 to 2 it counted 0 where 1 is due, and the replay stored none. Main's
+    // figures, measured on 2026-11-22.
+    const model: FieldDef[] = [{ key: 'first', type: 'number' }, lines('lines'), { key: 'g', type: 'group', fields: [lines('lines'), lines('other')] }]
+    const start = { lines: [{ qty: 1 }], g: { lines: [{ qty: 1 }], other: [{ qty: 1 }] } }
+    for (const waiting of [x('double(size(g.lines))', 'lines[].x'), x('double(size(g.lines))', 'first')]) {
+      const schema = form(model, [x('item.qty * 2.0', 'g.other[].y'), x('double(g.other.filter(o, o.y > 2.0).size())', 'g.lines[].x'), waiting])
+      const engine = createFormEngine({ schema, capabilities: FIXED_CLOCK, initialValue: start })
+      engine.setValue(['g', 'other', 0, 'qty'], 2)
+
+      expect(xs(engine.value(), ['g', 'lines']), waiting.target).toEqual([1])
+      expect(xs(replayed(schema, engine.value()), ['g', 'lines']), waiting.target).toEqual([1])
+    }
+  })
+
+  test('residual: where an edge main did not have holds a writer or a reader back, a whole read is pinned where the order leaves it', () => {
+    // Taken by place, the order is main's wherever no edge forbids it. A read into a row now waits for
+    // the rule it names, and that can hold either side of a whole read back. Held writer:
+    // `h.lines[].x` waits for `g.other[].x`, and `g.lines[].y`, counting `h.lines` whole, runs first;
+    // main gave x 2 where 3 is due and y 1, storing neither, and this gives x 3 and y 1, storing x
+    // alone. Held reader: `g.lines[].x` also reads `g.third[0].z`, so it runs after `g.other[].y`;
+    // main counted 0 where 1 is due, storing none, and this counts 1 on both. Measured on
+    // 2026-11-22; a change to the order fails here first.
+    const model: FieldDef[] = [
+      {
+        key: 'g',
+        type: 'group',
+        fields: [
+          lines('lines'),
+          lines('other'),
+          {
+            key: 'third',
+            type: 'repeater',
+            fields: [
+              { key: 'qty', type: 'number' },
+              { key: 'z', type: 'number' },
+            ],
+          },
+        ],
+      },
+      { key: 'h', type: 'group', fields: [lines('lines')] },
+    ]
+    const start = { g: { lines: [{ qty: 1 }], other: [{ qty: 1 }], third: [{ qty: 1 }] }, h: { lines: [{ qty: 1 }] } }
+
+    const held = form(model, [
+      x('g.other[0].x + 1.0', 'h.lines[].x'),
+      x('double(h.lines.filter(l, l.x > 1.0).size())', 'g.lines[].y'),
+      x('double(index) + item.qty', 'g.other[].x'),
+    ])
+    const writer = createFormEngine({ schema: held, capabilities: FIXED_CLOCK, initialValue: start })
+    writer.setValue(['g', 'other', 0, 'qty'], 2)
+    expect([xs(writer.value(), ['h', 'lines']), column(writer.value(), ['g', 'lines'], 'y')]).toEqual([[3], [1]])
+    const stored = replayed(held, writer.value())
+    expect([xs(stored, ['h', 'lines']), column(stored, ['g', 'lines'], 'y')]).toEqual([[3], [undefined]])
+
+    const late = form(model, [
+      x('double(g.other.filter(o, o.y > 2.0).size()) + g.third[0].z', 'g.lines[].x'),
+      x('item.qty * 2.0', 'g.other[].y'),
+      x('item.qty * 0.0', 'g.third[].z'),
+    ])
+    const reader = createFormEngine({ schema: late, capabilities: FIXED_CLOCK, initialValue: start })
+    reader.setValue(['g', 'other', 0, 'qty'], 2)
+    expect(xs(reader.value(), ['g', 'lines'])).toEqual([1])
+    expect(xs(replayed(late, reader.value()), ['g', 'lines'])).toEqual([1])
+  })
+
   test('a row reading the group in its own row whole waits for what is written in it, so a loop through it is refused, at the top level too', () => {
     // Main resolved `item.sub` to a node of that exact name, so it never reached `lines[].sub.z`,
     // and accepted both; at field granularity each is a loop. The same principle refuses every

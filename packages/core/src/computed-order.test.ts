@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import fc from 'fast-check'
 import { parse, referencedPaths } from '@formancy/expressions'
 import { computedOrder } from './computed-order.js'
 import type { Computation } from './computed-order.js'
@@ -358,6 +359,63 @@ describe('a top-level row reading another row of its list by position', () => {
     expect(cycle([rule('lines[].x', 'lines[0].qty * 1.0')], ['lines'])).toBeUndefined()
     const y = rule('lines[].y', 'lines[0].x + 1.0')
     expect(ordered([y, rule('lines[].x', 'item.qty * 2.0')], ['lines'])).toEqual(['lines[].x', 'lines[].y'])
+  })
+})
+
+describe('the order keeps each field at its place wherever no edge forbids it', () => {
+  test('is the smallest order by place that runs every field after what it waits for', () => {
+    // The depth-first order put what a field waits for just before it, wherever that field ranked,
+    // so a field placed late pulled its waits ahead of fields placed before them. Of the fields free
+    // to run, the one with the earliest place runs first: checked against picking it by hand, over
+    // acyclic sets of fields each reading some of those a random order puts before it.
+    fc.assert(
+      fc.property(
+        fc
+          .integer({ min: 1, max: 9 })
+          .chain((size) =>
+            fc.tuple(
+              fc.shuffledSubarray([...Array(size).keys()], { minLength: size, maxLength: size }),
+              fc.array(fc.boolean(), { minLength: size * size, maxLength: size * size }),
+            ),
+          ),
+        ([rank, picks]) => {
+          const size = rank.length
+          const fields = rank.map((_, index) => `f${String(index)}`)
+          const reads = fields.map((_, i) => fields.filter((_, j) => rank[j]! < rank[i]! && picks[i * size + j]!))
+          const rules = fields.map((field, i) => rule(field, reads[i]!.length === 0 ? '1.0' : reads[i]!.map((read) => `${read} * 1.0`).join(' + ')))
+
+          const expected: string[] = []
+          while (expected.length < size)
+            expected.push(fields.find((field, i) => !expected.includes(field) && reads[i]!.every((read) => expected.includes(read)))!)
+          expect(ordered(rules, fields)).toEqual(expected)
+        },
+      ),
+    )
+  })
+
+  test('a top-level row waiting for a row rule in a group leaves that rule at its place', () => {
+    // `lines[].x` reads `g.lines` whole and waits for its row rule, which reads `g.other` whole and
+    // waits for none. The depth-first order ran `g.lines[].x` just before `lines[].x`, ahead of
+    // `g.other[].y` listed before it, where main ran it after; it read the pass before's value.
+    const y = rule('g.other[].y', 'item.qty * 2.0')
+    const x = rule('g.lines[].x', 'double(g.other.filter(o, o.y > 2.0).size())')
+
+    expect(ordered([y, x, rule('lines[].x', 'double(size(g.lines))')], ['first', 'lines', 'g'])).toEqual(['g.other[].y', 'g.lines[].x', 'lines[].x'])
+    expect(ordered([y, x, rule('first', 'double(size(g.lines))')], ['first', 'lines', 'g'])).toEqual(['g.other[].y', 'g.lines[].x', 'first'])
+  })
+
+  test('residual: an edge main did not have can hold a writer behind a whole read that main ran after it', () => {
+    // Main ran the three in the document's order. `h.lines[].x` now waits for `g.other[].x`, which
+    // its read into a row names, and the whole read `g.lines[].y`, free from the start, runs at its
+    // place ahead of both. Taken greedily by place, the order cannot keep main's relative order for
+    // that pair too; this pins where it is, so that a change to the order fails here first.
+    const rules = [
+      rule('h.lines[].x', 'double(size(g.other[0].x))'),
+      rule('g.lines[].y', 'double(size(h.b)) + double(size(h))'),
+      rule('g.other[].x', 'double(index)'),
+    ]
+
+    expect(ordered(rules, ['g', 'h'])).toEqual(['g.lines[].y', 'g.other[].x', 'h.lines[].x'])
   })
 })
 
