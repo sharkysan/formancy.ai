@@ -73,6 +73,28 @@ describe('engineRefusal', () => {
   test('names the cycle', () => {
     expect(engineRefusal(refused['a cycle between computed fields'])).toMatch(/cycle/i)
   })
+
+  test('names a loop through a repeater inside a group, field by field, without publishing anything', () => {
+    // What `MIGRATIONS.md` gives an operator for finding a stored version the engine no longer
+    // opens. Every release through 0.14.0 opened this one, and so said nothing.
+    const looping = form(
+      [
+        {
+          key: 'order',
+          type: 'group',
+          label: 'Order',
+          fields: [{ key: 'lines', type: 'repeater', label: 'Lines', fields: [{ key: 'x', type: 'number', label: 'X' }] }],
+        },
+        { key: 'first', type: 'number', label: 'First' },
+      ],
+      [
+        { target: 'order.lines[].x', kind: 'computed', cel: 'first * 1.0' },
+        { target: 'first', kind: 'computed', cel: 'size(order.lines) == 0 ? 1.0 : order.lines[0].x' },
+      ],
+    )
+
+    expect(engineRefusal(looping)).toBe('Dependency cycle: order.lines[].x -> first -> order.lines[].x')
+  })
 })
 
 describe('the engine says what to write instead', () => {

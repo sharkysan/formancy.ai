@@ -1,7 +1,7 @@
 import { parse, referencedPaths } from '@formancy/expressions'
 import { modelDataPaths } from '@formancy/spec'
 import type { FormSchema, LogicRule } from '@formancy/spec'
-import { ROW_ITEM, rowScopeOf, withoutRowNumbers } from './row-reads.js'
+import { inModel, rowScopeOf } from './row-reads.js'
 
 /**
  * Rules that read a data path the model does not define.
@@ -80,23 +80,10 @@ export function unknownReferences(schema: FormSchema): UnknownReference[] {
 
     const missing = new Set<string>()
     for (const read of referencedPaths(parsed.ast)) {
-      const path = withoutRowNumbers(read)
-      if (path === ROW_INDEX) continue
-
-      if (path === ROW_ITEM || path.startsWith(`${ROW_ITEM}.`)) {
-        // Outside a repeater `item` is not bound to anything, so it is as
-        // unknown as any other name — reported under its own spelling, because
-        // there is no row to rewrite it into.
-        if (rowScope === undefined) {
-          missing.add(path)
-          continue
-        }
-        const resolved = `${rowScope}${path.slice(ROW_ITEM.length)}`
-        if (!defined.has(resolved)) missing.add(resolved)
-        continue
-      }
-
-      if (!defined.has(path)) missing.add(path)
+      // In a row, `item` is resolved into the model as the engine binds it; outside one it is a
+      // name like any other, reported under its own spelling when no field is keyed so.
+      const path = inModel(read, rowScope)
+      if (path !== ROW_INDEX && !defined.has(path)) missing.add(path)
     }
 
     if (missing.size === 0) continue

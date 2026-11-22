@@ -88,12 +88,23 @@ describe('a computed rule runs after every computed rule whose field it reads', 
   })
 
   test('a read is cut where it stops being keys and indices, and not resumed past it', () => {
-    // A quoted key that is not an identifier names no field. Cut there the read is `a`, which
-    // over-reports; resumed after the quotes it would be `a.d`, and miss the field computed in `a`.
+    // Defence in depth for a spelling `referencedPaths` keeps as written: a quoted key that is not
+    // an identifier names no field, so `a["b.c"].d` cannot read `a.x`, and cut to `a` the read
+    // over-reports. What this guards is the cut itself: a global pattern instead of a sticky one
+    // resumes after the quotes, reads `a.d`, and fails this case alone.
     const total = rule('total', 'a["b.c"].d')
     const x = rule('a.x', '1.0')
 
     expect(ordered([total, x], ['total', 'a'])).toEqual(['a.x', 'total'])
+  })
+
+  test('a key held in a variable reads the whole group, and runs after every field computed in it', () => {
+    // `addr[k]` is the member whose key `k` holds, which nothing knows before the pass, so it is
+    // reported as `addr` and `k`; read as only `k`, it would run before the zip it may name.
+    const picked = rule('picked', 'addr[k]')
+    const zip = rule('addr.zip', '"3000"')
+
+    expect(ordered([picked, zip], ['picked', 'addr', 'k'])).toEqual(['addr.zip', 'picked'])
   })
 
   test('control: inside a row, `item.qty` reads the row member and `index` reads nothing', () => {
@@ -107,6 +118,95 @@ describe('a computed rule runs after every computed rule whose field it reads', 
     expect(ordered([total, qty, index], ['items', 'index'])).toEqual(['items[].qty', 'items[].total', 'index'])
     // Outside a row there is no row, and `index` is a field like any other.
     expect(ordered([rule('label', 'string(index)'), index], ['label', 'index'])).toEqual(['index', 'label'])
+  })
+})
+
+describe('a computed rule writing inside a field another computes whole runs after it', () => {
+  // The rule writing the whole replaces what is inside it, so run after it the inner rule's field
+  // stays empty. Reading nothing of the rows, nothing else orders the two.
+  test('a row rule reading nothing of its row, at the top level', () => {
+    // Main left the field empty in both orders, the change before this edge in one.
+    const x = rule('lines[].x', '2.0')
+    const lines = rule('lines', '[{"qty": 3.0}]')
+
+    expect(ordered([x, lines], ['lines'])).toEqual(['lines', 'lines[].x'])
+    expect(ordered([lines, x], ['lines'])).toEqual(['lines', 'lines[].x'])
+  })
+
+  test('the same in a group, under the list or the group computed whole', () => {
+    // Main kept the field, because a row rule in a group ran after every top-level field; the
+    // change before this edge gave the row rule its group's place, and the field was replaced.
+    const x = rule('order.lines[].x', '2.0')
+
+    expect(ordered([x, rule('order.lines', '[{"qty": 3.0}]')], ['order'])).toEqual(['order.lines', 'order.lines[].x'])
+    expect(ordered([x, rule('order', '{"lines": [{"qty": 3.0}]}')], ['order'])).toEqual(['order', 'order.lines[].x'])
+  })
+
+  test('a row rule reading only a field outside its rows, in a group', () => {
+    // Its read orders it after `first` and nothing else; the edge orders it after the list.
+    const x = rule('order.lines[].x', 'first * 1.0')
+
+    expect(ordered([x, rule('order.lines', '[{"qty": 3.0}]')], ['order', 'first'])).toEqual(['order.lines', 'order.lines[].x'])
+  })
+})
+
+/*
+ * Main's order cut a read to its top-level name, and the edge that ordered a list's readers after
+ * its rows led from the list's own path, which no read inside a group was cut to. So a row rule in
+ * a repeater inside a group could read its own list, or the group around it, whole, and depended
+ * on none of the rows: a row count, the row before, the last row. That is kept, on purpose (0240).
+ */
+describe('a row rule in a repeater inside a group reading its own list or a group holding it, whole', () => {
+  const rows = (cel: string): Computation[] => [rule('order.lines[].x', cel)]
+
+  test('is accepted, as main accepted it, for a row count, the row before, the last row and the group', () => {
+    // Each computed what it should in the browser and on the replay, and a version published with
+    // one would no longer open were it refused, as its read of its own row makes the field order.
+    for (const cel of [
+      'double(size(order.lines))',
+      'index == 0 ? 0.0 : order.lines[index - 1].qty * 1.0',
+      'index == size(order.lines) - 1 ? 1.0 : 0.0',
+      'double(size(order))',
+      'double(order.lines.filter(l, l.qty > 1.0).size())',
+    ]) {
+      expect(cycle(rows(cel), ['order']), cel).toBeUndefined()
+    }
+  })
+
+  test('is accepted for a running total down the rows too, which stays a pass behind: debt', () => {
+    // Refusing it would retire a version main published; ordering it cannot make it right. The
+    // documents call it debt (0240, A5), and this case fails the day that changes.
+    expect(cycle(rows('index == 0 ? item.qty * 1.0 : order.lines[index - 1].x + item.qty'), ['order'])).toBeUndefined()
+  })
+
+  test('depends on no row rule, of its own list or of another list in the group', () => {
+    // Two lists each reading the group whole would read each other's rows and be one loop.
+    const x = rule('order.lines[].x', 'double(size(order))')
+    const y = rule('order.other[].y', 'double(size(order))')
+
+    expect(cycle([x, y], ['order'])).toBeUndefined()
+    expect(ordered([x, rule('order.lines[].qty', '1.0')], ['order'])).toEqual(['order.lines[].x', 'order.lines[].qty'])
+  })
+
+  test('and still runs after a field computed into what it reads', () => {
+    // `size(order)` counts the note, which a rule writes; read before it, the count is short.
+    const x = rule('order.lines[].x', 'double(size(order))')
+    const note = rule('order.note', '"n"')
+
+    expect(ordered([x, note], ['order'])).toEqual(['order.note', 'order.lines[].x'])
+  })
+
+  test('control: at the top level the same reads are refused, as they always were', () => {
+    // Passed before the change as after, on the cycle's wording aside: a top-level list's rows are
+    // ordered before its readers, its own row rules included. `concepts/logic.md` says so.
+    for (const cel of [
+      'double(size(lines))',
+      'index == 0 ? 0.0 : lines[index - 1].qty * 1.0',
+      'index == size(lines) - 1 ? 1.0 : 0.0',
+      'index == 0 ? item.qty * 1.0 : lines[index - 1].x + item.qty',
+    ]) {
+      expect(cycle([rule('lines[].x', cel)], ['lines']), cel).toEqual(['lines[].x', 'lines[].x'])
+    }
   })
 })
 
@@ -149,6 +249,19 @@ describe('what is still refused as a cycle, named by the fields in it', () => {
     const first = rule('first', 'size(order.lines) == 0 ? 1.0 : order.lines[0].twice')
 
     expect(cycle([twice, first], ['order', 'first'])).toEqual(['order.lines[].twice', 'first', 'order.lines[].twice'])
+  })
+
+  test('the other loops through a repeater inside a group main did not see, refused as at the top level', () => {
+    // Each was accepted on main and is refused at the top level. A count computed from the list
+    // and read back in its rows computed right there, and reading `size(order.lines)` in the row
+    // itself is its rewrite; a row reading another row's member by position showed values the
+    // replay did not store; two lists reading each other were accepted too.
+    const count = rule('count', 'double(size(order.lines))')
+    expect(cycle([rule('order.lines[].x', 'count'), count], ['order', 'count'])).toEqual(['order.lines[].x', 'count', 'order.lines[].x'])
+    expect(cycle([rule('order.lines[].x', 'index == 0 ? 1.0 : order.lines[0].x + 1.0')], ['order'])).toEqual(['order.lines[].x', 'order.lines[].x'])
+    const x = rule('order.lines[].x', 'double(size(order.other))')
+    const y = rule('order.other[].y', 'double(size(order.lines))')
+    expect(cycle([x, y], ['order'])).toEqual(['order.lines[].x', 'order.other[].y', 'order.lines[].x'])
   })
 })
 

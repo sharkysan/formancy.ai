@@ -19,7 +19,7 @@
 export const ROW_ITEM = 'item'
 
 /** `items[0].qty` and `items[].qty` are the same field; the model writes the second. */
-export function withoutRowNumbers(path: string): string {
+function withoutRowNumbers(path: string): string {
   return path.replaceAll(/\[\d+\]/g, '[]')
 }
 

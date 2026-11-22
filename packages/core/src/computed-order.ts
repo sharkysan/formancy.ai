@@ -10,6 +10,12 @@ export interface Computation {
   readonly references: readonly string[]
 }
 
+/** One read of a rule: the model path it names, and whether it waits for the row rules it overlaps. */
+interface Read {
+  readonly path: readonly string[]
+  readonly rows: boolean
+}
+
 /**
  * The computed rules in the order one pass runs them, each after every computed rule whose field
  * it reads — or a `GraphCycleError` naming the fields, when some of them read each other.
@@ -30,9 +36,22 @@ export interface Computation {
  * reports as the whole list, every row rule too. Conservative on purpose: a missed dependency is
  * a stale value, an extra one at most a form refused as a cycle that would not have looped.
  *
- * Rules that do not read each other run by the model's order of the top-level field they write,
- * then as the document lists them — the order they had when the node was that field — which is
- * also where the cycle a form is refused with starts.
+ * **But a row rule in a repeater inside a group, reading its own list or a group holding it
+ * whole, waits for no row rule** — `size(order.lines)`, `order.lines[index - 1].qty`, which is
+ * reported as `order.lines`, or `size(order)`. Main's order cut such a read to the group's name,
+ * which no row rule's node was, so it read the rows as the pass had left them when it ran: right
+ * for a row count, the row before and the last row, a pass behind for a running total down the
+ * rows. Every release's code opened such a form and versions published with one are stored, so
+ * the split is kept rather than made a cycle (0240); the running total is debt. At the top level
+ * the same read was refused, and still is.
+ *
+ * **And a rule writing inside a field another computes whole runs after it**, or the whole,
+ * written later, replaces what it wrote. That edge closes no cycle the reads did not: a read
+ * reaching the inner field overlaps the outer one too, its prefix, so its rule already waited for
+ * the outer rule.
+ *
+ * Rules that nothing orders run by the model's order of the top-level field they write, then as
+ * the document lists them, which is also where the cycle a form is refused with starts.
  */
 export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => Computation, fields: readonly string[]): T[] {
   const placed = rules
@@ -44,11 +63,16 @@ export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => 
 
   // One node per field written. Two rules on one target, which validation refuses, share it and
   // keep the document's order, as they did when every rule on a top-level field shared one.
-  const nodes = new Map<string, { written: readonly string[]; reads: Array<readonly string[]> }>()
+  const nodes = new Map<string, { written: readonly string[]; reads: Read[] }>()
   for (const { target, references } of placed) {
     const node = nodes.get(target) ?? { written: segments(target), reads: [] }
     const scope = rowScopeOf(target)
-    for (const reference of references) if (scope === undefined || reference !== 'index') node.reads.push(segments(inModel(reference, scope)))
+    const list = scope === undefined ? undefined : segments(scope.slice(0, -'[]'.length))
+    for (const reference of references) {
+      if (scope !== undefined && reference === 'index') continue
+      const path = segments(inModel(reference, scope))
+      node.reads.push({ path, rows: !ownListWhole(path, list) })
+    }
     nodes.set(target, node)
   }
 
@@ -61,14 +85,25 @@ export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => 
     else under.push({ target, written })
   }
 
-  /** The fields written that the reads overlap, in the order they are read, each once. */
-  const writersOf = (reads: ReadonlyArray<readonly string[]>): string[] => {
+  /** The fields written that the reads overlap, in the order they are read, each once, a row rule's only where the read waits for rows. */
+  const writersOf = (reads: readonly Read[]): string[] => {
     const found = new Set<string>()
-    for (const read of reads) for (const { target, written } of writtenUnder.get(read[0]) ?? []) if (overlaps(read, written)) found.add(target)
+    for (const { path, rows } of reads) {
+      for (const { target, written } of writtenUnder.get(path[0]) ?? []) if ((rows || !written.includes('[]')) && overlaps(path, written)) found.add(target)
+    }
     return [...found]
   }
 
-  const graph = buildGraph([...nodes].map(([target, { reads }]) => ({ id: target, dependsOn: writersOf(reads) })))
+  /** The fields written whole that a field written lies inside, all under its own top-level name, where it is too. */
+  const containersOf = (written: readonly string[]): string[] =>
+    writtenUnder
+      .get(written[0])!
+      .filter((other) => other.written.length < written.length && overlaps(other.written, written))
+      .map(({ target }) => target)
+
+  const graph = buildGraph(
+    [...nodes].map(([target, { written, reads }]) => ({ id: target, dependsOn: [...new Set([...writersOf(reads), ...containersOf(written)])] })),
+  )
   const position = new Map(graph.order.map((target, index) => [target, index]))
   return placed.toSorted((a, b) => position.get(a.target)! - position.get(b.target)!).map(({ rule }) => rule)
 }
@@ -93,4 +128,13 @@ function segments(path: string): readonly string[] {
 function overlaps(a: readonly string[], b: readonly string[]): boolean {
   for (let index = 0; index < Math.min(a.length, b.length); index++) if (a[index] !== b[index]) return false
   return true
+}
+
+/**
+ * Whether a row rule's read is its own list whole, or a group holding it, with the list inside a
+ * group: `order.lines` and `order` for a rule on `order.lines[].x`, never `lines` for one on
+ * `lines[].x`. `list` is the rule's repeater, undefined for a rule outside a row.
+ */
+function ownListWhole(read: readonly string[], list: readonly string[] | undefined): boolean {
+  return list !== undefined && list.length > 1 && read.length <= list.length && overlaps(read, list)
 }

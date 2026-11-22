@@ -139,4 +139,25 @@ describe('a rule that reads a path no field provides', () => {
     // `items[].qty`. Reporting it would be a false alarm on valid logic.
     expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'items[0].qty > 0.0' }])).toEqual([])
   })
+
+  test('reads `item` outside a row as the engine binds it: the field of that name, where there is one', () => {
+    // This check resolved `item` by a copy of its own and reported it outside a row whatever the
+    // model said, though a form with no row rule may key a field `item` and the engine reads it.
+    // It resolves a read with `inModel` now, as the computed order and the temporal checks do.
+    const keyed = {
+      specVersion: '2',
+      id: 'stock',
+      title: 'Stock',
+      model: {
+        fields: [
+          { key: 'item', type: 'text', label: 'Item' },
+          { key: 'note', type: 'text', label: 'Note' },
+        ],
+      },
+      logic: { rules: [{ target: 'note', kind: 'visible', cel: 'item == "bolt"' }] },
+    } as unknown as FormSchema
+
+    expect(unknownReferences(keyed)).toEqual([])
+    expect(pathsOf([{ target: 'note', kind: 'visible', cel: 'item == "bolt"' }])).toEqual([['item']])
+  })
 })
