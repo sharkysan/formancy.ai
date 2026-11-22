@@ -426,8 +426,8 @@ computed rules was worked out on top-level names: a read of anything inside a gr
 the group, and a row's read of a group in its row was a node of its own. Now a read waits for every
 computed rule that writes what it reads, by field path, so a loop at field granularity is refused,
 at the top level as well as inside groups. The one exception is a row rule in a repeater inside a
-group reading a list inside a group, or a group, whole: it keeps the order every release gave it,
-and is not refused for it.
+group reading a list inside a group, or a group, whole: it waits for no row rule of a list inside a
+group, only for the other rules writing into what it reads.
 
 What a stored version with such a loop does after the upgrade, measured: its public read answers
 `200`, but the engine refuses to open it in the browser; every submission to it is a `500` with a
@@ -475,8 +475,9 @@ Loops measured on `main`, where each was accepted, as illustrations rather than 
 group, whole — a row count `size(order.lines)`, the row before `order.lines[index - 1].qty`, the
 last row `index == size(order.lines) - 1`, another list's count `size(order.other)` or
 `size(other.lines)`. Those open and compute as before, and two such lists that each read the other
-whole open too, in one group or in two. Such a read takes the rows as every release's order leaves
-them when it runs: a member another row rule computes is this pass's value if that rule runs first
+whole open too, in one group or in two. Such a read takes the rows as the order leaves them when it
+runs, which is every release's order except where a wait the old order did not have holds a writer
+or the reader back: a member another row rule computes is this pass's value if that rule runs first
 and the pass before's otherwise, and the rule's own member always the pass before's. A running
 total down the rows, `order.lines[index - 1].x + item.qty`, a count of another list's computed
 members, or of the row's own list's, is therefore wrong in some document orders and on the replay;

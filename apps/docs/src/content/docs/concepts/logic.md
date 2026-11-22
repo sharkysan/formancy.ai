@@ -161,8 +161,9 @@ none of their rows: `order.lines[].count` computed as `double(size(order.lines))
 is accepted, and so are the row before, `order.lines[index - 1].qty`, the last
 row, `index == size(order.lines) - 1`, and another list's count,
 `size(order.other)` or `size(other.lines)`. Such a rule runs after the rules on
-every top-level field, then in the order the document lists the rules, and reads
-those rows as that order leaves them: a member another row rule computes is this
+every top-level field, then in the order the document lists the rules, unless
+what it or the rule it reads waits for holds one of them back, and reads those
+rows as that order leaves them: a member another row rule computes is this
 pass's value if that rule comes first and the pass before's if it comes after,
 and the rule's own member always the pass before's. So a running total down the
 rows (below), or a count of rows whose computed member passes a test, can be a

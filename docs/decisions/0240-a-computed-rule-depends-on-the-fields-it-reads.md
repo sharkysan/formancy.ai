@@ -30,7 +30,11 @@
       repeater inside a group, through a group inside a top-level row, and those that reach into a
       row or read a list or a group across levels whole;
     - *a top-level row reading another row of its list by position* — accepted, and after the
-      member it reads.
+      member it reads;
+    - *the order keeps each field at its place wherever no edge forbids it* — the smallest order by
+      place, held against picking it by hand over random acyclic sets; a row rule in a group left at
+      its place when a top-level rule waits for it; and, pinned, a writer an edge main did not have
+      holds behind a whole read.
 
     Against main's order — f4bc69aa's graph moved unchanged into the same module, for the computed
     rules alone, where main also gave `visible`, `required` and `disabled` rules nodes whose
@@ -42,8 +46,10 @@
     made those reads a cycle and gave a row rule in a group its group's place, the own-list cases
     failed, and so did every case of the edge. Against the second, which kept only a row's read of
     its own list, the two lists of one group each reading the other failed; against the third,
-    which kept a read of the rule's own group, the lists of two groups did; and against the fourth,
-    which ranked a row rule in a group at its group's place, the case that runs it where main did.
+    which kept a read of the rule's own group, the lists of two groups did; against the fourth,
+    which ranked a row rule in a group at its group's place, the case that runs it where main did;
+    and against the fifth, which took the depth-first order `buildGraph` gives, the cases of the
+    order by place.
     *A read is cut where it stops being keys and indices* passes before as after and fails when
     the cut resumes past what it cannot read, as a global rather than a sticky pattern does.
   - **`packages/core/src/engine-logic.test.ts`**, *a computed rule is ordered by the field it writes
@@ -52,9 +58,12 @@
     browser and build the server's replay from the browser's answers. The first block's cases each
     failed against main's order. In the second, the row count, row before, last row, share of the
     count, two lists counting each other, running total, and a whole read of a member another row
-    rule computes in both document orders compute main's figures; its loops were accepted on main,
+    rule computes in both document orders compute main's figures, and so does a whole read in a
+    group when a top-level rule waits for its row rule; its loops were accepted on main,
     as were the top-level loops through a group in a row; a top-level row reading a group computed
-    whole in its row, and a top-level row by position, fail against main's order.
+    whole in its row, and a top-level row by position, fail against main's order. The residual
+    case, a writer or a reader held back by a wait main did not have, is pinned at this order's
+    figures and fails against main's and against the fifth version's.
   - **`packages/core/src/engine-refusal.test.ts`**, *names a loop through a repeater inside a group,
     field by field*, and **`packages/server/src/refused-version.test.ts`**, which stores such a
     version as an earlier release did: its public read answers `200`, a submission `500` with a
@@ -115,8 +124,12 @@ ruling on that was to keep main's order for a row's whole read of any list or gr
 group, and to leave the lists at the top level as they were. The fourth ranked a row rule in a
 group at its group's place, where main ran it after every top-level field; since its whole read
 waits for no row rule, the rank decided its value, and a form main computed right was a pass
-behind. The ruling on that was to restore main's place. Daniel accepted the rest of what is
-refused, which is one principle: a read waits for every rule that writes what it reads, field by
+behind. The ruling on that was to restore main's place. The fifth kept the place and took the
+depth-first order `buildGraph` gives, which puts what a field waits for just before it wherever it
+ranks: a top-level rule that now waits for a row rule in a group pulled that row rule ahead of the
+row rules main ran before it, and a form main computed right was a pass behind again. The ruling on
+that was the smallest order by place, with the residual stated rather than patched. Daniel accepted
+the rest of what is refused, which is one principle: a read waits for every rule that writes what it reads, field by
 field, so a loop main's top-level names hid is a loop.
 
 ## Decision
@@ -144,6 +157,12 @@ as it was on `main`.
 
 **And a rule writing inside a field another rule computes whole depends on that rule**, so the
 whole is written first and the part into it.
+
+**The rules run by place, wherever no wait forbids it**: of the rules free to run, the one placed
+earliest — by the model's order of the top-level field it writes, a row rule of a list inside a
+group after them all, then the document's — runs first. That is Kahn's algorithm with the free set
+taken by place, the smallest topological order by place. `buildGraph` stays the cycle gate, as
+exported and unchanged; its depth-first order is no longer the pass's.
 
 It lives in `packages/core/src/computed-order.ts`, apart from the engine, because what a rule
 depends on changes for reasons of its own, and this was one. How a row's read names a model path
@@ -198,7 +217,8 @@ cycle that no longer is, such as a group's field reading a sibling, is accepted;
 through the server can have held one, because publishing builds the same engine and was refused.
 
 **What it keeps, on purpose: inside a group, a row's whole read of what row rules compute is as
-main's order leaves it when the row rule runs.** Such a read waits for none of those rows. A
+the order leaves it when the row rule runs, which is main's order except where a wait main did not
+have holds a writer or the reader back.** Such a read waits for none of those rows. A
 member another row rule computes is this pass's value if that rule runs first — by the model's
 order of the top-level field each writes, a row rule in a group after them all, then the
 document's — and the pass before's otherwise; the rule's own member is always the pass before's.
@@ -217,6 +237,14 @@ unchanged:
   `order.lines.filter(l, l.x > 4.0)` beside `order.lines[].x = item.qty * 2.0`: the same, by
   which of the two is listed first.
 
+Where a wait main did not have, from a read that now waits for the field it names, holds one side
+back, the order cannot be main's for that pair too. Measured on 2026-11-22 and pinned at this
+order's figures: with `h.lines[].x = g.other[0].x + 1.0` waiting for `g.other[].x`, the whole
+read `g.lines[].y` over `h.lines` runs before it, and with `g.other`'s quantity changed from 1 to 2
+main showed x 2 where 3 is due and stored neither, where this order shows x 3 and y 1 and the
+replay stores x alone; with the reader also reading `g.third[0].z`, it runs after the writer, and
+counts 1 where main counted 0 and stored none.
+
 They are kept as main had them, because the ruling keeps main's order for a row's whole read
 inside a group: telling them from a row count would take more than the reads say. At the top level
 the running total and the own list's count are refused, and a count of another list waits for its
@@ -230,9 +258,8 @@ rule writes into what it reads, and reaches no row rule to close a loop through.
 row rule reading nothing of its row is written after the list or group computed whole around it,
 at the top level and in a group.
 
-The order among rules that nothing orders is by the model's order of the top-level field each
-writes, a row rule of a list inside a group after them all, and then the document's, so the cycle
-a refused form is named with starts where main's order reaches it.
+The cycle a refused form is named with is `buildGraph`'s, which walks the rules by the same
+places, so it starts where main's order reaches it.
 
 Overlap is conservative where a read is: the whole `item`, a computed index such as `lines[i]` and
 a whole group each read every computed field inside them. Comparing each read with every computed
@@ -261,6 +288,15 @@ opening. Uniform, and paid for by forms that worked.
 **Rank a row rule in a group at its group's place.** The fourth version. Under the kept split the
 rank decides what a whole read takes, so a form main computed right read the pass before's value,
 and the place depended on which group the model lists first.
+
+**Take the depth-first order `buildGraph` gives.** The fifth version. A top-level rule waiting
+for a row rule in a group pulled that row rule, and what it waited for, ahead of where main ran it,
+and a whole read in a group read a pass behind where main read this pass.
+
+**Add main's relative order for each pair a whole read keeps as an edge.** Unconditional, it
+refuses forms both main and this order accept, measured in review, `g.lines[].y` reading `item.x` beside
+`g.lines[].x = double(size(g.lines))` among them; added only where it closes no cycle, it is a
+condition per pair for a residual that exists only where a new wait holds one side back.
 
 **Restore main's refusal of a top-level row's read of its own list by position.** It is safe now:
 the read waits for the member it names. Refusing it again would be a special case with no force

@@ -58,10 +58,12 @@ order was right. A computed rule now depends on the fields it reads, not on thei
 (0240, hazard A5). From the upgrade, a form version published before computes such a field from the
 rows as they stand, in the browser and on the replay; responses stored before keep what they were
 stored with, and never migrate. A row rule in a repeater inside a group that reads a list inside
-a group, or any group, whole keeps the order every release's code gave it: it waits for no row rule
-of a list inside a group, runs after the rules on every top-level field, and reads those rows as
-main's order leaves them when it runs. So a row count, the row before, the last row and another
-list's count compute as they did. A member another row rule computes is this pass's value if that
+a group, or any group, whole keeps what every release's code gave it: it waits for no row rule of a
+list inside a group, and runs at main's place, after the rules on every top-level field and then in
+the document's order. The rules run by place, the earliest placed of those free to run first, so
+it reads those rows as main's order left them, except where a wait main did not have, from a read
+that now waits for the field it names, holds a writer or the reader back. So a row count, the row
+before, the last row and another list's count compute as they did. A member another row rule computes is this pass's value if that
 rule runs first and the pass before's otherwise, and the rule's own member always the pass before's,
 so a running total down such rows, a count of another list's computed members, or of the row's own
 list's, can change with the order the document lists the rules in, and the replay can store none:
@@ -102,7 +104,8 @@ one and what to write instead.
 - **A version whose computed rules form a loop field by field, which every release's graph of
   top-level names did not see, no longer opens.** A read now waits for every computed rule that
   writes what it reads, by field path. The one exception is a row rule in a repeater inside a
-  group reading a list inside a group, or a group, whole, which keeps main's order (above). So a
+  group reading a list inside a group, or a group, whole, which waits for no row rule of a list
+  inside a group, only for the other rules writing into what it reads (above). So a
   loop main's graph missed is refused, at the top level as well as inside groups, and every release
   through `0.14.0` published one. A rule outside a group's rows that reads them, a top-level row
   among them, waits for their row rules as a field outside a top-level list's rows always waited
