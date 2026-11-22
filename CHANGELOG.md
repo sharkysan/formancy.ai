@@ -95,6 +95,18 @@ document lists the rules in, and the replay can store none. Recorded as debt, no
   for the member it reads, so both are accepted and compute the same in the browser and on the
   replay.
 
+**Added, on formancy.ai: the paid modules' pages in the sitemaps, and a link to each module from
+every page of the site's shell.** Formancy Data, Formancy Report and Formancy Health are served
+under formancy.ai, and a search engine was told of none of them: the sitemaps listed this site's
+pages and the documentation alone, and only the landing page's licence section linked the modules.
+`sitemap-pages.xml` now lists Data's examples and demo and Health's demo, and the sitemap index
+lists Report's own sitemap of its product pages; Report's Studio stays out. The footer of the
+landing page, the templates page and the Angular page links each module by its name, Report to its
+English product page, each with *not free · paid in production* beside the link. Both read one list, `apps/site/src/paid-modules.json`, and
+`pnpm build:web` fails when either sitemap does not list what it says. Nothing here checks that
+those pages are there or may be indexed, which their repositories decide. No `@formancy/*` package
+changes ([0240](docs/decisions/0240-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
+
 - **The Angular starter's preview says why the engine refused a document, instead of throwing.** A saved
   or half-written form whose rule does not compile is a valid document the builder can hold, and the
   engine only refuses it when the preview builds it; the effect threw and the pane went blank with the

@@ -156,6 +156,18 @@ if (stray.length > 0) {
  *
  * Astro skips its sitemap without a word when `site` is missing from its
  * config, so an absent one fails the build too.
+ *
+ * The paid modules are served under formancy.ai as well, each by a deployment
+ * of its own repository, and a search engine finds them only if this site names
+ * them (0240). So the pages each module makes indexable are listed after the
+ * site's own, and a module that writes a sitemap of its own is listed in the
+ * index after Astro's: Formancy Report's, which lists its product pages in each
+ * language with their alternates and is not an index. Both come from
+ * `apps/site/src/paid-modules.json`, the list the footer links the modules from,
+ * so the sitemaps and the footer cannot name a module's place differently. None
+ * of those pages is in this build, so what is held is the files against the
+ * list, not the list against what those repositories deploy. Every address in
+ * it has to be this site's, because a sitemap may list only its own host.
  */
 const locs = (file) => [...readFileSync(file, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
 
@@ -164,12 +176,22 @@ if (!existsSync(docsIndex)) {
   throw new Error(`The documentation built no sitemap at ${docsIndex}. Astro skips it silently when ` + `\`site\` is not set in apps/docs/astro.config.mjs.`)
 }
 
+const paidModules = JSON.parse(readFileSync(join(root, 'apps', 'site', 'src', 'paid-modules.json'), 'utf8'))
+const elsewhere = paidModules.flatMap((module) => [...module.pages, ...module.sitemaps]).filter((url) => !url.startsWith(`${SITE_ORIGIN}/`))
+if (elsewhere.length > 0) {
+  throw new Error(
+    `apps/site/src/paid-modules.json names ${elsewhere.join(', ')} for the sitemaps, which may list ` +
+      `only addresses under ${SITE_ORIGIN}/. A search engine ignores the rest.`,
+  )
+}
+
 const expectedPages = [
   `${SITE_ORIGIN}/`,
   ...NESTED.filter((app) => app.listed).map((app) => `${SITE_ORIGIN}${app.base}`),
   ...PAGES.map((page) => `${SITE_ORIGIN}/${page}/`),
+  ...paidModules.flatMap((module) => module.pages),
 ]
-const expectedIndex = [`${SITE_ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex)]
+const expectedIndex = [`${SITE_ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex), ...paidModules.flatMap((module) => module.sitemaps)]
 
 for (const [file, expected] of [
   ['sitemap-pages.xml', expectedPages],

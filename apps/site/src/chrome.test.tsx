@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { CURRENT_SPEC_VERSION } from '@formancy/spec'
+import { AngularBuilderPage } from './angular-builder-page.js'
 import { App } from './app.js'
 import { SiteBar, SiteFooter } from './chrome.js'
 import { TemplateGallery } from './template-gallery.js'
@@ -145,5 +146,47 @@ describe('the footer', () => {
     render(<SiteFooter />)
 
     expect(screen.getByRole('contentinfo').textContent).toContain(`Spec version ${CURRENT_SPEC_VERSION}`)
+  })
+
+  test('links each paid module by its name from every page, with its terms beside the link', () => {
+    /*
+     * The failure this prevents: the licence section of the landing page was the one
+     * place the site linked Formancy Data, Formancy Report and Formancy Health, so a
+     * visitor who arrived on the templates page or the Angular page, and a search engine
+     * following that page's links, found no way to them, though all three are served
+     * under formancy.ai (0240). Every page is rendered, not the footer alone, since a page
+     * that drew a footer of its own would drop the links without failing a test of the
+     * component.
+     *
+     * Beside a footer that opens with "Apache-2.0", a bare name reads as part of the free
+     * offer, so the item holding each link says the module's terms (0179). The addresses
+     * are written here rather than read from `paid-modules.json`, or a wrong one there
+     * would pass: Report's is its English product page and not its Studio at `/report/`,
+     * which that module keeps out of search.
+     */
+    const expected = [
+      ['Formancy Data', 'https://formancy.ai/data/examples/'],
+      ['Formancy Report', 'https://formancy.ai/report/en/'],
+      ['Formancy Health', 'https://formancy.ai/health/'],
+    ] as const
+    stubObserver()
+
+    for (const [page, element] of [
+      ['the landing page', <App key="home" />],
+      ['the templates page', <TemplateGallery key="templates" />],
+      ['the Angular page', <AngularBuilderPage key="angular" />],
+    ] as const) {
+      render(element)
+      const footer = within(screen.getByRole('contentinfo'))
+
+      for (const [name, href] of expected) {
+        const link = footer.getByRole('link', { name })
+        expect(link.getAttribute('href'), `${page} links ${name} somewhere else`).toBe(href)
+        const item = link.closest('li')?.textContent ?? ''
+        expect(item, `${page} links ${name} with no terms beside it`).toMatch(/not free/i)
+        expect(item).toMatch(/paid in production/i)
+      }
+      cleanup()
+    }
   })
 })

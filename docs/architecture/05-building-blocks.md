@@ -535,7 +535,11 @@ sold rather than given away: Formancy Data, Formancy Report and Formancy Health.
 module's item says it is not free beside its own links
 ([0179](../decisions/0179-the-paid-modules-are-named-as-not-free.md)), and Formancy
 Health's carries HL7's trademark sentence, because its description names FHIR
-([0180](../decisions/0180-formancy-health-is-named-before-its-first-release.md)).
+([0180](../decisions/0180-formancy-health-is-named-before-its-first-release.md)). Every
+page's footer links the three as well, each by its name and beside the same terms, from
+`src/paid-modules.json`, and `scripts/build-web.mjs` holds the sitemaps to that list, which
+names the pages each module's repository serves under formancy.ai for a search engine to find
+([0240](../decisions/0240-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
 
 Its pages — the landing page, the templates gallery and the Angular form builder — are
 drawn in one shell: `src/shell.css` holds the tokens, the type scale and the backdrop, and
