@@ -194,24 +194,28 @@ that way is refused as a cycle whichever row it means. Over-reporting is the
 direction that cannot leave a value stale; this record said until 2026-11-22 that
 such a path could not be expressed at all.
 
-**Inside a group, a row's whole read of rows a rule computes is a pass behind.**
+**Inside a group, a row's whole read of what row rules compute depends on the order they run in.**
 Accepted debt, from
-[0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md). Inside
-a group, a row rule reading a list or a group inside a group whole waits for none
-of their rows, as every release's code had it, because a row count, the row before,
-the last row and another list's count computed right that way and versions published
-with one must go on opening. What such a read takes from rows a rule computes is the
-pass before's. A running total, `order.lines[index - 1].x + item.qty`, reads its own
-member in the row before: measured on 2026-11-22, the browser showed 7 where 8 was
-due, and the replay stored the first row's total and no other. A count of what
-another list inside a group computes, `order.other.filter(o, o.y > 2.0)` or the
-same over `other.lines`, stayed 0 where 1 was due once that list's row computed 4,
-and the replay stored none (A5). At
-the top level the running total is refused. Paying it off means telling these from a
-row count, which the reads alone cannot, or retiring the versions that hold one; the
-engine tests *debt: a running total down the rows of a repeater inside a group is a
-pass behind, as on main* and *debt: a row reading another list inside a group whole
-reads what that list computed a pass before, as on main* fail the day either is done.
+[0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md). Inside a
+group, a row rule reading a list inside a group, or a group, whole waits for no row rule
+of a list inside a group, and runs where every release's code ran it, after the rules on
+every top-level field and then in the document's order, because a row count, the row
+before, the last row and another list's count computed right that way and versions
+published with one must go on opening. It reads those rows as that order leaves them: a
+member another row rule computes is this pass's value if that rule runs first and the
+pass before's otherwise, and its own member always the pass before's. Measured on
+2026-11-22, at `main`'s figures: a running total, `order.lines[index - 1].x + item.qty`,
+showed 7 where 8 was due, and the replay stored the first row's total and no other; a
+count of what another list inside a group computes, `order.other.filter(o, o.y > 2.0)`
+or the same over `other.lines`, and a count over the row's own list of a member another
+row rule computes, each stayed 0 where 1 was due with the writing rule listed after
+them, and the replay stored none, and were right with it listed before (A5). At the top
+level the running total and the own list's count are refused. Paying it off means
+telling these from a row count, which the reads alone cannot, or retiring the versions
+that hold one; the engine tests *debt: a running total down the rows of a repeater
+inside a group is a pass behind, as on main* and *debt: a whole read of a member another
+row rule computes is this pass's when that rule runs first, the pass before's after, as
+on main* fail the day either is done.
 
 **Visibility rules fail open.** The cost of
 [0022](../decisions/0022-fail-open-fail-closed.md). A form whose visibility

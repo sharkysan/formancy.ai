@@ -147,35 +147,42 @@ group: `addr.label` computed as `"in " + addr.city` is accepted. What it may not
 read is something that holds it. `size(addr)` reads the whole group, the field
 being computed included, and `item` the whole row, so a computed field reading
 either is refused as a cycle, named by its fields: `addr.label -> addr.label`. A
-field computed from a list's rows runs after the rules that compute them,
-wherever the list is, and a rule writing inside a field another rule computes
-whole runs after that rule.
+read waits for every rule that writes what it reads: a field computed from a
+list's rows runs after the rules that compute them, wherever the list is, and a
+rule writing inside a field another rule computes whole runs after that rule.
 
 A row rule reads its own list one way at the top level and another inside a
-group. At the top level a row that reads its list reads its own row, so
-`lines[].count` computed as `double(size(lines))` is refused. Inside a group a
-row rule may read any list or any group inside a group whole, and waits for none
-of their rows: `order.lines[].count` computed as `double(size(order.lines))` is
-accepted, and so are the row before, `order.lines[index - 1].qty`, the last row,
-`index == size(order.lines) - 1`, and another list's count, `size(order.other)`
-or `size(other.lines)`. What it takes that way from rows a rule computes is the
-pass before's, so a count of what another list computes lags a change behind, as
-a running total does (below). Every release's code reads such a rule that way,
-and it is kept so that the versions published with one go on opening.
+group. At the top level a row that reads its list whole reads its own row, so
+`lines[].count` computed as `double(size(lines))` is refused, while a row
+reading another row by position waits for the member it names, so
+`lines[].count` computed as `lines[0].qty * 1.0` is accepted. Inside a group a
+row rule may read any list inside a group, or any group, whole, and waits for
+none of their rows: `order.lines[].count` computed as `double(size(order.lines))`
+is accepted, and so are the row before, `order.lines[index - 1].qty`, the last
+row, `index == size(order.lines) - 1`, and another list's count,
+`size(order.other)` or `size(other.lines)`. Such a rule runs after the rules on
+every top-level field, then in the order the document lists the rules, and reads
+those rows as that order leaves them: a member another row rule computes is this
+pass's value if that rule comes first and the pass before's if it comes after,
+and the rule's own member always the pass before's. So a running total down the
+rows (below), or a count of rows whose computed member passes a test, can be a
+change behind, and can change if the rules are moved. Every release's code reads
+such a rule that way, and it is kept so that the versions published with one go
+on opening.
 
-Any other loop through a repeater inside a group is refused, as at the top
-level: a field outside the rows computed from them and read back into them, a
-count computed as `double(size(order.lines))` and read in the rows (read the
-count in the row itself instead), or a row reading another row's member, so
-`order.lines[].count` computed as `index == 0 ? 1.0 : order.lines[0].count + 1.0`
-is refused.
+Any other loop is refused, at the top level and inside groups alike: a field
+outside the rows computed from them and read back into them, a count computed as
+`double(size(order.lines))` and read in the rows (read the count in the row
+itself instead), a row whose member reads the group in its own row whole, or a
+row reading another row's member, so `order.lines[].count` computed as
+`index == 0 ? 1.0 : order.lines[0].count + 1.0` is refused.
 
 Before 2026-11-22 a dependency was the field's top-level name. That refused a
-group's field reading a sibling, ran a field reading the rows of a list inside a
-group before those rows were computed, and accepted those loops through a list
-inside a group: they computed nothing, or values the server's replay did not
-store, or, for a count read back into its rows, the right one. A version
-published with one no longer opens;
+group's field reading a sibling and a top-level row reading another by position,
+ran a field reading the rows of a list inside a group before those rows were
+computed, and accepted those loops: they computed nothing, or values the server's
+replay did not store, or, for a count read back into its rows, the right one. A
+version published with one no longer opens;
 [`MIGRATIONS.md`](https://github.com/sharkysan/formancy.ai/blob/main/MIGRATIONS.md)
 says how to find one.
 

@@ -96,7 +96,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0014](0014-presentation-sections.md) | Keep words and arrangement in optional sections | accepted |
 | [0015](0015-diff-before-server.md) | Build `diffSchemas` before there is data to corrupt | accepted |
 | [0041](0041-repeater-row-identity.md) | A repeater row carries its own identity | accepted |
-| [0042](0042-freeze-the-spec.md) | Freeze the spec at version 1 | accepted; a document valid today staying valid, for one holding the key `__proto__`, which no release could store an answer under, narrowed by 0185; a form written now that keeps working, for a version whose computed rules loop through a repeater inside a group, narrowed by 0240 |
+| [0042](0042-freeze-the-spec.md) | Freeze the spec at version 1 | accepted; a document valid today staying valid, for one holding the key `__proto__`, which no release could store an answer under, narrowed by 0185; a form written now that keeps working, for a version whose computed rules loop field by field where top-level names saw none, narrowed by 0240 |
 | [0043](0043-runs-on.md) | A validation rule says which side it runs on | accepted |
 
 ### The engine
