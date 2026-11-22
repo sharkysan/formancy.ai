@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { FormSchema } from '@formancy/spec'
+import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
 import { createFormEngine } from './engine.js'
 import type { FormEngineOptions } from './engine.js'
 
@@ -106,6 +106,185 @@ describe('computed rules', () => {
     }
 
     expect(() => createFormEngine({ schema: cyclic, capabilities: FIXED_CLOCK })).toThrow(/price|qty/)
+  })
+})
+
+/**
+ * The rules of one pass read one bag of answers, and what a computed rule writes goes into it for
+ * the rules after it. It went in at the target's top-level name, which for a field inside a group
+ * is the group's: a rule writing `addr.zip` left `addr` as "3000", and a row rule in a repeater
+ * inside a group left the group as the list of rows. Every rule after it that read a member of the
+ * group could not be evaluated whenever the computed rule had written, which once its inputs are
+ * answered is every pass.
+ */
+describe('what a computed rule writes inside a group, read by the rules after it in the same pass', () => {
+  const form = (fields: FieldDef[], rules: LogicRule[]): FormSchema => ({
+    specVersion: '1',
+    id: 'grouped',
+    title: 'Grouped',
+    model: { fields },
+    logic: { rules },
+  })
+
+  const address = form(
+    [
+      {
+        key: 'addr',
+        type: 'group',
+        fields: [
+          { key: 'city', type: 'text' },
+          { key: 'zip', type: 'text' },
+        ],
+      },
+      { key: 'label', type: 'text' },
+      { key: 'town', type: 'text' },
+      { key: 'canton', type: 'text' },
+      { key: 'note', type: 'text' },
+      { key: 'locked', type: 'text' },
+    ],
+    [
+      { target: 'addr.zip', kind: 'computed', cel: '"3000"' },
+      { target: 'label', kind: 'computed', cel: '"PLZ " + addr.zip' },
+      { target: 'town', kind: 'computed', cel: 'addr.city' },
+      { target: 'canton', kind: 'required', cel: 'addr.city == "Bern"' },
+      { target: 'note', kind: 'visible', cel: 'addr.city == "Basel"' },
+      { target: 'locked', kind: 'disabled', cel: 'addr.city == "Bern"' },
+    ],
+  )
+  const inBern = (mode: 'client' | 'server' = 'client') =>
+    createFormEngine({ schema: address, capabilities: FIXED_CLOCK, mode, initialValue: { addr: { city: 'Bern' }, note: 'typed' } })
+
+  test('a rule after it reads the value it wrote', () => {
+    // With "3000" where the group belongs, `addr.zip` could not be evaluated, and the label was not
+    // written, though the zip it reads was stored.
+    expect(inBern().getFieldSnapshot(['label']).value).toBe('PLZ 3000')
+  })
+
+  test('a rule after it reads a field of the group the rule did not write', () => {
+    // The city stood beside the zip in the store and not in the bag, so the town stayed empty
+    // however often the city was changed.
+    const engine = inBern()
+    expect(engine.getFieldSnapshot(['town']).value).toBe('Bern')
+
+    engine.setValue(['addr', 'city'], 'Thun')
+    expect(engine.getFieldSnapshot(['town']).value).toBe('Thun')
+  })
+
+  test('a required, a visible and a disabled rule read the group whole, in the browser and on the replay', () => {
+    // They run after every computed rule, and each failed open, as 0022 has them: the canton was
+    // not asked for and a submission without it was accepted, the note a rule hides was shown, so
+    // the server's replay kept what was typed into it rather than strip it, and the field a rule
+    // locks could be changed.
+    for (const mode of ['client', 'server'] as const) {
+      const engine = inBern(mode)
+
+      expect(engine.getFieldSnapshot(['canton']).required).toBe(true)
+      expect(engine.getFieldSnapshot(['note']).visible).toBe(false)
+      expect(engine.getFieldSnapshot(['locked']).disabled).toBe(true)
+      expect(engine.submit()).toEqual({ ok: false, errors: { canton: ['required'] } })
+      expect('note' in (engine.value() as Record<string, unknown>)).toBe(false)
+    }
+  })
+
+  const order = form(
+    [
+      {
+        key: 'order',
+        type: 'group',
+        fields: [
+          { key: 'note', type: 'text' },
+          {
+            key: 'lines',
+            type: 'repeater',
+            fields: [
+              { key: 'qty', type: 'number' },
+              { key: 'twice', type: 'number' },
+              { key: 'label', type: 'text' },
+            ],
+          },
+        ],
+      },
+      { key: 'remark', type: 'text' },
+    ],
+    [
+      { target: 'order.lines[].twice', kind: 'computed', cel: 'item.qty * 2.0' },
+      // Reads `item.twice`, so it runs after the rule above.
+      { target: 'order.lines[].label', kind: 'computed', cel: 'order.note + " " + string(item.twice)' },
+      { target: 'remark', kind: 'visible', cel: 'has(order.note) && order.note != "Probe"' },
+    ],
+  )
+  const probe = () => createFormEngine({ schema: order, capabilities: FIXED_CLOCK, initialValue: { order: { note: 'Probe', lines: [{ qty: 2 }] } } })
+
+  test('a row rule after another, in a repeater inside a group, reads the group', () => {
+    // The group was left as its rows, so `order.note` could not be evaluated and every row's
+    // label stayed empty.
+    expect(probe().getFieldSnapshot(['order', 'lines', 0, 'label']).value).toBe('Probe 4')
+  })
+
+  test('a rule after the row rules reads the group, not its rows', () => {
+    // The visible rule read the rows where the group belongs, failed open, and showed the remark.
+    expect(probe().getFieldSnapshot(['remark']).visible).toBe(false)
+  })
+
+  test('a group holding nothing yet is read as the group, not as no rows', () => {
+    // With nothing stored there is nothing to read back, and the group was left as an empty list,
+    // so even `has(order.note)` could not be evaluated, and the remark showed on every untouched form.
+    const engine = createFormEngine({ schema: order, capabilities: FIXED_CLOCK })
+
+    expect(engine.getFieldSnapshot(['remark']).visible).toBe(false)
+  })
+
+  test('control: a target at the top level is read back as it was written', () => {
+    // Passed before the fix as after. The group is re-read whole from the store; at the top level
+    // that is the value just written, so a rule after it reads what it read before.
+    const engine = createFormEngine({
+      schema: form(
+        [
+          { key: 'zip', type: 'text' },
+          { key: 'label', type: 'text' },
+        ],
+        [
+          { target: 'zip', kind: 'computed', cel: '"3000"' },
+          { target: 'label', kind: 'computed', cel: '"PLZ " + zip' },
+        ],
+      ),
+      capabilities: FIXED_CLOCK,
+    })
+
+    expect(engine.getFieldSnapshot(['label']).value).toBe('PLZ 3000')
+  })
+
+  test('control: a repeater at the top level is read back as its rows, or as none', () => {
+    // Passed before the fix as after. A rule after the row rules reads the rows as just written,
+    // and a repeater handed null, which validation takes for no rows, as none: read as null, the
+    // count could not be evaluated and a visible rule reading its size would show its field.
+    const lines = form(
+      [
+        { key: 'note', type: 'text' },
+        {
+          key: 'lines',
+          type: 'repeater',
+          fields: [
+            { key: 'qty', type: 'number' },
+            { key: 'twice', type: 'number' },
+            { key: 'label', type: 'text' },
+          ],
+        },
+        { key: 'count', type: 'number' },
+      ],
+      [
+        { target: 'lines[].twice', kind: 'computed', cel: 'item.qty * 2.0' },
+        { target: 'lines[].label', kind: 'computed', cel: 'note + " " + string(item.twice)' },
+        { target: 'count', kind: 'computed', cel: 'size(lines) == 0 ? 0.0 : lines[0].twice' },
+      ],
+    )
+    const engine = (initialValue: unknown) => createFormEngine({ schema: lines, capabilities: FIXED_CLOCK, initialValue })
+
+    const filled = engine({ note: 'Probe', lines: [{ qty: 2 }] })
+    expect(filled.getFieldSnapshot(['lines', 0, 'label']).value).toBe('Probe 4')
+    expect(filled.getFieldSnapshot(['count']).value).toBe(4)
+    expect(engine({ note: 'Probe', lines: null }).getFieldSnapshot(['count']).value).toBe(0)
+    expect(engine({ note: 'Probe' }).getFieldSnapshot(['count']).value).toBe(0)
   })
 })
 

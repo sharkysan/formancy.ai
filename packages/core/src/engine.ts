@@ -648,12 +648,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         for (const entry of computedInOrder) {
           if (entry.row === undefined) {
             const outcome = evaluate(entry.program, bag, { capabilities })
-            // A computed rule that cannot evaluate (half-filled inputs) writes
-            // nothing; the previous value stands until the inputs make sense.
+            // A computed rule that cannot evaluate (half-filled inputs) writes nothing; the previous value stands until the inputs make sense.
             const stored = outcome.ok ? storable(entry.rule.target, outcome.value) : undefined
             if (stored !== undefined) {
               store.set(entry.targetPath, stored.value)
-              bag[topSegment(entry.rule.target)] = stored.value
+              // Read back whole at the top: written inside a group, it is one field of the answer the rules after it read.
+              bag[topSegment(entry.rule.target)] = store.get([topSegment(entry.rule.target)])
             }
             continue
           }
@@ -664,8 +664,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             const stored = outcome.ok ? storable(entry.rule.target, outcome.value) : undefined
             if (stored !== undefined) store.set(instancePath(entry, index), stored.value)
           })
-          // Aggregates downstream must see the rows as just written.
-          bag[topSegment(repeater.wire)] = store.get(repeater.path) ?? []
+          // Aggregates see the rows as just written, and their group whole; with none stored, the bag's group, or at the top, null too, no rows, as always.
+          bag[topSegment(repeater.wire)] = store.get([topSegment(repeater.wire)]) ?? (repeater.path.length > 1 ? bag[topSegment(repeater.wire)] : [])
         }
 
         const applyMeta = (entry: CompiledRule, wire: string, path: Path, ok: boolean, value: unknown): void => {
