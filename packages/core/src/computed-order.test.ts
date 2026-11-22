@@ -213,6 +213,18 @@ describe('a row rule in a repeater inside a group reading a list or a group insi
     expect(ordered([rule('order.lines[].x', 'double(size(items))'), z], ['order', 'items'])).toEqual(['items[].z', 'order.lines[].x'])
   })
 
+  test('runs where main ran a row rule in a group: after every top-level field, then as the document lists them', () => {
+    // The whole read waits for none of the rows, so where it runs decides what it reads. Ranked at
+    // its group's place instead, a reader in `order` ran before a writer in `other` listed ahead
+    // of it, read the pass before's value, and the replay stored none, where main had it right.
+    const writer = rule('other.lines[].y', 'item.qty * 2.0')
+    const reader = rule('order.lines[].x', 'double(other.lines.filter(o, o.y > 2.0).size())')
+    const total = rule('total', '1.0')
+
+    expect(ordered([writer, reader, total], ['order', 'other', 'total'])).toEqual(['total', 'other.lines[].y', 'order.lines[].x'])
+    expect(ordered([reader, writer, total], ['order', 'other', 'total'])).toEqual(['total', 'order.lines[].x', 'other.lines[].y'])
+  })
+
   test('is accepted for lists of two groups each reading the other whole, as main accepted them', () => {
     // Refused as `order.lines[].x -> other.lines[].y -> order.lines[].x` by the second ruling, which
     // kept only a read of the rule's own group; main opened it, counting each other it computed
@@ -278,6 +290,45 @@ describe('what is still refused as a cycle, named by the fields in it', () => {
     ])
   })
 
+  test('loops that reach into a row, or read a list or a group across levels whole, which were accepted', () => {
+    // Each read waits for the rule writing the field it names, and main's top-level names hid each
+    // loop. Two lists of one group by position; a top-level row and a row in a group by position;
+    // a row in a group reading a top-level list whole that its row reads back; a top-level row
+    // reading a group whole whose list reads the top-level list back. The last is the same rule as
+    // a field outside the rows waiting for them: a top-level row is outside a group's rows.
+    const loops: Array<[Computation[], string[], string[]]> = [
+      [
+        [rule('order.lines[].x', 'order.other[0].y + 1.0'), rule('order.other[].y', 'order.lines[0].x + 1.0')],
+        ['order'],
+        ['order.lines[].x', 'order.other[].y', 'order.lines[].x'],
+      ],
+      [
+        [rule('lines[].y', 'order.lines[0].x + 1.0'), rule('order.lines[].x', 'lines[0].y + 1.0')],
+        ['lines', 'order'],
+        ['lines[].y', 'order.lines[].x', 'lines[].y'],
+      ],
+      [
+        [rule('order.lines[].x', 'double(lines.filter(l, l.y > 0.0).size())'), rule('lines[].y', 'order.lines[0].x + 1.0')],
+        ['lines', 'order'],
+        ['lines[].y', 'order.lines[].x', 'lines[].y'],
+      ],
+      [
+        [rule('lines[].y', 'double(size(g))'), rule('g.other[].x', 'double(size(lines))')],
+        ['lines', 'g'],
+        ['lines[].y', 'g.other[].x', 'lines[].y'],
+      ],
+    ]
+    for (const [rules, fields, loop] of loops) expect(cycle(rules, fields)).toEqual(loop)
+  })
+
+  test('a loop through a group inside a top-level row, which was accepted', () => {
+    // Main resolved `item.sub` to a node of that exact name, which `lines[].sub.z` was not; at field
+    // granularity the whole sub-group holds the member, so both are loops, as everywhere else.
+    expect(cycle([rule('lines[].sub.z', 'double(size(item.sub))')], ['lines'])).toEqual(['lines[].sub.z', 'lines[].sub.z'])
+    const x = rule('lines[].x', 'double(size(item.sub))')
+    expect(cycle([x, rule('lines[].sub.z', 'item.x * 2.0')], ['lines'])).toEqual(['lines[].x', 'lines[].sub.z', 'lines[].x'])
+  })
+
   test('a loop through a row rule in a repeater inside a group, which was accepted', () => {
     // The read of the rows was cut to `order`, which no edge led from, so the loop was not seen:
     // the form was accepted, and opened with a row in it, neither field was computed. The same
@@ -285,7 +336,7 @@ describe('what is still refused as a cycle, named by the fields in it', () => {
     const twice = rule('order.lines[].twice', 'item.qty * 2.0 + first')
     const first = rule('first', 'size(order.lines) == 0 ? 1.0 : order.lines[0].twice')
 
-    expect(cycle([twice, first], ['order', 'first'])).toEqual(['order.lines[].twice', 'first', 'order.lines[].twice'])
+    expect(cycle([twice, first], ['order', 'first'])).toEqual(['first', 'order.lines[].twice', 'first'])
   })
 
   test('the other loops through a repeater inside a group main did not see, refused as at the top level', () => {
@@ -294,8 +345,19 @@ describe('what is still refused as a cycle, named by the fields in it', () => {
     // itself is its rewrite; a row reading another row's member by position showed values the
     // replay did not store.
     const count = rule('count', 'double(size(order.lines))')
-    expect(cycle([rule('order.lines[].x', 'count'), count], ['order', 'count'])).toEqual(['order.lines[].x', 'count', 'order.lines[].x'])
+    expect(cycle([rule('order.lines[].x', 'count'), count], ['order', 'count'])).toEqual(['count', 'order.lines[].x', 'count'])
     expect(cycle([rule('order.lines[].x', 'index == 0 ? 1.0 : order.lines[0].x + 1.0')], ['order'])).toEqual(['order.lines[].x', 'order.lines[].x'])
+  })
+})
+
+describe('a top-level row reading another row of its list by position', () => {
+  test('is accepted, and waits for the member it reads, where main refused it as the list', () => {
+    // Main cut `lines[0].qty` to `lines`, whose node every row rule of the list fed, so it refused
+    // them as `lines -> lines[].x -> lines` and `lines -> lines[].y -> lines`. Read as the field it
+    // names, neither is a loop.
+    expect(cycle([rule('lines[].x', 'lines[0].qty * 1.0')], ['lines'])).toBeUndefined()
+    const y = rule('lines[].y', 'lines[0].x + 1.0')
+    expect(ordered([y, rule('lines[].x', 'item.qty * 2.0')], ['lines'])).toEqual(['lines[].x', 'lines[].y'])
   })
 })
 

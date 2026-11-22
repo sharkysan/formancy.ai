@@ -108,7 +108,7 @@ describe('a stored version whose rules loop through a repeater inside a group', 
 
     expect(again.statusCode).toBe(422)
     expect(again.json()).toMatchObject({ error: 'invalid_logic' })
-    expect(JSON.stringify(again.json())).toContain('Dependency cycle: order.lines[].twice -> first -> order.lines[].twice')
+    expect(JSON.stringify(again.json())).toContain('Dependency cycle: first -> order.lines[].twice -> first')
     expect((await app.inject({ method: 'GET', url: '/f/orders' })).json()).toMatchObject({ version: 1 })
   })
 })

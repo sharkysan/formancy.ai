@@ -93,7 +93,7 @@ describe('engineRefusal', () => {
       ],
     )
 
-    expect(engineRefusal(looping)).toBe('Dependency cycle: order.lines[].x -> first -> order.lines[].x')
+    expect(engineRefusal(looping)).toBe('Dependency cycle: first -> order.lines[].x -> first')
   })
 })
 

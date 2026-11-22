@@ -39,27 +39,32 @@ interface Read {
  * **But a row rule in a repeater inside a group, reading a list inside a group or a group whole,
  * waits for no row rule of a list inside a group** — `size(order.lines)`, `order.lines[index - 1].qty`,
  * which is reported as `order.lines`, `size(order.other)`, `size(other.lines)` or `size(order)`.
- * Main's order cut such a read to a group's name, which no such row rule's node was, so it read
- * the rows as the pass had left them when it ran: right for a row count, the row before, the last
- * row and another list's count, a pass behind for a running total down the rows or a member another
- * list computes. Every release's code opened such a form and versions published with one are
- * stored, so the split is kept rather than made a cycle (0240); what is a pass behind is debt. A
- * list at the top level it waits for, as main did, and at the top level a row reading its own list
- * whole is refused, as it was.
+ * Main's order cut such a read to a group's name, which no such row rule's node was, and ran every
+ * row rule of a list inside a group after the rules on every top-level field, as the document listed
+ * them. Both are kept: such a rule ranks after every top-level field, and its whole read takes the
+ * rows as main's order leaves them when it runs. That is right for a row count, the row before, the
+ * last row and another list's count. For a member another row rule computes it is this pass's value
+ * if that rule runs first and the pass before's otherwise, and for the rule's own member always the
+ * pass before's: debt (0240), kept because every release's code opened such a form and versions
+ * published with one are stored. A list at the top level it waits for, as main did, and at the top
+ * level a row reading its own list whole is refused, as it was.
  *
  * **And a rule writing inside a field another computes whole runs after it**, or the whole,
  * written later, replaces what it wrote. That edge closes no cycle the reads did not: a read
  * reaching the inner field overlaps the outer one too, its prefix, so its rule already waited for
  * the outer rule.
  *
- * Rules that nothing orders run by the model's order of the top-level field they write, then as
- * the document lists them, which is also where the cycle a form is refused with starts.
+ * Rules that nothing orders run by the model's order of the top-level field they write, a row rule
+ * of a list inside a group after them all, then as the document lists them, which is also where the
+ * cycle a form is refused with starts.
  */
 export function computedOrder<T>(rules: readonly T[], computation: (rule: T) => Computation, fields: readonly string[]): T[] {
   const placed = rules
     .map((rule) => {
       const { target, references } = computation(rule)
-      return { rule, target, references, rank: fields.indexOf(topSegment(target)) }
+      // A row rule of a list inside a group runs after every top-level field, as on main: its whole reads
+      // wait for no row rule, so where it runs decides what they read.
+      return { rule, target, references, rank: inGroupRow(segments(target)) ? fields.length : fields.indexOf(topSegment(target)) }
     })
     .sort((a, b) => a.rank - b.rank)
 
