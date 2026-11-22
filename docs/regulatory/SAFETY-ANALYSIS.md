@@ -387,12 +387,16 @@ rules in.* A row rule in a repeater inside a group that reads a list inside a gr
 whole waits for no row rule of a list inside a group, and is placed where `main` ran it, after the
 rules on every top-level field and then in the document's order, because a row count, the row
 before, the last row and another list's count computed right that way and versions published with
-one must go on opening (0240). The rules run by place, the earliest placed of those free to run
-first, which is `main`'s order wherever no wait forbids it. So a member another row rule computes is
-this pass's value if that rule runs first, and the pass before's otherwise; and the rule's own
-member is always the pass before's. When it is the pass before's, the replay of the browser's
-answers, one pass from them, stores none. Three shapes, each measured on `main` on 2026-11-22 and
-pinned at its figures:
+one must go on opening (0240). The order keeps `main`'s place for these rules where it can: of the
+rules free to run, the one with the earliest key runs first, a rule that another of its rank waits
+for taking that rule's place, as `main`'s depth-first order ran what a rule waits for just before
+it. Measured, it gives `main`'s values on every case below but one, which it computes this pass
+where `main` was a pass behind; it is not shown to equal `main`'s order in general. So a member
+another row rule computes is this pass's value if that rule runs first, and the pass before's
+otherwise; the rule's own member is always the pass before's; and such a read can take a computed
+member a pass behind where `main` took it fresh, or fresh where `main` took it a pass behind. When
+it is the pass before's, the replay of the browser's answers, one pass from them, stores none. Three
+shapes, each measured on `main` on 2026-11-22 and pinned at its figures:
 
 - **a running total down the rows**, `order.lines[index - 1].x + item.qty`, reads its own member in
   the row before: with quantities 2 and 5, the first changed to 3, the browser shows 3 and 7 where 8
@@ -408,28 +412,36 @@ pinned at its figures:
   0 where 1 is due with `x`'s rule listed after it, and the replay stores none; listed before, 1 on
   both.
 
-Where a wait `main` did not have, from a read that now waits for the field it names, holds one side
-back, the order is not `main`'s, and the reading is as that order leaves it. Two such cases are
-measured on 2026-11-22 and pinned at what this order gives:
+The other cases measured on 2026-11-22, each pinned, are these:
 
-- **a writer held back**: `h.lines[].x = g.other[0].x + 1.0` waits for `g.other[].x`, so
-  `g.lines[].y`, counting `h.lines` whole, runs before it. With `g.other`'s quantity changed from 1
-  to 2, `main` showed x 2 where 3 is due and y 1 and stored neither; this order shows x 3 and y 1,
-  and the replay stores x 3 and no y;
-- **a reader held back**: `g.lines[].x` also reads `g.third[0].z`, so it runs after `g.other[].y`;
-  `main` counted 0 where 1 is due and stored none, and this order counts 1 in the browser and on the
-  replay.
+- **at `main`'s figures**: a row count, the row before and the last row; two lists each reading the
+  other whole, in one group or in two; a top-level rule waiting for a row rule in a group, `first`
+  or a top-level row counting `g.lines`, beside `g.lines[].x` counting `g.other` after
+  `g.other[].y`: 1 in the browser and on the replay; and a count `g.other[].share` placed between
+  `g.lines[].x = item.y` and `g.lines[].y = item.qty * 2.0`: 1 on both, where the order by place
+  alone gave 0 and stored none;
+- **beside a wait `main` did not have**, a read into a row that now waits for the field it names:
+  `h.lines[].x = g.other[0].x + 1.0` waits for `g.other[].x`, which runs first, and `g.lines[].y`,
+  counting `h.lines` whole, after them, so with `g.other`'s quantity changed from 1 to 2 this order
+  shows x 3 and y 1 and stores both, where `main` showed x 2, with 3 due, and y 1, and stored
+  neither — the one case measured that is not `main`'s; and with `g.lines[].x` also reading
+  `g.third[0].z`, it counts `g.other` before `g.other[].y` runs, 0 where 1 is due and none stored,
+  as `main` counted.
 
 At the top level the running total and the count over the row's own list are refused as cycles,
 since a row reading its own list reads its own row, and a count of another list waits for that
-list's rows. A manufacturer should treat any whole read of computed rows inside a group as wrong in some
-order and not write one. Held, so that this entry cannot go untrue unnoticed, by *debt: a running
-total down the rows of a repeater inside a group is a pass behind, as on main* and *debt: a whole
-read of a member another row rule computes is this pass's when that rule runs first, the pass
-before's after, as on main*, *a whole read inside a group reads as on main when a top-level rule
-waits for its row rule*, and *residual: where an edge main did not have holds a writer or a reader
-back, a whole read is pinned where the order leaves it* in `engine-logic.test.ts`, each in the
-browser and on the replay. The loops refused now are under D1.
+list's rows. A manufacturer should treat any whole read of computed rows inside a group as wrong in
+some order and not write one. Held, so that this entry cannot go untrue unnoticed, by *a row count,
+the row before and the last row compute as on main, in the browser and on the replay*, *two lists
+of the group each reading the other whole compute as on main* and its twin for *lists of two
+groups*, *debt: a running total down the rows of a repeater inside a group is a pass behind, as on
+main*, *debt: a
+whole read of a member another row rule computes is this pass's when that rule runs first, the
+pass before's after, as on main*, *a whole read inside a group reads as on main when a top-level
+rule waits for its row rule*, *a count placed between a row rule and the member it reads through
+item reads it as on main* and *a whole read beside a wait main did not have is pinned where the
+order leaves it* in `engine-logic.test.ts`, each in the browser and on the replay. The loops refused
+now are under D1.
 
 ### A6. A presentation hint changes what the field collects
 
@@ -1849,18 +1861,18 @@ without the loop is published. Building each stored version with the new engine 
 What is not refused, on purpose: a row rule in a repeater inside a group reading a list inside a
 group, or a group, whole — `size(order.lines)`, `order.lines[index - 1].qty`, `size(order.other)`,
 `size(other.lines)`, `size(order)` — waits for no row rule of a list inside a group, and is
-placed after the rules on every top-level field, then in the document's order, as on `main`; the
-rules run by place wherever no wait forbids it. A row count,
-the row before, the last row and another list's count compute right that way, and two such lists
-that each read the other whole open, in one group or in two. What such a read takes from members
-row rules compute is as the order leaves them when it runs, which is `main`'s except where a wait
-`main` did not have holds a writer or the reader back (A5), and depends on that order: a
-running total down the rows is a loop, accepted, and always a pass behind; a count of another
-list's computed members, or of the row's own list's, is right or a pass behind by which rule the
-document lists first (A5). A list at the top level is waited for, as on `main`, and at the top
-level the same reads of a row's own list are refused, as on `main`. A top-level row reading
-another row of its list by position, `lines[0].qty`, is accepted now, where `main` read it as the
-whole list and refused it: it waits for the member it reads, which is no loop.
+placed after the rules on every top-level field, then in the document's order, as on `main`, the
+order keeping `main`'s place for these rules where it can. A row count, the row before, the last
+row and another list's count compute right that way, and two such lists that each read the other
+whole open, in one group or in two. What such a read takes from members row rules compute is as the
+order leaves them when it runs, which gives `main`'s values on the cases A5 names but one and is
+not shown to be `main`'s order in general, and depends on that order: a running total down the rows
+is a loop, accepted, and always a pass behind; a count of another list's computed members, or of the
+row's own list's, is right or a pass behind by which rule the document lists first (A5). A list at
+the top level is waited for, as on `main`, and at the top level the same reads of a row's own list
+are refused, as on `main`. A top-level row reading another row of its list by position,
+`lines[0].qty`, is accepted now, where `main` read it as the whole list and refused it: it waits for
+the member it reads, which is no loop.
 
 Held by *what is still refused as a cycle, named by the fields in it*, *a row rule in a repeater
 inside a group reading a list or a group inside a group, whole* and *a top-level row reading another

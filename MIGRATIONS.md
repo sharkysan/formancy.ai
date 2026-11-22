@@ -476,9 +476,12 @@ group, whole — a row count `size(order.lines)`, the row before `order.lines[in
 last row `index == size(order.lines) - 1`, another list's count `size(order.other)` or
 `size(other.lines)`. Those open and compute as before, and two such lists that each read the other
 whole open too, in one group or in two. Such a read takes the rows as the order leaves them when it
-runs, which is every release's order except where a wait the old order did not have holds a writer
-or the reader back: a member another row rule computes is this pass's value if that rule runs first
-and the pass before's otherwise, and the rule's own member always the pass before's. A running
+runs. The new order keeps every release's place for these rules where it can, and gave the old
+values on every case measured but one, which it computes this pass where the old order was a pass
+behind; it is not shown to equal the old order in general. A member another row rule computes is
+this pass's value if that rule runs first and the pass before's otherwise, and the rule's own member
+always the pass before's, so a value can be a pass behind where it was fresh, or fresh where it was
+a pass behind. A running
 total down the rows, `order.lines[index - 1].x + item.qty`, a count of another list's computed
 members, or of the row's own list's, is therefore wrong in some document orders and on the replay;
 do not write a new one.

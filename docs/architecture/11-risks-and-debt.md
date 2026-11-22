@@ -201,11 +201,14 @@ group, a row rule reading a list inside a group, or a group, whole waits for no 
 of a list inside a group, and is placed where every release's code ran it, after the
 rules on every top-level field and then in the document's order, because a row count,
 the row before, the last row and another list's count computed right that way and
-versions published with one must go on opening. The rules run by place wherever no wait
-forbids it, so it reads those rows as main's order left them, except where a wait main
-did not have holds a writer or the reader back (A5 measures both): a member another row
-rule computes is this pass's value if that rule runs first and the pass before's
-otherwise, and its own member always the pass before's. Measured on
+versions published with one must go on opening. The order keeps main's place for these
+rules where it can, and gives main's values on every case the tests measure but one,
+which it computes this pass where main was a pass behind (A5 names them); it is not
+shown to equal main's order in general. It reads those rows as the order leaves them: a
+member another row rule computes is this pass's value if that rule runs first and the
+pass before's otherwise, and its own member always the pass before's, so it can read a
+computed member a pass behind where main read it fresh, or fresh where main read it a
+pass behind. Measured on
 2026-11-22, at `main`'s figures: a running total, `order.lines[index - 1].x + item.qty`,
 showed 7 where 8 was due, and the replay stored the first row's total and no other; a
 count of what another list inside a group computes, `order.other.filter(o, o.y > 2.0)`

@@ -60,14 +60,17 @@ rows as they stand, in the browser and on the replay; responses stored before ke
 stored with, and never migrate. A row rule in a repeater inside a group that reads a list inside
 a group, or any group, whole keeps what every release's code gave it: it waits for no row rule of a
 list inside a group, and runs at main's place, after the rules on every top-level field and then in
-the document's order. The rules run by place, the earliest placed of those free to run first, so
-it reads those rows as main's order left them, except where a wait main did not have, from a read
-that now waits for the field it names, holds a writer or the reader back. So a row count, the row
-before, the last row and another list's count compute as they did. A member another row rule computes is this pass's value if that
-rule runs first and the pass before's otherwise, and the rule's own member always the pass before's,
-so a running total down such rows, a count of another list's computed members, or of the row's own
-list's, can change with the order the document lists the rules in, and the replay can store none:
-recorded as debt, not fixed.
+the document's order. The order keeps main's place for these rules where it can. In the cases
+measured it gives main's values — a row count, the row before, the last row, two lists counting each
+other, a count between a row rule and the member it reads through `item`, a top-level rule waiting
+for a row rule in a group, and the running total and the counts below in both document orders — but
+not where a read into a row now waits for the rule it names, which then computes this pass where
+main was a pass behind; it is not shown to equal main's order in general. A member another row rule
+computes is this pass's value if that rule runs first and the pass before's otherwise, and the rule's
+own member always the pass before's, so such a read can take a computed member a pass behind where
+main took it fresh, or fresh where main took it a pass behind: a running total down such rows, a
+count of another list's computed members, or of the row's own list's, can change with the order the
+document lists the rules in, and the replay can store none. Recorded as debt, not fixed.
 
 - **A computed field in a group may read another field of its group**, and a chain through a group
   that does not come back to the field it started from is accepted. `addr.label = "in " + addr.city`
