@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Fixed: a list stored as `null` could not be counted by a rule**, in every release through `0.14.0`,
+read from their engines' code. Validation takes a repeater handed `null` for no rows, so an API body
+can send one, but the pass read every top-level name as stored and only an absent one as empty:
+`size(lines)` against `null` could not be evaluated, so a computed `count` over it was never written
+and a `visible` rule reading it failed open, on the server's replay too: a field the rule hides was
+shown and what was typed into it stored. A `required` rule failed open the same way, so a
+submission without the answer was stored; a `validate` rule failed closed, so a body with no rows
+was refused, and a `skip` rule did not skip, so the page's required question was asked and the body
+refused for that. Inside a group, `{ "order": { "lines": null } }`, the `has(order.lines)`
+guard the guide recommends answered for an absent list and failed open for a null one. A form with a
+rule that writes into the repeater's rows answered the other way at the top level, since that pass
+reads the list back as `[]`, so one form read two ways, depending on whether it had a row rule. A list
+stored as `null` now reads as no rows in every rule — at the top level, and inside a group, where
+the `has()` guard now answers for it as it does for an absent list (hazard A5); what was stored is
+not rewritten, so `value()` still says `null`. A group stored as `null` is not read as empty,
+because validation refuses it. From the upgrade, a form version published before refuses a body it
+accepted (a field a `required` rule makes required over such a list is now asked for), fills a
+computed field it left empty and strips a hidden value it kept, and accepts a body a `validate`
+rule could not vouch for, or that was refused for a question on a page a `skip` rule did not skip,
+because the rule could not be evaluated; responses stored before keep what they were
+stored with, and never migrate.
+
 **Fixed: a rule reading a group that a computed rule writes into could not be evaluated**, in every
 release through `0.14.0`, read from their engines' code. The rules of one pass read one set of
 answers, and what a computed rule wrote went into it at its target's top-level name, which for a

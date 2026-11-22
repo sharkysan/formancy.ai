@@ -325,8 +325,7 @@ A repeater row is the other way round. The engine presents a row with every key
 there and null until answered, so `has()` is always true in a row and answers
 nothing; there, **`!= null`** is the guard — `item.tags != null` before `in` or
 `size()`, `item.qty != null` before `>`. A list is the case to watch: at the top
-level an untouched list is `[]` and `"gift" in extras` is simply `false`, while the
-same condition in a row errors. The builder's condition editor writes these guards
+level an untouched list is `[]`, and so is a repeater handed `null`, and `"gift" in extras` is simply `false`, while the same condition in a row errors. The builder's condition editor writes these guards
 itself.
 
 Both of these shipped in this project's own demo and were found by running it
