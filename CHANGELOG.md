@@ -57,10 +57,11 @@ answers stored no `first` at all; earlier releases were not run. At the top leve
 order was right. A computed rule now depends on the fields it reads, not on their top-level names
 (0240, hazard A5). From the upgrade, a form version published before computes such a field from the
 rows as they stand, in the browser and on the replay; responses stored before keep what they were
-stored with, and never migrate. A row rule in a repeater inside a group that reads its own list,
-or the group around it, whole keeps the order every release's code gave it, so a row count, the
-row before and the last row compute as they did, and a running total down such rows stays a pass
-behind, as it was: recorded as debt, not fixed.
+stored with, and never migrate. A row rule in a repeater inside a group that reads a list of its
+group, or the group, whole keeps the order every release's code gave it, so a row count, the row
+before, the last row and another list's count compute as they did, and a running total down such
+rows, or a member another list of the group computes, stays a pass behind, as it was: recorded as
+debt, not fixed.
 
 - **A computed field in a group may read another field of its group**, and a chain through a group
   that does not come back to the field it started from is accepted. `addr.label = "in " + addr.city`
@@ -83,15 +84,26 @@ behind, as it was: recorded as debt, not fixed.
 **Breaking, for a server with published forms.** [`MIGRATIONS.md`](MIGRATIONS.md) says how to find
 one and what to write instead.
 
-- **A version whose computed rules loop through a repeater inside a group by any read but a row's
-  own read of its list no longer opens.** The order did not see such a loop, so every release
-  through `0.14.0` published it. Measured on `main`: `first` read back into the rows it is computed
-  from computed nothing once a row was there; a count computed from the list and read in its rows
-  computed right; a row reading another row's member by position showed values the replay did not
-  store; and two lists of one group each reading the other were accepted. Each is refused now, as
-  the same loop at the top level was on `main`. A version stored with one still answers its public
-  read, the engine refuses to open it in the browser too, and the server answers every submission
-  with a `500` until a version without the loop is published.
+- **A version whose computed rules loop through a list inside a group no longer opens, unless the
+  loop runs only through a row's read of its own group whole.** A rule outside the rows that reads
+  a list inside a group now waits for that list's row rules, as at the top level, so a row reading
+  back what was computed from its own list is a loop. Every release through `0.14.0` published one,
+  since a read inside a group was the group's, which no row rule was reached from. Measured on
+  `main`, each refused now as the same loop at the top level was there:
+  - `count = double(size(order.lines))` read as `order.lines[].share = item.qty / count` computed
+    right; it is refused as `order.lines[].share -> count -> order.lines[].share`. Its rewrite reads
+    the count in the row, `order.lines[].share = item.qty / double(size(order.lines))`, which is
+    accepted. The same count inside the group, `order.count`, was refused already, as
+    `order -> order`, and still is;
+  - `first` computed from `order.lines[0].x` and read back by the rows computed nothing once a row
+    was there;
+  - a row reading another row's member by position, `order.lines[0].x`, showed values the replay
+    did not store;
+  - two lists of different groups each reading the other whole were accepted.
+
+  A version stored with one still answers its public read, the engine refuses to open it in the
+  browser, every submission is a `500` storing nothing, and publishing it again is a `422`
+  `invalid_logic` naming the cycle, which leaves the version in place.
 
 ## 0.14.0 — 2026-11-16
 

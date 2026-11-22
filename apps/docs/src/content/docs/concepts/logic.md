@@ -154,16 +154,20 @@ whole runs after that rule.
 A row rule reads its own list one way at the top level and another inside a
 group. At the top level a row that reads its list reads its own row, so
 `lines[].count` computed as `double(size(lines))` is refused. Inside a group a
-row rule may read its own list, or the group around it, whole, and waits for
+row rule may read any list of its group, or the group, whole, and waits for
 none of the rows: `order.lines[].count` computed as `double(size(order.lines))`
-is accepted, and so are the row before, `order.lines[index - 1].qty`, and the
-last row, `index == size(order.lines) - 1`. Every release's code reads such a
-rule that way, and it is kept so that the versions published with one go on
-opening.
+is accepted, and so are the row before, `order.lines[index - 1].qty`, the last
+row, `index == size(order.lines) - 1`, and another list's count,
+`size(order.other)`. What it takes that way from rows a rule computes is the
+pass before's, so a count of what another list computes lags a change behind,
+as a running total does (below). Every release's code reads such a rule that
+way, and it is kept so that the versions published with one go on opening.
+
 Any other loop through a repeater inside a group is refused, as at the top
 level: a field outside the rows computed from them and read back into them, a
 count computed as `double(size(order.lines))` and read in the rows (read the
-count in the row itself instead), or a row reading another row's member, so
+count in the row itself instead), two lists of different groups each reading
+the other whole, or a row reading another row's member, so
 `order.lines[].count` computed as `index == 0 ? 1.0 : order.lines[0].count + 1.0`
 is refused.
 

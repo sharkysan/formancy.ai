@@ -194,19 +194,23 @@ that way is refused as a cycle whichever row it means. Over-reporting is the
 direction that cannot leave a value stale; this record said until 2026-11-22 that
 such a path could not be expressed at all.
 
-**A running total down the rows of a repeater inside a group is a pass behind.**
+**Inside a group, a row's whole read of rows a rule computes is a pass behind.**
 Accepted debt, from
 [0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md). Inside
-a group, a row rule reading its own list whole waits for none of the rows, as every
-release's code had it, because a row count, the row before and the last row computed
-right that way and versions published with one must go on opening. A running total,
-`order.lines[index - 1].x + item.qty`, reads its own member in the row before, and so
-the pass before's: measured on 2026-11-22, the browser showed 7 where 8 was due, and
-the replay stored the first row's total and no other (A5). At the top level the same
-rule is refused. Paying it off means telling a running total from a row count, which
-the reads alone cannot, or retiring the versions that hold one; the engine test
-*debt: a running total down the rows of a repeater inside a group is a pass behind,
-as on main* fails the day either is done.
+a group, a row rule reading a list of its group, or the group, whole waits for none
+of the rows, as every release's code had it, because a row count, the row before,
+the last row and another list's count computed right that way and versions published
+with one must go on opening. What such a read takes from rows a rule computes is the
+pass before's. A running total, `order.lines[index - 1].x + item.qty`, reads its own
+member in the row before: measured on 2026-11-22, the browser showed 7 where 8 was
+due, and the replay stored the first row's total and no other. A count of what
+another list of the group computes, `order.other.filter(o, o.y > 2.0)`, stayed 0
+where 1 was due once that list's row computed 4, and the replay stored none (A5). At
+the top level the running total is refused. Paying it off means telling these from a
+row count, which the reads alone cannot, or retiring the versions that hold one; the
+engine tests *debt: a running total down the rows of a repeater inside a group is a
+pass behind, as on main* and *debt: a row reading another list of its group whole
+reads what that list computed a pass before, as on main* fail the day either is done.
 
 **Visibility rules fail open.** The cost of
 [0022](../decisions/0022-fail-open-fail-closed.md). A form whose visibility

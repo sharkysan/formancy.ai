@@ -184,7 +184,8 @@ topped up, added, removed or moved, and the rows a rule writes are given ids
   last total and stores none. The stored record agrees with its own inputs, and
   the screen did not. A5 has two more ways to the same disagreement, both from the
   order the computed rules run in: a field reading a row of a repeater inside a
-  group, fixed on 2026-11-22, and a running total down such rows, kept as debt.
+  group, fixed on 2026-11-22, and a row's whole read of rows a rule computes inside a
+  group, a running total among them, kept as debt.
 - **A host writing a whole row or group** with `setValue` on its parent path
   writes a computed member's value with it. The next pass overwrites that value
   when it can evaluate the expression, and keeps it until then. The server is
@@ -380,19 +381,26 @@ names* block of `packages/core/src/engine-logic.test.ts`, which builds the serve
 browser's answers and compares the two, and by `packages/core/src/computed-order.test.ts`; each case
 of the first failed against the order as it was, moved unchanged into the module the second tests.
 
-*What is left, on purpose: a running total down the rows of a repeater inside a group is a pass
-behind, and the replay stores less than the browser shows.* A row rule in a repeater inside a group
-that reads its own list, or the group around it, whole waits for none of the rows, as on `main`,
-because a row count, the row before and the last row computed right that way and versions
-published with one must go on opening (0240). A running total reads its own member in the row
-before, `order.lines[index - 1].x + item.qty`, so it reads the pass before's. Measured on `main`
-on 2026-11-22 and unchanged here: with quantities 2 and 5, the first changed to 3, the browser shows
-3 and 7 where 8 is due, and the replay of those answers, one pass from nothing, stores 3 and no
-second total. The same rule at the top level is refused as a cycle. A manufacturer should treat a
-running total in a repeater inside a group as wrong and not write one. Held, so that this entry
-cannot go untrue unnoticed, by *debt: a running total down the rows of a repeater inside a group is
-a pass behind, as on main* in `engine-logic.test.ts`, and the loops a group's rows are refused for
-now are under D1.
+*What is left, on purpose: inside a group, a row's whole read of rows a rule computes takes them as
+the pass before left them, and the replay stores less than the browser shows.* A row rule in a
+repeater inside a group that reads a list of its group, or the group, whole waits for none of the
+rows, as on `main`, because a row count, the row before, the last row and another list's count
+computed right that way and versions published with one must go on opening (0240). Two readings
+of computed rows are wrong that way, both measured on `main` on 2026-11-22 and unchanged here:
+
+- **a running total down the rows**, `order.lines[index - 1].x + item.qty`, reads its own member in
+  the row before: with quantities 2 and 5, the first changed to 3, the browser shows 3 and 7 where 8
+  is due, and the replay of those answers, one pass from nothing, stores 3 and no second total;
+- **a count of what another list of the group computes**, `order.other.filter(o, o.y > 2.0)`
+  beside `order.other[].y = item.qty * 2.0`: with that list's quantity changed from 1 to 2, its row
+  computes 4, and the count stays 0 where 1 is due, and the replay stores no count at all.
+
+At the top level the running total is refused as a cycle. A manufacturer should treat either
+inside a group as wrong and not write one. Held, so that this
+entry cannot go untrue unnoticed, by *debt: a running total down the rows of a repeater inside a
+group is a pass behind, as on main* and *debt: a row reading another list of its group whole reads
+what that list computed a pass before, as on main* in `engine-logic.test.ts`. The loops a group's
+rows are refused for now are under D1.
 
 ### A6. A presentation hint changes what the field collects
 
@@ -1784,39 +1792,45 @@ computed field one of its reads names, contains or lies inside
 ([0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md)). Until 2026-11-22
 the graph was keyed on top-level names, so a read of anything inside a group was a read of the
 group, which no row rule of a repeater inside it was ever reached from. Loops through those rows
-went unseen, and every release through `0.14.0` accepted them; each is refused now, as the same
-loop at the top level was on `main`. Measured on `main`:
+went unseen, and every release through `0.14.0` accepted them. A rule outside the rows that reads
+a list inside a group now waits for that list's row rules, as at the top level, so each such loop
+is refused, as the same loop at the top level was on `main`. Measured on `main`:
 
+- a total over the list read back in its rows, `count` computed as `double(size(order.lines))`
+  and `order.lines[].share` as `item.qty / count`: it computed right, and reading
+  `size(order.lines)` in the row itself is the rewrite, which is accepted;
 - `first` computed as `order.lines[0].x`, read back by `order.lines[].x`: with a row there, neither
   was computed;
-- a count computed as `double(size(order.lines))` and read in its rows as `count`: it computed
-  right, and reading `size(order.lines)` in the row itself is the rewrite;
 - a row reading another row's member by position, `order.lines[0].x + 1.0`: the browser showed
   values the server's replay did not store;
-- two lists of one group, each reading the other: accepted.
+- lists of two different groups, each reading the other whole: accepted.
 
 From the upgrade the engine no longer opens a form version published with one: its public read
 answers, and every submission is a `500` storing nothing, with a line at `error`, until a version
 without the loop is published. `MIGRATIONS.md` says how to find one.
 
-What is not refused, on purpose: a row rule in a repeater inside a group reading its own list, or
-the group around it, whole — `size(order.lines)`, `order.lines[index - 1].qty`, `size(order)` —
-waits for none of the rows, as it did on `main`. A row count, the row before and the last row
-compute right that way; a running total down the rows is a loop, accepted, and a pass behind (A5).
-At the top level the same reads are refused, as on `main`.
+What is not refused, on purpose: a row rule in a repeater inside a group reading a list of its
+group, or the group, whole — `size(order.lines)`, `order.lines[index - 1].qty`,
+`size(order.other)`, `size(order)` — waits for none of the rows, as it did on `main`. A row count,
+the row before, the last row and another list's count compute right that way, and two lists of
+the group that each read the other whole open. What such a read takes from rows a rule computes
+is the pass before's: a running total down the rows is a loop, accepted, and a pass behind, and so
+is a count of the members another list of the group computes (A5). At the top level the same
+reads are refused, as on `main`.
 
 Held by *what is still refused as a cycle, named by the fields in it* and *a row rule in a repeater
-inside a group reading its own list or a group holding it, whole* in
+inside a group reading a list of its group, or the group, whole* in
 `packages/core/src/computed-order.test.ts`; in the engine and on the replay by the block
-*a row rule in a repeater inside a group reading its own list whole, and the loops it is not* in
-`engine-logic.test.ts`; and at the server by `packages/server/src/refused-version.test.ts`, which
-stores such a version as an earlier release did and measures the `500` and the republish. Against
-`main`'s order the refusals of the loops failed, because it accepted them, and the cases that
-accept a group's own-list reads passed.
+*a row rule in a repeater inside a group reading a list of its group whole, and the loops it is
+not* in `engine-logic.test.ts`; and at the server by `packages/server/src/refused-version.test.ts`,
+which stores such a version as an earlier release did and measures the `500` and the republish.
+Against `main`'s order the refusals of the loops failed, because it accepted them, and the cases
+that accept a group's whole reads passed, their figures main's.
 
-*Residual:* one kind of loop is accepted on purpose, the running total above. It cannot hang, since
-a pass runs each computed rule once, but its value is a pass behind and the replay stores less
-than the browser shows. No other is known. A path computed at run time can be written —
+*Residual:* loops through a row's whole read of its own group are accepted on purpose: the running
+total above, and two lists of one group each reading the other's computed members. Neither can
+hang, since a pass runs each computed rule once, but each reads the pass before's values, and the
+replay stores less than the browser shows (A5). No other is known. A path computed at run time can be written —
 `lines[int(n)]`, `addr[k]` — and is read as the whole collection and the variable, which
 over-reports: at the top level a row rule reading its own list that way is refused as a cycle
 whichever row the index would reach. Measured on 2026-11-22 for those two spellings, and
