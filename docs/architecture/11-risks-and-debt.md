@@ -184,9 +184,15 @@ which makes drift a test failure rather than a discovery.
 implementation must reimplement the engine against the spec — which is part of
 why a portable expression language was chosen.
 
-**Expressions cannot reference runtime-computed paths.** The cost of
-[0018](../decisions/0018-static-dependencies.md). Dynamic indirection is simply
-not expressible, in exchange for cycles being impossible.
+**A path computed at run time is read whole.** The cost of
+[0018](../decisions/0018-static-dependencies.md), in the form
+[0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md) gives it.
+`lines[int(n)].qty` and `addr[k]` can be written, and are read as the whole
+collection and the variable, so a computed field reading one runs after every
+computed field inside it, and a row rule reading its own list that way is refused
+as a cycle whichever row it means. Over-reporting is the direction that cannot
+leave a value stale; this record said until 2026-11-22 that such a path could not
+be expressed at all.
 
 **Visibility rules fail open.** The cost of
 [0022](../decisions/0022-fail-open-fail-closed.md). A form whose visibility

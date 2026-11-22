@@ -130,6 +130,7 @@ comprehension would capture.
 |---|---|
 | `engine.ts` | `createFormEngine`. The model walk, logic compilation, snapshot construction and caching, validation, submit |
 | `graph.ts` | The dependency DAG, topologically sorted, cycle-checked |
+| `computed-order.ts` | What a computed rule depends on, and so the order of the computed pass and its cycle gate: a rule's node is the field it writes, a read is the field it names with every index `[]`, and a rule runs after every computed field one of its reads names, contains or lies inside, row reads resolved by `inModel` in `row-reads.ts`, which the authoring checks read too and which left `unknown-paths.ts` so that importing it brought none of those checks into the barrel every form loads. Apart from the engine because that changes for reasons of its own ([0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md)) |
 | `store.ts` | Path-addressed value storage with change tracking |
 | `path.ts` / `value.ts` | Parsing, formatting and traversal of data paths, reading only what a value holds as its own — a key only out of an object, an index only out of a list — and refusing `__proto__` as a key ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)) |
 | `props.ts` | Every ARIA attribute, composed centrally ([0021](../decisions/0021-engine-owns-aria.md)) |

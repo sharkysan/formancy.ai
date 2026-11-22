@@ -141,6 +141,17 @@ form where `price` computes from `qty` and `qty` computes from `price` is
 rejected when it is saved, with the cycle named — rather than hanging in a
 browser somewhere.
 
+A dependency is a field, not the group it is in. A computed field reads the
+fields its expression names, and so it may read the other fields of its own
+group: `addr.label` computed as `"in " + addr.city` is accepted. What it may not
+read is something that holds it. `size(addr)` reads the whole group, the field
+being computed included, and `item` the whole row, so a computed field reading
+either is refused as a cycle, named by its fields: `addr.label -> addr.label`. A
+field computed from a list's rows runs after the rules that compute them,
+wherever the list is. Before 2026-11-22 a dependency was the field's top-level
+name, which refused a group's field reading a sibling, and ran a field reading
+the rows of a list inside a group before those rows were computed.
+
 ## What an expression may call
 
 Each kind allows a fixed set of functions, and a form calling anything else is refused when the

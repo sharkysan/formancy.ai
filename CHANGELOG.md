@@ -46,6 +46,32 @@ its group around it (hazard A5). From the upgrade, a form version published befo
 accepted, fills a computed field it left empty and strips a hidden value it kept; responses stored
 before keep what they were stored with, and never migrate.
 
+**Fixed: a computed field reading a row of a repeater inside a group showed a value the server did
+not store**, in every release through `0.14.0`, read from their engines' code. The pass runs the
+computed rules in the order of what they read, and that order was worked out on top-level names: a
+read of `order.lines[0].twice` was a read of `order`, and nothing ordered it after the row rule
+writing `order.lines[].twice`. So the field ran first and read the rows as the pass before had left
+them. Measured on `main`, with `first = size(order.lines) == 0 ? 0.0 : order.lines[0].twice`: the
+quantity changed from 2 to 3, the row showed 6 and `first` 4, and the server's replay of those
+answers stored no `first` at all; earlier releases were not run. At the top level the
+order was right. A computed rule now depends on the fields it reads, not on their top-level names
+(0240, hazard A5). From the upgrade, a form version published before computes such a field from the
+rows as they stand, in the browser and on the replay; responses stored before keep what they were
+stored with, and never migrate. A loop through such a row rule — one reading a field computed from
+its rows — was accepted, and with a row in the form computed neither field; it is refused now, as
+the same loop at the top level was, so the engine no longer opens a version published with one.
+
+- **A computed field in a group may read another field of its group.**
+  `addr.label = "in " + addr.city` was refused as `Dependency cycle: addr -> addr`, since a field
+  and its group were one node, and nothing said so. It is accepted now, and a cycle is named by its
+  fields, as `addr.label -> addr.label`, rather than by their top-level names, which said which
+  group and not which rule.
+- **A row rule reading its row, on a list another rule computes whole, fills its field at the top
+  level.** It ran before the rule writing the list, which then replaced what it had written, so the
+  field stayed empty in the browser and on the replay; inside a group it ran last, and was right.
+  Measured on `main`; the same order is in every release's code, and whether each release let a
+  rule write a whole list was not checked.
+
 - **The Angular starter's preview says why the engine refused a document, instead of throwing.** A saved
   or half-written form whose rule does not compile is a valid document the builder can hold, and the
   engine only refuses it when the preview builds it; the effect threw and the pane went blank with the

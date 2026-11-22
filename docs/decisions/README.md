@@ -105,7 +105,7 @@ record whose only enforcement is "we remember" says so plainly.
 |---|---|---|
 | [0016](0016-cel.md) | Use CEL for conditional logic and calculations | accepted |
 | [0017](0017-expression-facade.md) | Wrap the CEL implementation behind our own facade | accepted |
-| [0018](0018-static-dependencies.md) | Extract dependencies statically and reject cycles at save time | accepted |
+| [0018](0018-static-dependencies.md) | Extract dependencies statically and reject cycles at save time | accepted; its graph's nodes made fields, and its "a path computed at run time cannot be expressed" corrected, by 0240 |
 | [0019](0019-injected-capabilities.md) | Inject the clock and randomness; never read them ambiently | accepted |
 | [0020](0020-identity-stable-snapshots.md) | Make snapshot identity the reactivity contract | accepted |
 | [0021](0021-engine-owns-aria.md) | The engine owns element ids and ARIA composition | accepted; which element carries a field's control id, which it left to each renderer, decided by 0186 |
@@ -340,3 +340,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0237](0237-a-host-may-add-content-beside-a-fields-control.md) | A host may add content of its own beside a select's or a typeahead's box, on the box's line | accepted |
 | [0238](0238-a-time-or-an-instant-declares-its-precision.md) | A time or an instant declares its precision, and every answer to it has that width | accepted |
 | [0239](0239-spec-6-freezes-with-the-property-it-opened-for.md) | Spec 6 freezes with the property it was opened for, and nothing opens version 7 yet | accepted |
+| [0240](0240-a-computed-rule-depends-on-the-fields-it-reads.md) | A computed rule depends on the fields it reads, not on their top-level names | accepted |

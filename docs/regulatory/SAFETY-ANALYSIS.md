@@ -353,6 +353,34 @@ remaining three, the stored value and the null group in each mode, passed before
 read-backs reverted on their own were caught by the cases meant for them. Stored responses keep what
 they were stored with, and are never migrated.
 
+*And a computed field read a row of a repeater inside a group before the row rule had written it, in
+every release through `0.14.0`.* The pass runs the computed rules in the order of what they read,
+and that order was worked out on top-level names. A read of `order.lines[0].twice` was a read of
+`order`, and the one edge ordering an aggregate after its rows led from `order.lines`, which
+nothing read under that cut. So `first = size(order.lines) == 0 ? 0.0 : order.lines[0].twice` ran
+before the rule writing `order.lines[].twice`, and read the rows as the pass before had left them.
+Measured on 2026-11-22 on `main` after the fix above: with the quantity changed from 2 to 3 the row
+showed 6 and `first` 4, and the server's replay of the browser's answers, which carry the rows'
+ids, stored no `first`: in its pass the member `first` reads was not computed yet. The browser
+showed a value the server did not store, A3's first residual reached with every input answered. A
+body sent without the rows' ids stored 6. At the top level the
+read and the edge met at `lines`, and the order was right there; but the same edge ran a row rule
+on a list another rule computes whole before that rule, which then replaced what the row rule had
+written, so its field stayed empty in the browser and on the replay. The three lines that make
+this order are the same in every release's code from `0.1.0`; only `main` was run. Now a computed
+rule's node is the field it writes, a read is the field it names, and a rule runs after every
+computed rule whose field one of its reads overlaps
+([0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md)). A form version
+published before computes such a field from its rows from the upgrade, in the browser and on the
+replay; responses stored before keep what they were stored with, and are never migrated. Held by
+the *a computed rule is ordered by the field it writes and the fields it reads, not their top-level
+names* block of `packages/core/src/engine-logic.test.ts`, which builds the server's replay from the
+browser's answers and compares the two, and by `packages/core/src/computed-order.test.ts`; each case
+of the first failed against the order as it was, moved unchanged into the module the second tests.
+What is left: a row rule reading nothing of its row, `lines[].twice = 2.0`, is not ordered after a
+rule writing its list whole, and listed before that rule its field is still replaced, measured the
+same day. The loop this order did not see is under D1.
+
 ### A6. A presentation hint changes what the field collects
 
 *How it arises:* a widget replaces a control with one that can express more than the
@@ -1738,8 +1766,22 @@ never persisted. This is only possible because CEL's AST yields exact
 references ([0016](../decisions/0016-cel.md)), and it converts a runtime hazard
 into an authoring-time message.
 
-*Residual:* none for cycles. Expressions cannot reference runtime-computed
-paths at all, which is the price.
+A dependency is a field: a computed rule's node is the field it writes, and it depends on every
+computed field one of its reads names, contains or lies inside
+([0240](../decisions/0240-a-computed-rule-depends-on-the-fields-it-reads.md)). Until 2026-11-22
+the graph was keyed on top-level names, and one loop went unseen through that: a row rule in a
+repeater inside a group reading a field computed from its rows. Such a form was accepted, and
+opened with a row in it, neither field was computed; the same loop at the top level was refused.
+It is refused now, so from the upgrade the engine no longer opens a form version published with
+one. Held by *what is still refused as a cycle, named by the fields in it* in
+`packages/core/src/computed-order.test.ts`, and in the engine by the loop's case in the block A5
+names. Both cases of the loop failed against the graph as it was; the other refusals passed, or
+failed on the cycle's wording alone.
+
+*Residual:* none known for cycles. A path computed at run time can be written — `lines[int(n)]`,
+`addr[k]` — and is read as the whole collection and the variable, which over-reports: a row rule
+reading its own list that way is refused as a cycle whichever row the index would reach. Measured
+on 2026-11-22 for those two spellings; `computed-order.test.ts` holds the order it gives.
 
 ### D2. An expression consumes unbounded time or memory
 
