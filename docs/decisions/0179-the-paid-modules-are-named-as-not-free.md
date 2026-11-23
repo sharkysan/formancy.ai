@@ -1,6 +1,8 @@
 # 0179 — Two modules built on formancy are sold, and the landing page names them as not free
 
-- **Status:** accepted
+- **Status:** accepted; extended by [0241](0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md),
+  which links the modules from every page's footer as well, each beside its terms, and names their
+  pages in the sitemaps
 - **Date:** 2026-10-16
 - **Supersedes in part:** [0003](0003-open-core-line.md) — its sold list as only operating the
   platform, and its "nothing to buy". Its free list, and the reason for it, stand.

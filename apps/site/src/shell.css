@@ -309,6 +309,18 @@ footer .spacer {
   margin-inline-start: auto;
 }
 
+/* The paid modules, on a line of their own under the links that check the claims, each
+   with its terms beside it (0241). */
+footer .footer-modules {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* ------------------------------------------------------------------ type */
 
 h1,

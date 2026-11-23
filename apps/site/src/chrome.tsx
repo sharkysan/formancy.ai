@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { CURRENT_SPEC_VERSION } from '@formancy/spec'
+import PAID_MODULES from './paid-modules.json'
 import './shell.css'
 
 /**
@@ -141,6 +142,14 @@ export function SiteBar({ current }: { current: Page }): ReactElement {
  * derives its counts: a number written into prose goes stale, and these are the
  * first thing an integrator compares against what they have installed. The spec
  * version was typed, and said 2 for two versions after the spec reached 4.
+ *
+ * Under them, the paid modules, so that every page of the site links them and not the
+ * landing page alone (0241). Each is linked by its name to the page its repository serves
+ * under formancy.ai for a visitor to start from, read from `paid-modules.json`, the list
+ * `scripts/build-web.mjs` holds the sitemaps to. The address is absolute for the reason
+ * `licence.tsx` gives: nothing else is served beside this site in development or on a
+ * preview. And each item says the module's terms beside the link, since next to
+ * "Apache-2.0" a bare name reads as part of it (0179).
  */
 export function SiteFooter(): ReactElement {
   return (
@@ -153,6 +162,13 @@ export function SiteFooter(): ReactElement {
       <a href="/legal/">Legal notice</a>
       <a href="/privacy/">Privacy</a>
       <span className="spacer">{`Spec version ${CURRENT_SPEC_VERSION} · packages ${__PACKAGE_VERSION__}, beta`}</span>
+      <ul className="footer-modules" aria-label="Paid modules">
+        {PAID_MODULES.map((module) => (
+          <li key={module.name}>
+            <a href={module.link}>{module.name}</a>, not free · paid in production
+          </li>
+        ))}
+      </ul>
     </footer>
   )
 }

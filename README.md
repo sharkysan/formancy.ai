@@ -506,6 +506,16 @@ succeeded. `scripts/build-web.mjs` reads each built page back and refuses to fin
 if that has happened. The starter, served inside another page, is built with a
 relative base instead.
 
+The sitemaps are files in `apps/site/public`, which the build checks rather than
+writes. `sitemap-pages.xml` lists the landing page, the playground and the site's
+other two pages, and the index lists that file and the documentation's sitemaps as
+Astro wrote them. After the site's own entries, each lists what the paid modules
+served under formancy.ai make indexable, read from `apps/site/src/paid-modules.json`,
+the list every page's footer links the modules from. Those pages are deployed by the
+modules' own repositories, so the build holds the files to the list and cannot see
+the pages
+([0241](./docs/decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
+
 Deploying is whatever serves a directory. With Cloudflare:
 
 ```bash

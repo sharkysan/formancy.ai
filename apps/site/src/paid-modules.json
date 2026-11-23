@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Formancy Data",
+    "link": "https://formancy.ai/data/examples/",
+    "pages": ["https://formancy.ai/data/examples/", "https://formancy.ai/data/demo/"],
+    "sitemaps": []
+  },
+  {
+    "name": "Formancy Report",
+    "link": "https://formancy.ai/report/en/",
+    "pages": [],
+    "sitemaps": ["https://formancy.ai/report/sitemap.xml"]
+  },
+  {
+    "name": "Formancy Health",
+    "link": "https://formancy.ai/health/",
+    "pages": ["https://formancy.ai/health/"],
+    "sitemaps": []
+  }
+]

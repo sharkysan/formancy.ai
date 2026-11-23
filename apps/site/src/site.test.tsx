@@ -134,7 +134,8 @@ describe('the page is a document first', () => {
     // link to one, wherever on the page and however it is spelled, has to sit in the
     // item that names that module's terms; text elsewhere on the page cannot pass for
     // it. Every module is named here rather than read from the page's own list, so
-    // dropping one from the page fails too.
+    // dropping one from the page fails too. The footer links each module as well, from
+    // every page (0241), so its three links are on this page and held the same way.
     render(<App />)
 
     const offered = [
@@ -144,6 +145,10 @@ describe('the page is a document first', () => {
       'https://github.com/sharkysan/formancy.ai-report',
       'https://formancy.ai/health/',
       'https://github.com/sharkysan/formancy.ai-health',
+      // The footer's.
+      'https://formancy.ai/data/examples/',
+      'https://formancy.ai/report/en/',
+      'https://formancy.ai/health/',
     ]
     const paid = screen
       .getAllByRole('link')
