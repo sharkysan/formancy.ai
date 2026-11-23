@@ -1,4 +1,4 @@
-# 0240 — The sitemaps name the paid modules' pages, and every page's footer links them, from one list
+# 0241 — The sitemaps name the paid modules' pages, and every page's footer links them, from one list
 
 - **Status:** accepted
 - **Date:** 2026-11-22

@@ -299,7 +299,7 @@ all three, and [0154](../decisions/0154-the-website-makes-no-request-to-any-othe
 gate does not open them.
 
 The sitemaps list those repositories' pages too, and every page's footer links them
-([0240](../decisions/0240-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
+([0241](../decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
 The build holds the sitemaps to `apps/site/src/paid-modules.json` and cannot read the pages
 that list names, so nothing here fails when one moves, stops being served or asks not to be
 indexed, and the index names Formancy Report's sitemap whether or not it is there. A search

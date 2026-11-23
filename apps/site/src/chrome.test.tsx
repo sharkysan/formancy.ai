@@ -154,7 +154,7 @@ describe('the footer', () => {
      * place the site linked Formancy Data, Formancy Report and Formancy Health, so a
      * visitor who arrived on the templates page or the Angular page, and a search engine
      * following that page's links, found no way to them, though all three are served
-     * under formancy.ai (0240). Every page is rendered, not the footer alone, since a page
+     * under formancy.ai (0241). Every page is rendered, not the footer alone, since a page
      * that drew a footer of its own would drop the links without failing a test of the
      * component.
      *

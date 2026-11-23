@@ -144,7 +144,7 @@ export function SiteBar({ current }: { current: Page }): ReactElement {
  * version was typed, and said 2 for two versions after the spec reached 4.
  *
  * Under them, the paid modules, so that every page of the site links them and not the
- * landing page alone (0240). Each is linked by its name to the page its repository serves
+ * landing page alone (0241). Each is linked by its name to the page its repository serves
  * under formancy.ai for a visitor to start from, read from `paid-modules.json`, the list
  * `scripts/build-web.mjs` holds the sitemaps to. The address is absolute for the reason
  * `licence.tsx` gives: nothing else is served beside this site in development or on a

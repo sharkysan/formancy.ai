@@ -159,7 +159,7 @@ if (stray.length > 0) {
  *
  * The paid modules are served under formancy.ai as well, each by a deployment
  * of its own repository, and a search engine finds them only if this site names
- * them (0240). So the pages each module makes indexable are listed after the
+ * them (0241). So the pages each module makes indexable are listed after the
  * site's own, and a module that writes a sitemap of its own is listed in the
  * index after Astro's: Formancy Report's, which lists its product pages in each
  * language with their alternates and is not an index. Both come from

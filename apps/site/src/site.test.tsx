@@ -135,7 +135,7 @@ describe('the page is a document first', () => {
     // item that names that module's terms; text elsewhere on the page cannot pass for
     // it. Every module is named here rather than read from the page's own list, so
     // dropping one from the page fails too. The footer links each module as well, from
-    // every page (0240), so its three links are on this page and held the same way.
+    // every page (0241), so its three links are on this page and held the same way.
     render(<App />)
 
     const offered = [

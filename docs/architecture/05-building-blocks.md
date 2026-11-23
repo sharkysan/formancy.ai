@@ -539,7 +539,7 @@ Health's carries HL7's trademark sentence, because its description names FHIR
 page's footer links the three as well, each by its name and beside the same terms, from
 `src/paid-modules.json`, and `scripts/build-web.mjs` holds the sitemaps to that list, which
 names the pages each module's repository serves under formancy.ai for a search engine to find
-([0240](../decisions/0240-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
+([0241](../decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
 
 Its pages — the landing page, the templates gallery and the Angular form builder — are
 drawn in one shell: `src/shell.css` holds the tokens, the type scale and the backdrop, and

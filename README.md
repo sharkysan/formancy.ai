@@ -514,7 +514,7 @@ served under formancy.ai make indexable, read from `apps/site/src/paid-modules.j
 the list every page's footer links the modules from. Those pages are deployed by the
 modules' own repositories, so the build holds the files to the list and cannot see
 the pages
-([0240](./docs/decisions/0240-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
+([0241](./docs/decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
 
 Deploying is whatever serves a directory. With Cloudflare:
 

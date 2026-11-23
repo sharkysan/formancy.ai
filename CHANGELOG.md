@@ -105,7 +105,7 @@ landing page, the templates page and the Angular page links each module by its n
 English product page, each with *not free · paid in production* beside the link. Both read one list, `apps/site/src/paid-modules.json`, and
 `pnpm build:web` fails when either sitemap does not list what it says. Nothing here checks that
 those pages are there or may be indexed, which their repositories decide. No `@formancy/*` package
-changes ([0240](docs/decisions/0240-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
+changes ([0241](docs/decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
 
 - **The Angular starter's preview says why the engine refused a document, instead of throwing.** A saved
   or half-written form whose rule does not compile is a valid document the builder can hold, and the
