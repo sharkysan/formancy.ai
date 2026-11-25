@@ -1,0 +1,228 @@
+/**
+ * The landing page's section on the paid modules (0242).
+ *
+ * Three cards, each a tile of the same build: a sketch of what the module makes on top,
+ * then its name, its terms, its promise, what it covers and its two links. The cards in a
+ * row share their rows (`subgrid`), so the sketches end level and the names start level
+ * however long each sketch is; a browser without subgrid stacks each card's two parts as
+ * they come, which reads the same.
+ *
+ * **Three in a row, or one to a row, never two and one.** Laid out by the width the section
+ * leaves them, `.modules-room`, not the screen's: three side by side from 56rem of it; one
+ * to a row below that, each with its sketch beside its words while there is room for both
+ * (from 40rem); and one above the other on a phone. Measured on 2026-11-26 in Chromium, the
+ * grid that fitted as many 19rem columns as it could put two cards on a row and Health alone
+ * under them at every width from 820 to 1280 pixels; the browser gate now fails a row of
+ * two.
+ *
+ * Each module takes one of the page's three accents, for its edge and its chips and no
+ * more: Data the server's teal, Report the browser's violet, Health the colour where the
+ * two meet. The terms are not coloured at all, so they read as plainly as the licence
+ * section's do.
+ */
+
+.modules {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+}
+
+/* Out of the running submission's lane, as the bands around it are. */
+@media (min-width: 62rem) {
+  .modules {
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
+}
+
+.modules-head h2 {
+  max-width: 24ch;
+}
+
+.modules-head .lede {
+  max-width: 46rem;
+}
+
+.modules-head .lede a,
+.modules-foot code {
+  color: var(--text);
+}
+
+.modules-head .lede a {
+  text-underline-offset: 3px;
+}
+
+.modules-room {
+  container-type: inline-size;
+}
+
+.modules-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@container (min-width: 56rem) {
+  .modules-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.module-card {
+  --accent: var(--client);
+
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  gap: 1.25rem;
+  min-width: 0;
+  padding: 0.75rem 0.75rem 1.375rem;
+  border: 1px solid var(--edge-strong);
+  border-block-start: 2px solid var(--accent);
+  border-radius: 22px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+
+.module-card[data-module='data'] {
+  --accent: var(--server);
+}
+
+.module-card[data-module='health'] {
+  --accent: var(--meet);
+}
+
+/* The sketch on top and the words under it, though the words come first in the document,
+   so that a heading leads into its own module's sketch. Placed in the card's own rows, which
+   are the row's shared ones, so the sketches still end level across a row. */
+.module-card > .mx {
+  grid-row: 1;
+}
+
+.module-card-body {
+  grid-row: 2;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-inline: 0.5rem;
+}
+
+/* One card to a row, wide enough for its sketch and its words side by side: the sketch on
+   the left, as it is on top elsewhere, and the words beside it. */
+@container (min-width: 40rem) and (width < 56rem) {
+  .module-card {
+    grid-row: auto;
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: 1.25rem;
+  }
+
+  .module-card > .mx {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .module-card-body {
+    grid-row: 1;
+    grid-column: 2;
+    padding-block-start: 0.5rem;
+  }
+}
+
+.module-card h3 {
+  font-size: 1.5rem;
+}
+
+.module-card .module-card-sub {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The terms, said on the card itself so either link reached alone still carries them. */
+.module-card .module-card-terms {
+  justify-self: start;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.module-card .module-card-promise {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.module-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.module-chips li {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.module-card .module-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding-block-start: 0.25rem;
+}
+
+.module-card-links a {
+  display: inline-flex;
+  align-items: center;
+  /* 2.5.8 Target size, with room to spare. */
+  min-height: 2.5rem;
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* The product page is the way in; the module's own demonstration is the second link. */
+.module-card-links a:first-child {
+  padding-inline: 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.module-card-links a:first-child:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* Somebody else's trademark line: owed, and small print, so it sits last. */
+.module-card .module-card-mark {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.modules-foot {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}

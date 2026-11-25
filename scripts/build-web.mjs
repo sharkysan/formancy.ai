@@ -54,8 +54,19 @@ const NESTED = [
   },
 ]
 
-/** The site's own pages besides the landing page, each an `index.html` in its directory. */
-const PAGES = ['templates', 'angular-form-builder']
+/**
+ * The site's own pages besides the landing page, each an `index.html` in its directory.
+ * The last three are the paid modules' product pages (0242), in the order the footer
+ * links the modules.
+ */
+const PAGES = ['templates', 'angular-form-builder', 'products/data', 'products/report', 'products/health']
+
+/**
+ * The pages whose words have to be in the HTML the server sends, because being found is
+ * what they are for (0242): the product pages, which the site's build renders into their
+ * roots. Every other page is an empty root a script draws into.
+ */
+const PRERENDERED = PAGES.filter((page) => page.startsWith('products/'))
 
 function run(command, args) {
   // `shell: true` on Windows, where pnpm is a .cmd and spawn cannot exec it.
@@ -76,9 +87,30 @@ if (!existsSync(join(siteDist, 'index.html'))) {
 }
 
 for (const page of PAGES) {
-  if (!existsSync(join(siteDist, page, 'index.html'))) {
+  if (!existsSync(join(siteDist, ...page.split('/'), 'index.html'))) {
     throw new Error(`The site build produced no ${page}/index.html.`)
   }
+}
+
+/*
+ * A product page whose root is empty builds and deploys and reads as nothing to a crawler
+ * that runs no script, which is the one reader the page was rendered for. So the built page
+ * is read back: its root holds markup, and the markup holds the page's one heading. The
+ * module that rendered it is gone, so nothing but the pages ships.
+ */
+for (const page of PRERENDERED) {
+  const html = readFileSync(join(siteDist, ...page.split('/'), 'index.html'), 'utf8')
+  const opened = html.indexOf('<div id="root"')
+  const body = opened === -1 ? '' : html.slice(opened, html.lastIndexOf('</body>'))
+  if (!/<main\b/.test(body) || (body.match(/<h1\b/g) ?? []).length !== 1) {
+    throw new Error(
+      `${page}/index.html was built with ${opened === -1 ? 'no root' : 'no page in its root'}: apps/site's build renders it to static HTML ` +
+        `(prerender.mjs), and without that its words reach no crawler that runs no script.`,
+    )
+  }
+}
+if (existsSync(join(siteDist, '.prerender'))) {
+  throw new Error(`apps/site/dist/.prerender is still there: it is the module prerender.mjs renders the product pages with, and it would ship.`)
 }
 
 for (const app of NESTED) {
@@ -168,6 +200,11 @@ if (stray.length > 0) {
  * of those pages is in this build, so what is held is the files against the
  * list, not the list against what those repositories deploy. Every address in
  * it has to be this site's, because a sitemap may list only its own host.
+ *
+ * Each module also has a product page that this site builds, `/products/<id>/`,
+ * listed among the site's own pages, and the footer links each module to it
+ * (0242). So the list's `product` for each module has to be one of those pages,
+ * or the footer would link a page the build did not make.
  */
 const locs = (file) => [...readFileSync(file, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
 
@@ -182,6 +219,14 @@ if (elsewhere.length > 0) {
   throw new Error(
     `apps/site/src/paid-modules.json names ${elsewhere.join(', ')} for the sitemaps, which may list ` +
       `only addresses under ${SITE_ORIGIN}/. A search engine ignores the rest.`,
+  )
+}
+
+const unbuilt = paidModules.filter((module) => !PRERENDERED.some((page) => module.product === `/${page}/`))
+if (unbuilt.length > 0) {
+  throw new Error(
+    `apps/site/src/paid-modules.json has the footer link ${unbuilt.map((module) => `${module.name} to ${String(module.product)}`).join(', ')}, ` +
+      `which is not a product page this build made: ${PRERENDERED.map((page) => `/${page}/`).join(', ')}.`,
   )
 }
 

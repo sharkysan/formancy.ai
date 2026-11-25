@@ -130,6 +130,7 @@ defect would be most costly.
 | **The playground copies Monaco's build whole** | The loader asks for modules by name as the editor needs them, and a list of the ones it needs would be a copy of Monaco's module graph nothing checks ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)) | The deployment carries the language workers for TypeScript, CSS and HTML for an editor that edits JSON — most of the copy's bytes, measured in the record, and never fetched |
 | **Three of the site's sections admit an inline style** | Monaco writes styles into the playground as it draws, Angular Material into the starter, and Starlight's code blocks carry style attributes, more distinct ones than a header line holds as hashes ([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)) | A style an injection wrote there would not be refused. The renderers, builders and editor write none, which a report-only policy on the playground holds; the site's own pages admit none but the legal notices', by hash |
 | **The playground and the documentation do not require Trusted Types** | Monaco's loader and `@monaco-editor/loader` hand script addresses to their sinks as strings, and Pagefind its worker's address and its results' markup ([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)) | A string handed to `innerHTML` or a script's address there is not refused by the browser; their policies still refuse a script from anywhere but the section's own directory |
+| **The landing page, the templates gallery and the Angular page are empty to a crawler that runs no script** | Each is a `<div id="root">` a script draws into. The paid modules' product pages are the only ones the build renders to static HTML, because being found is what they are for ([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)); the landing page renders live forms through the engine, a studio in its hero and a journey that reacts to scrolling, and rendering those on the server is a change of its own, with tests of its own | A search engine that does not run a page's scripts reads only its head, its structured data and, on the templates and Angular pages, a `<noscript>` line. The landing page's argument, its examples and its licence section reach such a reader through nothing, and the links in its footer through the sitemaps alone ([0241](../decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)) |
 | **Nothing reads the headers formancy.ai serves** | It needs the network, which CI's gates do not have; the gate serves the same rules itself ([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)) | A Cloudflare setting that drops, rewrites or adds to a header goes unnoticed until somebody reads a response, which the README's deploy section says to do after a deploy |
 | **A pasted answer is not bound to the request it answers** | Through the relay a person carries each turn, and nothing in a chat's answer says which request it answers ([0160](../decisions/0160-a-person-carries-the-models-turn.md)) | An answer from another chat, an earlier turn or another form is checked and proposed like the right one. The review's diff against the form the run was asked about is the only defence (SAFETY-ANALYSIS D10) |
 | **An answer that works leaves the focus on the page's body** | The relay pane exists only while a turn waits, and an answer that is accepted ends the turn; the prompt pane announces the review in its live region and moves no focus ([0160](../decisions/0160-a-person-carries-the-models-turn.md)) | A keyboard user who pasted an answer that worked hears the review announced and starts again from the top of the page to reach it. A turn that follows — a retry — takes the focus back to its Copy |
@@ -298,14 +299,32 @@ content security policy that allows nothing from another site. Those repositorie
 all three, and [0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)'s
 gate does not open them.
 
-The sitemaps list those repositories' pages too, and every page's footer links them
-([0241](../decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
+The sitemaps list those repositories' pages too, and every page's footer links each module's
+product page, which links them
+([0241](../decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md),
+[0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
 The build holds the sitemaps to `apps/site/src/paid-modules.json` and cannot read the pages
 that list names, so nothing here fails when one moves, stops being served or asks not to be
 indexed, and the index names Formancy Report's sitemap whether or not it is there. A search
 engine reports such an address; no gate here does. The privacy notice says what
 `/data/demo/` and Report's product pages keep and send as read on 2026-11-22, and nothing here
 checks it again when they change.
+
+**The modules' product pages describe three other repositories in detail, and nothing here
+reads them** ([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
+What `/products/data/`, `/products/report/` and `/products/health/`, and the landing page's
+cards, say each module does and does not do yet, its release and its licence, were read from
+each repository on 2026-11-25, and the pages say so beside them. The first release of a module
+after that can make some of it wrong, and no gate fails: the pages are read again by hand
+when a module releases. The examples' values are the modules' own fixtures, copied, and go
+stale the same way. Each module's own pages describe the same things, so a module is
+described in more than one place that can disagree. The pages name no module's packages by
+their npm names, since `apps/docs/src/package-references.test.ts` holds every `@formancy/` name
+on the site to this workspace; they send the reader to each module's getting-started guide.
+Each page's share card is a picture of its promise and its example, taken by hand from the
+built site as the site's own card is: its source is held to the page and the file to its
+address and size, and nothing compares the two, so a card shows the old promise until it is
+taken again.
 
 ## 11.4 The spec freeze, and what it locked in
 

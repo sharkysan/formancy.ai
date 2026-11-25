@@ -4,6 +4,8 @@ import { CURRENT_SPEC_VERSION } from '@formancy/spec'
 import { AngularBuilderPage } from './angular-builder-page.js'
 import { App } from './app.js'
 import { SiteBar, SiteFooter } from './chrome.js'
+import { ProductPage } from './product-page.js'
+import { PRODUCTS } from './products/all.js'
 import { TemplateGallery } from './template-gallery.js'
 
 /**
@@ -67,6 +69,38 @@ describe('the bar', () => {
     expect(current).toEqual(['Templates'])
   })
 
+  test('on a product page, marks "Paid modules" as the section it is in, and claims no link is the page itself', () => {
+    /*
+     * The bar's "Paid modules" goes to the landing page's section, not to the product page
+     * (0242). Marked `page` there it would tell somebody they are on the page that link
+     * opens, which they are not; marked as the current item of the set, it says where on
+     * the site they are, and it is underlined as the current page's entry is.
+     */
+    for (const page of ['data', 'report', 'health'] as const) {
+      render(<SiteBar current={page} />)
+      const nav = screen.getByRole('navigation', { name: 'Main' })
+      const modules = within(nav).getByRole('link', { name: 'Paid modules' })
+      expect(modules.getAttribute('aria-current'), page).toBe('true')
+      expect(modules.getAttribute('href'), 'an anchor on another page goes nowhere').toBe('/#modules')
+      expect(nav.querySelectorAll('[aria-current="page"]'), page).toHaveLength(0)
+      cleanup()
+    }
+  })
+
+  test('names no module, and says in its own words that what it leads to is paid', () => {
+    /*
+     * 0241 kept the modules out of the bar because a module's name there would stand
+     * without its terms. The one bar link to them names none of them, and its words are
+     * the terms' gist, so it cannot be read as part of the free offer.
+     */
+    render(<SiteBar current="home" />)
+
+    const links = [...screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('a')]
+    expect(links.filter((link) => /Formancy (Data|Report|Health)/.test(link.textContent ?? ''))).toEqual([])
+    const modules = links.find((link) => link.getAttribute('href') === '#modules')
+    expect(modules?.textContent).toMatch(/paid/i)
+  })
+
   test('and on the landing page nothing is marked, because no entry is the landing page', () => {
     /*
      * Deliberate, and worth pinning: the wordmark is the way home, and marking
@@ -97,9 +131,15 @@ describe('both pages', () => {
 
     render(<TemplateGallery />)
     const templates = navigation()
+    cleanup()
+
+    // And the product pages, which are drawn in the same shell (0242).
+    render(<ProductPage product={PRODUCTS.report} />)
+    const product = navigation()
 
     expect(home.length, 'the bar has almost no links').toBeGreaterThan(3)
     expect(templates, 'the two pages carry different navigation').toEqual(home)
+    expect(product, 'a product page carries navigation of its own').toEqual(home)
   })
 
   test("and the gallery wears the site's header rather than one of its own", () => {
@@ -161,13 +201,15 @@ describe('the footer', () => {
      * Beside a footer that opens with "Apache-2.0", a bare name reads as part of the free
      * offer, so the item holding each link says the module's terms (0179). The addresses
      * are written here rather than read from `paid-modules.json`, or a wrong one there
-     * would pass: Report's is its English product page and not its Studio at `/report/`,
-     * which that module keeps out of search.
+     * would pass. Each is the module's product page on this site, which links the pages
+     * its own repository serves (0242); before those pages, Report's was its English
+     * product page and not its Studio at `/report/`, which that module keeps out of search.
+     * The product pages carry the footer too, so they are rendered as well.
      */
     const expected = [
-      ['Formancy Data', 'https://formancy.ai/data/examples/'],
-      ['Formancy Report', 'https://formancy.ai/report/en/'],
-      ['Formancy Health', 'https://formancy.ai/health/'],
+      ['Formancy Data', '/products/data/'],
+      ['Formancy Report', '/products/report/'],
+      ['Formancy Health', '/products/health/'],
     ] as const
     stubObserver()
 
@@ -175,6 +217,9 @@ describe('the footer', () => {
       ['the landing page', <App key="home" />],
       ['the templates page', <TemplateGallery key="templates" />],
       ['the Angular page', <AngularBuilderPage key="angular" />],
+      ['the Formancy Data page', <ProductPage key="data" product={PRODUCTS.data} />],
+      ['the Formancy Report page', <ProductPage key="report" product={PRODUCTS.report} />],
+      ['the Formancy Health page', <ProductPage key="health" product={PRODUCTS.health} />],
     ] as const) {
       render(element)
       const footer = within(screen.getByRole('contentinfo'))

@@ -6,7 +6,7 @@
     <title>formancy.ai — Visual form builder for Angular and React</title>
     <meta
       name="description"
-      content="Build forms visually and embed them in Angular or React. Conditional fields, validation, file uploads and your own styling. Open source, with an optional self-hosted backend."
+      content="Open-source visual form builder for Angular and React. Paid modules: forms over your PostgreSQL or SQL Server database, PDF and Word invoices, healthcare forms."
     />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#080a12" />
@@ -24,7 +24,7 @@
     <meta property="og:title" content="formancy.ai — Visual form builder for Angular and React" />
     <meta
       property="og:description"
-      content="Create forms in a visual editor, add conditions and validation, and embed them in Angular or React. Open source, with an optional self-hosted backend."
+      content="A visual form builder for Angular and React, open source, with an optional self-hosted backend. Paid modules add forms over your PostgreSQL or SQL Server database, PDF and Word documents and invoices, and healthcare forms."
     />
     <meta property="og:image" content="https://formancy.ai/og.png" />
     <meta property="og:image:width" content="1200" />
@@ -37,12 +37,16 @@
     <meta name="twitter:title" content="formancy.ai — Visual form builder for Angular and React" />
     <meta
       name="twitter:description"
-      content="A visual form builder for Angular and React. Conditional fields, validation and your own styling. Open source, with an optional self-hosted backend."
+      content="A visual form builder for Angular and React, open source. Paid modules add forms over your PostgreSQL or SQL Server database, PDF and Word documents and invoices, and healthcare forms."
     />
     <meta name="twitter:image" content="https://formancy.ai/og.png" />
 
     <!-- What the page is, for search engines. Nothing here that the page or the
-         repository does not also say: no ratings, no prices beyond the licence. -->
+         repository does not also say: no ratings, no prices beyond the licence.
+         After formancy, the paid modules the page's #modules section shows, each by the
+         @id, address and description its product page gives its SoftwareApplication, so
+         the two pages describe one thing. Nothing here says they are free: they are not
+         in production (0179, 0242). -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -67,6 +71,27 @@
             "keywords": "form engine, form builder, React forms, Angular forms, JSON forms, CEL, self-hosted, accessibility",
             "isAccessibleForFree": true,
             "image": "https://formancy.ai/og.png"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://formancy.ai/products/data/#software",
+            "name": "Formancy Data",
+            "url": "https://formancy.ai/products/data/",
+            "description": "Turn an existing PostgreSQL or SQL Server database into forms in your React or Angular app, generated from what an account may do, under your rules."
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://formancy.ai/products/report/#software",
+            "name": "Formancy Report",
+            "url": "https://formancy.ai/products/report/",
+            "description": "Invoices with a Swiss QR-bill or EPC QR code, e-invoices, quotations and sales reports with charts, designed in your app and printed as PDF or Word."
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://formancy.ai/products/health/#software",
+            "name": "Formancy Health",
+            "url": "https://formancy.ai/products/health/",
+            "description": "Export formancy forms and answers as HL7® FHIR® R4 SDC resources, PDFs in a FHIR document Bundle, and Swiss referrals as CH ORF on CH Core."
           }
         ]
       }

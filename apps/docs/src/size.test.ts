@@ -44,8 +44,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {
-    lines: 800,
-    why: 'The landing page, one long document. The seam is one section per file — and the chrome has already gone that way: the bar, the footer, the brand mark and the backdrop left for `chrome.tsx` when the site grew a second page that had written its own, which is the ratchet pointing at something real rather than at a line count. The licence section followed to `licence.tsx` when it gained the paid modules and this ceiling allowed no growth.',
+    lines: 742,
+    why: 'The landing page, one long document. The seam is one section per file — and the chrome has already gone that way: the bar, the footer, the brand mark and the backdrop left for `chrome.tsx` when the site grew a second page that had written its own, which is the ratchet pointing at something real rather than at a line count. The licence section followed to `licence.tsx` when it gained the paid modules and this ceiling allowed no growth. The paid modules’ own section went to `modules.tsx`, and the finale left for `finale.tsx` to pay for the lines that place it, which took this ceiling down (0242).',
   },
   'packages/conformance/src/runner.ts': {
     lines: 640,

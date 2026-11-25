@@ -1,0 +1,118 @@
+/**
+ * Formancy Health's demo, as `health.tsx` draws it (0242): the referral on the paper
+ * `examples.css` declares, beside the JSON the packages make of it on the bench.
+ */
+
+.mx-split,
+.mx-form-side,
+.mx-json-side {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.mx-form-side,
+.mx-json-side {
+  gap: 0.4rem;
+}
+
+@container (min-width: 40rem) {
+  .mx-page .mx-split {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+  }
+}
+
+.mx-form {
+  padding: 0.875rem;
+}
+
+.mx-radios dd {
+  display: block;
+  min-height: 0;
+  padding: 0.1rem 0 0;
+  border: 0;
+}
+
+.mx-radios ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mx-radios li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* An empty ring, and the chosen one filled: a difference of shape, not of colour alone. */
+.mx-radios li::before {
+  content: '';
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 1.5px solid var(--mx-box);
+  border-radius: 50%;
+  background: var(--mx-paper);
+}
+
+.mx-radios li[data-chosen]::before {
+  border-color: var(--mx-mark);
+  background: radial-gradient(circle, var(--mx-mark) 0 36%, var(--mx-paper) 42%);
+}
+
+/* The JSON, wrapped where its stage ends rather than scrolled: a long canonical runs on
+   to the next line. */
+.mx-json {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: var(--inset);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mx-json code {
+  font: inherit;
+}
+
+.mx-json-key {
+  color: var(--server);
+}
+
+.mx-json-string {
+  color: var(--text);
+}
+
+.mx-refusal {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--meet) 45%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--meet) 8%, transparent);
+  font-size: 0.75rem;
+}
+
+.mx-refusal p:last-child {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.mx-refusal code {
+  margin-inline-end: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 8%);
+  color: var(--meet);
+  font-family: var(--mono);
+}

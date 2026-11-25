@@ -95,6 +95,31 @@ document lists the rules in, and the replay can store none. Recorded as debt, no
   for the member it reads, so both are accepted and compute the same in the browser and on the
   replay.
 
+**Added, on formancy.ai: a product page for each paid module, and a section of the landing page
+showing what each makes.** A search for what Formancy Data, Formancy Report or Formancy Health
+does found no page of this site that said it, and every page the site builds was an empty root to a
+crawler that runs no script. `/products/data/`, `/products/report/` and `/products/health/` say
+what each module makes, does and does not do yet, its release and its terms, each in the site's
+shell with a head of its own, and are rendered to static HTML when the site is built, so their words
+are in what the server sends; the sitemap lists them. Each ends on the module's demonstration
+and a question about a production licence, since the licence's table left a buyer to find the
+address in small print. The landing page gains a card per module, after self-hosting and before
+the licence, with a sketch of its output drawn in HTML and CSS: an order list and record, an
+invoice whose QR-bill code is deliberately left undrawn, a FHIR QuestionnaireResponse. The
+licence section's line on Formancy Report now says what Report's README does: PDF and Word,
+printed in Node or in a browser. Every link to a module, there and on the pages, says *not free · paid in
+production* beside it; the footer now links each module to its product page, and the bar gains
+one link, *Paid modules*, which names none of them. A product page shared in a chat app or a post
+shows its module's own card, the module's name, its promise and its terms beside its example,
+drawn by the site as its own card is, since the site's card would show formancy under the module's
+title; and each page places itself under formancy.ai with a breadcrumb for a search result. The
+landing page's descriptions still lead with the visual form builder and now say what the paid
+modules make, as paid, and its structured data names each module by the address and words its
+product page gives it. What the pages say of each module was read
+from its repository on 2026-11-25 and is dated on the page, since nothing here reads it again; the
+landing page itself is still drawn by script alone. No `@formancy/*` package changes
+([0242](docs/decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
+
 **Added, on formancy.ai: the paid modules' pages in the sitemaps, and a link to each module from
 every page of the site's shell.** Formancy Data, Formancy Report and Formancy Health are served
 under formancy.ai, and a search engine was told of none of them: the sitemaps listed this site's

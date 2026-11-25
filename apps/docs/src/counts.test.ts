@@ -209,5 +209,46 @@ describe('the card a shared link shows', () => {
     // would pass the comparison and still ship last year's PNG.
     expect(read('apps', 'site', 'src', 'main.tsx')).toContain('OgCard')
     expect(existsSync(join(repo, 'apps', 'site', 'public', 'og.png'))).toBe(true)
+    // And each paid module's, drawn at `?og` on its product page (0242).
+    expect(read('apps', 'site', 'src', 'product-main.tsx')).toContain('ProductOgCard')
+  })
+
+  test('and every page of the site names a card the site ships, at the size its head says', () => {
+    /*
+     * A page's `og:image` is an address under formancy.ai, and nothing reads it but the
+     * apps a link is shared in: a card that was never taken, or saved under another name,
+     * deploys without a word and every share shows none. So the file has to be in
+     * `apps/site/public` at that address's path, which the build copies to it. Its width and
+     * height are read off the PNG's own header and held to `og:image:width` and `height`,
+     * which an app lays the card out by before it loads it, so a card taken at another
+     * scale fails here rather than being cropped by each app differently. Asked of every
+     * `index.html` the site builds, so the paid modules' product pages (0242) and any page
+     * added later are held too.
+     */
+    const site = join(repo, 'apps', 'site')
+    const pages = (directory: string): string[] =>
+      readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+        if (entry.isDirectory()) return ['node_modules', 'dist', 'public', 'src'].includes(entry.name) ? [] : pages(join(directory, entry.name))
+        return entry.name === 'index.html' ? [join(directory, entry.name)] : []
+      })
+
+    const found = pages(site)
+    expect(found.map((page) => page.slice(site.length + 1).replaceAll('\\', '/'))).toEqual(expect.arrayContaining(['index.html', 'products/report/index.html']))
+
+    const cards = found.map((page) => {
+      const html = readFileSync(page, 'utf8')
+      const meta = (property: string): string => new RegExp(`<meta\\s+property="${property}"\\s+content="([^"]*)"`).exec(html)?.[1] ?? ''
+      const image = meta('og:image')
+      expect(image, `${page} names no card`).toMatch(/^https:\/\/formancy\.ai\/.+\.png$/)
+      const file = join(site, 'public', ...image.slice('https://formancy.ai/'.length).split('/'))
+      expect(existsSync(file), `${page} names ${image}, which apps/site/public does not hold`).toBe(true)
+      // A PNG's header: the signature, then the IHDR chunk, whose first two fields are the
+      // width and the height, big-endian, at bytes 16 and 20.
+      const png = readFileSync(file)
+      expect(png.subarray(1, 4).toString('latin1'), image).toBe('PNG')
+      return { image, size: `${String(png.readUInt32BE(16))}x${String(png.readUInt32BE(20))}`, said: `${meta('og:image:width')}x${meta('og:image:height')}` }
+    })
+    expect(cards.filter((card) => card.size !== card.said)).toEqual([])
+    expect(cards.map((card) => card.image)).toContain('https://formancy.ai/products/report/og.png')
   })
 })

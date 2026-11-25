@@ -2,7 +2,10 @@
 
 - **Status:** accepted; extended by [0241](0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md),
   which links the modules from every page's footer as well, each beside its terms, and names their
-  pages in the sitemaps
+  pages in the sitemaps; and by [0242](0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md),
+  which gives each module a page of its own, for search and for a visitor who lands on one, and a
+  card on the landing page, its terms beside every link. The licence section stays where this
+  record put it, and its rejection of a page of its own for deciding what is free stands
 - **Date:** 2026-10-16
 - **Supersedes in part:** [0003](0003-open-core-line.md) — its sold list as only operating the
   platform, and its "nothing to buy". Its free list, and the reason for it, stand.

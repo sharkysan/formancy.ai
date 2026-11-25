@@ -1,6 +1,9 @@
 # 0241 — The sitemaps name the paid modules' pages, and every page's footer links them, from one list
 
-- **Status:** accepted
+- **Status:** accepted; extended by [0242](0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md),
+  whose footer links each module to its product page on this site, which links the module's own
+  pages, and whose bar has one link to the modules, "Paid modules", that names none of them; the
+  sitemaps' entries for the modules' own pages stay as decided here
 - **Date:** 2026-11-22
 - **Extends:** [0179](0179-the-paid-modules-are-named-as-not-free.md), whose licence section
   stays where a visitor decides what is free, and which rejected a footer link *in place of* it

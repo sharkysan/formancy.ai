@@ -1,19 +1,19 @@
 [
   {
     "name": "Formancy Data",
-    "link": "https://formancy.ai/data/examples/",
+    "product": "/products/data/",
     "pages": ["https://formancy.ai/data/examples/", "https://formancy.ai/data/demo/"],
     "sitemaps": []
   },
   {
     "name": "Formancy Report",
-    "link": "https://formancy.ai/report/en/",
+    "product": "/products/report/",
     "pages": [],
     "sitemaps": ["https://formancy.ai/report/sitemap.xml"]
   },
   {
     "name": "Formancy Health",
-    "link": "https://formancy.ai/health/",
+    "product": "/products/health/",
     "pages": ["https://formancy.ai/health/"],
     "sitemaps": []
   }

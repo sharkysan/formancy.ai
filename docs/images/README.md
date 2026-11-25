@@ -78,3 +78,19 @@ It is built that way because the last one was a PNG nobody could regenerate, and
 outlived two rewrites of the headline — every shared link said "One engine, in the browser
 and on the server" long after the page stopped saying it.
 `apps/docs/src/counts.test.ts` now fails when the card's headline and the page's disagree.
+
+## `../../apps/site/public/products/<module>/og.png` — each paid module's card
+
+The card a shared link to a paid module's product page shows
+([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)),
+a route like the site's: `http://localhost:4399/products/data/?og`, `/products/report/?og`
+and `/products/health/?og` render `apps/site/src/product-og-card.tsx` at exactly 1200×630,
+the module's name, its page's promise and its terms beside the landing page's crop of its
+example. Screenshot each one's `#og-card` element at a device scale factor of 1, once
+`document.fonts.ready` has settled, and save it as `og.png` in
+`apps/site/public/products/<module>/`, where each page's head names it.
+
+Take them again when a module's promise, its terms or its example changes.
+`apps/site/src/product-og-card.test.tsx` fails when a card's words and its page's heading
+disagree, and `apps/docs/src/counts.test.ts` when a page names a card that is not there or
+not the size its head says; nothing compares the picture with the source.

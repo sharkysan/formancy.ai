@@ -1,0 +1,405 @@
+/**
+ * The paid modules' product pages (0242).
+ *
+ * Tokens from `shell.css` and nothing else, as the Angular page and the templates gallery
+ * do: no colour is written here, so a product page cannot drift from the site by a shade.
+ * The examples bring their own paper, in `module-examples/examples.css`.
+ */
+
+.product-page {
+  position: relative;
+  z-index: 1;
+}
+
+/* Positioned, so it paints above the backdrop, which is fixed and positioned too, as the
+   landing page's `.page` does; the bar and the footer are positioned by the shell. */
+.product-page main {
+  position: relative;
+  z-index: 1;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* The skip link lands here, and the page should not draw a ring round all of it. */
+.product-page main:focus {
+  outline: none;
+}
+
+/* ------------------------------------------------------------------ hero */
+
+.product-hero {
+  padding-block: clamp(3.5rem, 9vh, 6rem) clamp(2rem, 5vh, 3rem);
+}
+
+.product-hero h1 {
+  max-width: 19ch;
+  font-size: clamp(2.5rem, 1.3rem + 4vw, 4.75rem);
+}
+
+/* The half of the promise a reader came for, in the site's serif accent, as the Angular
+   page's headline sets its own; and on the module's share card, which says the same
+   promise (`product-og-card.tsx`). */
+.product-hero h1 em,
+.og-product h1 em {
+  font-family: 'Fraunces Variable', Georgia, serif;
+  font-variation-settings: 'opsz' 96;
+  font-style: italic;
+  font-weight: 500;
+  background: linear-gradient(100deg, var(--client), var(--meet) 60%, var(--server));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.product-hero .lede {
+  max-width: 44rem;
+}
+
+.product-offer-hero {
+  display: grid;
+  gap: 1.25rem;
+  margin-block-start: 2.25rem;
+}
+
+.product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  max-width: none;
+}
+
+.product-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-links a,
+.product-further a,
+.product-real a,
+.product-licence a {
+  display: inline-flex;
+  align-items: center;
+  /* 2.5.8 Target size: a link on a line of its own is a target, not a word in a sentence. */
+  min-height: 1.75rem;
+  color: var(--server);
+  text-underline-offset: 4px;
+  overflow-wrap: anywhere;
+}
+
+.product-terms {
+  max-width: 44rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 12px;
+  background: var(--glass);
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.product-terms strong {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.product-terms a {
+  color: var(--text);
+  text-underline-offset: 3px;
+}
+
+/* The terms beside a link, as the licence section's items carry them. */
+.product-terms-inline {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+/* -------------------------------------------------------------- sections */
+
+.product-section {
+  padding-block: clamp(2.5rem, 6vh, 4rem);
+  border-block-start: 1px solid var(--edge);
+}
+
+.product-section h2 {
+  max-width: 24ch;
+  margin-block-end: 1.25rem;
+  font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.75rem);
+}
+
+.product-section > p {
+  max-width: var(--measure);
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.product-section > p + p {
+  margin-block-start: 1rem;
+}
+
+.product-section code {
+  color: var(--text);
+}
+
+.product-section > p a {
+  color: var(--text);
+  text-decoration-color: var(--client);
+  text-underline-offset: 3px;
+}
+
+.product-example .mx {
+  max-width: 62rem;
+}
+
+.product-real p,
+.product-licence p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  max-width: none;
+  margin-block-start: 1rem;
+}
+
+.product-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-cards li {
+  padding: 1.25rem;
+  border: 1px solid var(--edge);
+  border-radius: 18px;
+  background: var(--glass);
+}
+
+.product-cards h3 {
+  font-size: 1.0625rem;
+}
+
+.product-cards p {
+  margin-block-start: 0.5rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.product-further {
+  display: grid;
+  gap: 0.75rem;
+  margin-block-start: 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+}
+
+.product-further p {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.product-further p.product-terms-inline {
+  justify-self: start;
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.product-further ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-jobs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 0 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-jobs li {
+  position: relative;
+  padding-block: 0.6rem;
+  padding-inline-start: 1.5rem;
+  border-block-end: 1px solid var(--edge);
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.product-jobs li::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 1.05rem;
+  inset-inline-start: 0.1rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--client), var(--server));
+}
+
+/* Two short parts side by side from the width where one alone would leave half a screen
+   of air; one above the other below it. */
+.product-duo {
+  display: grid;
+  column-gap: clamp(2rem, 5vw, 4rem);
+}
+
+@media (min-width: 60rem) {
+  .product-duo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.product-release {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+}
+
+.product-release strong {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+.product-preview {
+  padding: 0.1rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--meet) 55%, transparent);
+  border-radius: 999px;
+  color: var(--meet);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.product-absences {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-absences li {
+  position: relative;
+  padding-inline-start: 1.25rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* A dash, which says "not this" without a colour having to. */
+.product-absences li::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0.8rem;
+  inset-inline-start: 0;
+  width: 0.6rem;
+  height: 2px;
+  background: var(--edge-strong);
+}
+
+.product-section > p.product-dated {
+  margin-block-start: 1.25rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.product-table {
+  width: 100%;
+  max-width: 46rem;
+  margin-block: 1.5rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.product-table th,
+.product-table td {
+  padding: 0.75rem 0.5rem;
+  border-block-end: 1px solid var(--edge);
+  text-align: start;
+  vertical-align: top;
+}
+
+.product-table thead th {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.product-table tbody th {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* What costs, brighter than what is free, so the line a buyer reads for is the one that
+   stands out; said in words in its cell either way. */
+.product-table td {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.product-table td[data-free] {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.product-section > p.product-mark {
+  margin-block-start: 1.5rem;
+  font-size: 0.8125rem;
+}
+
+/* ------------------------------------------------------------- what next */
+
+/* The page ends on what a buyer does next, not on the licence's table: the demonstration and
+   the question about production, side by side, with the terms under both. */
+.product-next {
+  padding-block-end: clamp(3.5rem, 9vh, 6rem);
+}
+
+.product-offer-next {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  margin-block-start: 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-page .aurora {
+    animation: none;
+  }
+
+  .product-page .action {
+    transition: none;
+  }
+
+  .product-page .action:hover {
+    transform: none;
+  }
+}

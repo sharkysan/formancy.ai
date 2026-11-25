@@ -257,6 +257,13 @@ Each gate exists for a reason that was paid for at least once:
   Run first under one strict policy in report-only mode, to measure what each section needed,
   it found two of the product's styles written where such a policy refuses them, and each
   planted fault failed it ([0234](../decisions/0234-the-website-is-served-under-a-policy-for-each-section.md)).
+  Since 2026-11-26 it opens the landing page and the paid modules' product pages at the widths
+  the playground is measured at and down to 320 pixels, and fails on a page that scrolls
+  sideways, a control off its edge, a box in a module's example that clips what it holds, a word
+  in one under 10 pixels, the modules' cards two in a row with the third alone, and a product
+  page sent without its words in the HTML or whose markup the browser had to correct; each
+  failed once on a fault planted for it
+  ([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

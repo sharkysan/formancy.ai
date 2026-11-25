@@ -73,13 +73,16 @@ async function keptInBrowser(context, page) {
  * The pages, and what each one has to have finished before its requests are counted.
  *
  * One of each kind the composed site serves: the landing page, the two pages beside it,
- * the playground and one page of the documentation, which is a different build (Astro)
- * with its own head.
+ * one of the paid modules' product pages, the playground and one page of the
+ * documentation, which is a different build (Astro) with its own head.
  */
 const PAGES = [
   { path: '/', settle: scrollThrough, ownFaces: true },
   { path: '/templates/', settle: (page) => page.getByRole('heading', { level: 1 }).waitFor(), ownFaces: true },
   { path: '/angular-form-builder/', settle: openTheStarter, ownFaces: true, frame: '/angular-form-builder/demo/' },
+  // A paid module's product page (0242), the one kind of page the build renders to static
+  // HTML before the browser takes it over; Health's, whose example sets JSON in the mono face.
+  { path: '/products/health/', settle: scrollThrough, ownFaces: true },
   { path: '/playground/', settle: openTheSchemaEditor, ownFaces: true, editor: true, policy: true },
   // The same page, with a model's turn carried through it: the clipboard is the page's own
   // origin's to write, as a visitor's browser lets it be.
