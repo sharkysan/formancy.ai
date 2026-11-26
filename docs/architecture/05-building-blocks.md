@@ -546,7 +546,10 @@ Each module also has a page of this site's own, `/products/data/`, `/products/re
 `#modules` section, `src/modules.tsx`, just before the licence section
 ([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
 The pages are one layout, `src/product-page.tsx`, over one file of words per module in
-`src/products/`; each card and each page draws the module's example with the same component in
+`src/products/`, which say what the module makes and does, its status and its terms, and leave
+what it does not do yet to the module's own pages, which they link
+([0245](../decisions/0245-a-product-page-says-what-its-module-makes-and-does-and-leaves-what-it-does-not-do-yet-to-the-modules-own-pages.md));
+each card and each page draws the module's example with the same component in
 `src/module-examples/`, in HTML and CSS, a `card` crop for the one and a `page` crop for the
 other. Report's carries its sample's own Swiss QR Code, an SVG that `swiss-qr-code.tsx` encodes
 from the sample's payment data with uqr 0.1.3, Report's encoder at Report's version and options,

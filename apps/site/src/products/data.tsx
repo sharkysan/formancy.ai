@@ -6,10 +6,11 @@ import { github } from './product.js'
 /**
  * `/products/data/` (0242), read from formancy.ai-data on 2026-11-25 at 0.5.0's `main`:
  * each capability names what its README, `docs/guide/capabilities.md` and the files under
- * `packages/data-core/src` and `packages/data-server/src` do today, and each absence what
- * the README, `docs/guide/status.md` and `docs/guide/tested-on.md` say is not done or not
- * tested. Each is said as a buyer would ask it, and the guide that `further` links says it in
- * full. If the module changes, this changes by hand.
+ * `packages/data-core/src` and `packages/data-server/src` do today. Each is said as a buyer
+ * would ask it; the guide that `further` links says it in full. What it does not do yet its
+ * README says under that heading, and what is not tested the guide's tested-on page, which
+ * `further` links; this page leaves both there (0245). If the module changes, this changes by
+ * hand.
  */
 
 const REPOSITORY = 'formancy.ai-data'
@@ -135,18 +136,6 @@ export const DATA: Product = {
     preview: false,
     said: 'Its fifth release. The examples page and the live demo are deployed from the repository’s main branch, not from a release.',
   },
-  notYet: [
-    'PostgreSQL and Microsoft SQL Server only: no MySQL, MariaDB, Oracle or SQLite.',
-    'To change or delete rows of a PostgreSQL table, the table needs a version column that every writer increments. Without one, its form ' +
-      'reads and creates only, and says why.',
-    'SQL Server 2019 or later. Azure SQL is recognised and Entra sign-in accepted, but neither is tested yet.',
-    'No undo, and no copy or export of a record together with its child rows.',
-    'Actions and bulk changes work on one page of records at a time.',
-    'Self-hosted only, with no hosted service. The studio is built from the repository and not published to npm.',
-    'Not yet tested with your browser application on a different domain from the server, or through a real Cloudflare Tunnel.',
-    'Performance was last measured on 0.1.0, and not yet for lists, CSV exports, the forms menu, deletes, saves or actions.',
-    'No lawyer has reviewed the licence, and there is no published price.',
-  ],
   licence: {
     line: 'Formancy Data Source-Available Licence, Version 1.1, in force from 11 October 2026. Not reviewed by a lawyer.',
     rows: [

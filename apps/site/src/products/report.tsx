@@ -5,12 +5,12 @@ import { github } from './product.js'
 
 /**
  * `/products/report/` (0242), read from formancy.ai-report on 2026-11-25 at 0.3.0's `main`:
- * each capability names what its README and the packages under `packages/` do today, and
- * each absence what its README, `docs/roadmap.md` and `packages/report-data-provider/README.md`
- * say is not done, each said as a buyer would ask it. Report's own pages at
- * `/report/<language>/` speak to the searches for each topic; this one is the overview in
- * formancy.ai's room, and links each of them by its topic rather than repeating them.
- * If the module changes, this changes by hand.
+ * each capability names what its README and the packages under `packages/` do today, each
+ * said as a buyer would ask it. Report's own pages at `/report/<language>/` speak to the
+ * searches for each topic; this one is the overview in formancy.ai's room, and links each of
+ * them by its topic rather than repeating them. What Report does not do yet is its start
+ * page's *What it does not do yet*, which the hero and `further` link, and this page leaves it
+ * there (0245); its roadmap says what comes next. If the module changes, this changes by hand.
  */
 
 const REPOSITORY = 'formancy.ai-report'
@@ -142,21 +142,6 @@ export const REPORT: Product = {
     preview: true,
     said: 'A developer preview. The report format is still version 0, a draft: a report written now is not promised to be read by a later release.',
   },
-  notYet: [
-    'PDF and Word only: no Excel, CSV or HTML output.',
-    'Word files go out, not in: an existing Word template cannot be imported.',
-    'QR codes only: no Code 128, EAN or DataMatrix barcodes.',
-    'Latin, Greek and Cyrillic scripts only: Arabic, Hebrew, Chinese, Japanese and every other script are refused.',
-    'It sends nothing: no e-mail and no Peppol.',
-    'E-invoices are CII for Germany: no UBL, no check of France’s rules, and no FatturaPA for Italy.',
-    'No print server or job queue: your application calls the renderer for each document, on your server or in the browser.',
-    'No PDF viewer to embed: the Studio’s viewer is in no package, so your application shows the PDF in one of its own.',
-    'A chart cannot yet be added from the designers’ palettes; it is added in the report’s definition.',
-    'One list of detail rows per report, grouped by one field at most, and no running totals carried from page to page.',
-    'Reading from Formancy Data is written against its 0.1.0 and is best-effort, not one consistent read.',
-    'The designers’ own words are in English, German (Switzerland) and French (Switzerland).',
-    'No lawyer has reviewed the licence, and there is no published price.',
-  ],
   licence: {
     line: 'Formancy Report Source-Available Licence, Version 1, in force from 14 October 2026. Not reviewed by a lawyer.',
     rows: [

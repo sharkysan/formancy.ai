@@ -9,6 +9,9 @@ import type { Page } from '../chrome.js'
  * what the pages say about them: it was read from each on `READ_ON`, and the pages say so.
  * What is held here is the shape — every module link beside its terms, HL7's sentence on a
  * page that names HL7, the head each page's `index.html` carries — in `product-page.test.tsx`.
+ *
+ * What a module does not do yet is not among what a page says: the module's own pages say it,
+ * and the page links them (0245).
  */
 
 /** The day the modules' pages, and the landing page's section, were read from each module's repository. */
@@ -49,7 +52,6 @@ export interface Product {
   /** Another paid module this one works with, linked in a group named by that module's terms, not this one's. */
   readonly related?: { readonly name: string; readonly link: Link }
   readonly release: { readonly version: string; readonly date: string; readonly preview: boolean; readonly said: string }
-  readonly notYet: readonly string[]
   readonly licence: {
     readonly line: string
     readonly rows: ReadonlyArray<readonly [use: string, terms: string]>

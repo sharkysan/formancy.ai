@@ -24,8 +24,10 @@ import { longDate } from './products/product.js'
  * 0241); a page that names HL7 or FHIR carries HL7's sentence; "open source" is said of
  * nothing but in denial; the head each `index.html` carries is the page's own and fits a
  * search result, names the module's own share card and places the page under formancy.ai;
- * and the HTML the build sends holds the page, not an empty root. The landing page's head
- * names each module as its product page does, and says they are paid.
+ * and the HTML the build sends holds the page, not an empty root. No part says what a module
+ * does not do yet, and Health's says it is not intended as a medical device, which is its
+ * intended purpose rather than an absence (0245). The landing page's head names each module
+ * as its product page does, and says they are paid.
  */
 afterEach(cleanup)
 
@@ -79,6 +81,71 @@ describe.each(PAGES)('the product page of %s', (_, product, html) => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
     expect(screen.getByRole('link', { name: 'Skip to content' }).getAttribute('href')).toBe('#start')
     expect(screen.getByRole('main').id).toBe('start')
+  })
+
+  test('says, in this order, what the module makes, does and is for, its status and its terms, and nothing of what it does not do yet', () => {
+    /*
+     * A product page is a page a buyer decides on, and what a module does not do yet is said
+     * on the module's own pages, which the page links, not here (0245). Each list below is
+     * read from the rendered page and held to what the module's file gives it, so absences
+     * brought back fail wherever they are put and whatever they are called:
+     * - the name of every part of `<main>`, in order, so a part on them under its old heading
+     *   or another fails, and so does a part moved;
+     * - every heading in `<main>`, each a part's or a capability's, so one inside a part fails;
+     * - every item of every list outside the example, each a link of the hero's, a capability,
+     *   a link to the module's own pages or a job, so a list of them fails in any part and
+     *   under any class;
+     * - and the status, element by element, so a list or a paragraph folded into it fails.
+     * An absence written into the words the module's file gives one of these is review's.
+     */
+    render(<ProductPage product={product} />)
+
+    const main = screen.getByRole('main')
+    const parts = within(main)
+      .getAllByRole('region')
+      .map((part) => document.getElementById(part.getAttribute('aria-labelledby') ?? '')?.textContent)
+    expect(parts).toEqual([
+      wordsOf(product.h1),
+      'What it makes',
+      'What it does',
+      'What teams use it for',
+      'Who it is for',
+      'How it fits with formancy',
+      'Status',
+      'Terms',
+      'Try it, then ask about production',
+    ])
+    expect(
+      within(main)
+        .getAllByRole('heading')
+        .map((heading) => heading.textContent),
+    ).toEqual([
+      wordsOf(product.h1),
+      'What it makes',
+      'What it does',
+      ...product.capabilities.map((capability) => capability.label),
+      'What teams use it for',
+      'Who it is for',
+      'How it fits with formancy',
+      'Status',
+      'Terms',
+      'Try it, then ask about production',
+    ])
+    const items = [...main.querySelectorAll('li')].filter((item) => item.closest('figure') === null).map((item) => item.textContent)
+    expect(items).toEqual([
+      ...product.ctas.slice(2).map((link) => link.label),
+      ...product.capabilities.map((capability) => `${capability.label}${capability.detail}`),
+      ...product.further.links.map((link) => link.label),
+      ...product.jobs.map(wordsOf),
+    ])
+    const status = screen.getByRole('region', { name: 'Status' })
+    expect([...status.children].map((child) => [child.tagName.toLowerCase(), child.className].filter(Boolean).join('.'))).toEqual([
+      'h2',
+      'p.product-release',
+      'p',
+      'p.product-dated',
+    ])
+    expect(main.querySelectorAll('#not-yet')).toHaveLength(0)
   })
 
   test('says beside every link to the module that it is not free', () => {
@@ -154,16 +221,19 @@ describe.each(PAGES)('the product page of %s', (_, product, html) => {
     expect(figure?.querySelectorAll('a, button, input, select, textarea, [tabindex]')).toHaveLength(0)
   })
 
-  test('dates what it says about the module, since nothing here reads it again', () => {
-    // What a module does and does not do was read from its repository, and its next release
-    // can make it wrong with no gate here failing. Undated, a stale page would read as
-    // current; dated, a reader can weigh it.
+  test('says its release in its status, a developer preview as one, and dates it, since nothing here reads it again', () => {
+    // A module's release was read from its repository, and its next release can make it wrong
+    // with no gate here failing. Undated, a stale page would read as current; dated, a reader
+    // can weigh it. And a developer preview not marked as one on a page that sells it would
+    // sell Report or Health as ready: the mark and the release's own sentence stay in the
+    // status when its neighbour went (0245).
     render(<ProductPage product={product} />)
 
-    for (const part of ['Status', 'What it does not do yet']) {
-      expect(screen.getByRole('region', { name: part }).textContent, part).toContain('Read from the module’s repository on 25 November 2026.')
-    }
-    expect(within(screen.getByRole('region', { name: 'Status' })).getByText(product.release.version)).toBeTruthy()
+    const status = screen.getByRole('region', { name: 'Status' })
+    expect(status.textContent).toContain('Read from the module’s repository on 25 November 2026.')
+    expect(within(status).getByText(product.release.version)).toBeTruthy()
+    expect(within(status).getByText(product.release.said)).toBeTruthy()
+    expect(within(status).queryAllByText('developer preview')).toHaveLength(product.release.preview ? 1 : 0)
   })
 
   test('marks every word in another language with that language', () => {
@@ -355,6 +425,20 @@ describe('the landing page’s head', () => {
     }
     expect(descriptions.description.length).toBeLessThanOrEqual(160)
     expect(descriptions['twitter:description'].length).toBeLessThanOrEqual(200)
+  })
+})
+
+describe('Formancy Health’s page', () => {
+  test('says, where it says who the module is for, that it is not intended as a medical device', () => {
+    // Its intended purpose, in the words its README's *Intended purpose* gives it, and not a
+    // thing it does not do yet, so it stayed when the absences left the page (0245). Under the
+    // MDR a product's intended purpose is read from its promotional and sales material too, and
+    // a page selling referrals and a patient's answers without the sentence leaves a reader to
+    // infer one. Read from the rendered page, so a sentence in a branch nobody draws fails, and
+    // from its part, so one moved to the foot of the page, under the licence, fails too.
+    render(<ProductPage product={PRODUCTS.health} />)
+
+    expect(screen.getByRole('region', { name: 'Who it is for' }).textContent).toContain('It is not intended as a medical device.')
   })
 })
 

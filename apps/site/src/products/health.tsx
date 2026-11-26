@@ -6,11 +6,14 @@ import { HL7_MARK, github } from './product.js'
 /**
  * `/products/health/` (0242), read from formancy.ai-health on 2026-11-25 at 0.1.0's `main`:
  * each capability names what its README's *What it does* and the packages under
- * `packages/health-*` do today, and each absence what *Not in 0.1.0* and *Intended purpose*
- * say, and the validator's caveat what its README's *The validator gate* says offline leaves
- * unchecked. HL7's marks name the standard and never the module, a page or an address (Health
- * 0003), so the title says "FHIR R4 resources"; and the page carries HL7's sentence word for
- * word. A German word is marked `lang="de"`, so a screen reader does not say it as English. If the module changes, this changes by hand.
+ * `packages/health-*` do today, and the validator's caveat what its README's *The validator
+ * gate* says offline leaves unchecked. What is not in 0.1.0 its README says, which `further`
+ * links, and the page leaves it there (0245); that it is not intended as a medical device is
+ * its intended purpose, not an absence, and `whoFor` says it in its README's words. HL7's
+ * marks name the standard and never the module, a page or an address (Health 0003), so the
+ * title says "FHIR R4 resources"; and the page carries HL7's sentence word for word. A German
+ * word is marked `lang="de"`, so a screen reader does not say it as English. If the module
+ * changes, this changes by hand.
  */
 
 const REPOSITORY = 'formancy.ai-health'
@@ -108,7 +111,7 @@ export const HEALTH: Product = {
     <>
       Vendors of the software that hospitals, clinics and practices run. Their forms, a patient’s answers and the letters they print have to leave the
       application as FHIR R4 JSON for a Swiss partner system: a referral (<span lang="de">Zuweisung</span>) as CH ORF, its people in CH Core. The vendor’s
-      application calls the packages, gets the JSON back and sends it itself. It is a library, not a server.
+      application calls the packages, gets the JSON back and sends it itself. It is a library, not a server. It is not intended as a medical device.
     </>
   ),
   fits: [
@@ -131,17 +134,6 @@ export const HEALTH: Product = {
       'A developer preview, not yet for the production export of a person’s record. No lawyer has read the licence, the intended purpose or the ' +
       'trademark position.',
   },
-  notYet: [
-    'No PDF/A, and so no documents for Switzerland’s electronic patient record (CH EPR): every PDF/A declaration is refused.',
-    'Switzerland only: CH Core and CH ORF are the only national profiles. Germany’s are planned next; the United Kingdom’s, Austria’s and ' +
-      'Europe’s only when a customer pays for them.',
-    'No extraction: no resource is made from the answers in a QuestionnaireResponse.',
-    'File, signature, ranking, matrix and rich-text fields refuse the form. There is no FHIRPath, and a computed field is exported read-only.',
-    'Parts of CH ORF are refused: the Questionnaire is not put in the Bundle, and a PDF, the receivers and the contacts are refused in a CH ORF document.',
-    'It is a library with no server, page or transport: your application sends what it writes.',
-    'Tested under Node only: every gate runs the packed packages there, so no browser is claimed.',
-    'It is not an EHR, a FHIR server or a terminology service, and it is not intended as a medical device.',
-  ],
   licence: {
     line: 'Formancy Health Source-Available Licence, Version 1, in force from 16 October 2026. Not reviewed by a lawyer.',
     rows: [

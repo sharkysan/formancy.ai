@@ -313,7 +313,7 @@ checks it again when they change.
 **The modules' product pages describe three other repositories in detail, and nothing here
 reads them** ([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
 What `/products/data/`, `/products/report/` and `/products/health/`, and the landing page's
-cards, say each module does and does not do yet, its release and its licence, were read from
+cards, say each module does, its release and its licence, were read from
 each repository on 2026-11-25, and the pages say so beside them. The first release of a module
 after that can make some of it wrong, and no gate fails: the pages are read again by hand
 when a module releases. The examples' values are the modules' own fixtures, copied, and go
@@ -330,6 +330,16 @@ Each page's share card is a picture of its promise and its example, taken by han
 built site as the site's own card is: its source is held to the page and the file to its
 address and size, and nothing compares the two, so a card shows the old promise until it is
 taken again.
+
+**A product page does not say what its module does not do yet**, by the owner's call
+([0245](../decisions/0245-a-product-page-says-what-its-module-makes-and-does-and-leaves-what-it-does-not-do-yet-to-the-modules-own-pages.md)).
+A buyer who reads only the page learns that Report and Health are developer previews, that no
+lawyer has reviewed a licence and that Health is not intended as a medical device, and not that
+Data works with PostgreSQL and SQL Server alone, that Report writes PDF and Word and sends
+nothing, or that Health writes Switzerland's profiles alone: each module's own pages say so, and
+the page links them, but a reader who does not follow a link can take the page's silence for "it
+does". That those pages still say it is not checked here, since nothing here reads them, and an
+absence written into the words a page does say is held by review alone.
 
 ## 11.4 The spec freeze, and what it locked in
 

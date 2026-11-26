@@ -27,6 +27,10 @@
  * - **The landing page's cards are three in a row or one to a row**, never two with Health
  *   alone under them, which they were from 820 to 1280 pixels; and three in a row at the
  *   widest width measured.
+ * - **No part of a product page stands alone in half a row** (0245). Two short parts share a
+ *   row from 60rem; a part narrower than the row with no part beside it is one half of a pair
+ *   whose other half has gone, as *Status* was when *What it does not do yet* left the pages.
+ *   Measured from every part's box, so a part left alone anywhere fails, whatever it is.
  * - **A product page's words are in the HTML the server sent**, and the page the browser drew
  *   over it raised no error. The build renders each page into its root (`prerender.mjs`); a
  *   page whose markup React had to correct logs it as an error, and a crawler would have read
@@ -154,6 +158,18 @@ export async function checkProductPages(browser, origin, check) {
             codes.push({ module: box.width / svg.viewBox.baseVal.width, near: [...new Set(near)].slice(0, 3) })
           }
 
+          // A product page's parts narrower than the row `<main>` gives them, with no other part
+          // starting beside them (0245). A quarter of the row is allowed for, since a part in
+          // a row of two is under half of it and a part across the page is all of it.
+          const main = document.querySelector('main')
+          const padding = main === null ? null : getComputedStyle(main)
+          const row = main === null || padding === null ? 0 : main.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight)
+          const parts = [...document.querySelectorAll('main .product-section')].map((part) => ({ id: part.id, box: part.getBoundingClientRect() }))
+          const alone = parts
+            .filter(({ box }) => box.width < row * 0.75)
+            .filter(({ id, box }) => !parts.some((other) => other.id !== id && Math.abs(other.box.top - box.top) < 1))
+            .map(({ id }) => id)
+
           // The cards' rows, by where each card starts: one row of three, or one row each.
           const rows = new Set([...document.querySelectorAll('.module-card')].map((card) => Math.round(card.getBoundingClientRect().top)))
           const cards = document.querySelectorAll('.module-card').length
@@ -172,6 +188,8 @@ export async function checkProductPages(browser, origin, check) {
             roomy: window.innerWidth > roomyFrom,
             figures: document.querySelectorAll('figure.mx').length,
             codes,
+            parts: parts.length,
+            alone,
           }
         }, ROOMY_FROM)
 
@@ -197,6 +215,16 @@ export async function checkProductPages(browser, origin, check) {
           check(
             `and nothing comes within its quiet zone`,
             found.codes.length === 0 ? 'no Swiss QR Code on the page' : crowded.length === 0 ? null : `within 5 mm of it: ${crowded.join('; ')}`,
+          )
+        }
+        if (path !== '/') {
+          check(
+            `and no part of it stands alone in half a row`,
+            found.parts === 0
+              ? 'no part on the page, so nothing was measured'
+              : found.alone.length === 0
+                ? null
+                : `alone in half a row: ${found.alone.join(', ')}`,
           )
         }
         if (path === '/') {
