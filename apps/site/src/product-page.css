@@ -259,8 +259,11 @@
   background: linear-gradient(135deg, var(--client), var(--server));
 }
 
-/* Two short parts side by side from the width where one alone would leave half a screen
-   of air; one above the other below it. */
+/* Two short parts side by side from the width where each would leave half a screen of air;
+   one above the other below it. Never one: a part alone in half a row reads as a row whose
+   other half is missing, which `product-pages-browser-test.mjs` measures. A short part with
+   no pair, as the status, runs across the page with its words at reading width, as *Terms*
+   and the last part do (0245). */
 .product-duo {
   display: grid;
   column-gap: clamp(2rem, 5vw, 4rem);
@@ -294,32 +297,6 @@
   color: var(--meet);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
-}
-
-.product-absences {
-  display: grid;
-  gap: 0.6rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.product-absences li {
-  position: relative;
-  padding-inline-start: 1.25rem;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-/* A dash, which says "not this" without a colour having to. */
-.product-absences li::before {
-  content: '';
-  position: absolute;
-  inset-block-start: 0.8rem;
-  inset-inline-start: 0;
-  width: 0.6rem;
-  height: 2px;
-  background: var(--edge-strong);
 }
 
 .product-section > p.product-dated {

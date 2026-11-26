@@ -5,7 +5,9 @@
   by the prerender step decided here, and takes every page over in the browser with one `mount`;
   Report's example with its QR-bill's code undrawn, a square with only the Swiss cross, superseded
   in part by [0244](0244-reports-example-draws-its-samples-own-swiss-qr-code-encoded-as-report-encodes-it.md),
-  which draws the sample's own code
+  which draws the sample's own code; the product pages' *What it does not do yet* superseded in
+  part by [0245](0245-a-product-page-says-what-its-module-makes-and-does-and-leaves-what-it-does-not-do-yet-to-the-modules-own-pages.md),
+  which takes it off them and leaves the absences to each module's own pages
 - **Date:** 2026-11-25
 - **Extends:** [0179](0179-the-paid-modules-are-named-as-not-free.md), whose licence section
   stays where a visitor decides what is free and which rejected "a page of its own" for that

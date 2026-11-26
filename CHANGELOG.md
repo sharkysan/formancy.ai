@@ -95,6 +95,13 @@ document lists the rules in, and the replay can store none. Recorded as debt, no
   for the member it reads, so both are accepted and compute the same in the browser and on the
   replay.
 
+**Changed, on formancy.ai: the product pages no longer list what each module does not do yet.**
+They are where a buyer decides, and each module's own pages, which they link, say it in full with
+the reasons; the status keeps the release, its date and the developer-preview mark, and now stands
+across the page. Health's page still says it is not intended as a medical device, its intended
+purpose rather than an absence. No `@formancy/*` package changes
+([0245](docs/decisions/0245-a-product-page-says-what-its-module-makes-and-does-and-leaves-what-it-does-not-do-yet-to-the-modules-own-pages.md)).
+
 **Changed, on formancy.ai: Formancy Report's sample invoice shows its Swiss QR Code.** The
 landing page's card and Report's product page drew an empty square with the Swiss cross where the
 code goes, which read as unfinished; they now draw the code Report's own sample carries, encoded
@@ -122,7 +129,7 @@ refuse, and `pnpm test:browser` one the browser drew again instead of taking it 
 showing what each makes.** A search for what Formancy Data, Formancy Report or Formancy Health
 does found no page of this site that said it, and every page the site builds was an empty root to a
 crawler that runs no script. `/products/data/`, `/products/report/` and `/products/health/` say
-what each module makes, does and does not do yet, its release and its terms, each in the site's
+what each module makes and does, its release and its terms, each in the site's
 shell with a head of its own, and are rendered to static HTML when the site is built, so their words
 are in what the server sends; the sitemap lists them. Each ends on the module's demonstration
 and a question about a production licence, since the licence's table left a buyer to find the

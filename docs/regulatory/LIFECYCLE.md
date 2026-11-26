@@ -267,6 +267,9 @@ Each gate exists for a reason that was paid for at least once:
   page sent without its words in the HTML or whose markup the browser had to correct; each
   failed once on a fault planted for it
   ([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
+  Since 2026-11-26 it also fails on a part of a product page left alone in half a row; that
+  check failed once with the status left so
+  ([0245](../decisions/0245-a-product-page-says-what-its-module-makes-and-does-and-leaves-what-it-does-not-do-yet-to-the-modules-own-pages.md)).
   It also opens every page the site's build renders to static HTML, the landing page, the
   templates gallery and the Angular page among them, and fails on one the browser drew again
   instead of taking over the markup it was sent, or that threw or logged an error doing it; it

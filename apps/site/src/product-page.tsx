@@ -23,6 +23,10 @@ import './product-page.css'
  *
  * **It ends on what a buyer does next**: the demonstration, and a question about a production
  * licence, the two together under the terms, rather than on the licence's table.
+ *
+ * **It has no part on what the module does not do yet** (0245): the module's own pages say
+ * that, and the page links them. Its status stands alone, across the page as the parts
+ * around it do, rather than as half of a row whose other half is gone.
  */
 
 export function ProductPage({ product }: { product: Product }): ReactElement {
@@ -126,24 +130,14 @@ export function ProductPage({ product }: { product: Product }): ReactElement {
           </Part>
         </div>
 
-        <div className="product-duo">
-          <Part id="status" title="Status">
-            <p className="product-release">
-              <span>Release</span> <strong>{product.release.version}</strong> <span>of {longDate(product.release.date)}</span>
-              {product.release.preview && <span className="product-preview">developer preview</span>}
-            </p>
-            <p>{product.release.said}</p>
-            <Dated />
-          </Part>
-          <Part id="not-yet" title="What it does not do yet">
-            <ul className="product-absences">
-              {product.notYet.map((absence) => (
-                <li key={absence}>{absence}</li>
-              ))}
-            </ul>
-            <Dated />
-          </Part>
-        </div>
+        <Part id="status" title="Status">
+          <p className="product-release">
+            <span>Release</span> <strong>{product.release.version}</strong> <span>of {longDate(product.release.date)}</span>
+            {product.release.preview && <span className="product-preview">developer preview</span>}
+          </p>
+          <p>{product.release.said}</p>
+          <Dated />
+        </Part>
 
         <Part id="terms" title="Terms">
           <p>
