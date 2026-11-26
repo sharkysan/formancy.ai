@@ -1,0 +1,219 @@
+/**
+ * Formancy Data's host page, as `data.tsx` draws it (0242): the bench's grids in the host
+ * page's dark panels, and the open record on the paper `examples.css` declares.
+ */
+
+/* ------------------------------------------------------- the bench's panels */
+
+.mx-panel {
+  min-width: 0;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: rgb(8 10 18 / 55%);
+  overflow: hidden;
+}
+
+.mx .mx-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-block-end: 1px solid var(--edge);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.mx-panel-head b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.mx-view {
+  color: var(--server);
+  font-family: var(--mono);
+}
+
+.mx .mx-panel-foot {
+  padding: 0.4rem 0.75rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+}
+
+/* Laid out by its content, as the host's grid sizes a column to what it holds: the
+   order, its status and its amount never break, and the customer takes what is left
+   and wraps. Nothing in it is wider than its stage at any width the stage reaches. */
+.mx-grid {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.mx-grid th,
+.mx-grid td {
+  padding: 0.375rem 0.5rem;
+  text-align: start;
+}
+
+.mx-grid th {
+  color: var(--muted);
+  font-weight: 500;
+  border-block-end: 1px solid var(--edge);
+}
+
+.mx-grid td {
+  border-block-end: 1px solid rgb(255 255 255 / 5%);
+  overflow-wrap: anywhere;
+}
+
+.mx-grid tbody tr:last-child td {
+  border-block-end: 0;
+}
+
+.mx-grid .mx-c-customer {
+  width: 100%;
+}
+
+.mx-grid .mx-num,
+.mx-grid .mx-num-id {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.mx-grid .mx-num,
+.mx-grid .mx-num-id,
+.mx-grid .mx-c-status {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.mx-grid .mx-num {
+  text-align: end;
+}
+
+/* The row open below: lit, and marked down its first edge, which is not colour alone. */
+.mx-grid tr.mx-open td {
+  background: color-mix(in srgb, var(--client) 16%, transparent);
+}
+
+.mx-grid tr.mx-open td:first-child {
+  border-inline-start: 3px solid var(--client);
+}
+
+.mx-status {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.mx-status[data-status='shipped'] {
+  border-color: color-mix(in srgb, var(--server) 45%, transparent);
+  color: var(--server);
+}
+
+.mx-status[data-status='placed'] {
+  border-color: color-mix(in srgb, var(--client) 60%, transparent);
+  color: color-mix(in srgb, var(--client) 55%, var(--text));
+}
+
+.mx-status[data-status='draft'] {
+  color: var(--muted);
+}
+
+/* A card's grid, and any stage narrower than a phone held upright, is set a size down. */
+.mx-card .mx-grid {
+  font-size: 0.6875rem;
+}
+
+.mx-card .mx-grid th,
+.mx-card .mx-grid td {
+  padding-inline: 0.375rem;
+}
+
+@container (max-width: 22rem) {
+  .mx-grid {
+    font-size: 0.6875rem;
+  }
+
+  .mx-grid th,
+  .mx-grid td {
+    padding-inline: 0.375rem;
+  }
+}
+
+/* The narrowest stages, a card at 320 pixels among them, keep the order, its customer and
+   its amount, and leave the status to the record below. */
+@container (max-width: 17rem) {
+  .mx-grid .mx-c-status {
+    display: none;
+  }
+}
+
+.mx-notes ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  list-style: none;
+}
+
+.mx-notes li {
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  overflow-wrap: anywhere;
+}
+
+/* The record below the grid, and beside it on a wide stage its deliveries and the notes. */
+.mx-lower,
+.mx-side {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@container (min-width: 38rem) {
+  .mx-page .mx-lower {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.mx-record {
+  padding: 0.5rem 0.75rem 0.875rem;
+}
+
+.mx .mx-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-block-end: 0.75rem;
+  border-block-end: 1px solid var(--mx-rule);
+  font-size: 0.75rem;
+}
+
+.mx-tab {
+  margin-block-end: -1px;
+  padding: 0.3rem 0.6rem;
+  border-block-end: 2px solid transparent;
+  color: var(--mx-ink-soft);
+}
+
+.mx-tab-on {
+  border-block-end-color: var(--mx-mark);
+  color: var(--mx-ink);
+  font-family: var(--mono);
+  font-weight: 600;
+}

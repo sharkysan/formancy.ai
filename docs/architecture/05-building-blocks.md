@@ -541,8 +541,25 @@ page's footer links the three as well, each by its name and beside the same term
 names the pages each module's repository serves under formancy.ai for a search engine to find
 ([0241](../decisions/0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md)).
 
-Its pages — the landing page, the templates gallery and the Angular form builder — are
-drawn in one shell: `src/shell.css` holds the tokens, the type scale and the backdrop, and
+Each module also has a page of this site's own, `/products/data/`, `/products/report/` and
+`/products/health/`, which the footer links each module to, and a card in the landing page's
+`#modules` section, `src/modules.tsx`, just before the licence section
+([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
+The pages are one layout, `src/product-page.tsx`, over one file of words per module in
+`src/products/`; each card and each page draws the module's example with the same component in
+`src/module-examples/`, in HTML and CSS, a `card` crop for the one and a `page` crop for the
+other. They are the only pages the site sends with their words in the HTML: after `vite build`,
+the site's `build` runs `vite build --ssr src/product-render.tsx` and `prerender.mjs`, which
+renders each page into its root, and `src/product-main.tsx` takes the markup over in the browser.
+With `?og` it draws the module's share card instead, `src/product-og-card.tsx`, from which
+`public/products/<id>/og.png` is taken, as `src/og-card.tsx` is the site's; each page's head names
+its card, and the landing page's structured data names each module as its product page does.
+Every link on them to a module sits in a group named by the terms of the module it leads to, and each
+ends on the demonstration and a question about a production licence. The bar's one link to
+the modules, "Paid modules", names none of them and goes to the landing page's section.
+
+Its pages — the landing page, the templates gallery, the Angular form builder and the paid
+modules' product pages — are drawn in one shell: `src/shell.css` holds the tokens, the type scale and the backdrop, and
 `src/chrome.tsx` holds the bar, the footer and the mark that every page renders
 ([0106](../decisions/0106-one-shell-for-every-page-of-the-site.md)). The second
 page — the templates gallery — shipped with its own palette, its own font stack

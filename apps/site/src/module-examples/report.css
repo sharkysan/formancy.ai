@@ -1,0 +1,362 @@
+/**
+ * Formancy Report's invoice, as `report.tsx` draws it (0242): an A4 page on the paper
+ * `examples.css` declares, and SIX's slip across its foot, with no code drawn in it.
+ *
+ * **Its words are set in rem with a floor, not scaled with the page.** Scaled to the page's
+ * width they were about 5 pixels on a phone, and an A4 page that kept its proportions clipped
+ * whatever text zoom or a minimum font size made larger. So no text here is smaller than
+ * 0.625rem, the page keeps A4's proportions only where its stage is wide enough to hold them,
+ * and where its words need more room than that the page grows rather than cutting them off.
+ * The browser gate fails a figure with text under 10 pixels, and a page body taller than its
+ * box.
+ */
+
+.mx .mx-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.mx-downloads span {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.mx-a4 {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+}
+
+.mx-page .mx-a4 {
+  width: min(100%, 34rem);
+  margin-inline: auto;
+}
+
+.mx-a4-body {
+  display: grid;
+  flex: 1 0 auto;
+  align-content: start;
+  gap: 0.9em;
+  padding: 7% 8% 4%;
+}
+
+.mx-page .mx-a4-body {
+  font-size: 0.75rem;
+}
+
+.mx-page .mx-slip {
+  font-size: 0.6875rem;
+}
+
+/* A4's proportions, and the slip's 105 mm of its 297, where the stage gives the page room
+   for them: each an aspect ratio, which a box with visible overflow grows past when its
+   words need more, so the slip stays at the foot and nothing is cut. */
+@container (min-width: 30rem) {
+  .mx-page .mx-a4 {
+    aspect-ratio: 210 / 297;
+  }
+
+  .mx-page .mx-slip {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+.mx-card .mx-a4-body {
+  gap: 0.35rem;
+  padding: 0.875rem 1rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.mx .mx-sender {
+  color: var(--mx-ink-soft);
+  font-size: max(0.625rem, 0.75em);
+  overflow-wrap: anywhere;
+}
+
+.mx .mx-address {
+  margin-block: 0.4em 1em;
+  line-height: 1.4;
+}
+
+.mx .mx-doc-title {
+  font-family: var(--display);
+  font-size: 2em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.mx-card .mx-doc-title {
+  font-size: 1.5em;
+}
+
+.mx .mx-doc-meta {
+  color: var(--mx-ink-soft);
+  font-family: var(--mono);
+  font-size: max(0.625rem, 0.85em);
+}
+
+.mx-lines {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: max(0.625rem, 0.82em);
+  line-height: 1.35;
+}
+
+.mx-lines th,
+.mx-lines td {
+  padding: 0.45em 0.35em;
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.mx-lines th {
+  border-block-end: 1px solid var(--mx-ink);
+  font-weight: 600;
+}
+
+.mx-lines td {
+  border-block-end: 1px solid var(--mx-rule);
+}
+
+.mx-lines th:first-child {
+  width: 38%;
+}
+
+/* A figure or a heading is never broken inside itself: "480.00" split over two lines reads as
+   two numbers. The description takes what is left and wraps. */
+.mx-lines th,
+.mx-lines .mx-num {
+  overflow-wrap: normal;
+}
+
+.mx-lines .mx-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Where the page is narrower than an A4 page is wide on a screen, the columns take what their
+   words need, and on the narrowest stages the unit and the price are left out, as Data's grid
+   leaves out its status there: the amounts beside the descriptions still add up to the
+   subtotal below them. */
+@container (width < 30rem) {
+  .mx-page .mx-lines {
+    table-layout: auto;
+  }
+
+  .mx-page .mx-lines th:first-child {
+    width: auto;
+  }
+}
+
+@container (width < 18rem) {
+  .mx-lines .mx-c-unit,
+  .mx-lines .mx-c-price {
+    display: none;
+  }
+}
+
+.mx-sums {
+  display: grid;
+  justify-self: end;
+  gap: 0.25em;
+  min-width: 45%;
+  margin: 0;
+  font-size: max(0.625rem, 0.9em);
+}
+
+.mx-sums div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5em;
+}
+
+.mx-sums dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.mx-sums .mx-total {
+  padding-block-start: 0.35em;
+  border-block-start: 1.5px solid var(--mx-ink);
+  font-weight: 700;
+}
+
+.mx-card .mx-sums {
+  min-width: 70%;
+}
+
+.mx-slip {
+  display: grid;
+  grid-template-columns: minmax(0, 62fr) minmax(0, 148fr);
+  border-block-start: 1px dashed var(--mx-ink);
+  font-size: 0.6875rem;
+}
+
+
+.mx-receipt,
+.mx-payment {
+  display: grid;
+  align-content: start;
+  gap: 0.35em;
+  min-width: 0;
+  padding: 5% 6%;
+}
+
+.mx-receipt {
+  border-inline-end: 1px dashed var(--mx-ink);
+}
+
+@container (width < 30rem) {
+  .mx-page .mx-slip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mx-page .mx-receipt {
+    border-inline-end: 0;
+    border-block-end: 1px dashed var(--mx-ink);
+  }
+}
+
+.mx-payment {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-areas:
+    'title text'
+    'code text'
+    'amount text';
+  column-gap: 0.8em;
+  padding: 3.5% 4%;
+}
+
+.mx-payment > .mx-slip-title {
+  grid-area: title;
+}
+
+.mx-payment > .mx-code {
+  grid-area: code;
+}
+
+.mx-payment > .mx-slip-amount {
+  grid-area: amount;
+}
+
+.mx-payment > .mx-payment-text {
+  grid-area: text;
+  min-width: 0;
+}
+
+.mx .mx-slip-title {
+  font-size: 1.05em;
+  font-weight: 700;
+}
+
+.mx .mx-slip-label {
+  margin-block-start: 0.4em;
+  font-size: max(0.625rem, 0.7em);
+  font-weight: 700;
+}
+
+.mx .mx-slip-lines {
+  display: grid;
+  font-size: max(0.625rem, 0.8em);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.mx-slip-amount {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em 1.2em;
+  margin: 0.4em 0 0;
+  font-size: max(0.625rem, 0.8em);
+}
+
+.mx-slip-amount dt {
+  font-size: max(0.625rem, 0.85em);
+  font-weight: 700;
+}
+
+.mx-slip-amount dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A card keeps the slip's two headings, the code's place and the amounts. */
+.mx-card .mx-slip-label,
+.mx-card .mx-slip-lines,
+.mx-card .mx-payment-text {
+  display: none;
+}
+
+.mx-card .mx-payment {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'title'
+    'code'
+    'amount';
+}
+
+/* Where the renderer draws the Swiss QR Code: a square with the Swiss cross at its centre
+   and no modules, so nothing here can be scanned or taken for a code anybody could pay. */
+.mx-code {
+  display: grid;
+  justify-items: start;
+  gap: 0.35em;
+}
+
+.mx-code-square {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 9em;
+  aspect-ratio: 1;
+  border: 1px solid var(--mx-box);
+  background: var(--mx-paper);
+}
+
+.mx-card .mx-code-square {
+  max-width: 5rem;
+}
+
+.mx-cross {
+  position: absolute;
+  inset: 0;
+  width: 15%;
+  aspect-ratio: 1;
+  margin: auto;
+  background: var(--mx-ink);
+}
+
+.mx-cross::before,
+.mx-cross::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  background: var(--mx-paper);
+}
+
+.mx-cross::before {
+  width: 62%;
+  height: 20%;
+}
+
+.mx-cross::after {
+  width: 20%;
+  height: 62%;
+}
+
+.mx-code-note {
+  max-width: 12em;
+  color: var(--mx-ink-soft);
+  font-size: max(0.625rem, 0.72em);
+  line-height: 1.3;
+}

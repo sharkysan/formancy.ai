@@ -136,6 +136,9 @@ describe('the page is a document first', () => {
     // it. Every module is named here rather than read from the page's own list, so
     // dropping one from the page fails too. The footer links each module as well, from
     // every page (0241), so its three links are on this page and held the same way.
+    // And the modules' own section links each module's product page on this site and
+    // its demonstration (0242), so a link to `/products/<module>/` is a link to a module
+    // too, however it is spelled, and is held beside its terms like the rest.
     render(<App />)
 
     const offered = [
@@ -145,14 +148,23 @@ describe('the page is a document first', () => {
       'https://github.com/sharkysan/formancy.ai-report',
       'https://formancy.ai/health/',
       'https://github.com/sharkysan/formancy.ai-health',
-      // The footer's.
-      'https://formancy.ai/data/examples/',
-      'https://formancy.ai/report/en/',
+      // The modules' section's.
+      '/products/data/',
+      'https://formancy.ai/data/demo/',
+      '/products/report/',
+      'https://formancy.ai/report/',
+      '/products/health/',
       'https://formancy.ai/health/',
+      // The footer's, each to its product page.
+      '/products/data/',
+      '/products/report/',
+      '/products/health/',
     ]
     const paid = screen
       .getAllByRole('link')
-      .filter((link) => /formancy\.ai-(data|report|health)|formancy\.ai\/(data|report|health)\//.test(link.getAttribute('href') ?? ''))
+      .filter((link) =>
+        /formancy\.ai-(data|report|health)|formancy\.ai\/(data|report|health)\/|\/products\/(data|report|health)\//.test(link.getAttribute('href') ?? ''),
+      )
     expect(paid.map((link) => link.getAttribute('href')).sort()).toEqual([...offered].sort())
 
     for (const link of paid) {
@@ -572,11 +584,109 @@ describe('the stack', () => {
   })
 
   test('answers a field in the running submission, like every other section', () => {
+    // The page's conceit is that every section answers one field of the submission the
+    // visitor fills in by reading. A section that answered nothing would be the one place
+    // the panel in the corner stood still, and the finale's receipt would leave it out.
     render(<App />)
 
     read('stack')
 
     expect(within(screen.getByRole('complementary')).getByText(/"layers"/)).toBeTruthy()
+  })
+})
+
+describe('the paid modules’ section', () => {
+  /** The section, as rendered: the one the bar's "Paid modules" link goes to. */
+  const section = (): HTMLElement => {
+    const found = document.querySelector<HTMLElement>('#modules')
+    if (found === null) throw new Error('no #modules section on the page')
+    return found
+  }
+
+  test('comes after the engine’s story and just before the licence draws the free and paid line', () => {
+    // The order is the argument (0242): self-hosting is the engine's last chapter, and the
+    // licence section that follows says what is free right after a visitor has read what
+    // is not. Moved above the engine, the modules would read as the product.
+    render(<App />)
+
+    const order = [...document.querySelectorAll('main > section, main > .duo > section')].map((each) => each.id)
+    expect(order.indexOf('run')).toBeGreaterThan(-1)
+    expect(order.indexOf('modules'), 'the modules come right after self-hosting').toBe(order.indexOf('run') + 1)
+    expect(order.indexOf('licence'), 'and the licence right after them').toBe(order.indexOf('modules') + 1)
+  })
+
+  test('names each module in its own card, under one heading, its name before its sketch', () => {
+    /*
+     * Somebody moving by headings lands on a module's name and reads on into that module's
+     * card. With the sketch first in the document, Report's invoice was read under "Formancy
+     * Data" and Health's referral under "Formancy Report", and a screen reader read a long
+     * caption before the name it belongs to. The stylesheet draws the sketch on top; the
+     * document has the name first.
+     */
+    render(<App />)
+
+    const cards = within(section()).getByRole('list', { name: 'The paid modules' })
+    const names = within(cards)
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+    expect(names).toEqual(['Formancy Data', 'Formancy Report', 'Formancy Health'])
+    expect(within(section()).getAllByRole('heading', { level: 2 })).toHaveLength(1)
+
+    for (const card of [...cards.children]) {
+      const name = card.querySelector('h3')
+      const sketch = card.querySelector('figure')
+      expect(name, 'a card without a name').not.toBeNull()
+      expect(sketch, 'a card without a sketch').not.toBeNull()
+      if (name === null || sketch === null) continue
+      expect(name.compareDocumentPosition(sketch) & Node.DOCUMENT_POSITION_FOLLOWING, `${String(name.textContent)}'s sketch comes before its name`).not.toBe(0)
+    }
+  })
+
+  test('draws each module’s example in words and boxes, a figure nothing in can be operated', () => {
+    // Drawn by the site in HTML and CSS: no picture of text, and nothing fetched from the
+    // modules' sites (0154). And an example is a drawing, so a keyboard must not stop on a
+    // field in it that does nothing: every field is a term and its value, never a control.
+    render(<App />)
+
+    const figures = [...section().querySelectorAll('figure')]
+    expect(figures).toHaveLength(3)
+    for (const figure of figures) {
+      const caption = figure.querySelector('figcaption')?.textContent ?? ''
+      expect(caption, 'a figure says what it shows and that it is drawn for the page').toMatch(/Drawn for this page after/)
+      expect(figure.querySelectorAll('img, svg, canvas, picture, iframe'), caption).toHaveLength(0)
+      expect(figure.querySelectorAll('a, button, input, select, textarea, [tabindex]'), caption).toHaveLength(0)
+    }
+  })
+
+  test('leaves the QR-bill’s code undrawn, so nothing on the page can be scanned', () => {
+    // A drawing of a payment code that looked scannable would be a code somebody could
+    // pay. The place stays empty but for the Swiss cross, and says what goes there. Held by
+    // what the place holds, not only by the words beside it: a grid of modules drawn in
+    // spans would pass a test that read the words alone.
+    render(<App />)
+
+    const report = [...section().querySelectorAll('figure')].find((figure) => (figure.textContent ?? '').includes('INV-2026-0318'))
+    expect(report).toBeDefined()
+    expect(report?.textContent).toContain('The renderer draws the Swiss QR Code here')
+    expect(report?.textContent).toContain('Payment part')
+
+    const places = report?.querySelectorAll('.mx-code-square') ?? []
+    expect(places, 'one place for the code').toHaveLength(1)
+    const [place] = places
+    expect(
+      [...(place?.children ?? [])].map((child) => child.className),
+      'the place holds the Swiss cross and nothing else',
+    ).toEqual(['mx-cross'])
+    expect(place?.firstElementChild?.children, 'and the cross is one shape').toHaveLength(0)
+    expect(place?.textContent, 'and no character').toBe('')
+  })
+
+  test('answers a field in the running submission, like every other section', () => {
+    render(<App />)
+
+    read('modules')
+
+    expect(within(screen.getByRole('complementary')).getByText(/"paidModules": "optional"/)).toBeTruthy()
   })
 })
 

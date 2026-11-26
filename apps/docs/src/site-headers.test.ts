@@ -148,6 +148,19 @@ describe('the paths, as Cloudflare matches them', () => {
     expect(matches(path, pathname)).toBe(expected)
   })
 
+  test('the product pages are served under the site’s own policy, as every page the site builds', () => {
+    // The paid modules' product pages are this build's (0242). Served under no section they
+    // would carry no policy at all, and the build's `inlineOf` would refuse them; the
+    // modules' own pages beside them, at `/data/` and `/report/`, are their repositories'.
+    const rules = headersFor(SITE_ORIGIN, noInline)
+    const site = headersAt(rules, '/templates/')['Content-Security-Policy']
+    expect(site).toBeDefined()
+    for (const path of ['/products/data/', '/products/report/', '/products/health/']) {
+      expect(headersAt(rules, path)['Content-Security-Policy'], path).toBe(site)
+    }
+    expect(headersAt(rules, '/data/examples/')['Content-Security-Policy']).toBeUndefined()
+  })
+
   test('a header two matching rules set is joined into one value, as Cloudflare joins it', () => {
     // Which is why no page may match two rules that set a policy: the browser would
     // enforce both, and the page would be held to what neither section's alone says.

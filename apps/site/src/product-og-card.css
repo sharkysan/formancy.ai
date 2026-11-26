@@ -1,0 +1,59 @@
+/*
+ * A paid module's share card (0242), over the site's own in `og-card.css`: the same size,
+ * backdrop, brand and tags, with the module's name, its page's promise and its example.
+ *
+ * Fixed pixel sizes, as the site's card has: the output is one image at one size. The
+ * promise's accent is the product page's own rule, in `product-page.css`.
+ */
+
+.og-product .og-words {
+  gap: 18px;
+}
+
+.og-product-name {
+  margin: 8px 0 0;
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* The promise is a sentence where the site's headline is two short ones, so it is set
+   smaller to stay within the words' column in four lines. */
+.og-product h1 {
+  max-width: 470px;
+  font-size: 50px;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+
+.og-product .og-tags {
+  margin-block-start: 10px;
+}
+
+/* The example, the landing page's crop of it, laid out at 500px, which is past the 30rem
+   below which Report's invoice drops its columns, and drawn a little larger, so it fills
+   the half of the card the site's card gives its two forms. */
+.og-product-sketch {
+  position: relative;
+  width: 500px;
+  margin-inline-start: 32px;
+  zoom: 1.12;
+}
+
+.og-product-sketch figcaption {
+  display: none;
+}
+
+/* HL7's sentence, on the card whose promise names HL7's marks, as on the page. */
+.og-product-mark {
+  position: absolute;
+  inset-inline: 64px;
+  inset-block-end: 22px;
+  max-width: none;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}

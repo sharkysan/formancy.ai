@@ -488,9 +488,9 @@ rather than publishing a form whose total silently stays empty
 
 The website is one static deployment, composed by `scripts/build-web.mjs`: the
 landing page at `/` with its *Templates* and *Angular* pages at `/templates/` and
-`/angular-form-builder/`, the playground at `/playground/`, the documentation at
-`/docs/`, and the Angular starter at `/angular-form-builder/demo/`, which the
-Angular page embeds.
+`/angular-form-builder/` and a page for each paid module under `/products/`, the
+playground at `/playground/`, the documentation at `/docs/`, and the Angular starter at
+`/angular-form-builder/demo/`, which the Angular page embeds.
 
 ```bash
 pnpm build:web                          # -> apps/site/dist
@@ -506,9 +506,16 @@ succeeded. `scripts/build-web.mjs` reads each built page back and refuses to fin
 if that has happened. The starter, served inside another page, is built with a
 relative base instead.
 
+The paid modules' product pages are the only pages the site sends with their words
+in the HTML: the site's own `build` renders each into its root after Vite has built
+it, with `vite build --ssr` and `apps/site/prerender.mjs`, and `scripts/build-web.mjs`
+refuses a product page whose root holds no page
+([0242](./docs/decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
+Every other page is drawn by its script.
+
 The sitemaps are files in `apps/site/public`, which the build checks rather than
 writes. `sitemap-pages.xml` lists the landing page, the playground and the site's
-other two pages, and the index lists that file and the documentation's sitemaps as
+other pages, and the index lists that file and the documentation's sitemaps as
 Astro wrote them. After the site's own entries, each lists what the paid modules
 served under formancy.ai make indexable, read from `apps/site/src/paid-modules.json`,
 the list every page's footer links the modules from. Those pages are deployed by the
@@ -727,3 +734,8 @@ under a source-available licence, not Apache-2.0 — free to read, evaluate and
 develop with, in a company too, and paid in production
 ([0179](./docs/decisions/0179-the-paid-modules-are-named-as-not-free.md),
 [0180](./docs/decisions/0180-formancy-health-is-named-before-its-first-release.md)).
+Each has a page on formancy.ai that says what it makes and on what terms:
+[Formancy Data](https://formancy.ai/products/data/),
+[Formancy Report](https://formancy.ai/products/report/) and
+[Formancy Health](https://formancy.ai/products/health/)
+([0242](./docs/decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).

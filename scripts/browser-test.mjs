@@ -48,6 +48,7 @@ import { checkFieldBeside } from './field-beside-browser-test.mjs'
 import { checkPaneSwitchClear } from './pane-switch-browser-test.mjs'
 import { checkBuildersLayAlike } from './builders-layout-browser-test.mjs'
 import { REFUSALS, checkServedUnderItsPolicies, servedUnder } from './policy-browser-test.mjs'
+import { PRODUCT_PAGES, checkProductPages } from './product-pages-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -214,6 +215,7 @@ async function run() {
     await checkNoForeignRequests(browser, origin, check)
     await checkTemplateGallery(browser, origin, check)
     await checkAngularPage(browser, origin, check)
+    await checkProductPages(browser, origin, check)
     await checkUploadThumbnails(browser, url, check)
     await checkArrangeGaps(browser, url, check)
     await checkSuggestionsPlacement(browser, url, check)
@@ -776,7 +778,7 @@ async function run() {
       }
 
       const home = await look('/')
-      for (const path of ['/templates/', '/angular-form-builder/']) {
+      for (const path of ['/templates/', '/angular-form-builder/', ...PRODUCT_PAGES]) {
         const other = await look(path)
         for (const part of ['ground', 'ink', 'text', 'display', 'bar']) {
           check(
@@ -893,6 +895,8 @@ async function run() {
        * it is what the reader is actually deprived of when a layout is too
        * wide.
        */
+      // The product pages are measured for this at five widths by `checkProductPages`, so not
+      // again here.
       for (const path of ['/', '/templates/', '/angular-form-builder/']) {
         await page.goto(`${origin}${path}`, { waitUntil: 'load' })
         await page.waitForSelector('.bar nav a', { timeout: 30_000 })

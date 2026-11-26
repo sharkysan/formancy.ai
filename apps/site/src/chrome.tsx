@@ -33,8 +33,8 @@ export const REPO = 'https://github.com/sharkysan/formancy.ai'
  */
 export const PLAYGROUND = import.meta.env.DEV ? 'http://localhost:4381/' : '/playground/'
 
-/** Where a page can be, for the entry that marks itself as current. */
-export type Page = 'home' | 'templates' | 'angular'
+/** Where a page can be, for the entry that marks itself as current. The last three are the paid modules' product pages (0242). */
+export type Page = 'home' | 'templates' | 'angular' | 'data' | 'report' | 'health'
 
 /**
  * The light behind every page.
@@ -87,15 +87,32 @@ export function Mark(): ReactElement {
  * the landing page's sections, so from anywhere else they have to be qualified
  * with `/` — a bare `#engine` on `/templates/` scrolls that page to nowhere,
  * which is the kind of link that looks like it works.
+ *
+ * "Paid modules" names no module and says in its own words that what it leads to
+ * is paid, so it can sit in the bar, where 0241 would not let a module's name
+ * stand without its terms (0242). It leads to the landing page's section, where
+ * each module says its terms. `within` is the pages it is the section of: on a
+ * product page it is marked as where the visitor is, and not as the page itself,
+ * since it goes elsewhere. `roomy` hides it below 64rem as well, where the bar
+ * has no width left for a sixth link.
  */
-const LINKS = [
+const LINKS: ReadonlyArray<{ href: string; label: string; page?: Page; within?: readonly Page[]; optional?: boolean; roomy?: boolean }> = [
   { href: '#engine', label: 'How it works', optional: true },
   { href: '#build', label: 'Examples', optional: true },
-  { href: '/templates/', label: 'Templates', page: 'templates' as Page, optional: true },
-  { href: '/angular-form-builder/', label: 'Angular', page: 'angular' as Page, optional: true },
+  { href: '/templates/', label: 'Templates', page: 'templates', optional: true },
+  { href: '/angular-form-builder/', label: 'Angular', page: 'angular', optional: true },
   { href: '#run', label: 'Run it', optional: true },
+  { href: '#modules', label: 'Paid modules', within: ['data', 'report', 'health'], optional: true, roomy: true },
   { href: PLAYGROUND, label: 'Playground' },
 ]
+
+/** The classes the stylesheet hides a link by: below 50rem, and below 64rem. */
+const hiddenBelow = (link: (typeof LINKS)[number]): string | undefined =>
+  [link.optional === true ? 'optional' : '', link.roomy === true ? 'roomy' : ''].filter((name) => name !== '').join(' ') || undefined
+
+/** `page` for the link to the page itself; `true` for the section a product page belongs to, which is another page. */
+const currentness = (link: (typeof LINKS)[number], current: Page): 'page' | 'true' | undefined =>
+  link.page === current ? 'page' : link.within?.includes(current) === true ? 'true' : undefined
 
 /**
  * The bar, sticky at the top of every page.
@@ -117,11 +134,11 @@ export function SiteBar({ current }: { current: Page }): ReactElement {
         {LINKS.map((link) => (
           <a
             key={link.href}
-            className={link.optional === true ? 'optional' : undefined}
+            className={hiddenBelow(link)}
             // An anchor is a destination on the landing page. From anywhere else
             // it has to carry the page it belongs to or it goes nowhere.
             href={link.href.startsWith('#') && current !== 'home' ? `/${link.href}` : link.href}
-            aria-current={link.page === current ? 'page' : undefined}
+            aria-current={currentness(link, current)}
           >
             {link.label}
           </a>
@@ -144,12 +161,13 @@ export function SiteBar({ current }: { current: Page }): ReactElement {
  * version was typed, and said 2 for two versions after the spec reached 4.
  *
  * Under them, the paid modules, so that every page of the site links them and not the
- * landing page alone (0241). Each is linked by its name to the page its repository serves
- * under formancy.ai for a visitor to start from, read from `paid-modules.json`, the list
- * `scripts/build-web.mjs` holds the sitemaps to. The address is absolute for the reason
- * `licence.tsx` gives: nothing else is served beside this site in development or on a
- * preview. And each item says the module's terms beside the link, since next to
- * "Apache-2.0" a bare name reads as part of it (0179).
+ * landing page alone (0241). Each is linked by its name to its product page, which this
+ * site builds and which links the pages the module's own repository serves under
+ * formancy.ai (0242), read from `paid-modules.json`, the list `scripts/build-web.mjs`
+ * holds the sitemaps to and the product pages to. The address is relative, because the
+ * product pages are this build's own and are served beside every page of it, in
+ * development and on a preview too. And each item says the module's terms beside the
+ * link, since next to "Apache-2.0" a bare name reads as part of it (0179).
  */
 export function SiteFooter(): ReactElement {
   return (
@@ -165,7 +183,7 @@ export function SiteFooter(): ReactElement {
       <ul className="footer-modules" aria-label="Paid modules">
         {PAID_MODULES.map((module) => (
           <li key={module.name}>
-            <a href={module.link}>{module.name}</a>, not free · paid in production
+            <a href={module.product}>{module.name}</a>, not free · paid in production
           </li>
         ))}
       </ul>

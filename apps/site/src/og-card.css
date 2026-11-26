@@ -47,7 +47,10 @@
   color: #fff;
 }
 
-.og-mark {
+/* The site's mark, drawn here on the site's card and by `chrome.tsx`'s `Mark` on a module's
+   (`product-og-card.tsx`), at the card's size. */
+.og-mark,
+.og-brand .mark {
   display: block;
   width: 36px;
   height: 36px;

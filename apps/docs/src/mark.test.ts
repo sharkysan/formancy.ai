@@ -168,7 +168,9 @@ describe('the mark', () => {
       join('apps', 'admin', 'index.html'),
       join('apps', 'playground', 'index.html'),
       join('apps', 'angular-starter', 'index.html'),
-      ...['', 'templates', 'angular-form-builder'].map((page) => join('apps', 'site', page, 'index.html')),
+      ...['', 'templates', 'angular-form-builder', 'products/data', 'products/report', 'products/health'].map((page) =>
+        join('apps', 'site', ...page.split('/'), 'index.html'),
+      ),
     ]
     const missing = pages.filter((page) => !/<link[^>]*rel="icon"[^>]*favicon\.svg/.test(read(page)))
     expect(missing).toEqual([])

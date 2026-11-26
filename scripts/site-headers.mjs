@@ -76,7 +76,8 @@ const EVERY_RESPONSE = {
 export const SECTIONS = [
   {
     name: 'site',
-    paths: ['/', '/templates/*', '/angular-form-builder/', '/legal/*', '/privacy/*'],
+    // `/products/*`: the paid modules' product pages, which this build renders (0242).
+    paths: ['/', '/templates/*', '/angular-form-builder/', '/products/*', '/legal/*', '/privacy/*'],
     policy: (origin, inline) => [
       `script-src ${origin}/assets/${hashes(inline.scripts)}`,
       `style-src ${origin}/assets/${hashes(inline.styles)}`,

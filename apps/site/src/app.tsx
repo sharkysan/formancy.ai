@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode } from 'react'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
@@ -16,8 +16,10 @@ import { demoUploader } from './demo-uploader.js'
 import { LiveRules, highlight, sourceOf } from './source.js'
 import { useJourney } from './use-journey.js'
 import { HeroStudio } from './hero-studio.js'
-import { Backdrop, PLAYGROUND, REPO, SiteBar, SiteFooter } from './chrome.js'
+import { Backdrop, PLAYGROUND, SiteBar, SiteFooter } from './chrome.js'
 import { Licence } from './licence.js'
+import { Modules } from './modules.js'
+import { Finale } from './finale.js'
 
 /**
  * formancy.ai.
@@ -289,6 +291,12 @@ export function App(): ReactElement {
             </p>
           </Section>
         </div>
+
+        {/* The modules sold beside formancy, after the engine has told its whole story and
+            just before the licence draws the free and paid line (0242). */}
+        <Section id="modules" className="wide modules" journey={journey} section="modules">
+          <Modules />
+        </Section>
 
         <Section id="licence" className="wide licence" journey={journey} section="licence">
           <Licence />
@@ -671,72 +679,6 @@ function Panel({ journey }: { journey: ReturnType<typeof useJourney> }): ReactEl
       <pre>{JSON.stringify(journey.data, null, 2)}</pre>
       {journey.seen.has('finale') ? <p className="sent">sent</p> : journey.complete ? <p className="sent">ready to send</p> : null}
     </aside>
-  )
-}
-
-/**
- * The end.
- *
- * One orchestrated moment rather than an effect per section: the submission
- * the visitor has been filling in without knowing goes to the server, and the
- * server answers. The stamp lands only once the section is actually reached,
- * so it is a payoff rather than something that happened off screen.
- */
-function Finale({ journey }: { journey: ReturnType<typeof useJourney> }): ReactElement {
-  const [sent, setSent] = useState(false)
-
-  useEffect(() => {
-    if (!journey.seen.has('finale')) return
-    // A beat, so the receipt is read before the stamp lands on it.
-    const timer = setTimeout(() => setSent(true), 600)
-    return () => clearTimeout(timer)
-  }, [journey.seen])
-
-  const body = {
-    ...journey.data,
-    readAt: 'the bottom of the page',
-  }
-
-  return (
-    <section id="finale" className={sent ? 'finale wide sent' : 'finale wide'} data-section="finale" ref={journey.register('finale')}>
-      {/* The claim beside the evidence. Stacked, the receipt sat below the sentence
-          describing it and the section ran to two screens; side by side, the words and
-          the submission they are about are read together, which is the whole payoff. */}
-      <div className="finale-words">
-        <h2>You have been filling in a form.</h2>
-        <p className="lede">
-          Every section answered one field. The panel in the corner was a real submission the whole way down — the same shape the engine produces, built the
-          same way.
-        </p>
-
-        {/* Announced once, politely: somebody who cannot see the stamp land should still
-            be told the page did the thing it was building to. */}
-        <p role="status" className="note">
-          {sent ? 'Accepted, and validated by the same engine that drew the form.' : ''}
-        </p>
-
-        <div className="actions">
-          <a className="action primary" href={PLAYGROUND}>
-            Open the playground
-          </a>
-          <a className="action" href={REPO} rel="noreferrer noopener">
-            Read the source
-          </a>
-        </div>
-      </div>
-
-      <div className="finale-receipt">
-        <div className="receipt">
-          <header>
-            <span className="dot" />
-            POST /f/visitors/submissions
-          </header>
-          <pre>{JSON.stringify(body, null, 2)}</pre>
-          <div className={sent ? 'stamp landed' : 'stamp'}>201 Created</div>
-        </div>
-        <div className="seal" aria-hidden="true" />
-      </div>
-    </section>
   )
 }
 

@@ -71,9 +71,10 @@ record whose only enforcement is "we remember" says so plainly.
 | [0001](0001-purpose-built-spec.md) | Write a new schema spec rather than adopt form.io's | accepted |
 | [0002](0002-apache-2-0.md) | Apache-2.0 for everything, no dual licensing | accepted |
 | [0003](0003-open-core-line.md) | Give away the engine, sell operating the platform | accepted; its sold list as only operating the platform, and its "nothing to buy", superseded in part by 0179 |
-| [0179](0179-the-paid-modules-are-named-as-not-free.md) | Two modules built on formancy are sold, and the landing page names them as not free | accepted; extended by 0241, which links them from every page's footer as well |
+| [0179](0179-the-paid-modules-are-named-as-not-free.md) | Two modules built on formancy are sold, and the landing page names them as not free | accepted; extended by 0241, which links them from every page's footer as well, and by 0242, which gives each a product page and a card on the landing page |
 | [0180](0180-formancy-health-is-named-before-its-first-release.md) | Formancy Health is named beside the other paid modules, before its first release | accepted |
-| [0241](0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md) | The sitemaps name the paid modules' pages, and every page's footer links them, from one list | accepted |
+| [0241](0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md) | The sitemaps name the paid modules' pages, and every page's footer links them, from one list | accepted; extended by 0242, whose footer links each module to its product page, and whose bar has one link to the modules that names none of them |
+| [0242](0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md) | Each paid module has a product page on formancy.ai, sent as static HTML, and the landing page shows what each makes | accepted |
 
 ### Architecture
 

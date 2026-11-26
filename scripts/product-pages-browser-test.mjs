@@ -1,0 +1,165 @@
+/**
+ * The paid modules' product pages and the landing page's section on them, in a real browser
+ * (0242): what jsdom cannot see.
+ *
+ * Each page is opened at a phone's width and at the four widths the playground is measured
+ * at, down to 320 CSS pixels, which WCAG's reflow criterion names:
+ *
+ * - **It cannot be scrolled sideways, and every control is inside the viewport.** Measured by
+ *   trying to scroll, not by `scrollWidth`: the site hides overflow on the body so its
+ *   backdrop can be wider than the screen, and `scrollWidth` then reports overflow on a page
+ *   that cannot move. A control parked off the side that comes back when focused is the skip
+ *   link, which is the right pattern.
+ * - **Nothing in an example is cut off, and none of its words is under 10 pixels.** Each
+ *   module's sketch lays itself out by the room its stage gives it, and the stage clips what
+ *   overflows, so a table that pushed past its edge would be cut off without the page moving
+ *   at all. So every box in a figure that clips, and every sheet of paper, has to hold no more
+ *   than it shows, across and down. Report's A4 page set its words by its width and was about
+ *   5 pixels on a phone, and clipped what text zoom made larger; 10 pixels is the floor its
+ *   stylesheet now keeps, measured from the computed size of every element with words of its
+ *   own, in every figure.
+ * - **The landing page's cards are three in a row or one to a row**, never two with Health
+ *   alone under them, which they were from 820 to 1280 pixels; and three in a row at the
+ *   widest width measured.
+ * - **A product page's words are in the HTML the server sent**, and the page the browser drew
+ *   over it raised no error. The build renders each page into its root (`prerender.mjs`); a
+ *   page whose markup React had to correct logs it as an error, and a crawler would have read
+ *   the uncorrected one.
+ * - **The bar's "Paid modules" link** is shown from 64rem and hidden below it, where the bar
+ *   has no room for it; it is never hidden at every width.
+ *
+ * The landing page's own root is still empty to a crawler that runs no script, which the
+ * risks name (§11); this measures its section in the browser like the rest.
+ */
+
+/** The product pages the site builds, in the order the footer links the modules. */
+export const PRODUCT_PAGES = ['/products/data/', '/products/report/', '/products/health/']
+
+/** 320 for reflow, then a phone, and the playground's tablet portrait, tablet landscape and laptop. */
+const WIDTHS = [320, 390, 820, 1180, 1440]
+
+/** The width from which the bar shows "Paid modules": 64rem, at the root's 16px. */
+const ROOMY_FROM = 64 * 16
+
+export async function checkProductPages(browser, origin, check) {
+  console.log('\nthe paid modules: the product pages and the landing page’s section')
+
+  for (const path of PRODUCT_PAGES) {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+    try {
+      const response = await page.goto(`${origin}${path}`, { waitUntil: 'load' })
+      const sent = response === null ? '' : await response.text()
+      const opened = sent.indexOf('<div id="root"')
+      const root = opened === -1 ? '' : sent.slice(opened)
+      check(
+        `${path} is sent with its page in its root, a heading and the module's terms`,
+        /<main\b/.test(root) && /<h1\b/.test(root) && root.includes('Not free · paid in production') ? null : 'the root the server sent holds no page',
+      )
+    } finally {
+      await page.close()
+    }
+  }
+
+  for (const width of WIDTHS) {
+    for (const path of ['/', ...PRODUCT_PAGES]) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } })
+      const errors = []
+      page.on('pageerror', (error) => errors.push(error.message))
+      // On a product page, React says a markup it had to correct as a console error.
+      page.on('console', (message) => {
+        if (message.type() === 'error' && path !== '/') errors.push(message.text())
+      })
+      try {
+        await page.goto(`${origin}${path}`, { waitUntil: 'load' })
+        await page.waitForSelector(path === '/' ? '#modules figure' : 'main h1', { timeout: 30_000 })
+        const found = await page.evaluate((roomyFrom) => {
+          const root = document.scrollingElement ?? document.documentElement
+          root.scrollLeft = 9999
+          const slid = root.scrollLeft
+          root.scrollLeft = 0
+
+          const edge = document.documentElement.clientWidth
+          const past = []
+          for (const control of document.querySelectorAll('a, button, input, select, textarea, summary')) {
+            const box = control.getBoundingClientRect()
+            if (box.width === 0 || box.height === 0) continue
+            if (box.right <= edge + 1 && box.left >= -1) continue
+            control.focus({ preventScroll: true })
+            const focused = control.getBoundingClientRect()
+            if (focused.right <= edge + 1 && focused.left >= -1) continue
+            past.push(`${control.tagName} ${(control.textContent ?? '').trim().slice(0, 32)}`)
+          }
+          if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+
+          // A box that clips, or a sheet of paper, holding more than it shows. Asked of the
+          // computed overflow rather than of a list of classes, so a box that starts clipping
+          // tomorrow is measured too.
+          const cut = []
+          const small = []
+          for (const figure of document.querySelectorAll('figure.mx')) {
+            for (const element of figure.querySelectorAll('*')) {
+              // Words read to assistive technology and not drawn are clipped on purpose.
+              if (element.closest('.visually-hidden') !== null) continue
+              const style = getComputedStyle(element)
+              const clips = style.overflowX !== 'visible' || style.overflowY !== 'visible'
+              if ((clips || element.classList.contains('mx-paper')) && element.clientHeight > 0) {
+                const across = element.scrollWidth - element.clientWidth
+                const down = element.scrollHeight - element.clientHeight
+                if (across > 1 || down > 1) cut.push(`${String(element.className)}: ${String(across)}px across, ${String(down)}px down`)
+              }
+              const words = [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim() !== '')
+              if (words && parseFloat(style.fontSize) < 10) {
+                small.push(`${String(element.className) || element.tagName} at ${style.fontSize}`)
+              }
+            }
+          }
+
+          // The cards' rows, by where each card starts: one row of three, or one row each.
+          const rows = new Set([...document.querySelectorAll('.module-card')].map((card) => Math.round(card.getBoundingClientRect().top)))
+          const cards = document.querySelectorAll('.module-card').length
+
+          const modules = [...document.querySelectorAll('.bar nav a')].find((link) => link.getAttribute('href')?.endsWith('#modules'))
+          const shown = modules === undefined ? null : getComputedStyle(modules).display !== 'none'
+          // `max-width: 64rem` hides it at 64rem itself, so it is shown only past it.
+          return {
+            slid,
+            past: [...new Set(past)].slice(0, 6),
+            cut: cut.slice(0, 4),
+            small: [...new Set(small)].slice(0, 4),
+            rows: rows.size,
+            cards,
+            shown,
+            roomy: window.innerWidth > roomyFrom,
+            figures: document.querySelectorAll('figure.mx').length,
+          }
+        }, ROOMY_FROM)
+
+        check(`${path} at ${String(width)}px cannot be scrolled sideways`, found.slid === 0 ? null : `it slid ${String(found.slid)}px`)
+        check(`and every control on it is inside the viewport`, found.past.length === 0 ? null : `off the edge: ${found.past.join(', ')}`)
+        check(
+          `and nothing in a module's example is cut off`,
+          found.figures === 0 ? 'no example on the page, so nothing was measured' : found.cut.length === 0 ? null : `cut off: ${found.cut.join('; ')}`,
+        )
+        check(`and no word in one is under 10px`, found.small.length === 0 ? null : `too small: ${found.small.join('; ')}`)
+        if (path === '/') {
+          const widest = width === WIDTHS[WIDTHS.length - 1]
+          check(
+            `and the modules' cards are ${widest ? 'three in a row' : 'three in a row or one to a row'}`,
+            found.cards !== 3
+              ? `${String(found.cards)} cards on the page`
+              : found.rows === 1 || (!widest && found.rows === 3)
+                ? null
+                : `they are on ${String(found.rows)} rows`,
+          )
+        }
+        check(
+          `and the bar's "Paid modules" is ${found.roomy ? 'shown' : 'hidden'} at this width`,
+          found.shown === null ? 'no "Paid modules" link in the bar' : found.shown === found.roomy ? null : `it is ${found.shown ? 'shown' : 'hidden'}`,
+        )
+        check(`and nothing went wrong drawing it`, errors.length === 0 ? null : errors.join('; ').slice(0, 400))
+      } finally {
+        await page.close()
+      }
+    }
+  }
+}

@@ -47,6 +47,9 @@ export const JOURNEY: ReadonlyArray<{ section: string; answer: Answer }> = [
   { section: 'stack', answer: { key: 'layers', value: 'shared-below-the-binding' } },
   { section: 'access', answer: { key: 'accessible', value: true } },
   { section: 'host', answer: { key: 'hostedBy', value: 'you' } },
+  // The modules built on formancy and sold beside it: what reading them answers is
+  // that they are an option, not a part of the free thing (0242).
+  { section: 'modules', answer: { key: 'paidModules', value: 'optional' } },
   { section: 'licence', answer: { key: 'licence', value: 'Apache-2.0' } },
 ]
 

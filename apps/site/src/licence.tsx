@@ -32,7 +32,7 @@ const MODULES = [
   },
   {
     name: 'Formancy Report',
-    does: 'Paginated PDF reports from formancy forms, Formancy Data datasets or your own JSON, designed in native Angular and React editors and rendered on your server.',
+    does: 'Paginated PDF reports and Word files of them, from formancy forms, Formancy Data or your own JSON, designed in native Angular and React editors and printed in Node or in a browser.',
     demo: { href: 'https://formancy.ai/report/', label: 'Open the Studio' },
     repo: 'formancy.ai-report',
   },
