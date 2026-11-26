@@ -317,7 +317,12 @@ cards, say each module does and does not do yet, its release and its licence, we
 each repository on 2026-11-25, and the pages say so beside them. The first release of a module
 after that can make some of it wrong, and no gate fails: the pages are read again by hand
 when a module releases. The examples' values are the modules' own fixtures, copied, and go
-stale the same way. Each module's own pages describe the same things, so a module is
+stale the same way. Report's draws its sample's Swiss QR Code from a payload read from Report on
+2026-11-26 and encoded with uqr pinned at Report's version: the tests hold the code and the slip's
+words to that payload, and the modules to a fingerprint of Report's published picture taken that
+day, and nothing holds the payload to Report, so a change to the sample or to how Report writes
+its code leaves the site showing a code Report's sample no longer carries
+([0244](../decisions/0244-reports-example-draws-its-samples-own-swiss-qr-code-encoded-as-report-encodes-it.md)). Each module's own pages describe the same things, so a module is
 described in more than one place that can disagree. The pages name no module's packages by
 their npm names, since `apps/docs/src/package-references.test.ts` holds every `@formancy/` name
 on the site to this workspace; they send the reader to each module's getting-started guide.

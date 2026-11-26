@@ -1,25 +1,70 @@
 import type { ReactElement } from 'react'
+import { SwissQrCode } from './swiss-qr-code.js'
 import type { Variant } from './variant.js'
 import './examples.css'
 import './report.css'
 
 /**
  * Formancy Report's English invoice sample, drawn for formancy.ai (0242): an A4 page on white
- * paper with the Swiss QR-bill across its foot.
+ * paper with the Swiss QR-bill across its foot, and on the bill the sample's own Swiss QR Code
+ * (0244).
  *
  * Read from formancy.ai-report on 2026-11-25: the firm, the customer, the number, the five
  * lines with their quantities and prices are `invoice-en` in
  * `packages/report-corpus/src/starters/invoice-words.ts`. Every amount is the rendered sample's
  * own, as `docs/images/samples.json` prints the text of `invoice-en`'s first page: each line's,
  * "Subtotal CHF 1'310.38", "VAT 8.1% CHF 106.14", "Total CHF 1'416.52", and the slip's
- * "CHF 1 416.52". The account is SIX's own example QR-IBAN, which no bank books.
+ * "CHF 1 416.52".
  *
- * **The Swiss QR Code is not drawn.** Where the renderer puts it there is a square with only
- * the Swiss cross at its centre and no modules, and words saying what goes there, so nothing
- * on this site can be scanned or taken for a code someone could pay. The two download labels
- * above the page are the Studio's, drawn as part of the picture: they are not links, and they
- * are hidden from assistive technology, which the caption tells what the Studio offers.
+ * **The code is the sample's.** Read from formancy.ai-report's `main` (81405cb) on 2026-11-26,
+ * `PAYLOAD` is the text Report's runtime puts into `invoice-en`'s QR-bill: `resolveReport` over
+ * the sample's report and data (`packages/report-corpus/src/starters/invoice.ts`), whose
+ * `payload` in `packages/report-runtime/src/qr-bill.ts` writes each element of SIX's Table 8 on
+ * its line. `swiss-qr-code.tsx` encodes it as Report's renderer does, so the code drawn here is
+ * module for module the one in Report's published `docs/images/invoice-en.png`. The slip prints
+ * what the code carries, as Report's does, under SIX's notice to separate it before paying in,
+ * and `product-page.test.tsx` holds the words to the code. The firm and the customer are
+ * invented, and the account is SIX's own example QR-IBAN, which no bank books.
+ *
+ * The two download labels above the page are the Studio's, drawn as part of the picture: they
+ * are not links, and they are hidden from assistive technology, which the caption tells what
+ * the Studio offers.
  */
+
+/** The Swiss QR Code's text, each element of SIX's Table 8 on its line: the ultimate creditor's seven lines empty, no billing information. */
+export const PAYLOAD = [
+  'SPC',
+  '0200',
+  '1',
+  'CH4431999123000889012',
+  'S',
+  'Formancy Building Services AG',
+  'Gewerbestrasse',
+  '14',
+  '4053',
+  'Basel',
+  'CH',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '1416.52',
+  'CHF',
+  'S',
+  'Riverside Coffee Roasters AG',
+  'Rheingasse',
+  '21',
+  '4058',
+  'Basel',
+  'CH',
+  'QRR',
+  '000000000000000000202603184',
+  'Invoice INV-2026-0318',
+  'EPD',
+].join('\n')
 
 const LINES = [
   { description: 'Ventilation system service, base charge', quantity: '1.00', unit: 'flat rate', price: '480.00', amount: '480.00' },
@@ -29,17 +74,35 @@ const LINES = [
   { description: 'Call-out charge, Basel area', quantity: '1.00', unit: 'flat rate', price: '65.00', amount: '65.00' },
 ] as const
 
-const CREDITOR = ['CH44 3199 9123 0008 8901 2', 'Formancy Building Services AG', 'Gewerbestrasse 14', '4053 Basel'] as const
+/** A block of a part's information, as the slip prints it (IG 3.5.4, 3.6.2): its heading over its values. */
+interface SlipBlock {
+  readonly heading: string
+  readonly values: readonly string[]
+}
+
+const ACCOUNT: SlipBlock = {
+  heading: 'Account / Payable to',
+  values: ['CH44 3199 9123 0008 8901 2', 'Formancy Building Services AG', 'Gewerbestrasse 14', '4053 Basel'],
+}
+const REFERENCE: SlipBlock = { heading: 'Reference', values: ['00 00000 00000 00000 02026 03184'] }
+const ADDITIONAL_INFORMATION: SlipBlock = { heading: 'Additional information', values: ['Invoice INV-2026-0318'] }
+const PAYABLE_BY: SlipBlock = { heading: 'Payable by', values: ['Riverside Coffee Roasters AG', 'Rheingasse 21', '4058 Basel'] }
+
+/** What each part prints, in SIX's order: the additional information in the payment part alone. */
+const RECEIPT = [ACCOUNT, REFERENCE, PAYABLE_BY] as const
+const PAYMENT_PART = [ACCOUNT, REFERENCE, ADDITIONAL_INFORMATION, PAYABLE_BY] as const
 
 const CAPTIONS: Record<Variant, string> = {
   card:
     "Formancy Report’s English invoice sample, INV-2026-0318: the top of the page, its Total CHF 1'416.52, and the QR-bill’s Receipt and Payment " +
-    'part. Drawn for this page after the sample; the square stands where the renderer draws the Swiss QR Code, so nothing here can be scanned.',
+    'part with the Swiss QR Code the sample carries. Drawn for this page after the sample, its code with the encoder Report uses; the firm and ' +
+    'the customer are invented, and the account is SIX’s example QR-IBAN, which no bank books.',
   page:
     "Formancy Report’s English invoice sample, INV-2026-0318, on an A4 page: five lines, the subtotal, VAT at 8.1% and Total CHF 1'416.52, and " +
-    'across the foot of the page the QR-bill, its Receipt and its Payment part each for CHF 1 416.52. The Studio offers it as ' +
-    'a PDF and as a Word file. Drawn for this page after the sample, whose firm and customer are invented and whose account is SIX’s example QR-IBAN, ' +
-    'which no bank books; where the renderer draws the Swiss QR Code this drawing leaves a square with only the Swiss cross, so nothing here can be scanned.',
+    'across the foot of the page the QR-bill, its Receipt and its Payment part each for CHF 1 416.52, the Payment part with the Swiss QR Code the ' +
+    'sample carries and what the code says. The Studio offers it as a PDF and as a Word file. Drawn for this page after the sample, its code ' +
+    'encoded from the sample’s payment data with the encoder Report uses; the firm and the customer are invented, and the account is SIX’s ' +
+    'example QR-IBAN, which no bank books.',
 }
 
 export function ReportExample({ variant }: { variant: Variant }): ReactElement {
@@ -121,40 +184,45 @@ export function ReportExample({ variant }: { variant: Variant }): ReactElement {
             </dl>
           </div>
 
+          {page && <p className="mx-separate">Separate before paying in</p>}
           <div className="mx-slip">
             <div className="mx-receipt">
               <p className="mx-slip-title">Receipt</p>
-              <p className="mx-slip-label">Account / Payable to</p>
-              <p className="mx-slip-lines">
-                {CREDITOR.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </p>
+              {page && <SlipInformation blocks={RECEIPT} />}
               <Amount />
+              {page && <p className="mx-acceptance">Acceptance point</p>}
             </div>
             <div className="mx-payment">
               <p className="mx-slip-title">Payment part</p>
               <div className="mx-code">
-                <span className="mx-code-square" aria-hidden="true">
-                  <span className="mx-cross" />
-                </span>
-                <span className="mx-code-note">The renderer draws the Swiss QR Code here</span>
-              </div>
-              <div className="mx-payment-text">
-                <p className="mx-slip-label">Account / Payable to</p>
-                <p className="mx-slip-lines">
-                  {CREDITOR.map((line) => (
-                    <span key={line}>{line}</span>
-                  ))}
-                </p>
+                <SwissQrCode payload={PAYLOAD} />
               </div>
               <Amount />
+              {page && <SlipInformation blocks={PAYMENT_PART} />}
             </div>
           </div>
         </div>
       </div>
       <figcaption>{CAPTIONS[variant]}</figcaption>
     </figure>
+  )
+}
+
+/** A part's information: each block's heading over its values, one to a line. The card leaves it out, and keeps the code and the amount. */
+function SlipInformation({ blocks }: { blocks: readonly SlipBlock[] }): ReactElement {
+  return (
+    <dl className="mx-slip-information">
+      {blocks.map((block) => (
+        <div key={block.heading}>
+          <dt>{block.heading}</dt>
+          <dd>
+            {block.values.map((value) => (
+              <span key={value}>{value}</span>
+            ))}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 

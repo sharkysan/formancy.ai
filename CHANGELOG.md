@@ -95,6 +95,15 @@ document lists the rules in, and the replay can store none. Recorded as debt, no
   for the member it reads, so both are accepted and compute the same in the browser and on the
   replay.
 
+**Changed, on formancy.ai: Formancy Report's sample invoice shows its Swiss QR Code.** The
+landing page's card and Report's product page drew an empty square with the Swiss cross where the
+code goes, which read as unfinished; they now draw the code Report's own sample carries, encoded
+from its payment data by Report's encoder, uqr 0.1.3, as Report does, and Report's page prints on
+the slip what the code says, under SIX's notice to separate it before paying in. The firm and the
+customer are invented and the account is SIX's example QR-IBAN, which no bank books. The landing
+page's HTML grows by 3.5 kB gzipped and its script by 0.5 kB; no `@formancy/*` package changes
+([0244](docs/decisions/0244-reports-example-draws-its-samples-own-swiss-qr-code-encoded-as-report-encodes-it.md)).
+
 **Changed, on formancy.ai: the landing page, the templates gallery and the Angular page are sent
 as HTML with their words in it.** Each was an empty root its script drew into, so a crawler or a
 link preview that runs no script read its head and nothing else: not the landing page's argument,
@@ -119,7 +128,7 @@ are in what the server sends; the sitemap lists them. Each ends on the module's 
 and a question about a production licence, since the licence's table left a buyer to find the
 address in small print. The landing page gains a card per module, after self-hosting and before
 the licence, with a sketch of its output drawn in HTML and CSS: an order list and record, an
-invoice whose QR-bill code is deliberately left undrawn, a FHIR QuestionnaireResponse. The
+invoice with its Swiss QR-bill, a FHIR QuestionnaireResponse. The
 licence section's line on Formancy Report now says what Report's README does: PDF and Word,
 printed in Node or in a browser. Every link to a module, there and on the pages, says *not free · paid in
 production* beside it; the footer now links each module to its product page, and the bar gains

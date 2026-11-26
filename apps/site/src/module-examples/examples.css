@@ -1,10 +1,13 @@
 /**
  * The paid modules' examples (0242), drawn by this site in HTML and CSS: no picture,
- * no face and nothing from another site (0154), and every word in them real text.
+ * no face and nothing from another site (0154), and every word in them real text. The one
+ * drawing is Report's Swiss QR Code, an SVG the site draws from the sample's payment data
+ * (`swiss-qr-code.tsx`, 0244).
  *
  * The bench is the site's own, in `shell.css`'s tokens. The paper is white, because each
  * module draws its form, its page or its card on white, so the paper's few colours are
- * declared here, once, on `.mx`, and on nothing else. By WCAG 2.2's contrast formula, its
+ * declared here, once, on `.mx`, and on nothing else but that code, whose black and white are
+ * SIX's and written on its shapes as Report's renderer writes them. By WCAG 2.2's contrast formula, its
  * relative luminance from the sRGB values, computed on 2026-11-26: the ink is 16.07:1 on
  * white, the soft ink 8.08:1 on white and 7.08:1 on a disabled field's grey, the mark 6.39:1,
  * and a field's border 3.09:1, past the 3:1 a control's edge needs (1.4.11).

@@ -18,6 +18,12 @@
  *   5 pixels on a phone, and clipped what text zoom made larger; 10 pixels is the floor its
  *   stylesheet now keeps, measured from the computed size of every element with words of its
  *   own, in every figure.
+ * - **Report's Swiss QR Code reads as one, and can be read** (0244). Every module of it is at
+ *   least 1.5 CSS pixels at every width, where a smaller one is grey texture rather than a
+ *   code, and a whole number of them, where a fraction draws some modules a pixel wider than
+ *   their neighbours; and nothing on the paper, a word or a part's dashed edge, comes within
+ *   SIX's 5 mm of white around its 46 (IG 3.5.2), nor does the paper's edge, which a reader
+ *   needs clear to find the code. Measured on the landing page's card and on Report's page.
  * - **The landing page's cards are three in a row or one to a row**, never two with Health
  *   alone under them, which they were from 820 to 1280 pixels; and three in a row at the
  *   widest width measured.
@@ -117,6 +123,37 @@ export async function checkProductPages(browser, origin, check) {
             }
           }
 
+          // Each Swiss QR Code (0244): what a module measures, and anything on its paper that
+          // is not the code, holds it or is held by it, within SIX's 5 mm of its 46, or the
+          // paper's edge there. Half a pixel is allowed for a box that only touches it.
+          const codes = []
+          for (const svg of document.querySelectorAll('figure.mx svg.mx-qr')) {
+            const box = svg.getBoundingClientRect()
+            const quiet = (box.width * 5) / 46
+            const zone = { left: box.left - quiet, right: box.right + quiet, top: box.top - quiet, bottom: box.bottom + quiet }
+            const paper = svg.closest('.mx-paper')
+            const edge = paper?.getBoundingClientRect()
+            const near = []
+            if (
+              edge === undefined ||
+              zone.left < edge.left - 0.5 ||
+              zone.right > edge.right + 0.5 ||
+              zone.top < edge.top - 0.5 ||
+              zone.bottom > edge.bottom + 0.5
+            ) {
+              near.push('the paper’s edge')
+            }
+            for (const element of paper?.querySelectorAll('*') ?? []) {
+              if (element.contains(svg) || svg.contains(element)) continue
+              const other = element.getBoundingClientRect()
+              if (other.width === 0 || other.height === 0) continue
+              if (other.left < zone.right - 0.5 && other.right > zone.left + 0.5 && other.top < zone.bottom - 0.5 && other.bottom > zone.top + 0.5) {
+                near.push(String(element.getAttribute('class') ?? element.tagName))
+              }
+            }
+            codes.push({ module: box.width / svg.viewBox.baseVal.width, near: [...new Set(near)].slice(0, 3) })
+          }
+
           // The cards' rows, by where each card starts: one row of three, or one row each.
           const rows = new Set([...document.querySelectorAll('.module-card')].map((card) => Math.round(card.getBoundingClientRect().top)))
           const cards = document.querySelectorAll('.module-card').length
@@ -134,6 +171,7 @@ export async function checkProductPages(browser, origin, check) {
             shown,
             roomy: window.innerWidth > roomyFrom,
             figures: document.querySelectorAll('figure.mx').length,
+            codes,
           }
         }, ROOMY_FROM)
 
@@ -144,6 +182,23 @@ export async function checkProductPages(browser, origin, check) {
           found.figures === 0 ? 'no example on the page, so nothing was measured' : found.cut.length === 0 ? null : `cut off: ${found.cut.join('; ')}`,
         )
         check(`and no word in one is under 10px`, found.small.length === 0 ? null : `too small: ${found.small.join('; ')}`)
+        if (path === '/' || path === '/products/report/') {
+          const fine = found.codes.filter((code) => code.module < 1.5).map((code) => `${code.module.toFixed(2)}px`)
+          check(
+            `and every module of Report's Swiss QR Code is at least 1.5px`,
+            found.codes.length === 0 ? 'no Swiss QR Code on the page' : fine.length === 0 ? null : `a module of ${fine.join(', ')}`,
+          )
+          const split = found.codes.filter((code) => Math.abs(code.module - Math.round(code.module)) > 0.01).map((code) => `${code.module.toFixed(3)}px`)
+          check(
+            `and a whole number of pixels`,
+            found.codes.length === 0 ? 'no Swiss QR Code on the page' : split.length === 0 ? null : `a module of ${split.join(', ')}`,
+          )
+          const crowded = found.codes.filter((code) => code.near.length > 0).map((code) => code.near.join(', '))
+          check(
+            `and nothing comes within its quiet zone`,
+            found.codes.length === 0 ? 'no Swiss QR Code on the page' : crowded.length === 0 ? null : `within 5 mm of it: ${crowded.join('; ')}`,
+          )
+        }
         if (path === '/') {
           const widest = width === WIDTHS[WIDTHS.length - 1]
           check(

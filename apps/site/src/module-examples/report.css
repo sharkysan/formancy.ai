@@ -1,6 +1,7 @@
 /**
  * Formancy Report's invoice, as `report.tsx` draws it (0242): an A4 page on the paper
- * `examples.css` declares, and SIX's slip across its foot, with no code drawn in it.
+ * `examples.css` declares, and SIX's slip across its foot, with the sample's own Swiss QR Code
+ * on it (0244).
  *
  * **Its words are set in rem with a floor, not scaled with the page.** Scaled to the page's
  * width they were about 5 pixels on a phone, and an A4 page that kept its proportions clipped
@@ -194,13 +195,20 @@
   min-width: 70%;
 }
 
+/* SIX's notice above the slip's top edge, outside the payment part, where a bill sent as a PDF
+   says where to separate it (IG 3.7), as Report's sample prints it. */
+.mx .mx-separate {
+  padding-block-end: 0.3rem;
+  font-size: 0.625rem;
+  text-align: center;
+}
+
 .mx-slip {
   display: grid;
   grid-template-columns: minmax(0, 62fr) minmax(0, 148fr);
   border-block-start: 1px dashed var(--mx-ink);
   font-size: 0.6875rem;
 }
-
 
 .mx-receipt,
 .mx-payment {
@@ -226,14 +234,25 @@
   }
 }
 
+/* The payment part as SIX lays it out (IG 3.5): its title, the code and the amount down the
+   left, and what the code carries beside them. `--mx-code` is the code's side: its 61 modules,
+   the sample's code at version 11, of 0.125rem each, which at the default text size is 2 CSS
+   pixels, a whole number of a screen's pixels where a CSS pixel is one or two of them. The
+   browser gate fails a module that is not a whole CSS pixel, which a code of another version
+   would be. SIX's 5 mm of white around its 46 mm, the quiet zone a reader needs, is that side
+   times 5/46: kept clear by the part's padding on the left and by the code's own room above,
+   below and to its right, so no word or rule comes nearer. */
 .mx-payment {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  --mx-code: calc(61 * 0.125rem);
+  --mx-quiet: calc(var(--mx-code) * 5 / 46);
+
+  grid-template-columns: max-content minmax(0, 1fr);
   grid-template-areas:
-    'title text'
-    'code text'
-    'amount text';
-  column-gap: 0.8em;
-  padding: 3.5% 4%;
+    'title information'
+    'code information'
+    'amount information';
+  column-gap: 0;
+  padding: 3.5% 4% 3.5% max(4%, var(--mx-quiet));
 }
 
 .mx-payment > .mx-slip-title {
@@ -248,9 +267,41 @@
   grid-area: amount;
 }
 
-.mx-payment > .mx-payment-text {
-  grid-area: text;
+.mx-payment > .mx-slip-information {
+  grid-area: information;
   min-width: 0;
+}
+
+/* Below the width where the code and the words beside it both fit, the words go under the
+   amount: the code keeps its size, which is what makes it readable. Where the slip's two parts
+   are one under the other, below 30rem, the payment part is the stage's width, so it is
+   measured here by the stage: beside the code down to 22rem, as SIX lays it out. */
+@container (width < 22rem) {
+  .mx-page .mx-payment {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'title'
+      'code'
+      'amount'
+      'information';
+  }
+}
+
+.mx-code {
+  display: block;
+  padding-block: var(--mx-quiet);
+  padding-inline-end: var(--mx-quiet);
+}
+
+/* The Swiss QR Code (0244), the sample's own, drawn by `swiss-qr-code.tsx` at `--mx-code` a
+   side, on the card and on the page, at every width: ZXing read it from Chromium's screenshots
+   of both at 320 and 1280 pixels on 2026-11-26. Square whatever width is left to it. */
+.mx-qr {
+  display: block;
+  width: var(--mx-code);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
 }
 
 .mx .mx-slip-title {
@@ -258,17 +309,30 @@
   font-weight: 700;
 }
 
-.mx .mx-slip-label {
-  margin-block-start: 0.4em;
+.mx-slip-information {
+  display: grid;
+  align-content: start;
+  gap: 0.5em;
+  margin: 0;
+}
+
+.mx-slip-information dt {
   font-size: max(0.625rem, 0.7em);
   font-weight: 700;
 }
 
-.mx .mx-slip-lines {
+/* An account, a reference and an address are broken between their groups and words, never
+   inside one, unless a word is wider than the part. */
+.mx-slip-information dd {
   display: grid;
+  margin: 0;
   font-size: max(0.625rem, 0.8em);
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+.mx-payment > .mx-slip-information {
+  padding-block-start: 0.2em;
 }
 
 .mx-slip-amount {
@@ -289,74 +353,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* A card keeps the slip's two headings, the code's place and the amounts. */
-.mx-card .mx-slip-label,
-.mx-card .mx-slip-lines,
-.mx-card .mx-payment-text {
-  display: none;
+.mx .mx-acceptance {
+  justify-self: end;
+  margin-block-start: 0.4em;
+  font-size: max(0.625rem, 0.7em);
+  font-weight: 700;
 }
 
+/* A card keeps the slip's two headings, the code and the amounts, one under the other. */
 .mx-card .mx-payment {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     'title'
     'code'
     'amount';
-}
-
-/* Where the renderer draws the Swiss QR Code: a square with the Swiss cross at its centre
-   and no modules, so nothing here can be scanned or taken for a code anybody could pay. */
-.mx-code {
-  display: grid;
-  justify-items: start;
-  gap: 0.35em;
-}
-
-.mx-code-square {
-  position: relative;
-  display: block;
-  width: 100%;
-  max-width: 9em;
-  aspect-ratio: 1;
-  border: 1px solid var(--mx-box);
-  background: var(--mx-paper);
-}
-
-.mx-card .mx-code-square {
-  max-width: 5rem;
-}
-
-.mx-cross {
-  position: absolute;
-  inset: 0;
-  width: 15%;
-  aspect-ratio: 1;
-  margin: auto;
-  background: var(--mx-ink);
-}
-
-.mx-cross::before,
-.mx-cross::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  background: var(--mx-paper);
-}
-
-.mx-cross::before {
-  width: 62%;
-  height: 20%;
-}
-
-.mx-cross::after {
-  width: 20%;
-  height: 62%;
-}
-
-.mx-code-note {
-  max-width: 12em;
-  color: var(--mx-ink-soft);
-  font-size: max(0.625rem, 0.72em);
-  line-height: 1.3;
 }

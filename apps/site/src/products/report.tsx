@@ -44,7 +44,7 @@ export const REPORT: Product = {
   example: {
     figure: <ReportExample variant="page" />,
     real: {
-      label: 'See the sample as the renderer printed it, Swiss QR Code and all',
+      label: 'See the sample as the renderer printed it, in four languages',
       href: `${github(REPOSITORY, 'docs/starters.md')}#the-invoice-in-four-languages-and-the-euro-invoice-from-six-countries`,
     },
   },

@@ -5,9 +5,12 @@ import { FIELD_TYPES } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import { createFormEngine } from '@formancy/core'
 import { expressionProblems } from '@formancy/core/authoring'
+import { encode } from 'uqr'
 import { App } from './app.js'
 import { EXAMPLES } from './examples.js'
+import { PAYLOAD } from './module-examples/report.js'
 import { JOURNEY, isComplete, scrollProgress, submissionFor } from './scroll.js'
+import { modulesOfRuns, readQr } from './testing/read-qr.js'
 
 /**
  * The landing page.
@@ -644,7 +647,9 @@ describe('the paid modules’ section', () => {
 
   test('draws each module’s example in words and boxes, a figure nothing in can be operated', () => {
     // Drawn by the site in HTML and CSS: no picture of text, and nothing fetched from the
-    // modules' sites (0154). And an example is a drawing, so a keyboard must not stop on a
+    // modules' sites (0154). The one drawing is Report's Swiss QR Code, an SVG of the site's
+    // own that points at nothing, hidden from assistive technology because the slip prints
+    // what it says (0244). And an example is a drawing, so a keyboard must not stop on a
     // field in it that does nothing: every field is a term and its value, never a control.
     render(<App />)
 
@@ -653,32 +658,128 @@ describe('the paid modules’ section', () => {
     for (const figure of figures) {
       const caption = figure.querySelector('figcaption')?.textContent ?? ''
       expect(caption, 'a figure says what it shows and that it is drawn for the page').toMatch(/Drawn for this page after/)
-      expect(figure.querySelectorAll('img, svg, canvas, picture, iframe'), caption).toHaveLength(0)
+      expect(figure.querySelectorAll('img, canvas, picture, iframe, image, use, foreignObject'), caption).toHaveLength(0)
+      expect(
+        [...figure.querySelectorAll('svg')].map((svg) => `${String(svg.getAttribute('class'))}, aria-hidden ${String(svg.getAttribute('aria-hidden'))}`),
+        caption,
+      ).toEqual(figure.classList.contains('mx-report') ? ['mx-qr, aria-hidden true'] : [])
       expect(figure.querySelectorAll('a, button, input, select, textarea, [tabindex]'), caption).toHaveLength(0)
     }
   })
 
-  test('leaves the QR-bill’s code undrawn, so nothing on the page can be scanned', () => {
-    // A drawing of a payment code that looked scannable would be a code somebody could
-    // pay. The place stays empty but for the Swiss cross, and says what goes there. Held by
-    // what the place holds, not only by the words beside it: a grid of modules drawn in
-    // spans would pass a test that read the words alone.
+  /** The card's one Swiss QR Code: its modules as its path draws them, and its drawing. */
+  const reportCode = (): { svg: SVGSVGElement; modules: boolean[][] } => {
+    const codes = section().querySelectorAll<SVGSVGElement>('figure.mx-report svg.mx-qr')
+    expect(codes, 'one code on the card').toHaveLength(1)
+    const [svg] = codes
+    if (svg === undefined) throw new Error('no Swiss QR Code on Report’s card')
+    const across = Number(svg.getAttribute('viewBox')?.split(' ')[2])
+    return { svg, modules: modulesOfRuns(svg.querySelector('path.mx-qr-modules')?.getAttribute('d') ?? '', across) }
+  }
+  const bits = (modules: readonly (readonly boolean[])[]): string[] => modules.map((row) => row.map(Number).join(''))
+  /** The modules a picture of a code shows, row by row: `1` dark, `0` light, and `-` for each module SIX's cross's white square covers. */
+  const visible = (modules: readonly (readonly boolean[])[]): string => {
+    const across = modules.length
+    const reach = (7 * across) / 46 / 2
+    const under = (at: number): boolean => at + 1 > across / 2 - reach && at < across / 2 + reach
+    return modules.map((row, y) => row.map((dark, x) => (under(x) && under(y) ? '-' : dark ? '1' : '0')).join('')).join('\n')
+  }
+  /** A text's FNV-1a, its 32 bits in hex: a fingerprint, where nothing needs more. */
+  const fnv1a = (text: string): string => {
+    let hash = 0x811c9dc5
+    for (const character of text) hash = Math.imul(hash ^ character.charCodeAt(0), 0x01000193) >>> 0
+    return hash.toString(16).padStart(8, '0')
+  }
+
+  test('draws the QR-bill’s code as Report’s encoder encodes the sample’s payment data', () => {
+    /*
+     * The code on the card is the one Report's sample carries (0244): the payload Report's
+     * runtime writes for `invoice-en`, encoded as SIX requires and as Report's renderer does,
+     * at level M (IG 6.1) in the smallest version that holds it, never past version 25 (6.2)
+     * and never at a level raised to fill it. The expectation is uqr's encoding of the
+     * payload, made here with SIX's options written out, against the modules the drawing's
+     * path holds: a drawing encoded at another level, with another mask or of another text
+     * fails, where a test comparing the drawing with itself would pass.
+     */
     render(<App />)
 
-    const report = [...section().querySelectorAll('figure')].find((figure) => (figure.textContent ?? '').includes('INV-2026-0318'))
-    expect(report).toBeDefined()
-    expect(report?.textContent).toContain('The renderer draws the Swiss QR Code here')
-    expect(report?.textContent).toContain('Payment part')
+    const expected = encode(PAYLOAD, { ecc: 'M', border: 0, boostEcc: false, maxVersion: 25 }).data
+    const { svg, modules } = reportCode()
+    expect(svg.getAttribute('viewBox')).toBe(`0 0 ${String(expected.length)} ${String(expected.length)}`)
+    expect(bits(modules)).toEqual(bits(expected))
+    // In SIX's black on white, as Report writes them: a grey module is one a reader may take
+    // for either.
+    expect(svg.querySelector('path.mx-qr-modules')?.getAttribute('fill'), 'the modules are black').toBe('#000')
 
-    const places = report?.querySelectorAll('.mx-code-square') ?? []
-    expect(places, 'one place for the code').toHaveLength(1)
-    const [place] = places
-    expect(
-      [...(place?.children ?? [])].map((child) => child.className),
-      'the place holds the Swiss cross and nothing else',
-    ).toEqual(['mx-cross'])
-    expect(place?.firstElementChild?.children, 'and the cross is one shape').toHaveLength(0)
-    expect(place?.textContent, 'and no character').toBe('')
+    const caption = section().querySelector('figure.mx-report figcaption')?.textContent ?? ''
+    expect(caption, 'the caption says whose code it is').toMatch(/the Swiss QR Code the sample carries/)
+    expect(caption, 'and that nobody is paid by it').toMatch(/SIX’s example QR-IBAN, which no bank books/)
+  })
+
+  test('draws a code a reader reads back as the payment data, at level M', () => {
+    // Read by `testing/read-qr.ts`, a reader that shares no code with the encoder, so a fault
+    // in the encoding that the encoder would repeat in the test is found as well: the format
+    // information, the mask, the blocks or the bytes. It reads the path's modules, those under
+    // the Swiss cross among them, which a reader of the picture recovers by error correction;
+    // that the picture is read with the cross over it is ZXing's reading of Chromium's
+    // screenshots on 2026-11-26, not this test (0244).
+    render(<App />)
+
+    expect(readQr(reportCode().modules)).toMatchObject({ level: 'M', text: PAYLOAD })
+  })
+
+  test('draws the modules Report’s published sample shows, whatever uqr the pin is moved to', () => {
+    /*
+     * The first test above takes what it expects from uqr, and the reader reads any mask and
+     * any version up to 25, so a later uqr that chose another mask, another version or other
+     * segments for the same text would pass both, and the drawing would no longer be the code
+     * Report's sample carries. This one holds it to Report's picture instead: on 2026-11-26
+     * ZXing (zxing-wasm 3.1.5) sampled the code in Report's published
+     * `docs/images/invoice-en.png`, at `main` 81405cb, as version 11 at level M with mask 2,
+     * and its 3,600 modules outside the cross's square, written as `visible` writes them, have
+     * the FNV-1a below.
+     */
+    render(<App />)
+
+    const { modules } = reportCode()
+    const { version, level, mask } = readQr(modules)
+    expect({ version, level, mask }).toEqual({ version: 11, level: 'M', mask: 2 })
+    expect(visible(modules).match(/[01]/g), 'the modules a picture shows').toHaveLength(3600)
+    expect(fnv1a(visible(modules)), 'the modules of Report’s picture').toBe('e833c655')
+  })
+
+  test('puts SIX’s cross over the code’s centre, 7 mm of its 46', () => {
+    // IG 6.4.2: a white square of 7 mm, a black one of 6 on it and a white cross of 35/9 mm on
+    // that, at the centre of the 46 mm code, as Report draws it. A cross anywhere else, or
+    // larger, covers modules a reader then has to correct, and one left out is not a Swiss
+    // QR Code.
+    render(<App />)
+
+    const { svg, modules } = reportCode()
+    const across = modules.length
+    const mm = across / 46
+    const squares = [...svg.querySelectorAll('rect')].map((rect) => ({
+      centre: Number(rect.getAttribute('x') ?? 0) + Number(rect.getAttribute('width')) / 2,
+      middle: Number(rect.getAttribute('y') ?? 0) + Number(rect.getAttribute('height')) / 2,
+      side: Number(rect.getAttribute('width')),
+      fill: rect.getAttribute('fill'),
+    }))
+    const near = (value: number): number => Math.round(value * 1e6) / 1e6
+    expect(squares.map((square) => ({ ...square, centre: near(square.centre), middle: near(square.middle), side: near(square.side) }))).toEqual([
+      { centre: near(across / 2), middle: near(across / 2), side: across, fill: '#fff' },
+      { centre: near(across / 2), middle: near(across / 2), side: near(7 * mm), fill: '#fff' },
+      { centre: near(across / 2), middle: near(across / 2), side: near(6 * mm), fill: '#000' },
+    ])
+    const corners = [...(svg.querySelector('path.mx-qr-cross')?.getAttribute('d') ?? '').matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].map(
+      ([, x, y]) => [Number(x), Number(y)] as const,
+    )
+    expect(corners, 'the cross has twelve corners').toHaveLength(12)
+    expect(svg.querySelector('path.mx-qr-cross')?.getAttribute('fill'), 'and is white').toBe('#fff')
+    const xs = corners.map(([x]) => x)
+    const ys = corners.map(([, y]) => y)
+    expect([near(Math.min(...xs)), near(Math.max(...xs)), near(Math.min(...ys)), near(Math.max(...ys))]).toEqual(
+      [-1, 1, -1, 1].map((side) => near(across / 2 + (side * 35 * mm) / 18)),
+    )
   })
 
   test('answers a field in the running submission, like every other section', () => {
