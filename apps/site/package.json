@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --ssr src/product-render.tsx --outDir dist/.prerender && node prerender.mjs",
+    "build": "vite build && vite build --ssr src/render.tsx --outDir dist/.prerender && node prerender.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage",

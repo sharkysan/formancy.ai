@@ -49,6 +49,7 @@ import { checkPaneSwitchClear } from './pane-switch-browser-test.mjs'
 import { checkBuildersLayAlike } from './builders-layout-browser-test.mjs'
 import { REFUSALS, checkServedUnderItsPolicies, servedUnder } from './policy-browser-test.mjs'
 import { PRODUCT_PAGES, checkProductPages } from './product-pages-browser-test.mjs'
+import { checkStaticPages } from './static-pages-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -216,6 +217,7 @@ async function run() {
     await checkTemplateGallery(browser, origin, check)
     await checkAngularPage(browser, origin, check)
     await checkProductPages(browser, origin, check)
+    await checkStaticPages(browser, origin, check, site)
     await checkUploadThumbnails(browser, url, check)
     await checkArrangeGaps(browser, url, check)
     await checkSuggestionsPlacement(browser, url, check)

@@ -74,7 +74,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0179](0179-the-paid-modules-are-named-as-not-free.md) | Two modules built on formancy are sold, and the landing page names them as not free | accepted; extended by 0241, which links them from every page's footer as well, and by 0242, which gives each a product page and a card on the landing page |
 | [0180](0180-formancy-health-is-named-before-its-first-release.md) | Formancy Health is named beside the other paid modules, before its first release | accepted |
 | [0241](0241-the-sitemaps-name-the-paid-modules-pages-and-every-pages-footer-links-them.md) | The sitemaps name the paid modules' pages, and every page's footer links them, from one list | accepted; extended by 0242, whose footer links each module to its product page, and whose bar has one link to the modules that names none of them |
-| [0242](0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md) | Each paid module has a product page on formancy.ai, sent as static HTML, and the landing page shows what each makes | accepted |
+| [0242](0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md) | Each paid module has a product page on formancy.ai, sent as static HTML, and the landing page shows what each makes | accepted; extended by 0243, which sends the landing page, the templates gallery and the Angular page as static HTML by the same step |
 
 ### Architecture
 
@@ -343,3 +343,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0238](0238-a-time-or-an-instant-declares-its-precision.md) | A time or an instant declares its precision, and every answer to it has that width | accepted |
 | [0239](0239-spec-6-freezes-with-the-property-it-opened-for.md) | Spec 6 freezes with the property it was opened for, and nothing opens version 7 yet | accepted |
 | [0240](0240-a-computed-rule-depends-on-the-fields-it-reads.md) | A computed rule depends on the fields it reads, not on their top-level names | accepted |
+| [0243](0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md) | Every page of the site's own build is sent as static HTML, and the browser takes it over as it was sent | accepted |

@@ -506,12 +506,17 @@ succeeded. `scripts/build-web.mjs` reads each built page back and refuses to fin
 if that has happened. The starter, served inside another page, is built with a
 relative base instead.
 
-The paid modules' product pages are the only pages the site sends with their words
-in the HTML: the site's own `build` renders each into its root after Vite has built
-it, with `vite build --ssr` and `apps/site/prerender.mjs`, and `scripts/build-web.mjs`
-refuses a product page whose root holds no page
+Every page of the site's own build — the landing page, the templates gallery, the
+Angular page and the paid modules' product pages — is sent with its words in the
+HTML: the site's `build` renders each into its root after Vite has built it, with
+`vite build --ssr` and `apps/site/prerender.mjs`, and `scripts/build-web.mjs`
+refuses a page whose root holds no page
 ([0242](./docs/decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
-Every other page is drawn by its script.
+In the browser each page's script takes that markup over rather than drawing it
+again, and `pnpm test:browser` fails a page it had to draw again
+([0243](./docs/decisions/0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md)).
+The playground is a build of its own and is still drawn by its script; the
+documentation is Astro's, which writes its pages as HTML.
 
 The sitemaps are files in `apps/site/public`, which the build checks rather than
 writes. `sitemap-pages.xml` lists the landing page, the playground and the site's

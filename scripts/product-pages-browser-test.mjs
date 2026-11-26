@@ -28,8 +28,10 @@
  * - **The bar's "Paid modules" link** is shown from 64rem and hidden below it, where the bar
  *   has no room for it; it is never hidden at every width.
  *
- * The landing page's own root is still empty to a crawler that runs no script, which the
- * risks name (§11); this measures its section in the browser like the rest.
+ * The landing page is rendered into its root by the same build (0243), so it is held to the
+ * same rule at every width here: nothing raised, React's correction of its markup among it.
+ * `static-pages-browser-test.mjs` asks of every page the build renders whether the browser
+ * took its markup over or drew it again.
  */
 
 /** The product pages the site builds, in the order the footer links the modules. */
@@ -65,9 +67,10 @@ export async function checkProductPages(browser, origin, check) {
       const page = await browser.newPage({ viewport: { width, height: 900 } })
       const errors = []
       page.on('pageerror', (error) => errors.push(error.message))
-      // On a product page, React says a markup it had to correct as a console error.
+      // React says a markup it had to correct as a console error, on the landing page as on a
+      // product page, since the build renders both (0243).
       page.on('console', (message) => {
-        if (message.type() === 'error' && path !== '/') errors.push(message.text())
+        if (message.type() === 'error') errors.push(message.text())
       })
       try {
         await page.goto(`${origin}${path}`, { waitUntil: 'load' })

@@ -548,10 +548,16 @@ Each module also has a page of this site's own, `/products/data/`, `/products/re
 The pages are one layout, `src/product-page.tsx`, over one file of words per module in
 `src/products/`; each card and each page draws the module's example with the same component in
 `src/module-examples/`, in HTML and CSS, a `card` crop for the one and a `page` crop for the
-other. They are the only pages the site sends with their words in the HTML: after `vite build`,
-the site's `build` runs `vite build --ssr src/product-render.tsx` and `prerender.mjs`, which
-renders each page into its root, and `src/product-main.tsx` takes the markup over in the browser.
-With `?og` it draws the module's share card instead, `src/product-og-card.tsx`, from which
+other. They were the first pages the site sent with their words in the HTML; every page of its
+own build is sent so now, the landing page, the templates gallery and the Angular page with them
+([0243](../decisions/0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md)).
+After `vite build`, the site's `build` runs `vite build --ssr src/render.tsx` and `prerender.mjs`,
+which renders each page `STATIC_PAGES` lists into its root, and in the browser each page's entry
+takes the markup over through `mount` in `src/mount.tsx`, which hydrates the tree the server
+rendered rather than drawing it again. Nothing on the pages reads the browser while it renders, so
+the two agree, and `scripts/build-web.mjs` refuses a page whose root holds no page, or one whose
+markup carries a style attribute, which the site's policy refuses and React would not write again.
+On a product page, `?og` draws the module's share card instead, `src/product-og-card.tsx`, from which
 `public/products/<id>/og.png` is taken, as `src/og-card.tsx` is the site's; each page's head names
 its card, and the landing page's structured data names each module as its product page does.
 Every link on them to a module sits in a group named by the terms of the module it leads to, and each
