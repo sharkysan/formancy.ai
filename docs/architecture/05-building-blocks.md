@@ -548,7 +548,10 @@ Each module also has a page of this site's own, `/products/data/`, `/products/re
 The pages are one layout, `src/product-page.tsx`, over one file of words per module in
 `src/products/`; each card and each page draws the module's example with the same component in
 `src/module-examples/`, in HTML and CSS, a `card` crop for the one and a `page` crop for the
-other. They were the first pages the site sent with their words in the HTML; every page of its
+other. Report's carries its sample's own Swiss QR Code, an SVG that `swiss-qr-code.tsx` encodes
+from the sample's payment data with uqr 0.1.3, Report's encoder at Report's version and options,
+when the page is rendered, and draws as Report's renderer does
+([0244](../decisions/0244-reports-example-draws-its-samples-own-swiss-qr-code-encoded-as-report-encodes-it.md)). They were the first pages the site sent with their words in the HTML; every page of its
 own build is sent so now, the landing page, the templates gallery and the Angular page with them
 ([0243](../decisions/0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md)).
 After `vite build`, the site's `build` runs `vite build --ssr src/render.tsx` and `prerender.mjs`,

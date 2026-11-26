@@ -8,6 +8,7 @@ import healthHtml from '../products/health/index.html?raw'
 import reportHtml from '../products/report/index.html?raw'
 import PAID_MODULES from './paid-modules.json'
 import { ProductPage } from './product-page.js'
+import { PAYLOAD, ReportExample } from './module-examples/report.js'
 import { STATIC_PAGES, renderPage } from './render.js'
 import { PRODUCTS } from './products/all.js'
 import type { Product } from './products/product.js'
@@ -144,7 +145,12 @@ describe.each(PAGES)('the product page of %s', (_, product, html) => {
     const figure = screen.getByRole('region', { name: 'What it makes' }).querySelector('figure')
     expect(figure).not.toBeNull()
     expect(figure?.querySelector('figcaption')?.textContent).toMatch(/Drawn for this page after/)
-    expect(figure?.querySelectorAll('img, svg, canvas, picture, iframe')).toHaveLength(0)
+    expect(figure?.querySelectorAll('img, canvas, picture, iframe, image, use, foreignObject')).toHaveLength(0)
+    // The one drawing is Report's Swiss QR Code, the site's own SVG, hidden from assistive
+    // technology because the slip prints what it says (0244).
+    expect(
+      [...(figure?.querySelectorAll('svg') ?? [])].map((svg) => `${String(svg.getAttribute('class'))}, aria-hidden ${String(svg.getAttribute('aria-hidden'))}`),
+    ).toEqual(product.page === 'report' ? ['mx-qr, aria-hidden true'] : [])
     expect(figure?.querySelectorAll('a, button, input, select, textarea, [tabindex]')).toHaveLength(0)
   })
 
@@ -353,17 +359,99 @@ describe('the landing page’s head', () => {
 })
 
 describe('Formancy Report’s page', () => {
-  test('leaves the QR-bill’s code undrawn, so nothing on it can be scanned', () => {
-    // As on the landing page's card: a payment code that looked scannable would be one
-    // somebody could pay. The place holds the Swiss cross alone, and no character.
+  /** The SVG of the one Swiss QR Code in a rendering of Report's example. */
+  const codeOf = (html: string): string => {
+    const codes = [...html.matchAll(/<svg class="mx-qr"[\s\S]*?<\/svg>/g)].map(([svg]) => svg)
+    expect(codes, 'one code in the example').toHaveLength(1)
+    return codes[0] ?? ''
+  }
+
+  test('draws the same Swiss QR Code as the landing page’s card', () => {
+    // One code, the sample's (0244): a page and a card drawing two would make two claims
+    // about what Report prints, and one of them would be wrong. Compared as the build sends
+    // them, the whole drawing, the cross with the modules.
+    const card = codeOf(renderToStaticMarkup(<ReportExample variant="card" />))
+    const page = codeOf(renderToStaticMarkup(<ProductPage product={PRODUCTS.report} />))
+    expect(card).toMatch(/<path class="mx-qr-modules" d="M0 0h7/)
+    expect(page).toBe(card)
+  })
+
+  test('prints on its slip what its code carries, as a real one does', () => {
+    /*
+     * A QR-bill prints the account, the creditor, the reference, the additional information,
+     * the debtor, the currency and the amount its code carries (IG 3.5, 3.6), so that whoever
+     * pays can check the code against the words. Here the words are typed and the code is the
+     * payload's, so they are held to each other: each element of SIX's Table 8 is read from
+     * the payload, printed as SIX prints it, and found under its heading in each part, the
+     * additional information in the payment part alone. A payload changed without the words,
+     * or the words without the payload, fails; and the amount is the invoice's total.
+     */
     render(<ProductPage product={PRODUCTS.report} />)
 
-    const places = document.querySelectorAll('#makes .mx-code-square')
-    expect(places).toHaveLength(1)
-    const [place] = places
-    expect([...(place?.children ?? [])].map((child) => child.className)).toEqual(['mx-cross'])
-    expect(place?.firstElementChild?.children).toHaveLength(0)
-    expect(place?.textContent).toBe('')
+    const lines = PAYLOAD.split('\n')
+    expect(lines, 'the 31 elements of IG Table 8, without billing information').toHaveLength(31)
+    expect(lines.slice(0, 3), 'header').toEqual(['SPC', '0200', '1'])
+    expect(lines.slice(11, 18), 'the ultimate creditor, which must not be filled in').toEqual(Array<string>(7).fill(''))
+    expect(lines[30], 'trailer').toBe('EPD')
+    const [iban = '', amount = '', currency = '', type = '', reference = '', message = ''] = [lines[3], lines[18], lines[19], lines[27], lines[28], lines[29]]
+    const address = (parts: readonly string[]): string[] => {
+      const [kind, name, street, number, postcode, town, country] = parts
+      expect([kind, country], 'a structured address in Switzerland').toEqual(['S', 'CH'])
+      return [String(name), `${String(street)} ${String(number)}`, `${String(postcode)} ${String(town)}`]
+    }
+    expect(type, 'a QR reference').toBe('QRR')
+    const groups = (text: string, size: number): string => text.match(new RegExp(`.{1,${String(size)}}`, 'g'))?.join(' ') ?? ''
+    const [whole = '', cents = ''] = amount.split('.')
+    const grouped = (digits: string, separator: string): string => digits.replace(/\B(?=(\d{3})+$)/g, separator)
+    const printed = {
+      account: [groups(iban, 4), ...address(lines.slice(4, 11))],
+      reference: [`${reference.slice(0, 2)} ${groups(reference.slice(2), 5)}`],
+      additional: [message],
+      debtor: address(lines.slice(20, 27)),
+      amount: `${grouped(whole, ' ')}.${cents}`,
+    }
+
+    const part = (name: 'receipt' | 'payment'): { information: Record<string, string[]>; amount: Record<string, string> } => {
+      const element = document.querySelector(`#makes .mx-${name}`)
+      if (element === null) throw new Error(`no ${name} on the slip`)
+      const terms = (list: Element | null): Array<[string, Element]> =>
+        [...(list?.children ?? [])].map((row) => [row.querySelector('dt')?.textContent ?? '', row.querySelector('dd') ?? row])
+      return {
+        information: Object.fromEntries(
+          terms(element.querySelector('.mx-slip-information')).map(([heading, values]) => [heading, [...values.children].map((value) => value.textContent)]),
+        ),
+        amount: Object.fromEntries(terms(element.querySelector('.mx-slip-amount')).map(([heading, value]) => [heading, value.textContent ?? ''])),
+      }
+    }
+    expect(part('payment').information).toEqual({
+      'Account / Payable to': printed.account,
+      Reference: printed.reference,
+      'Additional information': printed.additional,
+      'Payable by': printed.debtor,
+    })
+    expect(part('receipt').information).toEqual({
+      'Account / Payable to': printed.account,
+      Reference: printed.reference,
+      'Payable by': printed.debtor,
+    })
+    for (const name of ['receipt', 'payment'] as const) expect(part(name).amount, name).toEqual({ Currency: currency, Amount: printed.amount })
+
+    const total = [...document.querySelectorAll('#makes .mx-sums .mx-total dd')].map((value) => value.textContent)
+    expect(total, 'the bill pays the invoice’s total').toEqual([`${currency} ${grouped(whole, "'")}.${cents}`])
+  })
+
+  test('marks where its slip is separated, and names its parts and the receipt’s acceptance point', () => {
+    // What SIX's slip prints besides what the code carries, as Report's sample prints it: a
+    // bill sent as a PDF says above the slip where to separate it (IG 3.7), each part is
+    // titled, and the receipt keeps a place for the acceptance point's stamp (3.5). Without
+    // them the drawing is not the slip SIX lays out, and not the one Report's sample shows.
+    render(<ProductPage product={PRODUCTS.report} />)
+
+    const separate = document.querySelector('#makes .mx-separate')
+    expect(separate?.textContent).toBe('Separate before paying in')
+    expect(separate?.nextElementSibling?.className, 'just above the slip').toBe('mx-slip')
+    expect([...document.querySelectorAll('#makes .mx-slip-title')].map((title) => title.textContent)).toEqual(['Receipt', 'Payment part'])
+    expect(document.querySelector('#makes .mx-receipt .mx-acceptance')?.textContent).toBe('Acceptance point')
   })
 })
 
