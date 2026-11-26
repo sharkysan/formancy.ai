@@ -8,7 +8,7 @@ import healthHtml from '../products/health/index.html?raw'
 import reportHtml from '../products/report/index.html?raw'
 import PAID_MODULES from './paid-modules.json'
 import { ProductPage } from './product-page.js'
-import { renderProduct } from './product-render.js'
+import { STATIC_PAGES, renderPage } from './render.js'
 import { PRODUCTS } from './products/all.js'
 import type { Product } from './products/product.js'
 import { longDate } from './products/product.js'
@@ -201,14 +201,17 @@ describe.each(PAGES)('the product page of %s', (_, product, html) => {
   test('is sent with its words in the HTML, rendered as the browser draws it', () => {
     /*
      * The page exists to be found, and a crawler that runs no script reads only what the
-     * server sends. `prerender.mjs` writes `renderProduct`'s markup into the root this page's
-     * `index.html` names; `build-web.mjs` reads the built page back. This holds the two
-     * halves that are source: the root is the one the build looks for, and the markup is the
-     * whole page.
+     * server sends. `prerender.mjs` writes the markup `render.tsx` renders for this page into
+     * the root its `index.html` names; `build-web.mjs` reads the built page back. This holds
+     * the two halves that are source: the root is the one the build looks for, and the markup
+     * is the whole page.
      */
-    expect(html).toContain(`<div id="root" data-product="${product.page}"></div>`)
+    const page = STATIC_PAGES.find((each) => each.page === `products/${product.page}`)
+    if (page === undefined) throw new Error(`render.tsx renders no page products/${product.page}`)
+    expect(page.root).toBe(`<div id="root" data-product="${product.page}"></div>`)
+    expect(html).toContain(page.root)
 
-    const sent = new DOMParser().parseFromString(renderProduct(product.page), 'text/html')
+    const sent = new DOMParser().parseFromString(renderPage(page), 'text/html')
     expect(sent.querySelectorAll('h1')).toHaveLength(1)
     expect(sent.querySelector('main')).not.toBeNull()
     expect(sent.body.textContent).toContain(product.name)

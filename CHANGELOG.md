@@ -95,6 +95,20 @@ document lists the rules in, and the replay can store none. Recorded as debt, no
   for the member it reads, so both are accepted and compute the same in the browser and on the
   replay.
 
+**Changed, on formancy.ai: the landing page, the templates gallery and the Angular page are sent
+as HTML with their words in it.** Each was an empty root its script drew into, so a crawler or a
+link preview that runs no script read its head and nothing else: not the landing page's argument,
+its section on the paid modules with their terms or its footer's links, not one template and none
+of the Angular page's code. The site's build renders them by the step that renders the product
+pages, and in the browser each page's script takes the markup over rather than drawing it again,
+so the page behaves as before, `?og` included. Until the script has run, the forms show their first
+state and answer nothing, which a `<noscript>` line says under the landing page and the gallery;
+a template's download link works without it. The landing page's HTML grew from 1,975 to 12,316
+bytes gzipped, measured on 2026-11-26, and its script is unchanged. `pnpm build:web` fails a page
+of the site's build sent with an empty root, or with a style attribute the site's policy would
+refuse, and `pnpm test:browser` one the browser drew again instead of taking it over. No `@formancy/*` package changes
+([0243](docs/decisions/0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md)).
+
 **Added, on formancy.ai: a product page for each paid module, and a section of the landing page
 showing what each makes.** A search for what Formancy Data, Formancy Report or Formancy Health
 does found no page of this site that said it, and every page the site builds was an empty root to a
@@ -117,7 +131,7 @@ landing page's descriptions still lead with the visual form builder and now say 
 modules make, as paid, and its structured data names each module by the address and words its
 product page gives it. What the pages say of each module was read
 from its repository on 2026-11-25 and is dated on the page, since nothing here reads it again; the
-landing page itself is still drawn by script alone. No `@formancy/*` package changes
+landing page is sent as HTML too, by the entry above. No `@formancy/*` package changes
 ([0242](docs/decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
 
 **Added, on formancy.ai: the paid modules' pages in the sitemaps, and a link to each module from

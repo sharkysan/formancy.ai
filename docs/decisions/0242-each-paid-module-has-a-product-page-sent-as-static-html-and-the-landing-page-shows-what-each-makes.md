@@ -1,6 +1,8 @@
 # 0242 — Each paid module has a product page on formancy.ai, sent as static HTML, and the landing page shows what each makes
 
-- **Status:** accepted
+- **Status:** accepted; extended by [0243](0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md),
+  which renders the landing page, the templates gallery and the Angular page, named here as debt,
+  by the prerender step decided here, and takes every page over in the browser with one `mount`
 - **Date:** 2026-11-25
 - **Extends:** [0179](0179-the-paid-modules-are-named-as-not-free.md), whose licence section
   stays where a visitor decides what is free and which rejected "a page of its own" for that

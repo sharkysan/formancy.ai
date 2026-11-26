@@ -1,6 +1,5 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
 import { App } from './app.js'
+import { mount, replace } from './mount.js'
 import { OgCard } from './og-card.js'
 import './og-card.css'
 
@@ -14,7 +13,11 @@ if (root === null) throw new Error('No #root in index.html')
  * one before this outlived two rewrites of the headline. Built from the same fonts,
  * colours and renderer, it cannot drift without the drift being visible in the source.
  * `docs/images/README.md` says how to turn it into `public/og.png`.
+ *
+ * Read here, before anything renders, and never during a render: the build renders the
+ * page with no address at all (0243), so the page itself must not depend on one. The root
+ * holds the page the build wrote, so the card replaces it; otherwise the page takes the
+ * markup over.
  */
-const wantsCard = new URLSearchParams(window.location.search).has('og')
-
-createRoot(root).render(<StrictMode>{wantsCard ? <OgCard /> : <App />}</StrictMode>)
+if (new URLSearchParams(window.location.search).has('og')) replace(root, <OgCard />)
+else mount(root, <App />)

@@ -108,7 +108,10 @@ Each gate exists for a reason that was paid for at least once:
 - **`build:web`** — composes the landing page, the playground, the docs and the
   Angular starter under one origin, which `build` does not do, and carries the check
   for root-absolute documentation links and for an app's asset URLs pointing outside
-  where it is served. Added as a gate after it had existed for a while as a
+  where it is served, and for a page of the site's own build sent with an empty root or
+  with a style attribute the site's policy would refuse
+  ([0243](../decisions/0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md)).
+  Added as a gate after it had existed for a while as a
   script nothing ran: two links resolving against the landing page instead of
   `/docs/` reached production, built cleanly all the way through, and were found
   in a deploy log. A guard that is not a gate is a comment.
@@ -264,6 +267,11 @@ Each gate exists for a reason that was paid for at least once:
   page sent without its words in the HTML or whose markup the browser had to correct; each
   failed once on a fault planted for it
   ([0242](../decisions/0242-each-paid-module-has-a-product-page-sent-as-static-html-and-the-landing-page-shows-what-each-makes.md)).
+  It also opens every page the site's build renders to static HTML, the landing page, the
+  templates gallery and the Angular page among them, and fails on one the browser drew again
+  instead of taking over the markup it was sent, or that threw or logged an error doing it; it
+  failed once on a landing page built with a reading rendered from `typeof window`
+  ([0243](../decisions/0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

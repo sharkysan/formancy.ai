@@ -61,12 +61,20 @@ const NESTED = [
  */
 const PAGES = ['templates', 'angular-form-builder', 'products/data', 'products/report', 'products/health']
 
+/** The paid modules' product pages among them (0242), which the footer links each module to. */
+const PRODUCT_PAGES = PAGES.filter((page) => page.startsWith('products/'))
+
 /**
- * The pages whose words have to be in the HTML the server sends, because being found is
- * what they are for (0242): the product pages, which the site's build renders into their
- * roots. Every other page is an empty root a script draws into.
+ * The pages whose words have to be in the HTML the server sends: every page of the site's
+ * own build, the landing page first, which its `build` renders into their roots. The product
+ * pages were first, because being found is what they are for (0242); the landing page, the
+ * templates gallery and the Angular page followed, since a crawler or a link preview that
+ * runs no script read nothing on them but their heads (0243). `''` is the landing page.
  */
-const PRERENDERED = PAGES.filter((page) => page.startsWith('products/'))
+const PRERENDERED = ['', ...PAGES]
+
+/** A page's `index.html` in the site's build. */
+const indexOf = (page) => join(siteDist, ...page.split('/').filter((part) => part !== ''), 'index.html')
 
 function run(command, args) {
   // `shell: true` on Windows, where pnpm is a .cmd and spawn cannot exec it.
@@ -93,24 +101,42 @@ for (const page of PAGES) {
 }
 
 /*
- * A product page whose root is empty builds and deploys and reads as nothing to a crawler
- * that runs no script, which is the one reader the page was rendered for. So the built page
- * is read back: its root holds markup, and the markup holds the page's one heading. The
- * module that rendered it is gone, so nothing but the pages ships.
+ * A page whose root is empty builds and deploys and reads as nothing to a crawler or a link
+ * preview that runs no script, while it looks right to everybody whose browser runs it, so
+ * nothing else would say so. So each built page is read back: its root holds markup, and the
+ * markup holds the page's `<main>` and its one heading. The module that rendered them is
+ * gone, so nothing but the pages ships.
  */
 for (const page of PRERENDERED) {
-  const html = readFileSync(join(siteDist, ...page.split('/'), 'index.html'), 'utf8')
+  const html = readFileSync(indexOf(page), 'utf8')
   const opened = html.indexOf('<div id="root"')
   const body = opened === -1 ? '' : html.slice(opened, html.lastIndexOf('</body>'))
   if (!/<main\b/.test(body) || (body.match(/<h1\b/g) ?? []).length !== 1) {
     throw new Error(
-      `${page}/index.html was built with ${opened === -1 ? 'no root' : 'no page in its root'}: apps/site's build renders it to static HTML ` +
-        `(prerender.mjs), and without that its words reach no crawler that runs no script.`,
+      `${page === '' ? '' : `${page}/`}index.html was built with ${opened === -1 ? 'no root' : 'no page in its root'}: apps/site's build renders it ` +
+        `to static HTML (prerender.mjs, from src/render.tsx), and without that its words reach no crawler that runs no script.`,
+    )
+  }
+  /*
+   * The site's pages are served under a policy that admits no style attribute
+   * (`scripts/site-headers.mjs`), so one in a page's first render is refused as the browser
+   * parses the page, and React, taking the markup over, leaves the element as it was sent until
+   * that style changes. Drawn by script, the same style was set through the CSSOM, which the
+   * policy allows, so this is new with the markup (0243). Attribute values are cut out first:
+   * React writes every one in double quotes, with any quote inside it escaped.
+   */
+  const styled = [...body.matchAll(/<([a-z][^\s/>]*)([^>]*)>/gi)]
+    .filter(([, , attributes]) => /(?:^|\s)style\s*=/i.test(attributes.replace(/"[^"]*"|'[^']*'/g, '""')))
+    .map(([, tag]) => `<${tag}>`)
+  if (styled.length > 0) {
+    throw new Error(
+      `${page === '' ? '' : `${page}/`}index.html was built with a style attribute on ${[...new Set(styled)].join(', ')}: the site's policy refuses it, ` +
+        `and React does not write it again when it takes the markup over. Give the element a class, or set the style once the page is taken over (0243).`,
     )
   }
 }
 if (existsSync(join(siteDist, '.prerender'))) {
-  throw new Error(`apps/site/dist/.prerender is still there: it is the module prerender.mjs renders the product pages with, and it would ship.`)
+  throw new Error(`apps/site/dist/.prerender is still there: it is the module prerender.mjs renders the site's pages with, and it would ship.`)
 }
 
 for (const app of NESTED) {
@@ -222,11 +248,11 @@ if (elsewhere.length > 0) {
   )
 }
 
-const unbuilt = paidModules.filter((module) => !PRERENDERED.some((page) => module.product === `/${page}/`))
+const unbuilt = paidModules.filter((module) => !PRODUCT_PAGES.some((page) => module.product === `/${page}/`))
 if (unbuilt.length > 0) {
   throw new Error(
     `apps/site/src/paid-modules.json has the footer link ${unbuilt.map((module) => `${module.name} to ${String(module.product)}`).join(', ')}, ` +
-      `which is not a product page this build made: ${PRERENDERED.map((page) => `/${page}/`).join(', ')}.`,
+      `which is not a product page this build made: ${PRODUCT_PAGES.map((page) => `/${page}/`).join(', ')}.`,
   )
 }
 
