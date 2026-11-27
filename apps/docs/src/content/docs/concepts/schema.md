@@ -367,6 +367,13 @@ It lives on the **model** rather than in logic because it decides the shape of
 the stored data, and the server applies the same reading it does — stripping
 values under branches *its own* evaluation says are hidden.
 
+A page a `skip` rule walks past reads `clearOnHide` too, in one place only: what
+is stored. Its answers stay in the form's value while the page is away, so every
+rule still reads them, the server judges what the browser judged, and walking
+back into the page finds them; `engine.submission()`, which the server stores,
+leaves out each field, group and list on the page unless it says `false`
+([0246](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)).
+
 ## Built-in validation
 
 Beyond `required`, the model carries the checks that need no expression:

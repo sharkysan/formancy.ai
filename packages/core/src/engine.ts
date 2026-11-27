@@ -23,6 +23,7 @@ import { ruleMessages } from './rule-messages.js'
 import { optionOrders } from './option-order.js'
 import { createRows, repeaterViolations } from './rows.js'
 import type { RepeaterNode } from './rows.js'
+import { createSkips } from './skips.js'
 import { bagType, readNullListAsNoRows, topLevelDataFields } from './top-level-fields.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
@@ -96,8 +97,15 @@ export interface FormEngine {
    * numbers that disagree about the same page.
    */
   pages(): ReadonlyArray<{ key: string; def: FieldDef; skipped: boolean }>
-  /** The current submission value. */
+  /** The current submission value: what a binding sends, and what the server replays and judges. */
   value(): unknown
+  /**
+   * What a response stores: `value()` without what a page the answers walk past holds, each field,
+   * group and list whole unless its own `clearOnHide` is false. The rules judge `value()`, so the
+   * server replays what the browser judged; this is what it keeps
+   * ([0246](../../../docs/decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)).
+   */
+  submission(): unknown
   rowCount(path: Path): number
   /**
    * Add an empty row. Past the repeater's `maxItems` it throws, as a row index that is not a
@@ -231,7 +239,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   const staticNodes: FieldNode[] = []
   const repeaters: RepeaterNode[] = []
-  const pageDefs: Array<{ key: string; def: FieldDef }> = []
+  const pageDefs: Array<{ key: string; def: FieldDef; parent: Path }> = []
   /** Groups by wire, for what a rule hiding one does to the answers in it. */
   const groupDefs = new Map<string, FieldDef>()
   let pageCount = 0
@@ -239,7 +247,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   function walk(defs: readonly FieldDef[], parent: Path, page: number): void {
     for (const def of defs) {
       if (def.type === 'page') {
-        pageDefs.push({ key: def.key, def })
+        pageDefs.push({ key: def.key, def, parent })
         walk(def.fields ?? [], parent, pageCount++)
       } else if (def.type === 'group') {
         groupDefs.set(formatPath([...parent, def.key]), def)
@@ -456,6 +464,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const rows = createRows(store, interaction, (repeater) => withinTarget(computed, repeater.wire))
   const errorsByWire = new Map<string, string[]>()
   const serverErrorsByWire = new Map<string, string[]>()
+  const skips = createSkips({ rules: skipRules, pages: pageDefs, declarations, fields: fieldsByKey })
 
   /** Absence means visible, enabled, and not expression-required. Row-scoped
    *  entries use instance wires (`items[0].discount`). */
@@ -463,8 +472,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const disabledWires = new Set<string>()
   const requiredWires = new Set<string>()
   // Inherited: what a rule hides or disables, it hides or disables whole — a group with
-  // the fields in it, a repeater with its rows (0184).
-  const hiddenAt = (path: Path): boolean => withinAny(hiddenWires, path)
+  // the fields in it, a repeater with its rows (0184). A page walked past hides too, on its own.
+  const hiddenAt = (path: Path): boolean => withinAny(hiddenWires, path) || skips.hides(path)
   const disabledAt = (path: Path): boolean => withinAny(disabledWires, path)
 
   const snapshotCache = new Map<string, FieldSnapshot>()
@@ -676,67 +685,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   // ----------------------------------------------------------------- skipping
 
-  /**
-   * Pages the answers walk past.
-   *
-   * A `skip` rule is an expression like `visible`, and it is compiled as one:
-   * same policy, same boolean result, same refusal of anything that could reach
-   * outside the document. What differs is its TARGET — a page's key rather than a
-   * data path, because a page is transparent for data and has no path at all.
-   *
-   * The consequence that matters is not the stepper. It is that the fields on a
-   * skipped page are hidden, and therefore not validated: a required answer on a
-   * page somebody never saw is a form that cannot be submitted and will not say
-   * why ([0087](../../../docs/decisions/0087-a-page-can-be-walked-past.md)).
-   */
-  const compiledSkips = skipRules.map((rule) => {
-    // `visible` rather than a policy of its own: the question is the same shape,
-    // the result is the same boolean, and giving it a second policy would be a
-    // second list of allowed functions for somebody to forget to keep level.
-    const outcome = compile(rule.cel ?? '', { kind: 'visible', variables: declarations })
-    if (!outcome.ok) throw new Error(refusedRule(rule, outcome.error, fieldsByKey))
-    const index = pageDefs.findIndex((page) => page.key === rule.target)
-    return { rule, program: outcome.program, index }
-  })
-
-  const skippedPages = new Set<number>()
-
-  /** Recomputed whenever anything the expressions read changes. */
+  /** Which pages the answers walk past, recomputed whenever anything the expressions read changes (`skips.ts`). */
   function applySkips(): string[] {
-    if (compiledSkips.length === 0) return []
-    const capabilities: Capabilities = captureCapabilities(capabilitySource!)
-    const bag = buildBag()
-    const changed: string[] = []
-
-    for (const entry of compiledSkips) {
-      if (entry.index === -1) continue
-      const outcome = evaluate(entry.program, bag, { capabilities })
-      // A rule that cannot evaluate does NOT skip. Failing open here is the one
-      // place it is right: a page hidden by a broken expression takes its
-      // questions away silently, while a page shown in error is visible and
-      // answerable ([0054] on what a rule that never works costs).
-      const skip = outcome.ok && outcome.value === true
-      const was = skippedPages.has(entry.index)
-      if (skip === was) continue
-      if (skip) skippedPages.add(entry.index)
-      else skippedPages.delete(entry.index)
-
-      // Every field on the page: hidden follows the page, and hidden is what
-      // keeps the answers out of validation and out of the submission.
-      for (const node of staticNodes) {
-        if (node.page !== entry.index) continue
-        if (skip) hiddenWires.add(node.wire)
-        else hiddenWires.delete(node.wire)
-        changed.push(node.wire)
-      }
-      for (const repeater of repeaters) {
-        if (repeater.page !== entry.index) continue
-        if (skip) hiddenWires.add(repeater.wire)
-        else hiddenWires.delete(repeater.wire)
-        changed.push(repeater.wire)
-      }
-    }
-    return changed
+    return skips.any ? skips.apply(buildBag(), captureCapabilities(capabilitySource!)) : []
   }
 
   // ------------------------------------------------------------------ checks
@@ -990,8 +941,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       // The `skipped` flag rather than a filtered list: the stepper needs to
       // leave a page out AND `page()` is an absolute index, so a filtered list
       // would put the two out of step with each other.
-      pageDefs.map((page, index) => ({ ...page, skipped: skippedPages.has(index) })),
+      pageDefs.map(({ key, def }, index) => ({ key, def, skipped: skips.isSkipped(index) })),
     value: () => store.root(),
+    submission: () => skips.strip(store.root()),
 
     rowCount: (path) => rows.count(requireRepeater(path)),
     addRow: (path) => rows.add(requireRepeater(path)),
@@ -1108,7 +1060,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         // Absolute page indices throughout: a skipped page is walked past rather
         // than removed, so `page()` still means the same thing it always did and
         // `pageOf(field)` still compares against it.
-        isLive: (index) => !skippedPages.has(index),
+        isLive: (index) => !skips.isSkipped(index),
       })
       return wizardInstance
     },

@@ -1,13 +1,16 @@
 # 0087 — A page can be walked past, and its questions go with it
 
-- **Status:** accepted
+- **Status:** accepted; what keeps a skipped page's answers out of the submission, and that
+  they are kept while the page is away, is [0246](0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)
 - **Date:** 2026-09-29
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/spec/src/skip-rule.test.ts` for the format and
-  `packages/core/src/skip.test.ts` for the walk — seven cases, of which *'does not hold the
+  `packages/core/src/skip.test.ts` for the walk, of which *'does not hold the
   form up with an answer nobody was asked for'* is the one that matters and
   *'and going back, which is where this is usually got wrong'* is the one that usually
-  ships broken. Both renderers are held by the stepper cases in their `new-types` suites,
+  ships broken. That the answers stay out of the submission is held, since
+  2026-11-27, by the tests [0246](0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)
+  names — until then nothing held it, and nothing did it. Both renderers are held by the stepper cases in their `new-types` suites,
   by role and accessible name.
 
 ## Context

@@ -10,6 +10,29 @@ later.
 
 ## Unreleased
 
+**Fixed: a page a `skip` rule walks past had its answers stored**, in every release since `0.3.0`,
+the first with a `skip` rule — measured on 2026-11-26 against `main` and read from `0.3.0`'s code; no
+release between was run. A skipped page's fields were hidden from validation, as
+[0087](docs/decisions/0087-a-page-can-be-walked-past.md) says, and what was in them was stored all
+the same: an answer a client sent for a skipped page, a passport number typed before the person said
+they need no visa after all, and a default on a page skipped from the start (hazards A4 and A10).
+The server now stores, and hands to a webhook, the engine's new `submission()`: `value()` without
+each field, group and list on a page the answers walk past, whole, unless its own `clearOnHide` is
+`false` ([0246](docs/decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). `value()`
+is unchanged — what a binding sends, what a draft keeps and what the server replays — so every rule
+judges as it did and the replay judges what the browser judged. That costs a stored response that
+can hold a field shown because of, or a value computed from, an answer it does not hold (A3), and a
+skipped page that, walked back into, finds what was typed there. Two other repairs were built and
+not shipped: pruning the answers from the store let a skip that reads its own page undo itself, and
+leaving them out of `value()` made the replay judge without answers the browser judged with. And a
+field on a skipped page with a `visible` rule of its own shared one switch with the skip, so the
+browser's next pass showed it again: a required one held the form up with an error on a page nobody
+could reach, where the replay of the same answers accepted it (A2). A skip and a `visible` rule are
+now two reasons to hide a field, and either hides it. A host storing what a binding hands over
+without replaying it should store `submission()` from its own replay instead. From the upgrade, a
+form version published before stores none of what a client sends for a page its answers walk past;
+responses stored before keep what they were stored with, and never migrate.
+
 **Fixed: a list stored as `null` could not be counted by a rule**, in every release through `0.14.0`,
 read from their engines' code. Validation takes a repeater handed `null` for no rows, so an API body
 can send one, but the pass read every top-level name as stored and only an absent one as empty:

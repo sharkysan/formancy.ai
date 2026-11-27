@@ -294,6 +294,37 @@ describe('createSubmission', () => {
     expect(canonical['total']).toBe(20)
   })
 
+  test('never trusts the client with a page the answers walk past: what it sent for it is stripped', async () => {
+    // SAFETY-ANALYSIS A4 by the skip road. The replay hid a skipped page's fields from
+    // validation and kept what the client sent for them, so the server stored an answer to
+    // a question the answers had walked past — measured on 2026-11-26 against `main` (0087, 0013).
+    const paged: FormSchema = {
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: {
+        fields: [
+          { key: 'p1', type: 'page', label: 'About you', fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Do you need a visa?' }] },
+          { key: 'p2', type: 'page', label: 'Visa details', fields: [{ key: 'passport', type: 'text', label: 'Passport number', required: true }] },
+        ],
+      },
+      logic: { rules: [{ target: 'p2', kind: 'skip', cel: 'needsVisa != true' }] },
+    }
+    const published = await publishForm(deps, { path: 'trip', schema: paged })
+    if (!published.ok) throw new Error('publish failed')
+
+    const outcome = await createSubmission(deps, {
+      path: 'trip',
+      declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
+      data: { needsVisa: false, passport: 'SMUGGLED' },
+    })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.canonicalData).toEqual({ needsVisa: false })
+  })
+
   test('stores no computed value it did not compute, even when it cannot compute one', async () => {
     // `price * qty` cannot be evaluated with `qty` left out, and a computed rule that
     // cannot be evaluated writes nothing (0054). The replay overwrote a sent total only

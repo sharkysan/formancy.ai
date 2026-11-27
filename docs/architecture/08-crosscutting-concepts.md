@@ -97,6 +97,12 @@ A specified behaviour, not an emergent one
   `disabled`.
 - `clearOnHide`, default `true`, decides whether its answer is pruned — a group's and a
   repeater's for everything inside them.
+- A page the answers walk past hides each field, group and list on it the same way, and leaves
+  it out of what a response stores (`submission()`), each by its own `clearOnHide`, while the
+  value keeps it: every rule reads it, the server's replay judges it as the browser did, and
+  walking back into the page finds it, which the line below does not promise a field a rule
+  hid. A skip and a `visible` rule are two reasons to hide a field, and either hides it
+  ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)).
 - The **server** applies the same semantics from its own evaluation, so a
   client cannot smuggle data into a hidden branch by sending it anyway.
 - Hiding then showing again gives back the person's answer if and only if `clearOnHide` is

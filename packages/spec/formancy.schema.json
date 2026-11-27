@@ -1287,7 +1287,7 @@
       {
        "const": "skip",
        "title": "Skip",
-       "description": "Walks past a page while the expression is true — a visa page for somebody who does not need a visa. Its target is the PAGE’s key rather than a data path, because a page carries no answer of its own. Needs spec version 3."
+       "description": "Walks past a page while the expression is true — a visa page for somebody who does not need a visa. Its target is the PAGE’s key rather than a data path, because a page carries no answer of its own. The fields on a skipped page are hidden, as a `visible` rule hides one, so not validated, and each field, group and list on it is left out of what a response stores unless its own `clearOnHide` is false. The answers stay in the form's value while the page is away, and every rule reads them, so walking back into it finds them. Needs spec version 3."
       }
      ]
     },
