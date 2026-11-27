@@ -10,7 +10,10 @@
   the engine with the same `createFormEngine` the renderers use, and the test
   "never trusts the client: hidden-branch data is stripped and computed lies are
   overwritten" in `packages/server-core/src/use-cases.test.ts` fails if the
-  server stops replaying. The fixtures are not yet executed against the engine
+  server stops replaying. That the replay judges as the browser did, by the
+  roads a browser can take, is walked at random through seven forms by
+  `packages/core/src/replay.test.ts`, within the limits SAFETY-ANALYSIS A2
+  states. The fixtures are not yet executed against the engine
   in a real browser — the renderer suites run under jsdom — so the browser half
   of this rests on the compiler rather than on a run.
 

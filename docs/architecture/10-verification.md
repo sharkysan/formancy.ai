@@ -53,7 +53,7 @@ the translated string off the document
 | Check | Command | What it proves |
 |---|---|---|
 | Engine fixtures, Node and browser, deep-diffed | `pnpm test` | No client/server rule drift — the flagship claim |
-| `fast-check` invariants | `pnpm test` | Hide/unhide restores iff `clearOnHide` is false; repeater add-then-remove is identity; evaluation is order-independent; cycles report deterministically |
+| `fast-check` invariants | `pnpm test` | Hide/unhide restores iff `clearOnHide` is false; repeater add-then-remove is identity; evaluation is order-independent; cycles report deterministically; the server's replay of what the browser hands over judges as the browser did, by random roads through seven forms (`packages/core/src/replay.test.ts`, SAFETY-ANALYSIS A2) |
 | Renderer conformance, both drivers | `pnpm test` | Both renderers behave identically, with no framework-specific skips |
 | axe-core after every mount and DOM-mutating change | in the same run | Zero automated accessibility violations |
 | Server integration on real PostgreSQL via Testcontainers | `pnpm test` | Versioning and submission defects only manifest against real SQL semantics — among them which of two sends of one response is stored, decided by the primary key inside the insert ([0169](../decisions/0169-a-response-is-stored-once.md)), and a NUL character, which PostgreSQL holds in no `text` or `jsonb` and the in-memory storage holds like any other, swept through every route in the route table ([0173](../decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)) |
