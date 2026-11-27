@@ -243,9 +243,9 @@ integration test that posts a value in a hidden branch and asserts it is absent
 from the stored row.
 
 A page a `skip` rule walks past is such a branch. What it holds is left out of what the server
-stores and hands to a webhook — the engine's `submission()` — each field, group and list whole by
-its own `clearOnHide`, while the value the browser sends and the replay judges keeps it, so the
-two judge alike ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). Until 2026-11-26
+stores with a response and hands to a webhook — the engine's `submission()` — each field, group
+and list whole by its own `clearOnHide`, while the value the browser sends, a draft keeps and the
+replay judges keeps it, so the two judge alike ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). Until 2026-11-26
 it was stored: the replay stored what a client sent for a skipped page, and what somebody typed
 there before the answers walked past it. Measured that day against `main`, and read from the code of `0.3.0`, the first release
 with a `skip` rule; no release between was run. Verified by
@@ -589,6 +589,18 @@ while a refusal leaves the draft holding the answers.
 - **The answer may stop being readable.** A document with `options` carries value→label
   forever in an immutable record; a source is under no such obligation, and recording the
   label would change what the field collects.
+
+*And every page is opened.* Until 2026-11-27 the walk that finds the sourced answers took a page
+for a group: it looked for the page's key in the answers, found nothing, and asked the source about
+none of the fields on it, so on any paged form, in every release since `0.2.0`, the first with this
+check, a value the list does not offer was stored — measured that day against `main`, and read from
+`0.2.0`'s code; no release between was run. A page now contributes nothing to the walk,
+by the function the walk for files uses. The walk reads what the replay judged, not what is stored,
+so an answer on a page the answers walk past is checked too: it is not stored, but the rules read
+it ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). Verified by
+`packages/server-core/src/options-membership.test.ts` (*is checked like any other, because a page is
+no segment of its path*) and `use-cases.test.ts` (*and still refuses an answer there that its list
+does not offer*).
 
 *And the name is looked up among the deployment's own.* Through 0.6.0 the lookup read
 `optionsSources[name]`, so a source named `constructor` was found in every object's prototype: a

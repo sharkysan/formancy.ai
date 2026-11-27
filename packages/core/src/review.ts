@@ -26,7 +26,8 @@ export interface ReviewedAnswer extends SaidAnswer {
  * A question is asked when it is shown, takes an answer and is the person's to give: not one a
  * rule hides or a skipped page holds, not one a rule disables or computes, and never a `hidden`
  * field, which nobody sees. Read by the walk `answersInWords` takes, so the review and a
- * submission read back agree about what was answered.
+ * submission read back agree about what was answered — and read from `submission()`, what is
+ * stored, so an answer a skipped page holds is not shown as one that will be sent (0246).
  */
 export function answersToReview(engine: FormEngine, text: FormText): ReviewedAnswer[] {
   const schema = engine.schema()
@@ -34,7 +35,7 @@ export function answersToReview(engine: FormEngine, text: FormText): ReviewedAns
     const snapshot = engine.getFieldSnapshot(parsePath(field))
     return snapshot.type !== 'hidden' && snapshot.visible && !snapshot.disabled && !snapshot.readOnly
   }
-  return readAnswers(schema, engine.value(), text, engine.locale(), asked).map(({ line, answered }) => {
+  return readAnswers(schema, engine.submission(), text, engine.locale(), asked).map(({ line, answered }) => {
     const field = parsePath(line.field)
     return { ...line, answered, page: engine.pageOf(field), controlId: engine.getFieldSnapshot(field).ids.control }
   })

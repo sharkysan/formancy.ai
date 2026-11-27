@@ -9,7 +9,9 @@
   replays exactly what `value()` hands over in server mode and asks for the same verdict, the
   same errors, the same pages and the same `submission()` — and, for the server,
   `packages/server-core/src/use-cases.test.ts` (*never trusts the client with a page the answers
-  walk past*). Removing the strip, letting it ignore `clearOnHide`, or hiding a skipped page's
+  walk past*, for the answer, the stored row and the webhook's body, and *and still refuses an answer
+  there that its list does not offer*), `packages/core/src/review.test.ts` (*a page the answers walk
+  past*) and `packages/core/src/scenarios.test.ts` (*an example on a page the answers walk past*). Removing the strip, letting it ignore `clearOnHide`, or hiding a skipped page's
   fields in the set a `visible` rule switches each fails at least one of them, and the replay
   cases fail against an engine whose `value()` leaves the answers out.
 
@@ -48,7 +50,11 @@ and judges, so the replay sees exactly what the browser saw. The engine's `submi
 `value()` without each field, group and list standing on a page the answers walk past, whole,
 unless its own `clearOnHide` is false, as a group a rule hides is
 ([0184](0184-a-repeater-is-validated-as-a-field-is.md)). The server stores `submission()`, hands
-it to webhooks, and checks a sourced answer's membership and claims files from it.
+it to webhooks and claims files from it; it checks a sourced answer against its list in `value()`,
+what was judged, so one on a skipped page that the list does not offer is refused as before, since
+the rules read it — as an answer of the wrong shape there is. The review a person checks before
+sending, and an example's `absent`, read `submission()`, so neither shows a skipped page's answer as
+one that is sent.
 
 **A skip and a `visible` rule are two reasons to hide a field, and either hides it.** They had
 shared one switch, so the next answer anywhere re-ran a field's own rule and showed it again on

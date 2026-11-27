@@ -97,7 +97,7 @@ export interface FormEngine {
    * numbers that disagree about the same page.
    */
   pages(): ReadonlyArray<{ key: string; def: FieldDef; skipped: boolean }>
-  /** The current submission value: what a binding sends, and what the server replays and judges. */
+  /** The current answers: what a binding sends, what a draft keeps, and what the server replays and judges. */
   value(): unknown
   /**
    * What a response stores: `value()` without what a page the answers walk past holds, each field,

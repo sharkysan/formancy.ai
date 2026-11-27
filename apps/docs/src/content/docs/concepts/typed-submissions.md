@@ -144,4 +144,5 @@ function onSubmit(outcome: SubmitOutcome) {
 ```
 
 is a statement about data the engine checked, not a guess. A webhook or an export carries the
-data the server stored after its replay, which the same engine checked.
+data the server stored after its replay, which the same engine checked — `engine.submission()`,
+which is `onSubmit`'s data without what a page the answers walked past holds.

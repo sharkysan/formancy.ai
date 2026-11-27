@@ -1,5 +1,6 @@
 import { getAt } from '@formancy/core'
 import type { FieldDef, FormSchema } from '@formancy/spec'
+import { flattenPages } from './pages.js'
 
 /**
  * Checking that a sourced answer is one the deployment's own source offers.
@@ -50,7 +51,7 @@ export function sourcedAnswers(schema: FormSchema, value: unknown): ReadonlyArra
   const walk = (fields: readonly FieldDef[], data: unknown, prefix: string): void => {
     if (typeof data !== 'object' || data === null) return
 
-    for (const field of fields) {
+    for (const field of flattenPages(fields)) {
       const at = prefix === '' ? field.key : `${prefix}.${field.key}`
       // What the submission holds, as the engine reads it: never a member of every object (0185).
       const held = getAt(data, [field.key])

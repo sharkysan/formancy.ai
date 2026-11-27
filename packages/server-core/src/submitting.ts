@@ -151,7 +151,9 @@ export async function createSubmission(
   // nothing. The engine cannot do this itself: a `optionsSource` field has no
   // document options to compare against, which is exactly what naming a source
   // means.
-  const membership = await checkMembership(current.schema, canonical, deps.optionsSources)
+  // Against what was judged rather than what is kept: an answer on a page the answers walk past is
+  // not stored, but the rules read it, so one its list does not offer is refused as on every release.
+  const membership = await checkMembership(current.schema, engine.value(), deps.optionsSources)
   if (!membership.ok) {
     return membership.kind === 'invalid'
       ? { ok: false, kind: 'invalid', errors: membership.errors }

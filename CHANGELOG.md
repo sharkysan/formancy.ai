@@ -30,8 +30,21 @@ browser's next pass showed it again: a required one held the form up with an err
 could reach, where the replay of the same answers accepted it (A2). A skip and a `visible` rule are
 now two reasons to hide a field, and either hides it. A host storing what a binding hands over
 without replaying it should store `submission()` from its own replay instead. From the upgrade, a
-form version published before stores none of what a client sends for a page its answers walk past;
-responses stored before keep what they were stored with, and never migrate.
+form version published before stores none of what a client sends for a page its answers walk past,
+but what a field there keeps with `clearOnHide: false`; it still refuses an answer there that its list
+does not offer, since the rules read it; responses stored before keep what they were stored with, and
+never migrate. The review a person checks before sending, and an example's `absent`, read
+`submission()` too, so neither shows a skipped page's answer as one that is sent.
+
+**Fixed: a sourced answer on a page was never checked against its list**, in every release since
+`0.2.0`, the first with a membership check — measured on 2026-11-27 against `main` and read from
+`0.2.0`'s code; no release between was run. The server asks a deployment's
+source whether a `select` with an `optionsSource` holds a value it offers, walking the answers from
+the schema, and the walk took a page for a group: it looked for the page's key in the answers, found
+nothing, and asked about none of the fields on it. So on any paged form a value the list does not
+offer was stored (hazard A7). A page now contributes nothing to the walk, as it contributes nothing
+to a data path, by the one function the walk for files already used. From the upgrade, a paged form
+version published before refuses, with `option`, a sourced answer it accepted.
 
 **Fixed: a list stored as `null` could not be counted by a rule**, in every release through `0.14.0`,
 read from their engines' code. Validation takes a repeater handed `null` for no rows, so an API body
