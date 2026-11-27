@@ -96,7 +96,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0010](0010-canonical-hash.md) | Canonically serialise and hash every schema | accepted |
 | [0011](0011-declared-renames.md) | Field keys are identity; renames are declared | accepted |
 | [0012](0012-pages-scope-nothing.md) | Pages scope nothing; groups and repeaters scope paths | accepted |
-| [0013](0013-hidden-field-semantics.md) | Specify what happens to a hidden field's answer | accepted |
+| [0013](0013-hidden-field-semantics.md) | Specify what happens to a hidden field's answer | accepted; for a page the answers walk past narrowed by 0246 |
 | [0014](0014-presentation-sections.md) | Keep words and arrangement in optional sections | accepted |
 | [0015](0015-diff-before-server.md) | Build `diffSchemas` before there is data to corrupt | accepted |
 | [0041](0041-repeater-row-identity.md) | A repeater row carries its own identity | accepted |
@@ -197,7 +197,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0084](0084-a-translation-is-authored-not-imported.md) | Extraction is the command; an orphaned message is kept | accepted |
 | [0085](0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md) | A tag picker is a widget, and a widget has a version | accepted |
 | [0086](0086-a-check-is-named-and-answered-elsewhere.md) | A check is named here and answered elsewhere | accepted |
-| [0087](0087-a-page-can-be-walked-past.md) | A page can be walked past, and its questions go with it | accepted |
+| [0087](0087-a-page-can-be-walked-past.md) | A page can be walked past, and its questions go with it | accepted; how its answers stay out of the submission is 0246 |
 | [0088](0088-spec-3-freezes-with-four-constructs.md) | Spec 3 freezes with four constructs, not one | accepted |
 | [0089](0089-a-page-is-unwrapped-into-its-neighbour.md) | A page is unwrapped into its neighbour, not onto the top level | accepted |
 | [0090](0090-a-check-defaults-to-the-server.md) | A check defaults to the server, and the page says which default it gets | accepted |
@@ -346,3 +346,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0239](0239-spec-6-freezes-with-the-property-it-opened-for.md) | Spec 6 freezes with the property it was opened for, and nothing opens version 7 yet | accepted |
 | [0240](0240-a-computed-rule-depends-on-the-fields-it-reads.md) | A computed rule depends on the fields it reads, not on their top-level names | accepted |
 | [0243](0243-every-page-of-the-sites-own-build-is-sent-as-static-html-and-taken-over-as-sent.md) | Every page of the site's own build is sent as static HTML, and the browser takes it over as it was sent | accepted |
+| [0246](0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md) | A skipped page's answers are left out of what is stored, not out of what is judged | accepted |

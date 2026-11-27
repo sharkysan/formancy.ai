@@ -92,7 +92,8 @@ POST /f/contact-us/submissions
                                   │         │
                           errors in the     ├─ insert under the token's id — taken already?
                           identical shape   │  then nothing below, and 409 (two sends at once)
-                          the client uses   ├─ store canonicalData, not the body,
+                          the client uses   ├─ store canonicalData, not the body: submission(),
+                                            │  without what a skipped page holds (0246),
                                             │  bound to form_version_id
                                             ├─ claim the files it names
                                             ├─ write the audit row

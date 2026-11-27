@@ -158,3 +158,33 @@ describe('answers to review', () => {
     ])
   })
 })
+
+describe('a page the answers walk past', () => {
+  test('is not in the review, though the answers keep what was typed there (0246)', () => {
+    // The review is what will be sent, and a skipped page's answers are not stored: listing
+    // the passport number typed before the person said they need no visa after all shows them
+    // an answer they will not be sending, with a Change that takes them to a page they skip.
+    const visa = {
+      specVersion: '3',
+      id: 'visa',
+      title: 'Visa',
+      model: {
+        fields: [
+          { key: 'p1', type: 'page', label: 'About you', fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Do you need a visa?' }] },
+          { key: 'p2', type: 'page', label: 'Visa details', fields: [{ key: 'passport', type: 'text', label: 'Passport number' }] },
+        ],
+      },
+      logic: { rules: [{ target: 'p2', kind: 'skip', cel: 'needsVisa != true' }] },
+    } as FormSchema
+    const engine = createFormEngine({
+      schema: visa,
+      initialValue: { needsVisa: false, passport: 'X123' },
+      capabilities: { now: () => 0, today: () => '2026-09-29', random: () => 0.5 },
+    })
+
+    const labels = answersToReview(engine, createFormText({ locale: 'en' })).map(({ label }) => label)
+
+    expect(labels).not.toContain('Passport number')
+    expect(engine.value()).toHaveProperty('passport', 'X123')
+  })
+})

@@ -2,6 +2,7 @@ import { getAt } from '@formancy/core'
 import { modelDataPaths } from '@formancy/spec'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 import { maySubmit } from './access.js'
+import { flattenPages } from './pages.js'
 import type { FileRecord, FormRecord, Storage } from './ports.js'
 
 /**
@@ -215,16 +216,6 @@ function fileFieldAt(schema: FormSchema, path: string): FieldDef | undefined {
     fields = flattenPages(found.fields ?? [])
   }
   return found
-}
-
-/** A page contributes no segment to a data path. */
-function flattenPages(fields: readonly FieldDef[]): FieldDef[] {
-  const out: FieldDef[] = []
-  for (const field of fields) {
-    if (field.type === 'page') out.push(...flattenPages(field.fields ?? []))
-    else out.push(field)
-  }
-  return out
 }
 
 /** The HTML `accept` grammar, as the engine reads it. */

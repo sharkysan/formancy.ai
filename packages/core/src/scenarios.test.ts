@@ -575,3 +575,28 @@ describe('the mode a scenario runs in', () => {
     expect(runScenarios(leave, [scenario], { initialValue: start, mode: 'server' })[0]?.passed).toBe(true)
   })
 })
+
+describe('an example on a page the answers walk past', () => {
+  test('finds its answer absent, because what is stored leaves it out (0246)', () => {
+    // `absent` asks what the submission must not carry, and a skipped page's answers are not
+    // stored: read from the answers the engine keeps for the rules, it failed an example that
+    // the server would have passed, in either mode.
+    const visa = {
+      specVersion: '3',
+      id: 'visa',
+      title: 'Visa',
+      model: {
+        fields: [
+          { key: 'p1', type: 'page', label: 'About you', fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Do you need a visa?' }] },
+          { key: 'p2', type: 'page', label: 'Visa details', fields: [{ key: 'passport', type: 'text', label: 'Passport number' }] },
+        ],
+      },
+      logic: { rules: [{ target: 'p2', kind: 'skip', cel: 'needsVisa != true' }] },
+    } as FormSchema
+    const walkedPast: Scenario = { name: 'no visa, no passport kept', changes: { needsVisa: false, passport: 'X123' }, valid: true, absent: ['passport'] }
+
+    for (const mode of ['client', 'server'] as const) {
+      expect(runScenarios(visa, [walkedPast], { mode })[0]?.failures).toEqual([])
+    }
+  })
+})

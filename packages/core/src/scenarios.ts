@@ -267,8 +267,9 @@ export function runScenarios(schema: FormSchema, scenarios: readonly Scenario[],
      * looked up at the top of the submission found `home.street` in none, so an `absent`
      * on a field inside a group or a row held whatever the form did
      * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+     * Against what is stored, `submission()`, which leaves out what a skipped page holds (0246).
      */
-    const submitted = engine.value()
+    const submitted = engine.submission()
     for (const path of scenario.absent ?? []) {
       const segments = parsePath(path)
       const holder = getAt(submitted, segments.slice(0, -1))

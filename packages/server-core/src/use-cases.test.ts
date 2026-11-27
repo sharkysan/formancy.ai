@@ -294,6 +294,80 @@ describe('createSubmission', () => {
     expect(canonical['total']).toBe(20)
   })
 
+  test('never trusts the client with a page the answers walk past: what it sent for it is stripped', async () => {
+    // SAFETY-ANALYSIS A4 by the skip road. The replay hid a skipped page's fields from
+    // validation and kept what the client sent for them, so the server stored an answer to
+    // a question the answers had walked past — measured on 2026-11-26 against `main` (0087, 0013).
+    const paged: FormSchema = {
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: {
+        fields: [
+          { key: 'p1', type: 'page', label: 'About you', fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Do you need a visa?' }] },
+          { key: 'p2', type: 'page', label: 'Visa details', fields: [{ key: 'passport', type: 'text', label: 'Passport number', required: true }] },
+        ],
+      },
+      logic: { rules: [{ target: 'p2', kind: 'skip', cel: 'needsVisa != true' }] },
+    }
+    const published = await publishForm(deps, { path: 'trip', schema: paged })
+    if (!published.ok) throw new Error('publish failed')
+    await deps.storage.insertWebhook({
+      id: 'w1',
+      formId: published.formId,
+      url: 'https://example.ch/hook',
+      secret: 'whsec_x',
+      consecutiveFailures: 0,
+      openedAt: null,
+    })
+
+    const outcome = await createSubmission(deps, {
+      path: 'trip',
+      declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
+      data: { needsVisa: false, passport: 'SMUGGLED' },
+    })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    // Each of the three it leaves: what it answers, the stored row, and the webhook's body.
+    expect(outcome.canonicalData).toEqual({ needsVisa: false })
+    const [stored] = await deps.storage.listSubmissionsByForm(published.formId)
+    expect(stored?.data).toEqual({ needsVisa: false })
+    const [delivery] = await deps.storage.claimDueDeliveries('9999-12-31T00:00:00Z', 10)
+    expect((JSON.parse(delivery!.body) as { data: unknown }).data).toEqual({ needsVisa: false })
+  })
+
+  test('and still refuses an answer there that its list does not offer, since the rules read it', async () => {
+    // What a skipped page holds is not stored, but every rule judges it (0246), so an answer its
+    // list does not offer could still decide a fee that is stored. Checked against what was judged,
+    // it is refused as on every release, rather than slipping past the check with the page.
+    const paged: FormSchema = {
+      specVersion: '3',
+      id: 'move',
+      title: 'Move',
+      model: {
+        fields: [
+          { key: 'p1', type: 'page', label: 'About you', fields: [{ key: 'moving', type: 'checkbox', label: 'Are you moving?' }] },
+          { key: 'p2', type: 'page', label: 'New address', fields: [{ key: 'canton', type: 'select', label: 'Canton', optionsSource: 'cantons' }] },
+        ],
+      },
+      logic: { rules: [{ target: 'p2', kind: 'skip', cel: 'moving != true' }] },
+    }
+    const sourced = { ...deps, optionsSources: { cantons: { members: (values: readonly string[]) => Promise.resolve(values.filter((v) => v !== 'ZH')) } } }
+    const published = await publishForm(sourced, { path: 'move', schema: paged })
+    if (!published.ok) throw new Error('publish failed')
+
+    const outcome = await createSubmission(sourced, {
+      path: 'move',
+      declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
+      data: { moving: false, canton: 'XX' },
+    })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'invalid', errors: { canton: ['option'] } })
+  })
+
   test('stores no computed value it did not compute, even when it cannot compute one', async () => {
     // `price * qty` cannot be evaluated with `qty` left out, and a computed rule that
     // cannot be evaluated writes nothing (0054). The replay overwrote a sent total only

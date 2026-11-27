@@ -119,6 +119,25 @@ enforced on the server, and whoever authors rules has to understand that. Every
 other validator runs in both places
 ([0043](../decisions/0043-runs-on.md)).
 
+The same engine is not the same history. The replay builds an engine from the answers once; the
+browser reached them answer by answer, and what an engine keeps between passes can differ by the
+road. Until 2026-11-26 a field on a page a `skip` rule walks past, with a `visible` rule of its own
+that showed it, was hidden by one switch the two shared: the browser's next pass re-ran the rule
+and showed the field again, so a required one was refused in the browser, on a page nobody could
+reach, where the replay of the same answers accepted it. A skip and a rule now hide apart,
+either one hiding the field
+([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). Verified by
+`packages/core/src/skip.test.ts` (*stays hidden while the page is skipped, whatever a rule of its
+own says*). And the replay judges what the browser judged about a skipped page: its answers stay
+in the value the browser sends and the server replays, and are left out only of what the server
+stores ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). A first repair left them out
+of the value instead, and measured on 2026-11-27 the browser accepted what the replay refused, and
+asked what the replay dropped. Held by the cases under *the replay of what the browser hands over*
+in `packages/core/src/skip.test.ts`, which reach each state answer by answer in the browser,
+replay exactly what it hands over and ask for the same verdict, pages and stored value. Nothing
+here checks that every other piece of state the engine keeps between passes is the same by every
+road.
+
 ### A3. A calculated value is supplied by the client rather than computed
 
 *How it arises:* a computed field's value is attacker-controlled in the request
@@ -186,6 +205,13 @@ topped up, added, removed or moved, and the rows a rule writes are given ids
   order the computed rules run in: a field reading a row of a repeater inside a
   group, fixed on 2026-11-22, and a row's whole read of rows a rule computes inside a
   group, a running total among them, kept as debt.
+- **A stored record can hold a value computed from an answer it does not hold.** A computed
+  field reading an answer on a page the answers walked past is computed from it in the browser
+  and on the replay alike, and stored, while the answer is left out of what is stored
+  ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)): a fee computed from a passport
+  number typed before the person said they need no visa is stored without the passport number,
+  and replaying the stored record alone would not give it back. Pinned by *reads it as it did
+  before* in `packages/core/src/skip.test.ts`.
 - **A host writing a whole row or group** with `setValue` on its parent path
   writes a computed member's value with it. The next pass overwrites that value
   when it can evaluate the expression, and keeps it until then. The server is
@@ -216,12 +242,39 @@ values under server-hidden subtrees
 integration test that posts a value in a hidden branch and asserts it is absent
 from the stored row.
 
-*Residual:* none known beyond the one an author chooses: `clearOnHide: false`
+A page a `skip` rule walks past is such a branch. What it holds is left out of what the server
+stores with a response and hands to a webhook — the engine's `submission()` — each field, group
+and list whole by its own `clearOnHide`, while the value the browser sends, a draft keeps and the
+replay judges keeps it, so the two judge alike ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). Until 2026-11-26
+it was stored: the replay stored what a client sent for a skipped page, and what somebody typed
+there before the answers walked past it. Measured that day against `main`, and read from the code of `0.3.0`, the first release
+with a `skip` rule; no release between was run. Verified by
+`packages/server-core/src/use-cases.test.ts` (*never trusts the client with a page the answers
+walk past*) and the cases under *what a skipped page holds* in `packages/core/src/skip.test.ts`.
+
+*Residual:* the one an author chooses — `clearOnHide: false`
 keeps a hidden field's answer, by design. Since 2026-10-18 that is read on a group
 and a repeater too, where it was read from nothing and their answers were stripped
 whatever it said; a hidden group or repeater that keeps its answers is not
 validated, and neither is anything inside it
 ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
+
+A rule reading a skipped page's answer reads it, in the browser and on the replay alike, as in
+every release: a field shown because of one is shown, asked and stored, and a value computed from
+one is stored, while the answer itself is not ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md),
+pinned by *reads it as it did before* in `packages/core/src/skip.test.ts`). So what a client sends
+for a page whose answers are not stored can still decide which fields are asked and what is
+computed — as a person's answer can, given before the page is walked past.
+
+A response stored before 2026-11-26 may hold answers from a page its answers walked past;
+responses never migrate, and nothing here finds them for the operator.
+
+In the browser, a computed field a `visible` rule hides is written again by the next pass that
+re-runs its rule, and is in the value the browser sends while it stays hidden; measured on
+2026-11-26 against `main`. In the case measured the replay stripped it, computing and hiding it
+in the same pass, so it was not stored with a response; nothing here shows that for every form. A
+draft, which the server stores as it is sent, carries it. A skipped page's computed fields are
+left out of what is stored with the rest of the page.
 
 ### A5. An expression fails at runtime and the failure is interpreted as a pass
 
@@ -537,6 +590,18 @@ while a refusal leaves the draft holding the answers.
   forever in an immutable record; a source is under no such obligation, and recording the
   label would change what the field collects.
 
+*And every page is opened.* Until 2026-11-27 the walk that finds the sourced answers took a page
+for a group: it looked for the page's key in the answers, found nothing, and asked the source about
+none of the fields on it, so on any paged form, in every release since `0.2.0`, the first with this
+check, a value the list does not offer was stored — measured that day against `main`, and read from
+`0.2.0`'s code; no release between was run. A page now contributes nothing to the walk,
+by the function the walk for files uses. The walk reads what the replay judged, not what is stored,
+so an answer on a page the answers walk past is checked too: it is not stored, but the rules read
+it ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). Verified by
+`packages/server-core/src/options-membership.test.ts` (*is checked like any other, because a page is
+no segment of its path*) and `use-cases.test.ts` (*and still refuses an answer there that its list
+does not offer*).
+
 *And the name is looked up among the deployment's own.* Through 0.6.0 the lookup read
 `optionsSources[name]`, so a source named `constructor` was found in every object's prototype: a
 document naming it was published against a deployment that configures other sources, and its
@@ -684,6 +749,14 @@ server rejects ([0197](../decisions/0197-a-default-is-where-something-fresh-star
 `packages/core/src/default.test.ts` (nothing handed in is filled; a refused default keeps the
 form from opening) and `packages/server-core/src/submitting.test.ts` (a response without the
 answer, or with no data, is stored without it).
+
+Not on a page the answers walk past, where a default would be an answer to a question nobody was
+asked: a new form's defaults, and a list's first rows, on a page skipped from the start are left
+out of what is stored unless the field's own `clearOnHide` is false, and are there when the page
+is walked into ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)). They still answer
+every rule, in the browser and on the replay alike, so a value computed from one is stored without
+it (A3). Until 2026-11-26 they were stored; measured that day against `main`. Verified by
+`packages/core/src/skip.test.ts` (*leaves out a default and a list of rows nobody was asked for*).
 
 *Residual:*
 

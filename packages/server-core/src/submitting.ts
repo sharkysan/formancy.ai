@@ -143,10 +143,16 @@ export async function createSubmission(
   const outcome = engine.submit()
   if (!outcome.ok) return { ok: false, kind: 'invalid', errors: outcome.errors }
 
+  // What is kept: the replay judged what the client sent, as the browser did, and keeps it without
+  // what a page the answers walk past holds (0246).
+  const canonical = engine.submission()
+
   // Asked AFTER the engine and BEFORE anything is written, so a refusal stores
   // nothing. The engine cannot do this itself: a `optionsSource` field has no
   // document options to compare against, which is exactly what naming a source
   // means.
+  // Against what was judged rather than what is kept: an answer on a page the answers walk past is
+  // not stored, but the rules read it, so one its list does not offer is refused as on every release.
   const membership = await checkMembership(current.schema, engine.value(), deps.optionsSources)
   if (!membership.ok) {
     return membership.kind === 'invalid'
@@ -161,7 +167,7 @@ export async function createSubmission(
   const hooks = await deps.storage.webhooksForForm(current.formId)
   // The CANONICAL value, not the request body: the receiver sees what was
   // stored, with computed fields recomputed and hidden branches stripped.
-  const body = JSON.stringify({ id, form: input.path, data: engine.value() })
+  const body = JSON.stringify({ id, form: input.path, data: canonical })
   const queued = hooks.map((hook) => ({
     id: deps.newId(),
     webhookId: hook.id,
@@ -181,7 +187,7 @@ export async function createSubmission(
   const claimable = await filesToClaim(deps.storage, {
     schema: current.schema,
     formId: current.formId,
-    data: engine.value(),
+    data: canonical,
   })
   if (!claimable.ok) {
     return {
@@ -199,7 +205,7 @@ export async function createSubmission(
       id,
       formId: current.formId,
       formVersionId: current.versionId,
-      data: engine.value(),
+      data: canonical,
       submittedAt: at,
     },
     queued,
@@ -229,5 +235,5 @@ export async function createSubmission(
   // Two sends of one response at once both found nothing stored above; the storage decided
   // which of them it is, and wrote nothing at all for the other.
   if (!stored) return { ok: false, kind: 'token_spent', id }
-  return { ok: true, id, canonicalData: engine.value() }
+  return { ok: true, id, canonicalData: canonical }
 }

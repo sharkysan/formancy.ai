@@ -1,6 +1,8 @@
 # 0013 — Specify what happens to a hidden field's answer
 
-- **Status:** accepted
+- **Status:** accepted; for a page the answers walk past, whose answers are left out of what is
+  stored and kept in the value while it is away, narrowed by
+  [0246](0246-a-skipped-pages-answers-are-left-out-of-what-is-stored.md)
 - **Date:** 2026-09-19
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/conformance/fixtures/clear-on-hide.json`, which

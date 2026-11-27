@@ -91,7 +91,7 @@ export function ContactForm() {
     <FormancyProvider engine={engine}>
       <FormancyForm
         onSubmit={(outcome) => {
-          if (outcome.ok) console.log('canonical value', outcome.data)
+          if (outcome.ok) console.log('answers to send', outcome.data)
         }}
       />
     </FormancyProvider>

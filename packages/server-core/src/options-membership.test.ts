@@ -232,3 +232,34 @@ describe('a list answer from a source', () => {
     expect(found.map((answer) => answer.value)).toEqual(['a11y'])
   })
 })
+
+describe('a sourced answer on a page', () => {
+  test('is checked like any other, because a page is no segment of its path', () => {
+    // A7 on every paged form: the walk took a page for a group, looked for `about` in the
+    // answers, found nothing, and asked the source about none of the fields on it — so a value
+    // the list does not offer was stored, measured on 2026-11-27 against `main`.
+    const paged = {
+      specVersion: '3',
+      id: 'paged',
+      title: 'Paged',
+      model: {
+        fields: [
+          { key: 'about', type: 'page', label: 'About you', fields: [{ key: 'canton', type: 'select', label: 'Canton', optionsSource: 'cantons' }] },
+          {
+            key: 'more',
+            type: 'page',
+            label: 'More',
+            fields: [
+              { key: 'billing', type: 'group', label: 'Billing', fields: [{ key: 'country', type: 'select', label: 'Country', optionsSource: 'countries' }] },
+            ],
+          },
+        ],
+      },
+    } as unknown as FormSchema
+
+    expect(sourcedAnswers(paged, { canton: 'ZH', billing: { country: 'CH' } })).toEqual([
+      { path: 'canton', source: 'cantons', value: 'ZH' },
+      { path: 'billing.country', source: 'countries', value: 'CH' },
+    ])
+  })
+})

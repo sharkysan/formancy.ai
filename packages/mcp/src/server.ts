@@ -400,7 +400,9 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
                     '  `data-formancy-theme` attribute, or write your own against the',
                     '  `data-formancy-part` hooks.',
                     '- The submitted value is `engine.value()`. Validate it on the server',
-                    '  too: the same engine runs there, so the two cannot disagree.',
+                    '  too: the same engine runs there, so the two cannot disagree. Store',
+                    '  `engine.submission()` from that engine, which leaves out what a page',
+                    '  the answers walked past holds.',
                   ].join('\n')
                 : [
                     'Render a formancy form in a React application.',
@@ -415,7 +417,9 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
                     '  `data-formancy-theme` attribute, or write your own against the',
                     '  `data-formancy-part` hooks.',
                     '- The submitted value is `engine.value()`. Validate it on the server',
-                    '  too: the same engine runs there, so the two cannot disagree.',
+                    '  too: the same engine runs there, so the two cannot disagree. Store',
+                    '  `engine.submission()` from that engine, which leaves out what a page',
+                    '  the answers walked past holds.',
                   ].join('\n'),
           },
         },
