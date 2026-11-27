@@ -134,9 +134,46 @@ stores ([0246](../decisions/0246-a-skipped-pages-answers-are-left-out-of-what-is
 of the value instead, and measured on 2026-11-27 the browser accepted what the replay refused, and
 asked what the replay dropped. Held by the cases under *the replay of what the browser hands over*
 in `packages/core/src/skip.test.ts`, which reach each state answer by answer in the browser,
-replay exactly what it hands over and ask for the same verdict, pages and stored value. Nothing
-here checks that every other piece of state the engine keeps between passes is the same by every
-road.
+replay exactly what it hands over and ask for the same verdict, pages and stored value.
+
+Since 2026-11-27 the road is also chosen at random. `packages/core/src/replay.test.ts` walks seven
+forms, each holding a road the engine has got wrong or one beside it: answers to what is shown,
+enabled and the person's to give, rows added and removed where the buttons allow, up to thirty
+steps. After each walk it builds the replay from a JSON copy of `value()`, as the server receives
+it, and asks for the same verdict, errors, pages walked past and stored value, and the same value,
+visibility, requiredness and disabledness of every field. It fails against the engines before
+#358 and #363, against one that leaves a skipped page's answers out of `value()`, and against one
+whose server ignores `disabled` rules. The seed is random on every run, and a failure prints it
+with a walk shrunk from the one that broke it. It walks those seven forms with the answers it
+lists and compares those readings, and nothing more:
+
+- **Not an emptied number.** A control writes one as `null`, and a computed rule reading it then
+  keeps in the browser what it last wrote — A3's accepted residual, which would make the walks red
+  for a reason accepted by design.
+- **No row moves, no page navigation**, and no field type or rule kind none of the forms holds;
+  a walk that would reach a field of a type it has no answers for refuses to run rather than
+  leave the field alone.
+- **Not the second pass a default filled in a pass runs**, because any rule reading such a field
+  is on the road kept as debt below.
+- **Not a disagreement both sides share.** A rule wrong in the browser and on the server alike
+  agrees with itself.
+
+*Residual:* **a rule reading an answer that a hiding clears in the same pass decides as though
+it were still there.** Found by those walks on 2026-11-27, against `main`. The rules of a pass read
+the answers as the pass began; a `visible` rule that hides a field clears its answer in the store,
+not in what the pass reads — so the order the rules run in does not matter — and nothing runs the
+pass again until the next answer, unless the same pass filled a default or topped a list up to its
+minimum rows. In the browser whatever
+the cleared answer decided stays decided, while the replay starts without it. Both ways round:
+what it showed stays shown and required, and what it computed stays, so the browser refuses what
+the server accepts and shows a computed value the server does not store; and a `required` it
+switched off stays off, or what it hid stays hidden, so the browser accepts and sends what the
+server refuses. Where it switched `required` off, the error is on a field the browser shows as
+optional, which the person can then answer; where it hid the field, **the error is on a field the
+browser does not show, which leaves the person nothing to answer**. Kept as debt (arc42 §11), and
+pinned by *debt: a rule reading an answer a hiding clears in the same pass* in `replay.test.ts`,
+four cases asserting the disagreement as it is so that its fix is seen; the seven forms leave that
+road out until then.
 
 ### A3. A calculated value is supplied by the client rather than computed
 

@@ -140,7 +140,10 @@ Each gate exists for a reason that was paid for at least once:
   Stating the floor is what makes it true tomorrow as well
   ([0060](../decisions/0060-documentation-is-checked.md)). A manufacturer who
   needs the exact figure for a pinned version should read it from that
-  version's CI run.
+  version's CI run. Among them is a property that walks forms by random roads and asks the
+  server's replay to judge as the browser did (`packages/core/src/replay.test.ts`, hazard A2).
+  Its seed is random on every run, so two runs of one commit walk different roads; a failure
+  prints the seed and a shrunk walk, which is what makes a red run reproducible.
 - **`check:pkg`** — `publint` and `@arethetypeswrong/cli` with
   `--profile esm-only`, because broken exports maps are the commonest way a
   multi-framework library fails in somebody else's application
